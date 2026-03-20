@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                primary: '#7f13ec',
+                'background-light': '#f7f6f8',
+                'background-dark': '#191022',
+              },
+              fontFamily: {
+                display: ['Inter', 'sans-serif'],
+              },
+              borderRadius: {
+                DEFAULT: '0.5rem',
+                'lg': '1rem',
+                'xl': '1.5rem',
+              }
+            }
+          }
+        }
+    </script>
+    <title>Damaged Currency - Business Perf</title>
+    <style>
+        #sidebar { 
+            width: 5.5rem !important;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar:hover { 
+            width: 16rem !important;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        }
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+        #sidebar:hover .sidebar-logo-container { justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+        #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+        #sidebar .nav-text, #sidebar .sidebar-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        #sidebar:hover .nav-text, #sidebar:hover .sidebar-text { 
+            opacity: 1; 
+            transform: translateX(0);
+            width: auto;
+            margin-left: 0.75rem;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20">
+            <div class="px-6 pb-6 pt-6 flex items-center gap-3 sidebar-logo-container border-b border-primary/5">
+                <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
+                    <span class="material-symbols-outlined">analytics</span>
+                </div>
+                <div class="sidebar-text">
+                    <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+                    <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+                </div>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-1">
+                <a href="dashboard-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="text-sm nav-text">Dashboard</span>
+                </a>
+                <a href="add-entry-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <span class="text-sm nav-text">Add Entry</span>
+                </a>
+                <a href="transactions-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="text-sm nav-text">Transactions</span>
+                </a>
+                <a href="reports-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                    <span class="text-sm nav-text">Reports</span>
+                </a>
+                <a href="credit-ledger-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span class="text-sm nav-text">Credit Ledger</span>
+                </a>
+                <a href="cash-calculator-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">calculate</span>
+                    <span class="text-sm nav-text">Cash Calculator</span>
+                </a>
+                <a href="settings-code.html" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="text-sm nav-text">Settings</span>
+                </a>
+</nav>
+<div class="mt-auto p-4 border-t border-primary/10">
+    <div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+                <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
+            </div>
+            <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
+                <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+            </div>
+        </div>
+    </div>
+</div>
+</aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-y-auto">
+            <!-- Header -->
+            <header class="p-8 pb-0">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-primary/10 pb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                            <span class="material-symbols-outlined text-rose-500 text-4xl">money_off</span>
+                            Damaged Currency Calculator
+                        </h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Calculate the total value of mutilated or damaged notes.</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Calculator Body -->
+            <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Denominations Table -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-primary/10">
+                                <tr>
+                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Denomination</th>
+                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Note Count</th>
+                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Value (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="damaged-denomination-rows" class="divide-y divide-primary/5">
+                                <!-- Multi-step generation for denominations -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Summary Card -->
+                <div class="space-y-6">
+                    <div class="bg-primary p-8 rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
+                        <div class="relative z-10 flex flex-col h-full justify-between">
+                            <div>
+                                <p class="text-primary-100/80 text-sm font-medium mb-1">Total Damaged Value</p>
+                                <h3 id="damaged-total-val-display" class="text-4xl font-black tracking-tight">₹0</h3>
+                            </div>
+                            <button onclick="transferTotal()" class="mt-8 w-full bg-white text-primary hover:bg-primary-50 font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined">save_as</span>
+                                Use this amount
+                            </button>
+                        </div>
+                        <!-- Background decoration -->
+                        <div class="absolute -right-10 -bottom-10 size-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-primary/10 border-dashed flex flex-col gap-4">
+                        <div class="flex items-center gap-3 text-slate-500">
+                            <span class="material-symbols-outlined text-primary">info</span>
+                            <span class="text-xs font-medium uppercase tracking-wider">Instructions</span>
+                        </div>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">Enter the count of damaged notes for each denomination. The total will be automatically calculated and can be transferred back to your daily entry summary.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

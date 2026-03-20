@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Business Performance Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    
+        /* Sidebar Hover Expansion Styles */
+        #sidebar { 
+            width: 5.5rem !important; /* Default collapsed */
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #sidebar:hover { 
+            width: 16rem !important; /* Expanded w-64 */
+            box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        }
+        
+        /* Center icons when collapsed */
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
+
+        /* Restore alignment on hover */
+        #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+        #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+        
+        /* Fade texts in/out */
+        #sidebar .sidebar-text, 
+        #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        
+        #sidebar:hover .sidebar-text, 
+        #sidebar:hover .nav-text { 
+            opacity: 1; 
+            transform: translateX(0);
+            transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+            width: auto;
+            margin-left: 0.75rem;
+        }
+    
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20 transition-all duration-300">
+<div class="px-4 py-4 flex justify-end toggle-container">
+    <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
+        <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
+    </button>
+</div>
+<div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
+    <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
+        <span class="material-symbols-outlined">analytics</span>
+    </div>
+    <div class="sidebar-text overflow-hidden whitespace-nowrap">
+        <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+        <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+    </div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="dashboard-code.html" data-page="dashboard-code.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm nav-text">Dashboard</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-sm nav-text">Add Entry</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-sm nav-text">Transactions</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-sm nav-text">Reports</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-sm nav-text">Credit Ledger</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
+<span class="material-symbols-outlined">calculate</span>
+<span class="text-sm nav-text">Cash Calculator</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm nav-text">Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-4 border-t border-primary/10">
+    <div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+                <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
+            </div>
+            <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
+                <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+            </div>
+        </div>
+    </div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-1 flex flex-col overflow-y-auto w-full">
+<!-- Navbar -->
+<header class="h-16 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-8 sticky top-0 z-10 shadow-sm">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
+        <h2 class="text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent tracking-tight">
+            Daily Business Performance Report
+        </h2>
+    </div>
+</header>
+<div class="p-8 max-w-7xl mx-auto w-full space-y-8">
+<!-- Quick Actions -->
+<section class="flex flex-wrap gap-4 items-center justify-between">
+<div class="space-y-1">
+<h3 class="text-2xl font-bold tracking-tight">Business Overview</h3>
+<p class="text-slate-500 text-sm">Real-time performance metrics and insights.</p>
+</div>
+<div class="flex gap-3">
+<a href="add-entry-code.html" class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                            Add Entry
+                        </a>
+<a href="cash-calculator-code.html" class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/10 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-lg">calculate</span>
+                            Calculator
+                        </a>
+</div>
+</section>
+<!-- Comparison & Summary Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Comparison Highlights -->
+<div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-yellow-400/10 rounded-bl-full flex items-start justify-end p-3 text-yellow-500">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Total Income</p>
+<h4 id="total-income-top" class="text-3xl font-bold mt-2">₹12,450.00</h4>
+<div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
+    <span class="material-symbols-outlined text-sm" id="income-trend-icon">trending_up</span>
+    <span id="income-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-rose-400/10 rounded-bl-full flex items-start justify-end p-3 text-rose-500">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Total Expense</p>
+<h4 id="total-expense-top" class="text-3xl font-bold mt-2">₹4,820.50</h4>
+<div class="flex items-center gap-2 mt-4 text-rose-500 text-sm font-bold">
+    <span class="material-symbols-outlined text-sm" id="expense-trend-icon">trending_up</span>
+    <span id="expense-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-emerald-400/10 rounded-bl-full flex items-start justify-end p-3 text-emerald-500">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Net Profit</p>
+<h4 id="total-profit-top" class="text-3xl font-bold mt-2">₹7,629.50</h4>
+<div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
+    <span class="material-symbols-outlined text-sm" id="profit-trend-icon">trending_up</span>
+    <span id="profit-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+</div>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border-2 border-primary/20 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-primary/20 rounded-bl-full flex items-start justify-end p-3 text-primary">
+<span class="material-symbols-outlined">savings</span>
+</div>
+<p class="text-sm font-semibold text-primary">Closing Balance</p>
+<h4 id="closing-balance-top" class="text-3xl font-bold mt-2 text-primary">₹42,910.20</h4>
+<div class="flex items-center gap-2 mt-4 text-primary text-sm font-bold">
+<span class="material-symbols-outlined text-sm">shield</span>
+<span class="font-medium">Account Balanced</span>
+</div>
+</div>
+<!-- Capital -->
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-blue-400/10 rounded-bl-full flex items-start justify-end p-3 text-blue-500">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Total Capital</p>
+<h4 id="total-capital-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<div class="flex items-center gap-2 mt-4 text-blue-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">upgrade</span>
+<span>Added</span>
+</div>
+</div>
+<!-- Withdrawal -->
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-rose-400/10 rounded-bl-full flex items-start justify-end p-3 text-rose-500">
+<span class="material-symbols-outlined">atm</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Withdrawals</p>
+<h4 id="total-withdrawals-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<div class="flex items-center gap-2 mt-4 text-rose-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">money_off</span>
+<span>Total</span>
+</div>
+</div>
+<!-- Today's Income -->
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-emerald-400/10 rounded-bl-full flex items-start justify-end p-3 text-emerald-500">
+<span class="material-symbols-outlined">today</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Today's Income</p>
+<h4 id="today-income-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">event</span>
+<span>Today</span>
+</div>
+</div>
+<!-- Today's Expense -->
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-orange-400/10 rounded-bl-full flex items-start justify-end p-3 text-orange-500">
+<span class="material-symbols-outlined">event_busy</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Today's Expense</p>
+<h4 id="today-expense-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<div class="flex items-center gap-2 mt-4 text-orange-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">event</span>
+<span>Today</span>
+</div>
+</div>
+<!-- Today Profit -->
+<div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 size-16 bg-teal-400/10 rounded-bl-full flex items-start justify-end p-3 text-teal-500">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<p class="text-sm font-semibold text-slate-500">Today's Profit</p>
+<h4 id="today-profit-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<div class="flex items-center gap-2 mt-4 text-teal-500 text-sm font-bold">
+<span class="material-symbols-outlined text-sm">event_available</span>
+<span>Today</span>
+</div>
+</div>
+</div>
+<!-- Chart 1: Income vs Expense -->
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10">
+<div class="flex items-center justify-between mb-6">
+<h5 class="font-bold">Income vs Expense Trend</h5>
+<select class="text-xs bg-slate-100 dark:bg-slate-700 border-none rounded-lg focus:ring-1 focus:ring-primary">
+<option>Last 30 Days</option>
+<option>Last 7 Days</option>
+</select>
+</div>
+    <div class="h-64 mt-2">
+        <canvas id="incomeExpenseChart"></canvas>
+    </div>
+</div>
+<!-- Chart 2: Profit Trend -->
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10">
+<div class="flex items-center justify-between mb-6">
+<h5 class="font-bold">Profit Growth</h5>
+<button class="text-xs text-primary font-bold">View Full Report</button>
+</div>
+    <div class="h-64 mt-2">
+        <canvas id="profitGrowthChart"></canvas>
+    </div>
+</div>
+<!-- New Analytics Grid -->
+<div class="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 pb-8">
+    <!-- Analytical Comparison (Today & MTD) -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-6">
+            <h5 class="font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">analytics</span>
+                Performance Comparison (MoM)
+            </h5>
+            <div class="flex gap-2">
+                <span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold">TODAY</span>
+                <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">MTD</span>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- Today Section -->
+            <div class="space-y-3">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                    <span class="size-1.5 rounded-full bg-emerald-500"></span> Today vs Same Day Last Month
+                </p>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
+                        <p class="text-[9px] text-slate-400 uppercase font-bold">Income</p>
+                        <h4 id="mom-today-income" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mom-last-income" class="text-[9px] text-slate-500 mt-1 italic">vs ₹0</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
+                        <p class="text-[9px] text-slate-400 uppercase font-bold">Expense</p>
+                        <h4 id="mom-today-expense" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mom-last-expense" class="text-[9px] text-slate-500 mt-1 italic">vs ₹0</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
+                        <p class="text-[9px] text-slate-400 uppercase font-bold">Profit</p>
+                        <h4 id="mom-today-profit" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mom-last-profit" class="text-[9px] text-slate-500 mt-1 italic">vs ₹0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MTD Section -->
+            <div class="space-y-3">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                    <span class="size-1.5 rounded-full bg-blue-500"></span> Month-to-Date vs Last Month Period
+                </p>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <p class="text-[9px] text-primary uppercase font-bold">In (MTD)</p>
+                        <h4 id="mtd-current-income" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mtd-last-income" class="text-[9px] text-primary/60 mt-1 italic">vs ₹0</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <p class="text-[9px] text-primary uppercase font-bold">Ex (MTD)</p>
+                        <h4 id="mtd-current-expense" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mtd-last-expense" class="text-[9px] text-primary/60 mt-1 italic">vs ₹0</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <p class="text-[9px] text-primary uppercase font-bold">Net (MTD)</p>
+                        <h4 id="mtd-current-profit" class="text-sm font-black mt-1">₹0</h4>
+                        <p id="mtd-last-profit" class="text-[9px] text-primary/60 mt-1 italic">vs ₹0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Income Projections -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+            <h5 class="font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">query_stats</span>
+                Income Projections
+            </h5>
+            <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Estimated</span>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                <div class="space-y-0.5">
+                    <span class="text-xs font-semibold text-slate-500">Current Month Projection</span>
+                    <p id="proj-month-range" class="text-[9px] text-slate-400 italic">...</p>
+                </div>
+                <span id="proj-monthly" class="text-sm font-black text-primary">₹0</span>
+            </div>
+            <div class="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-700/50 rounded-lg">
+                <div class="space-y-0.5">
+                    <span class="text-xs font-semibold text-slate-500">Current Quarter Projection</span>
+                    <p id="proj-quart-range" class="text-[9px] text-slate-400 italic">...</p>
+                </div>
+                <span id="proj-quarterly" class="text-sm font-black text-slate-700 dark:text-slate-300">₹0</span>
+            </div>
+            <div class="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-700/50 rounded-lg">
+                <div class="space-y-0.5">
+                    <span class="text-xs font-semibold text-slate-500">Financial Year Projection</span>
+                    <p id="proj-year-range" class="text-[9px] text-slate-400 italic">...</p>
+                </div>
+                <span id="proj-yearly" class="text-sm font-black text-slate-700 dark:text-slate-300">₹0</span>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</main>
+</div>
+<script type="module" src="app.js"></script>
+</body></html>

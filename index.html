@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Daily Business Performance Report</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; background: #f9fafb; }
+        h1 { color: #111827; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 1rem; }
+        a { display: block; padding: 1rem; background: white; border-radius: 0.5rem; text-decoration: none; color: #2563eb; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: box-shadow 0.2s; }
+        a:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    
+        /* Sidebar Hover Expansion Styles */
+        #sidebar { 
+            width: 5.5rem !important; /* Default collapsed */
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #sidebar:hover { 
+            width: 16rem !important; /* Expanded w-64 */
+            box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        }
+        
+        /* Center icons when collapsed */
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
+
+        /* Restore alignment on hover */
+        #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+        #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+        
+        /* Fade texts in/out */
+        #sidebar .sidebar-text, 
+        #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        
+        #sidebar:hover .sidebar-text, 
+        #sidebar:hover .nav-text { 
+            opacity: 1; 
+            transform: translateX(0);
+            transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+            width: auto;
+            margin-left: 0.75rem;
+        }
+    
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Dynamic Daily Business Performance Report</h1>
+    <p>Select a screen to view:</p>
+    <ul>
+        <li><a href="dashboard-code.html">Dashboard</a></li>
+        <li><a href="add-entry-code.html">Add Entry</a></li>
+        <li><a href="cash-calculator-code.html">Cash Calculator</a></li>
+        <li><a href="credit-ledger-code.html">Credit Ledger</a></li>
+        <li><a href="reports-code.html">Reports</a></li>
+    </ul>
+</body>
+</html>

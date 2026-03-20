@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transactions - Business Performance Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    
+        /* Sidebar Hover Expansion Styles */
+        #sidebar { 
+            width: 5.5rem !important; /* Default collapsed */
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #sidebar:hover { 
+            width: 16rem !important; /* Expanded w-64 */
+            box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        }
+        
+        /* Center icons when collapsed */
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
+
+        /* Restore alignment on hover */
+        #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+        #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+        
+        /* Fade texts in/out */
+        #sidebar .sidebar-text, 
+        #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        
+        #sidebar:hover .sidebar-text, 
+        #sidebar:hover .nav-text { 
+            opacity: 1; 
+            transform: translateX(0);
+            transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+            width: auto;
+            margin-left: 0.75rem;
+        }
+    
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: none;
+        }
+
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20 transition-all duration-300">
+<div class="px-4 py-4 flex justify-end toggle-container">
+    <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
+        <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
+    </button>
+</div>
+<div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
+    <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
+        <span class="material-symbols-outlined">analytics</span>
+    </div>
+    <div class="sidebar-text overflow-hidden whitespace-nowrap">
+        <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+        <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+    </div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html" data-page="dashboard-code.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm nav-text">Dashboard</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-sm nav-text">Add Entry</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="transactions-code.html" data-page="transactions-code.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-sm nav-text">Transactions</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-sm nav-text">Reports</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-sm nav-text">Credit Ledger</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
+<span class="material-symbols-outlined">calculate</span>
+<span class="text-sm nav-text">Cash Calculator</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm nav-text">Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-4 border-t border-primary/10">
+    <div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+                <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
+            </div>
+            <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
+                <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+            </div>
+        </div>
+    </div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-1 flex flex-col overflow-y-auto w-full">
+
+<div class="p-6 md:p-8 w-full mx-auto space-y-8">
+
+<!-- Page Title -->
+<section class="flex flex-col gap-1">
+<h3 class="text-2xl font-bold tracking-tight">Transactions Ledger</h3>
+<p class="text-slate-500 text-sm">Full history of entries with date-wise opening and closing balances.</p>
+</section>
+
+<!-- Spreadsheet Transactions Table -->
+<div class="w-full overflow-x-auto bg-white dark:bg-background-dark/40 rounded-none border border-primary/20 shadow-sm relative" style="max-height: calc(100vh - 200px);">
+<table class="w-full text-[10px] text-center border-collapse" style="table-layout: fixed; min-width: 1600px;">
+<colgroup>
+    <col style="width: 35px;">   <!-- S.No -->
+    <col style="width: 85px;">   <!-- Date -->
+    <col style="width: 95px;">   <!-- Prev Closing -->
+    <col style="width: 80px;">   <!-- Capital Add -->
+    <col style="width: 90px;">   <!-- Opening -->
+    <col style="width: 65px;">   <!-- Cash -->
+    <col style="width: 65px;">   <!-- Online -->
+    <col style="width: 65px;">   <!-- Roinet -->
+    <col style="width: 55px;">   <!-- Jio -->
+    <col style="width: 65px;">   <!-- Go2Sms -->
+    <col style="width: 55px;">   <!-- Credit -->
+    <col style="width: 65px;">   <!-- Pending -->
+    <col style="width: 65px;">   <!-- Damages -->
+    <col style="width: 115px;">  <!-- Total -->
+    <col style="width: 85px;">   <!-- Income -->
+    <col style="width: 70px;">   <!-- Expense -->
+    <col style="width: 85px;">   <!-- Profit -->
+    <col style="width: 90px;">   <!-- Net -->
+    <col style="width: 75px;">   <!-- Withdraw -->
+    <col style="width: 115px;">  <!-- Closing -->
+</colgroup>
+<thead class="sticky top-0 z-10 bg-[#00a2e8] text-white">
+    <tr>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">S.No</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Date</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Prev Closing Balance</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Capital Add</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Opening (Prev + Cap) [Display Only]</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Cash</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Online</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Roinet</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Jio</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">CRGB BC</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Credit</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Pending</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Damages</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Total (C + O + R + J + CB + Cr + P + Dmg)</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Income (Total - Opening)</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Expense</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Profit (Income - Exp)</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Net (Total - Exp)</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Withdraw</th>
+        <th class="border border-slate-300 dark:border-slate-600 px-1 py-2 font-bold break-words whitespace-normal align-middle">Closing (Total - Exp - W)</th>
+    </tr>
+</thead>
+<tbody id="transactions-table-body" class="text-slate-800 dark:text-slate-200">
+    <!-- Rows will be injected here -->
+</tbody>
+</table>
+</div>
+
+</div>
+</main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
