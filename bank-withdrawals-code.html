@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bank Withdrawals - BizPerform</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: { "primary": "#7f13ec", "background-light": "#f7f6f8", "background-dark": "#191022" },
+                fontFamily: { "display": ["Inter"] },
+            },
+        },
+    }
+</script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    
+    #sidebar { width: 5.5rem !important; overflow: hidden; white-space: nowrap; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    #sidebar:hover { width: 16rem !important; box-shadow: 4px 0 15px rgba(0,0,0,0.03); }
+    #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+    #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+    #sidebar .toggle-container { display: none !important; }
+    #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+    #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+    #sidebar .sidebar-text, #sidebar .nav-text { opacity: 0; transform: translateX(-10px); transition: opacity 0.2s ease, transform 0.2s ease; display: inline-block; width: 0; overflow: hidden; }
+    #sidebar:hover .sidebar-text, #sidebar:hover .nav-text { opacity: 1; transform: translateX(0); transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s; width: auto; margin-left: 0.75rem; }
+    input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+</style>
+<script src="auth.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div id="error-log" style="color:red; background:yellow; font-weight:bold; padding:10px; z-index:9999; position:relative;"></div>
+<script>
+window.addEventListener('error', function(e) {
+  document.getElementById('error-log').innerHTML += 'ERROR: ' + e.message + '<br>';
+});
+window.addEventListener('unhandledrejection', function(e) {
+  document.getElementById('error-log').innerHTML += 'PROMISE ERROR: ' + e.reason + '<br>';
+});
+</script>
+<div class="flex h-screen overflow-hidden">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20 transition-all duration-300">
+<div class="px-6 pb-6 pt-6 flex items-center gap-3 sidebar-logo-container">
+    <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
+        <span class="material-symbols-outlined">analytics</span>
+    </div>
+    <div class="sidebar-text overflow-hidden whitespace-nowrap">
+        <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+        <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+    </div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="dashboard-code.html"><span class="material-symbols-outlined">dashboard</span><span class="text-sm nav-text">Dashboard</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="add-entry-code.html"><span class="material-symbols-outlined">add_circle</span><span class="text-sm nav-text">Add Entry</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="transactions-code.html"><span class="material-symbols-outlined">receipt_long</span><span class="text-sm nav-text">Transactions</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="reports-code.html"><span class="material-symbols-outlined">bar_chart</span><span class="text-sm nav-text">Reports</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html"><span class="material-symbols-outlined">menu_book</span><span class="text-sm nav-text">Credit Ledger</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary bg-primary/10 font-bold" href="bank-withdrawals-code.html"><span class="material-symbols-outlined">account_balance</span><span class="text-sm nav-text">Bank Withdrawals</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html"><span class="material-symbols-outlined">calculate</span><span class="text-sm nav-text">Cash Calculator</span></a>
+    <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary/5 transition-colors" href="settings-code.html"><span class="material-symbols-outlined">settings</span><span class="text-sm nav-text">Settings</span></a>
+    
+    <a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 mt-auto"><span class="material-symbols-outlined">logout</span><span class="text-sm nav-text font-semibold">Logout</span></a>
+</nav>
+</aside>
+
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-y-auto w-full">
+<div class="p-8 flex-1 overflow-y-auto space-y-8">
+
+    <!-- 1Cr Progress Bar -->
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 flex flex-col shadow-sm">
+        <div class="flex justify-between items-end mb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Year Withdrawals (Current FY)</h3>
+                <h2 id="fy-total-display" class="text-3xl font-black mt-1">₹0.00</h2>
+            </div>
+            <div class="text-right">
+                <span id="fy-percentage" class="text-lg font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">0% Used</span>
+            </div>
+        </div>
+        <div class="h-5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 relative">
+            <div id="fy-progress-bar" class="h-full bg-emerald-500 transition-all duration-700" style="width: 0%"></div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2 font-medium flex justify-between">
+            <span id="fy-dates-display">FY Tracking</span>
+            <span>Limit: ₹1,00,00,000 (Sec 194N)</span>
+        </p>
+    </div>
+
+    <!-- Account Management Form -->
+    <div id="account-view-header" class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold">Bank Accounts</h3>
+            <button onclick="showAccountsList()" id="back-to-accounts" class="hidden flex items-center gap-2 text-primary text-sm font-bold hover:underline">
+                <span class="material-symbols-outlined text-sm">arrow_back</span> Back to Banks
+            </button>
+        </div>
+        <form id="add-account-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-slate-500">Bank Name / Details</label>
+                <input id="new-account-name" class="form-input rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary" placeholder="e.g. SBI A/c 4859" type="text" required/>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">add_card</span> Add Account
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Withdrawal Tracker Form -->
+    <div id="add-withdrawal-section" class="hidden bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 id="withdrawal-form-title" class="text-base font-bold text-primary">Record Withdrawal</h3>
+        </div>
+        <form id="withdrawal-form" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input type="hidden" id="selected-account-id"/>
+            <div class="flex flex-col gap-1.5 md:col-span-1">
+                <label class="text-xs font-bold text-slate-500">Date</label>
+                <input id="withdrawal-date" class="form-input rounded-lg border-primary/10 bg-background-light text-sm" type="date" required/>
+            </div>
+            <div class="flex flex-col gap-1.5 md:col-span-1">
+                <label class="text-xs font-bold text-slate-500">Amount (₹)</label>
+                <input id="withdrawal-amount" class="form-input rounded-lg border-primary/10 bg-background-light text-sm font-bold" placeholder="0.00" type="number" required/>
+            </div>
+            <div class="flex flex-col gap-1.5 md:col-span-1">
+                <label class="text-xs font-bold text-slate-500">Method</label>
+                <select id="withdrawal-method" class="form-select rounded-lg border-primary/10 bg-background-light text-sm font-medium">
+                    <option value="Cheque">Self Cheque</option>
+                    <option value="ATM">ATM Withdrawal</option>
+                    <option value="Yono">Yono Cash</option>
+                    <option value="Other">Other Branch Cash</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+                <label class="text-xs font-bold text-slate-500">Note</label>
+                <input id="withdrawal-note" class="form-input rounded-lg border-primary/10 bg-background-light text-sm" placeholder="Optional remark" type="text"/>
+            </div>
+            <div class="md:col-span-5 flex justify-end mt-2">
+                <button type="submit" class="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 hover:bg-primary/90 transition-all">
+                    <span class="material-symbols-outlined text-sm">save</span> Check & Save
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-primary/10 flex items-center justify-between">
+            <h3 class="text-base font-bold">Withdrawal History</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <!-- Accounts Header -->
+                <thead id="accounts-header" class="bg-background-light/50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Bank Account</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Total Withdrawn (Current FY)</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">Status</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+                    </tr>
+                </thead>
+                <!-- Withdrawals Header -->
+                <thead id="withdrawals-header" class="hidden bg-background-light/50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Date</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Amount (₹)</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Method</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Note</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bank-data-body" class="divide-y divide-primary/5">
+                    <!-- Dynamic rendering -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

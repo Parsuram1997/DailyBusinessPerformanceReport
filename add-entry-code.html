@@ -84,6 +84,7 @@
         }
 
     </style>
+    <script src="auth.js"></script>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
 <div class="flex h-screen overflow-hidden">
@@ -124,6 +125,11 @@
 <span class="material-symbols-outlined">menu_book</span>
 <span class="text-sm nav-text">Credit Ledger</span>
 </a>
+
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+<span class="material-symbols-outlined">account_balance</span>
+<span class="text-sm nav-text">Bank Withdrawals</span>
+</a>
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
 <span class="material-symbols-outlined">calculate</span>
 <span class="text-sm nav-text">Cash Calculator</span>
@@ -131,6 +137,11 @@
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
 <span class="material-symbols-outlined">settings</span>
 <span class="text-sm nav-text">Settings</span>
+</a>
+
+<a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm nav-text font-semibold">Logout</span>
 </a>
 </nav>
 <div class="mt-auto p-4 border-t border-primary/10">
@@ -216,7 +227,10 @@
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="online" name="online" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="online" name="online" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <button type="button" id="open-online-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Online Balances">
+                <span class="material-symbols-outlined text-xl">splitscreen</span>
+                </button>
                 </div>
             </div>
             <!-- Roinet Field -->
@@ -226,7 +240,10 @@
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="roinet" name="roinet" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="roinet" name="roinet" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <button type="button" id="open-roinet-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Roinet Balances">
+                <span class="material-symbols-outlined text-xl">splitscreen</span>
+                </button>
                 </div>
             </div>
             <!-- Jio Field -->
@@ -279,7 +296,10 @@
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="expense" name="expense" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold text-rose-600 dark:text-rose-400" placeholder="0.00" type="number"/>
+                <input id="expense" name="expense" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold text-rose-600 dark:text-rose-400" placeholder="0.00" type="number"/>
+                <button type="button" id="open-expense-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-500/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Daily Expenses">
+                <span class="material-symbols-outlined text-xl">splitscreen</span>
+                </button>
                 </div>
             </div>
             <!-- Damages Currency Field -->
@@ -352,5 +372,270 @@
 </div>
 </main>
 </div>
+
+<!-- Online Details Modal -->
+<div id="online-split-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-0">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" id="online-split-backdrop"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-primary/20 w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]" id="online-split-panel">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-primary/10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined">splitscreen</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">Online Accounts</h3>
+                    <p class="text-xs text-slate-500 font-medium">Split amounts across accounts</p>
+                </div>
+            </div>
+            <button type="button" id="close-online-split-btn" class="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Body inputs -->
+        <div class="p-6 space-y-5 overflow-y-auto">
+            <!-- Account 1 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> PARSURAM NAIK
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="online_p1" name="online_p1" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- Account 2 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> SHOP ACCOUNT
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="online_p2" name="online_p2" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- Account 3 -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> RAMESH KUMAR DALAI
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="online_p3" name="online_p3" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+
+        <!-- Total and Actions -->
+        <div class="p-6 bg-primary/5 border-t border-primary/10 rounded-b-3xl space-y-4 flex-shrink-0">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total Online</span>
+                <span id="online-split-total-display" class="text-2xl font-black text-primary font-mono select-all">₹ 0.00</span>
+            </div>
+            <button type="button" id="use-online-amount-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">check_circle</span> Use This Amount
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Roinet Details Modal -->
+<div id="roinet-split-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-0">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" id="roinet-split-backdrop"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-primary/20 w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]" id="roinet-split-panel">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-primary/10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined">hub</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">Roinet Sub-Accounts</h3>
+                    <p class="text-xs text-slate-500 font-medium">Split amounts across services</p>
+                </div>
+            </div>
+            <button type="button" id="close-roinet-split-btn" class="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Body inputs -->
+        <div class="p-6 space-y-4 overflow-y-auto">
+            <!-- ROINET-1 -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">hub</span> ROINET-1
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="roinet_1" name="roinet_1" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- ROINET-2 -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">hub</span> ROINET-2
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="roinet_2" name="roinet_2" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- AIRTEL-1 -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">cell_tower</span> AIRTEL-1
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="airtel_1" name="airtel_1" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- AIRTEL-2 -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">cell_tower</span> AIRTEL-2
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="airtel_2" name="airtel_2" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- SPICEMONEY -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-primary">payments</span> SPICEMONEY
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="spicemoney" name="spicemoney" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+
+        <!-- Total and Actions -->
+        <div class="p-6 bg-primary/5 border-t border-primary/10 rounded-b-3xl space-y-4 flex-shrink-0">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total Roinet</span>
+                <span id="roinet-split-total-display" class="text-2xl font-black text-primary font-mono select-all">₹ 0.00</span>
+            </div>
+            <button type="button" id="use-roinet-amount-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">check_circle</span> Use This Amount
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Expense Details Modal -->
+<div id="expense-split-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-0">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" id="expense-split-backdrop"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-rose-200 dark:border-rose-900/30 w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]" id="expense-split-panel">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-primary/10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined">shopping_cart_checkout</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">Daily Expenses</h3>
+                    <p class="text-xs text-slate-500 font-medium">Split amounts across categories</p>
+                </div>
+            </div>
+            <button type="button" id="close-expense-split-btn" class="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Body inputs -->
+        <div class="p-6 space-y-4 overflow-y-auto">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">person</span> PERSONAL EXPENSE
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="personal_expense" name="personal_expense" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">payments</span> SALARY EXPENSE
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="salary_expense" name="salary_expense" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">bolt</span> ELECTRICITY EXPENSE
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="electricity_expense" name="electricity_expense" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">store</span> SHOP RENT EXPENSE
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="shop_rent_expense" name="shop_rent_expense" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">trending_up</span> BUSINESS DEVLOPMENT
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="business_development" name="business_development" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-rose-500">wifi</span> INTERNET EXPENSE
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                    <input id="internet_expense" name="internet_expense" type="number" class="w-full pl-8 pr-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-semibold" placeholder="0.00">
+                </div>
+            </div>
+            <!-- Extra info context -->
+            <div class="flex flex-col gap-1.5 pt-2">
+                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-sm text-slate-400">edit_note</span> NOTES
+                </label>
+                <input id="expense_notes" name="expense_notes" type="text" class="w-full px-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm" placeholder="Additional details...">
+            </div>
+        </div>
+
+        <!-- Total and Actions -->
+        <div class="p-6 bg-rose-50/50 dark:bg-rose-500/5 border-t border-primary/10 rounded-b-3xl space-y-4 flex-shrink-0">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total Expense</span>
+                <span id="expense-split-total-display" class="text-2xl font-black text-rose-500 font-mono select-all">₹ 0.00</span>
+            </div>
+            <button type="button" id="use-expense-amount-btn" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">check_circle</span> Use This Amount
+            </button>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="app.js"></script>
 </body></html>

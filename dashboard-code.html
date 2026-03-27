@@ -84,6 +84,7 @@
         }
 
     </style>
+    <script src="auth.js"></script>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <div class="flex h-screen overflow-hidden">
@@ -124,6 +125,11 @@
 <span class="material-symbols-outlined">menu_book</span>
 <span class="text-sm nav-text">Credit Ledger</span>
 </a>
+
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+<span class="material-symbols-outlined">account_balance</span>
+<span class="text-sm nav-text">Bank Withdrawals</span>
+</a>
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
 <span class="material-symbols-outlined">calculate</span>
 <span class="text-sm nav-text">Cash Calculator</span>
@@ -131,6 +137,11 @@
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
 <span class="material-symbols-outlined">settings</span>
 <span class="text-sm nav-text">Settings</span>
+</a>
+
+<a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm nav-text font-semibold">Logout</span>
 </a>
 </nav>
 <div class="mt-auto p-4 border-t border-primary/10">
@@ -151,7 +162,7 @@
 <!-- Main Content Wrapper -->
 <main class="flex-1 flex flex-col overflow-y-auto w-full">
 <!-- Navbar -->
-<header class="h-16 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-8 sticky top-0 z-10 shadow-sm">
+<header class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-8 sticky top-0 z-10 shadow-sm">
     <div class="flex items-center gap-3">
         <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
         <h2 class="text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent tracking-tight">
@@ -185,33 +196,33 @@
 <div class="absolute right-0 top-0 size-16 bg-yellow-400/10 rounded-bl-full flex items-start justify-end p-3 text-yellow-500">
 <span class="material-symbols-outlined">payments</span>
 </div>
-<p class="text-sm font-semibold text-slate-500">Total Income</p>
-<h4 id="total-income-top" class="text-3xl font-bold mt-2">₹12,450.00</h4>
+<p class="text-sm font-semibold text-slate-500">All Time Income</p>
+<h4 id="total-income-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
-    <span class="material-symbols-outlined text-sm" id="income-trend-icon">trending_up</span>
-    <span id="income-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+    <span class="material-symbols-outlined text-sm">public</span>
+    <span>Lifetime Accumulation</span>
 </div>
 </div>
 <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
 <div class="absolute right-0 top-0 size-16 bg-rose-400/10 rounded-bl-full flex items-start justify-end p-3 text-rose-500">
 <span class="material-symbols-outlined">receipt_long</span>
 </div>
-<p class="text-sm font-semibold text-slate-500">Total Expense</p>
-<h4 id="total-expense-top" class="text-3xl font-bold mt-2">₹4,820.50</h4>
+<p class="text-sm font-semibold text-slate-500">All Time Expense</p>
+<h4 id="total-expense-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-rose-500 text-sm font-bold">
-    <span class="material-symbols-outlined text-sm" id="expense-trend-icon">trending_up</span>
-    <span id="expense-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+    <span class="material-symbols-outlined text-sm">public</span>
+    <span>Lifetime Accumulation</span>
 </div>
 </div>
 <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 shadow-sm relative overflow-hidden group">
 <div class="absolute right-0 top-0 size-16 bg-emerald-400/10 rounded-bl-full flex items-start justify-end p-3 text-emerald-500">
 <span class="material-symbols-outlined">account_balance_wallet</span>
 </div>
-<p class="text-sm font-semibold text-slate-500">Net Profit</p>
-<h4 id="total-profit-top" class="text-3xl font-bold mt-2">₹7,629.50</h4>
+<p class="text-sm font-semibold text-slate-500">All Time Profit</p>
+<h4 id="total-profit-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
-    <span class="material-symbols-outlined text-sm" id="profit-trend-icon">trending_up</span>
-    <span id="profit-trend-val">+0% <span class="font-normal text-slate-400 ml-1">vs yesterday</span></span>
+    <span class="material-symbols-outlined text-sm">public</span>
+    <span>Lifetime Accumulation</span>
 </div>
 </div>
 <div class="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border-2 border-primary/20 shadow-sm relative overflow-hidden group">
@@ -219,7 +230,7 @@
 <span class="material-symbols-outlined">savings</span>
 </div>
 <p class="text-sm font-semibold text-primary">Closing Balance</p>
-<h4 id="closing-balance-top" class="text-3xl font-bold mt-2 text-primary">₹42,910.20</h4>
+<h4 id="closing-balance-top" class="text-3xl font-bold mt-2 text-primary">...</h4>
 <div class="flex items-center gap-2 mt-4 text-primary text-sm font-bold">
 <span class="material-symbols-outlined text-sm">shield</span>
 <span class="font-medium">Account Balanced</span>
@@ -231,7 +242,7 @@
 <span class="material-symbols-outlined">account_balance</span>
 </div>
 <p class="text-sm font-semibold text-slate-500">Total Capital</p>
-<h4 id="total-capital-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<h4 id="total-capital-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-blue-500 text-sm font-bold">
 <span class="material-symbols-outlined text-sm">upgrade</span>
 <span>Added</span>
@@ -243,7 +254,7 @@
 <span class="material-symbols-outlined">atm</span>
 </div>
 <p class="text-sm font-semibold text-slate-500">Withdrawals</p>
-<h4 id="total-withdrawals-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<h4 id="total-withdrawals-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-rose-500 text-sm font-bold">
 <span class="material-symbols-outlined text-sm">money_off</span>
 <span>Total</span>
@@ -255,10 +266,10 @@
 <span class="material-symbols-outlined">today</span>
 </div>
 <p class="text-sm font-semibold text-slate-500">Today's Income</p>
-<h4 id="today-income-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<h4 id="today-income-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-emerald-500 text-sm font-bold">
-<span class="material-symbols-outlined text-sm">event</span>
-<span>Today</span>
+    <span class="material-symbols-outlined text-sm" id="income-trend-icon">trending_flat</span>
+    <span id="income-trend-val">...</span>
 </div>
 </div>
 <!-- Today's Expense -->
@@ -267,10 +278,10 @@
 <span class="material-symbols-outlined">event_busy</span>
 </div>
 <p class="text-sm font-semibold text-slate-500">Today's Expense</p>
-<h4 id="today-expense-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<h4 id="today-expense-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-orange-500 text-sm font-bold">
-<span class="material-symbols-outlined text-sm">event</span>
-<span>Today</span>
+    <span class="material-symbols-outlined text-sm" id="expense-trend-icon">trending_flat</span>
+    <span id="expense-trend-val">...</span>
 </div>
 </div>
 <!-- Today Profit -->
@@ -279,10 +290,10 @@
 <span class="material-symbols-outlined">trending_up</span>
 </div>
 <p class="text-sm font-semibold text-slate-500">Today's Profit</p>
-<h4 id="today-profit-top" class="text-3xl font-bold mt-2">₹0.00</h4>
+<h4 id="today-profit-top" class="text-3xl font-bold mt-2">...</h4>
 <div class="flex items-center gap-2 mt-4 text-teal-500 text-sm font-bold">
-<span class="material-symbols-outlined text-sm">event_available</span>
-<span>Today</span>
+    <span class="material-symbols-outlined text-sm" id="profit-trend-icon">trending_flat</span>
+    <span id="profit-trend-val">...</span>
 </div>
 </div>
 </div>
@@ -290,9 +301,9 @@
 <div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10">
 <div class="flex items-center justify-between mb-6">
 <h5 class="font-bold">Income vs Expense Trend</h5>
-<select class="text-xs bg-slate-100 dark:bg-slate-700 border-none rounded-lg focus:ring-1 focus:ring-primary">
-<option>Last 30 Days</option>
-<option>Last 7 Days</option>
+<select id="chart-timeframe-select" class="text-xs bg-slate-100 dark:bg-slate-700 border-none rounded-lg focus:ring-1 focus:ring-primary cursor-pointer outline-none font-bold text-slate-600 dark:text-slate-300 px-3 py-1.5 transition-colors">
+<option value="30">Last 30 Days</option>
+<option value="7">Last 7 Days</option>
 </select>
 </div>
     <div class="h-64 mt-2">
@@ -307,6 +318,26 @@
 </div>
     <div class="h-64 mt-2">
         <canvas id="profitGrowthChart"></canvas>
+    </div>
+</div>
+<!-- Chart 3: Income Growth -->
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide">
+    <div class="flex items-center justify-between mb-6">
+        <h5 class="font-bold text-slate-700 dark:text-slate-200">Income Growth</h5>
+        <a href="reports-code.html" class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View Full Report</a>
+    </div>
+    <div class="h-64 mt-2">
+        <canvas id="incomeGrowthChart"></canvas>
+    </div>
+</div>
+<!-- Chart 4: Expense Growth -->
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide">
+    <div class="flex items-center justify-between mb-6">
+        <h5 class="font-bold text-slate-700 dark:text-slate-200">Expense Growth</h5>
+        <a href="reports-code.html" class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View Full Report</a>
+    </div>
+    <div class="h-64 mt-2">
+        <canvas id="expenseGrowthChart"></canvas>
     </div>
 </div>
 <!-- New Analytics Grid -->
@@ -328,7 +359,7 @@
             <!-- Today Section -->
             <div class="space-y-3">
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                    <span class="size-1.5 rounded-full bg-emerald-500"></span> Today vs Same Day Last Month
+                    <span class="size-1.5 rounded-full bg-emerald-500"></span> <span id="mom-today-label">Today vs Same Day Last Month</span>
                 </p>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
@@ -352,7 +383,7 @@
             <!-- MTD Section -->
             <div class="space-y-3">
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                    <span class="size-1.5 rounded-full bg-blue-500"></span> Month-to-Date vs Last Month Period
+                    <span class="size-1.5 rounded-full bg-blue-500"></span> <span id="mom-mtd-label">Month-to-Date vs Last Month Period</span>
                 </p>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="p-3 rounded-lg bg-primary/5 border border-primary/10">

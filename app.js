@@ -19,6 +19,8 @@ import {
 let dashboardUnsubscribe = null;
 let incomeExpenseChart = null;
 let profitGrowthChart = null;
+let incomeGrowthChart = null;
+let expenseGrowthChart = null;
 
 // Helper for Firestore calls (maintaining naming for compatibility where possible)
 async function loadEntries() {
@@ -201,6 +203,62 @@ async function saveDamagedCurrency(counts) {
     }
 }
 
+// --- BEGIN Bank Withdrawals Helpers ---
+async function loadBankAccounts() {
+    if (!db) return [];
+    try {
+        const querySnapshot = await getDocs(collection(db, "bank_accounts"));
+        return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+    } catch (e) {
+        console.error("Error loading bank accounts: ", e);
+        return [];
+    }
+}
+async function saveBankAccount(account) {
+    if (!db) return null;
+    try {
+        const id = String(account.id || Date.now());
+        const docRef = doc(db, "bank_accounts", id);
+        await setDoc(docRef, account);
+        return { message: "Bank account saved" };
+    } catch (e) {
+        console.error("Error saving bank account: ", e);
+        return null;
+    }
+}
+async function loadBankWithdrawals() {
+    if (!db) return [];
+    try {
+        const querySnapshot = await getDocs(collection(db, "bank_withdrawals"));
+        return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+    } catch (e) {
+        console.error("Error loading bank withdrawals: ", e);
+        return [];
+    }
+}
+async function saveBankWithdrawal(withdrawal) {
+    if (!db) return null;
+    try {
+        const id = String(withdrawal.id || Date.now());
+        const docRef = doc(db, "bank_withdrawals", id);
+        await setDoc(docRef, withdrawal);
+        return { message: "Withdrawal saved" };
+    } catch (e) {
+        console.error("Error saving withdrawal: ", e);
+        return null;
+    }
+}
+async function deleteBankWithdrawal(id) {
+    try {
+        await deleteDoc(doc(db, "bank_withdrawals", id.toString()));
+        return { message: "Withdrawal deleted" };
+    } catch (e) {
+        console.error("Error deleting withdrawal: ", e);
+        return null;
+    }
+}
+// --- END Bank Withdrawals Helpers ---
+
 async function clearDatabase() {
     try {
         const collections = ['entries', 'credits', 'customers'];
@@ -336,7 +394,13 @@ async function initAddEntry() {
         const selectedFormatted = new Date(yr, mo - 1, dy)
             .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-        const existing = entries.find(e => e.date === selectedFormatted);
+        const existing = entries.find(e => {
+            if (!e.date) return false;
+            if (e.date === datePicker.value) return true; // Matches CSV "2026-03-27"
+            if (e.date === selectedFormatted) return true; // Legacy "Mar 27, 2026"
+            if (e.date.startsWith(datePicker.value)) return true;
+            return false;
+        });
 
         if (existing) {
             existingEntryId = existing.firebaseId || existing.id || null;
@@ -353,6 +417,18 @@ async function initAddEntry() {
                 input.value = val;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             });
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = details[id] !== undefined ? details[id] : '';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            const notesEl = document.getElementById('expense_notes');
+            if (notesEl) {
+                notesEl.value = details['expense_notes'] || '';
+                notesEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         } else {
             if (formTitle) formTitle.innerText = "New Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
@@ -372,6 +448,18 @@ async function initAddEntry() {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     });
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && draft.data[id] !== undefined) {
+                            el.value = draft.data[id];
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+                    const notesEl = document.getElementById('expense_notes');
+                    if (notesEl && draft.data['expense_notes'] !== undefined) {
+                        notesEl.value = draft.data['expense_notes'];
+                        notesEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
                 } else {
                     // Draft is for a different date, clear it
                     localStorage.removeItem('add_entry_draft');
@@ -379,6 +467,12 @@ async function initAddEntry() {
                         input.value = '';
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                     });
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+                    });
+                    const notesEl = document.getElementById('expense_notes');
+                    if (notesEl) { notesEl.value = ''; notesEl.dispatchEvent(new Event('input', { bubbles: true })); }
                 }
             } else {
                 // No data and no draft — clear all fields
@@ -386,6 +480,12 @@ async function initAddEntry() {
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                 });
+                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+                });
+                const notesEl = document.getElementById('expense_notes');
+                if (notesEl) { notesEl.value = ''; notesEl.dispatchEvent(new Event('input', { bubbles: true })); }
             }
         }
 
@@ -434,21 +534,40 @@ async function initAddEntry() {
         datePicker.addEventListener('change', checkExisting);
         
         // Auto-save draft on input
+        const saveDraft = () => {
+            const draft = {
+                date: datePicker.value,
+                data: {}
+            };
+            Array.from(form.querySelectorAll('input[type="number"]')).forEach(input => {
+                const fieldName = (input.id || input.name || "").toLowerCase();
+                if (input.value !== '') {
+                    draft.data[fieldName] = parseFloat(input.value);
+                }
+            });
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value !== '') {
+                    draft.data[id] = parseFloat(el.value);
+                }
+            });
+            const notesEl = document.getElementById('expense_notes');
+            if (notesEl && notesEl.value !== '') {
+                draft.data['expense_notes'] = notesEl.value;
+            }
+            localStorage.setItem('add_entry_draft', JSON.stringify(draft));
+        };
         form.addEventListener('input', (e) => {
-            if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
-                const draft = {
-                    date: datePicker.value,
-                    data: {}
-                };
-                Array.from(form.querySelectorAll('input[type="number"]')).forEach(input => {
-                    const fieldName = (input.id || input.name || "").toLowerCase();
-                    if (input.value !== '') {
-                        draft.data[fieldName] = parseFloat(input.value);
-                    }
-                });
-                localStorage.setItem('add_entry_draft', JSON.stringify(draft));
+            if (e.target.tagName === 'INPUT') {
+                saveDraft();
             }
         });
+        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('input', saveDraft);
+        });
+        const notesElForListener = document.getElementById('expense_notes');
+        if (notesElForListener) notesElForListener.addEventListener('input', saveDraft);
 
         // Initial check
         checkExisting();
@@ -481,6 +600,200 @@ async function initAddEntry() {
         
         // Initial call
         updateRealTimeTotal();
+    }
+
+    // --- Online Accounts Split Modal Logic ---
+    const onlineSplitModal = document.getElementById('online-split-modal');
+    const onlineSplitPanel = document.getElementById('online-split-panel');
+    const openOnlineBtn = document.getElementById('open-online-split-btn');
+    const closeOnlineBtn = document.getElementById('close-online-split-btn');
+    const onlineBackdrop = document.getElementById('online-split-backdrop');
+    const useOnlineBtn = document.getElementById('use-online-amount-btn');
+    const onlineSplitTotalDisplay = document.getElementById('online-split-total-display');
+    const onlineInput = document.getElementById('online');
+    
+    const p1Input = document.getElementById('online_p1');
+    const p2Input = document.getElementById('online_p2');
+    const p3Input = document.getElementById('online_p3');
+
+    const updateOnlineSplitTotal = () => {
+        if(!p1Input) return 0;
+        const p1 = parseFloat(p1Input.value) || 0;
+        const p2 = parseFloat(p2Input.value) || 0;
+        const p3 = parseFloat(p3Input.value) || 0;
+        const total = p1 + p2 + p3;
+        if(onlineSplitTotalDisplay) onlineSplitTotalDisplay.textContent = formatCurrency(total);
+        return total;
+    };
+
+    if (openOnlineBtn && onlineSplitModal) {
+        openOnlineBtn.addEventListener('click', () => {
+             onlineSplitModal.classList.remove('hidden');
+             onlineSplitModal.classList.add('flex');
+             void onlineSplitModal.offsetWidth;
+             onlineSplitPanel.classList.remove('scale-95', 'opacity-0');
+             onlineSplitPanel.classList.add('scale-100', 'opacity-100');
+             updateOnlineSplitTotal();
+        });
+
+        const closeOnlineModal = () => {
+             onlineSplitPanel.classList.remove('scale-100', 'opacity-100');
+             onlineSplitPanel.classList.add('scale-95', 'opacity-0');
+             setTimeout(() => {
+                 onlineSplitModal.classList.add('hidden');
+                 onlineSplitModal.classList.remove('flex');
+             }, 300);
+        };
+
+        if(closeOnlineBtn) closeOnlineBtn.addEventListener('click', closeOnlineModal);
+        if(onlineBackdrop) onlineBackdrop.addEventListener('click', closeOnlineModal);
+
+        [p1Input, p2Input, p3Input].forEach(inp => {
+            if(inp) inp.addEventListener('input', updateOnlineSplitTotal);
+        });
+
+        if(useOnlineBtn) {
+            useOnlineBtn.addEventListener('click', () => {
+                const total = updateOnlineSplitTotal();
+                if(onlineInput) {
+                    onlineInput.value = total || '';
+                    onlineInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                closeOnlineModal();
+            });
+        }
+    }
+
+    // --- Roinet Accounts Split Modal Logic ---
+    const roinetSplitModal = document.getElementById('roinet-split-modal');
+    const roinetSplitPanel = document.getElementById('roinet-split-panel');
+    const openRoinetBtn = document.getElementById('open-roinet-split-btn');
+    const closeRoinetBtn = document.getElementById('close-roinet-split-btn');
+    const roinetBackdrop = document.getElementById('roinet-split-backdrop');
+    const useRoinetBtn = document.getElementById('use-roinet-amount-btn');
+    const roinetSplitTotalDisplay = document.getElementById('roinet-split-total-display');
+    const roinetInput = document.getElementById('roinet');
+    
+    const r1Input = document.getElementById('roinet_1');
+    const r2Input = document.getElementById('roinet_2');
+    const a1Input = document.getElementById('airtel_1');
+    const a2Input = document.getElementById('airtel_2');
+    const sInput = document.getElementById('spicemoney');
+
+    const updateRoinetSplitTotal = () => {
+        if(!r1Input) return 0;
+        const total = (parseFloat(r1Input.value) || 0) + 
+                      (parseFloat(r2Input.value) || 0) + 
+                      (parseFloat(a1Input.value) || 0) + 
+                      (parseFloat(a2Input.value) || 0) + 
+                      (parseFloat(sInput.value) || 0);
+        if(roinetSplitTotalDisplay) roinetSplitTotalDisplay.textContent = formatCurrency(total);
+        return total;
+    };
+
+    if (openRoinetBtn && roinetSplitModal) {
+        openRoinetBtn.addEventListener('click', () => {
+             roinetSplitModal.classList.remove('hidden');
+             roinetSplitModal.classList.add('flex');
+             void roinetSplitModal.offsetWidth;
+             roinetSplitPanel.classList.remove('scale-95', 'opacity-0');
+             roinetSplitPanel.classList.add('scale-100', 'opacity-100');
+             updateRoinetSplitTotal();
+        });
+
+        const closeRoinetModal = () => {
+             roinetSplitPanel.classList.remove('scale-100', 'opacity-100');
+             roinetSplitPanel.classList.add('scale-95', 'opacity-0');
+             setTimeout(() => {
+                 roinetSplitModal.classList.add('hidden');
+                 roinetSplitModal.classList.remove('flex');
+             }, 300);
+        };
+
+        if(closeRoinetBtn) closeRoinetBtn.addEventListener('click', closeRoinetModal);
+        if(roinetBackdrop) roinetBackdrop.addEventListener('click', closeRoinetModal);
+
+        [r1Input, r2Input, a1Input, a2Input, sInput].forEach(inp => {
+            if(inp) inp.addEventListener('input', updateRoinetSplitTotal);
+        });
+
+        if(useRoinetBtn) {
+            useRoinetBtn.addEventListener('click', () => {
+                const total = updateRoinetSplitTotal();
+                if(roinetInput) {
+                    roinetInput.value = total || '';
+                    roinetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                closeRoinetModal();
+            });
+        }
+    }
+
+    // --- Daily Expense Split Modal Logic ---
+    const expenseSplitModal = document.getElementById('expense-split-modal');
+    const expenseSplitPanel = document.getElementById('expense-split-panel');
+    const openExpenseBtn = document.getElementById('open-expense-split-btn');
+    const closeExpenseBtn = document.getElementById('close-expense-split-btn');
+    const expenseBackdrop = document.getElementById('expense-split-backdrop');
+    const useExpenseBtn = document.getElementById('use-expense-amount-btn');
+    const expenseSplitTotalDisplay = document.getElementById('expense-split-total-display');
+    const expenseInput = document.getElementById('expense');
+    
+    const ex_p = document.getElementById('personal_expense');
+    const ex_s = document.getElementById('salary_expense');
+    const ex_e = document.getElementById('electricity_expense');
+    const ex_r = document.getElementById('shop_rent_expense');
+    const ex_b = document.getElementById('business_development');
+    const ex_i = document.getElementById('internet_expense');
+
+    const updateExpenseSplitTotal = () => {
+        if(!ex_p) return 0;
+        const total = (parseFloat(ex_p.value) || 0) + 
+                      (parseFloat(ex_s.value) || 0) + 
+                      (parseFloat(ex_e.value) || 0) + 
+                      (parseFloat(ex_r.value) || 0) + 
+                      (parseFloat(ex_b.value) || 0) + 
+                      (parseFloat(ex_i.value) || 0);
+        if(expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
+        return total;
+    };
+
+    if (openExpenseBtn && expenseSplitModal) {
+        openExpenseBtn.addEventListener('click', () => {
+             expenseSplitModal.classList.remove('hidden');
+             expenseSplitModal.classList.add('flex');
+             void expenseSplitModal.offsetWidth;
+             expenseSplitPanel.classList.remove('scale-95', 'opacity-0');
+             expenseSplitPanel.classList.add('scale-100', 'opacity-100');
+             updateExpenseSplitTotal();
+        });
+
+        const closeExpenseModal = () => {
+             expenseSplitPanel.classList.remove('scale-100', 'opacity-100');
+             expenseSplitPanel.classList.add('scale-95', 'opacity-0');
+             setTimeout(() => {
+                 expenseSplitModal.classList.add('hidden');
+                 expenseSplitModal.classList.remove('flex');
+             }, 300);
+        };
+
+        if(closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
+        if(expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
+
+        [ex_p, ex_s, ex_e, ex_r, ex_b, ex_i].forEach(inp => {
+            if(inp) inp.addEventListener('input', updateExpenseSplitTotal);
+        });
+
+        if(useExpenseBtn) {
+            useExpenseBtn.addEventListener('click', () => {
+                const total = updateExpenseSplitTotal();
+                if(expenseInput) {
+                    expenseInput.value = total || '';
+                    expenseInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                closeExpenseModal();
+            });
+        }
     }
 
     form.addEventListener('submit', async (e) => {
@@ -524,6 +837,17 @@ async function initAddEntry() {
             let withdrawal = 0;
             const details = {};
 
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && parseFloat(el.value) > 0) {
+                    details[id] = parseFloat(el.value);
+                }
+            });
+            const notesElSubmit = document.getElementById('expense_notes');
+            if (notesElSubmit && notesElSubmit.value.trim() !== '') {
+                details['expense_notes'] = notesElSubmit.value.trim();
+            }
+
             inputs.forEach(input => {
                 const val = parseFloat(input.value) || 0;
                 const fieldName = (input.id || input.name || "").toLowerCase();
@@ -556,7 +880,7 @@ async function initAddEntry() {
             let totalCashFlow = (details['cash'] || 0) + (details['online'] || 0) + (details['roinet'] || 0) + (details['jio'] || 0) + (details['go2sms'] || 0) + (details['credit'] || 0) + (details['pending'] || 0) + (details['damages'] || 0);
 
             const entry = {
-                date: formattedDate,
+                date: (datePicker && datePicker.value) ? datePicker.value : formattedDate,
                 description: `Daily Summary - ${new Date().toLocaleTimeString()}`,
                 category: capital > 0 ? 'Capital' : 'Operations',
                 income,
@@ -606,6 +930,20 @@ async function initAddEntry() {
                 toast._t = setTimeout(() => { toast.style.transform = 'translateX(120%)'; }, 3000);
             })();
             form.reset();
+            
+            // Clear modal inputs which are outside the form
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { 
+                    el.value = ''; 
+                    el.dispatchEvent(new Event('input', { bubbles: true })); 
+                }
+            });
+            const notesElForm = document.getElementById('expense_notes');
+            if (notesElForm) {
+                notesElForm.value = '';
+                notesElForm.dispatchEvent(new Event('input', { bubbles: true }));
+            }
 
             if (datePicker) {
                 const today = new Date();
@@ -613,6 +951,17 @@ async function initAddEntry() {
                 const mm = String(today.getMonth() + 1).padStart(2, '0');
                 const dd = String(today.getDate()).padStart(2, '0');
                 datePicker.value = `${yyyy}-${mm}-${dd}`;
+                // Trigger checkExisting for the new date to properly reset states like existingEntryId
+                datePicker.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                existingEntryId = null;
+                if (formTitle) formTitle.innerText = "New Daily Record";
+                if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
+                if (submitBtn) {
+                    const iconBox = submitBtn.querySelector('.material-symbols-outlined');
+                    if(iconBox) iconBox.innerText = "save";
+                    // Note: submitText is handled in finally block
+                }
             }
         } catch (err) {
             console.error('Error saving entry:', err);
@@ -654,20 +1003,30 @@ async function initDashboard() {
         });
 
         const now = new Date();
-        const todayStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-        // --- 2. Consolidated Aggregation Loop ---
-        // Basic Dates for Filtering
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         const currentDay = now.getDate();
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+
         const lastMonthDate = new Date(currentYear, currentMonth - 1, currentDay);
-        const lastMonthStr = lastMonthDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const lastMonthVal = currentMonth === 0 ? 11 : currentMonth - 1;
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+        // Financial Year & Quarter Setup
+        const nowMonth = now.getMonth();
+        const nowYear = now.getFullYear();
+        const fyStartYear = nowMonth >= 3 ? nowYear : nowYear - 1;
+        const yStart = new Date(fyStartYear, 3, 1); // April 1
+        const yEnd = new Date(fyStartYear + 1, 2, 31); // March 31
+
+        const currentQ = Math.floor((nowMonth >= 3 ? nowMonth - 3 : nowMonth + 9) / 3); 
+        const qStartMonth = currentQ * 3 + 3;
+        const qStartYearVal = qStartMonth > 11 ? fyStartYear + 1 : fyStartYear;
+        const qStartActual = qStartMonth > 11 ? 0 : qStartMonth;
+        const qStart = new Date(qStartYearVal, qStartActual, 1);
+        const qEnd = new Date(qStartYearVal, qStartActual + 3, 0);
 
         let allTimeIncome = 0, allTimeExpense = 0, allTimeProfit = 0;
         let totalCapital = 0, totalWithdrawal = 0;
@@ -676,15 +1035,17 @@ async function initDashboard() {
         let lastMonthTodayIncome = 0, lastMonthTodayExpense = 0;
         let currentMTDIncome = 0, currentMTDExpense = 0;
         let lastMTDIncome = 0, lastMTDExpense = 0;
+        let currentFYIncome = 0, currentQIncome = 0;
         let finalRunningBalance = 0;
+
 
         // Cumulative Data for Charts
         const dailyData = {};
         for (let i = 29; i >= 0; i--) {
             const d = new Date(now);
             d.setDate(d.getDate() - i);
-            const s = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            dailyData[s] = { income: 0, expense: 0, profit: 0, label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+            const isoKey = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            dailyData[isoKey] = { income: 0, expense: 0, profit: 0, label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
         }
 
         sortedEntries.forEach((e) => {
@@ -698,22 +1059,24 @@ async function initDashboard() {
             const online = parseFloat(details.online) || 0;
             const roinet = parseFloat(details.roinet) || 0;
             const jio = parseFloat(details.jio) || 0;
-            const go2sms = parseFloat(details.go2sms) || 0;
+            const go2sms = parseFloat(details.go2sms) || parseFloat(details.crgb_bc) || 0;
             const credit = parseFloat(details.credit) || 0;
             const pending = parseFloat(details.pending) || 0;
             const damages = parseFloat(details.damages) || 0;
 
             const tcf = cash + online + roinet + jio + go2sms + credit + pending + damages;
             const exp = parseFloat(e.expense) || 0;
-            const cap = parseFloat(e.capital) || 0;
-            const wit = parseFloat(details.withdrawal) || 0;
+            const cap = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
+            const wit = parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0;
 
-            
-            // Formula Logic (Consistent with CSP Ledger):
-            const opn = finalRunningBalance + cap;
-            const dailyInc = tcf - opn;
+            // Universal Gross Math Logic
+            const baseOpn = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : finalRunningBalance;
+            const opn = baseOpn + cap;
+            const displayTotalBase = tcf + exp; 
+            const dailyInc = Math.max(0, displayTotalBase - opn);
             const dailyProf = dailyInc - exp;
-            const cls = tcf - exp - wit;
+            const netFlow = displayTotalBase - exp;
+            const cls = netFlow - wit;
             finalRunningBalance = cls;
 
             // 1. All-Time Aggregation
@@ -724,14 +1087,14 @@ async function initDashboard() {
             totalWithdrawal += wit;
 
             // 2. Today & Yesterday Comparisons
-            if (e.date === todayStr) {
+            if (eDay === currentDay && eMonth === currentMonth && eYear === currentYear) {
                 todayIncome = dailyInc; todayExpense = exp; todayProfit = dailyProf;
-            } else if (e.date === yesterdayStr) {
+            } else if (eDay === yesterday.getDate() && eMonth === yesterday.getMonth() && eYear === yesterday.getFullYear()) {
                 yesterdayIncome = dailyInc; yesterdayExpense = exp; yesterdayProfit = dailyProf;
             }
 
             // 3. MoM & MTD Analytics
-            if (e.date === lastMonthStr) {
+            if (eDay === lastMonthDate.getDate() && eMonth === lastMonthDate.getMonth() && eYear === lastMonthDate.getFullYear()) {
                 lastMonthTodayIncome += dailyInc;
                 lastMonthTodayExpense += exp;
             }
@@ -743,6 +1106,13 @@ async function initDashboard() {
                 lastMTDIncome += dailyInc;
                 lastMTDExpense += exp;
             }
+            if (entryDate >= yStart && entryDate <= yEnd) {
+                currentFYIncome += dailyInc;
+            }
+            if (entryDate >= qStart && entryDate <= qEnd) {
+                currentQIncome += dailyInc;
+            }
+
 
             // 4. Chart Data
             if (dailyData[e.date]) {
@@ -804,22 +1174,40 @@ async function initDashboard() {
         setSm('mtd-current-expense', currentMTDExpense, lastMTDExpense);
         setSm('mtd-current-profit', currentMTDIncome - currentMTDExpense, lastMTDIncome - lastMTDExpense);
 
-        // 5. Projections
+        // Update MoM Labels with Explicit Dates
+        const fmtShort = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMtdStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const labelToday = document.getElementById('mom-today-label');
+        if (labelToday) labelToday.innerText = `TODAY (${fmtShort(now).toUpperCase()}) VS LAST MONTH (${fmtShort(lastMonthDate).toUpperCase()})`;
+
+        const labelMtd = document.getElementById('mom-mtd-label');
+        if (labelMtd) labelMtd.innerText = `MTD (${fmtShort(mtdStart).toUpperCase()} - ${fmtShort(now).toUpperCase()}) VS LAST MTD (${fmtShort(lastMtdStart).toUpperCase()} - ${fmtShort(lastMonthDate).toUpperCase()})`;
+
+        // 5. Projections - Forecast to Completion Model
         const daysPassed = now.getDate();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const avgDaily = currentMTDIncome / (daysPassed || 1);
-        const daysInYear = (now.getFullYear() % 4 === 0) ? 366 : 365;
-        setVal('proj-monthly', avgDaily * daysInMonth);
-        setVal('proj-quarterly', avgDaily * (daysInYear / 4));
-        setVal('proj-yearly', avgDaily * daysInYear);
+        
+        // Month
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const daysRemainingMonth = Math.max(0, daysInMonth - daysPassed);
+        
+        // Quarter
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const daysRemainingQ = Math.max(0, Math.round((qEnd - nowMidnight) / (1000 * 60 * 60 * 24)));
+        
+        // Year
+        const daysRemainingFY = Math.max(0, Math.round((yEnd - nowMidnight) / (1000 * 60 * 60 * 24)));
+
+        setVal('proj-monthly', currentMTDIncome + (avgDaily * daysRemainingMonth));
+        setVal('proj-quarterly', currentQIncome + (avgDaily * daysRemainingQ));
+        setVal('proj-yearly', currentFYIncome + (avgDaily * daysRemainingFY));
+
 
         const fmtDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-        const qEnd = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0);
-        const yStart = new Date(now.getFullYear(), 0, 1);
-        const yEnd = new Date(now.getFullYear(), 11, 31);
         
         const setRange = (id, s, e) => {
             const el = document.getElementById(id);
@@ -831,7 +1219,9 @@ async function initDashboard() {
 
         // --- 6. Charts ---
         const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        const chartColor = '#7f13ec';
+        const cIncome = '#10b981';
+        const cExpense = '#f43f5e';
+        const cProfit = '#0ea5e9';
         const labels = Object.values(dailyData).map(d => d.label);
         const incomeData = Object.values(dailyData).map(d => d.income);
         const expenseData = Object.values(dailyData).map(d => d.expense);
@@ -846,13 +1236,15 @@ async function initDashboard() {
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Income', data: incomeData, backgroundColor: chartColor, borderRadius: 4 },
-                        { label: 'Expense', data: expenseData, backgroundColor: 'rgba(127, 19, 236, 0.2)', borderRadius: 4 }
+                        { label: 'Income', data: incomeData, backgroundColor: cIncome, borderRadius: 4 },
+                        { label: 'Expense', data: expenseData, backgroundColor: cExpense, borderRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+                    },
                     scales: {
                         y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
                         x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
@@ -872,21 +1264,119 @@ async function initDashboard() {
                     datasets: [{
                         label: 'Net Profit',
                         data: profitData,
-                        borderColor: chartColor,
-                        backgroundColor: 'rgba(127, 19, 236, 0.1)',
+                        borderColor: cProfit,
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
                         fill: true,
                         tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+                    },
                     scales: {
                         y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
                         x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
                     }
                 }
             });
+        }
+
+        // Income Growth
+        if (incomeGrowthChart) incomeGrowthChart.destroy();
+        const igCtx = document.getElementById('incomeGrowthChart');
+        if (igCtx) {
+            incomeGrowthChart = new Chart(igCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Income Growth',
+                        data: incomeData,
+                        borderColor: cIncome,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        // Expense Growth
+        if (expenseGrowthChart) expenseGrowthChart.destroy();
+        const egCtx = document.getElementById('expenseGrowthChart');
+        if (egCtx) {
+            expenseGrowthChart = new Chart(egCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Expense Growth',
+                        data: expenseData,
+                        borderColor: cExpense,
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        // --- 7. Interactive Chart Dropdowns ---
+        const timeframeSelect = document.getElementById('chart-timeframe-select');
+        if (timeframeSelect) {
+            timeframeSelect.onchange = (e) => {
+                const days = parseInt(e.target.value);
+                const slicedLabels = labels.slice(-days);
+                const slicedIncome = incomeData.slice(-days);
+                const slicedExpense = expenseData.slice(-days);
+                const slicedProfit = profitData.slice(-days);
+
+                if (incomeExpenseChart) {
+                    incomeExpenseChart.data.labels = slicedLabels;
+                    incomeExpenseChart.data.datasets[0].data = slicedIncome;
+                    incomeExpenseChart.data.datasets[1].data = slicedExpense;
+                    incomeExpenseChart.update();
+                }
+
+                if (profitGrowthChart) {
+                    profitGrowthChart.data.labels = slicedLabels;
+                    profitGrowthChart.data.datasets[0].data = slicedProfit;
+                    profitGrowthChart.update();
+                }
+
+                if (incomeGrowthChart) {
+                    incomeGrowthChart.data.labels = slicedLabels;
+                    incomeGrowthChart.data.datasets[0].data = slicedIncome;
+                    incomeGrowthChart.update();
+                }
+
+                if (expenseGrowthChart) {
+                    expenseGrowthChart.data.labels = slicedLabels;
+                    expenseGrowthChart.data.datasets[0].data = slicedExpense;
+                    expenseGrowthChart.update();
+                }
+            };
+            
+            // Trigger it once to match current selection
+            timeframeSelect.dispatchEvent(new Event('change'));
         }
     });
 }
@@ -1160,19 +1650,18 @@ async function initSettings() {
 
     if (btnDownloadTemplate) {
         btnDownloadTemplate.addEventListener('click', () => {
-            const headers = ['Date', 'Capital_Add', 'Cash', 'Online', 'Roinet', 'Jio', 'CRGB_BC', 'Credit', 'Pending', 'Damages', 'Expense', 'Withdrawal', 'Description', 'Category'];
-            const example = ['2024-01-01', '0', '5000', '2000', '0', '0', '0', '500', '0', '0', '200', '1000', 'Opening Balance 2024', 'General'];
-            // Add UTF-8 BOM for better Excel compatibility
+            const headers = ['Date', 'Capital_Add', 'Cash', 'Online', 'Roinet', 'Jio', 'CRGB_BC', 'Credit', 'Pending', 'Damages', 'Expense', 'Withdrawal'];
+            const example = ['2024-01-01', '0', '5000', '2000', '0', '0', '0', '500', '0', '0', '200', '1000'];
+            
             const csvContent = "\ufeff" + [headers.join(','), example.join(',')].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            const encodedUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
+            
             const a = document.createElement('a');
-            a.href = url;
-            a.download = 'bizperform_import_template.csv';
+            a.setAttribute("href", encodedUri);
+            a.setAttribute("download", "BizPerform_Import_Template.csv");
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         });
     }
 
@@ -1224,10 +1713,17 @@ async function initSettings() {
 
                     // Standardize date into YYYY-MM-DD
                     let finalDate = row.date;
-                    if (finalDate.includes('/')) {
-                        const parts = finalDate.split('/');
-                        if (parts[0].length === 4) finalDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                        else finalDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    if (finalDate.includes('/') || finalDate.includes('-')) {
+                        const sep = finalDate.includes('/') ? '/' : '-';
+                        const parts = finalDate.split(sep);
+                        // Case 1: YYYY-MM-DD or YYYY-M-D
+                        if (parts[0].length === 4) {
+                            finalDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        } 
+                        // Case 2: DD-MM-YYYY or D-M-YYYY
+                        else if (parts.length === 3 && parts[2].length === 4) {
+                            finalDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
                     }
 
                     const details = {
@@ -1238,7 +1734,8 @@ async function initSettings() {
                         go2sms: parseFloat(row.go2sms) || 0,
                         credit: parseFloat(row.credit) || 0,
                         pending: parseFloat(row.pending) || 0,
-                        damages: parseFloat(row.damages) || 0
+                        damages: parseFloat(row.damages) || 0,
+                        withdrawal: parseFloat(row.withdrawal) || 0
                     };
 
                     const tcf = Object.values(details).reduce((a, b) => a + b, 0);
@@ -1260,7 +1757,7 @@ async function initSettings() {
                         withdrawal: withdrawal,
                         description: row.description || "Bulk Import",
                         category: row.category || "Historical",
-                        timestamp: serverTimestamp()
+                        timestamp: Date.now()
                     });
                 }
 
@@ -1322,7 +1819,7 @@ async function initTransactions() {
         const details = e.details || {};
         const getVal = (key) => details[key] || 0;
 
-        const capitalAdd = e.capital || 0;
+        const capitalAdd = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
         const cash = getVal('cash');
         const online = getVal('online');
         const roinet = getVal('roinet');
@@ -1334,11 +1831,11 @@ async function initTransactions() {
 
         const income = e.income || 0;
         const expense = e.expense || 0;
-        const withdrawal = getVal('withdrawal');
+        const withdrawal = getVal('withdrawal') || parseFloat(e.withdrawal) || 0;
 
         // CSP Ledger Logic:
-        // 1. Prev Closing Balance (Carryforward from yesterday)
-        const prevCls = runningBalance;
+        // 1. Prev Closing Balance (Carryforward or Explicit historical Opening)
+        const prevCls = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : runningBalance;
         
         // 2. Capital Add
         const capital = capitalAdd || 0;
@@ -1346,33 +1843,23 @@ async function initTransactions() {
         // 3. Opening Balance (Display Only) = Prev Closing + Capital Add
         const opnBalance = calculateOpeningBalance(prevCls, capital);
         
-        // 4. Total (Cash Flow) = Cash + Online + Roinet + Jio + Go2Sms + Credit + Pending + Damages
+        // 4. Base Cash Flow
         const totalCashFlow = cash + online + roinet + jio + go2sms + credit + pending + damages;
         
-        // 5. Income = Total - Opening
-        const dailyIncome = totalCashFlow - opnBalance;
-        
-        // 6. Profit = Income - Expense
-        const dailyProfit = dailyIncome - expense;
-        
-        // 7. Net = Total - Expense
-        const netFlow = totalCashFlow - expense;
-        
-        // 8. Closing Balance = Net - Withdraw
-        const finalCls = netFlow - withdrawal;
+        // Universal Gross Math Logic
+        const displayTotal = totalCashFlow + expense;  
+        const displayIncome = Math.max(0, displayTotal - opnBalance); 
+        const displayProfit = displayIncome - expense; 
+        const displayNet = displayTotal - expense; 
+        const displayCls = displayNet - withdrawal;
 
-        // Carryforward for NEXT day
-        runningBalance = finalCls;
+        // Carryforward for NEXT day uses true closing
+        runningBalance = displayCls;
 
-        // Display values
+        // Display values for the table template
         const displayPrevCls = prevCls;
         const displayCap = capital;
         const displayOpn = opnBalance;
-        const displayTotal = totalCashFlow;
-        const displayIncome = dailyIncome;
-        const displayProfit = dailyProfit;
-        const displayNet = netFlow;
-        const displayCls = finalCls;
 
         const dailyTotal = income; // Keep legacy variable names if used below, but update logic constants
 
@@ -1951,6 +2438,17 @@ async function initReports() {
 
     let currentMode = 'overall';
 
+    const getFinancialYear = (d) => {
+        if (isNaN(d)) return null;
+        const year = d.getFullYear();
+        const month = d.getMonth() + 1;
+        if (month >= 4) {
+            return `FY ${year}-${(year + 1).toString().slice(-2)}`;
+        } else {
+            return `FY ${year - 1}-${year.toString().slice(-2)}`;
+        }
+    };
+
     // Populate Filters
     async function populateFilters() {
         const entries = await loadEntries();
@@ -1972,11 +2470,14 @@ async function initReports() {
             monthSelect.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
         }
 
-        // Year options
-        const years = [...new Set(entries.map(e => {
+        // Financial Year options
+        const fySet = new Set();
+        entries.forEach(e => {
             const d = new Date(e.date);
-            return isNaN(d) ? null : d.getFullYear();
-        }))].filter(Boolean).sort((a, b) => b - a);
+            const fy = getFinancialYear(d);
+            if (fy) fySet.add(fy);
+        });
+        const years = [...fySet].sort((a, b) => b.localeCompare(a));
 
         if (yearSelect && years.length > 0) {
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -2096,7 +2597,7 @@ async function initReports() {
             }
 
             if (currentMode === 'year' && yearSelect) {
-                return y.toString() === yearSelect.value;
+                return getFinancialYear(entryDate) === yearSelect.value;
             }
             return false;
         });
@@ -2115,6 +2616,9 @@ async function initReports() {
         // Build a map of date -> dailyIncome using running balance on ALL entries
         let runningBalance = 0;
         const dailyIncomeMap = {};
+        // Sort strictly chronologically to ensure accurate running balance calculation
+        allEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
         allEntries.forEach(e => {
             const details = e.details || {};
             const cash = parseFloat(details.cash) || 0;
@@ -2129,12 +2633,15 @@ async function initReports() {
 
             const tcf = cash + online + roinet + jio + (crgbBc || go2sms) + credit + pending + damages;
             const cap = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
-            const wit = parseFloat(details.withdrawal) || 0;
+            const wit = parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0;
             const exp = parseFloat(e.expense) || 0;
 
-            const opn = runningBalance + cap;
-            const dailyInc = tcf - opn;
-            const cls = tcf - exp - wit;
+            const baseOpn = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : runningBalance;
+            const opn = baseOpn + cap;
+            const displayTotalBase = tcf + exp; 
+            const dailyInc = Math.max(0, displayTotalBase - opn);
+            const netFlow = displayTotalBase - exp;
+            const cls = netFlow - wit;
             runningBalance = cls;
 
             dailyIncomeMap[e.date] = { inc: dailyInc, exp, cap };
@@ -2235,6 +2742,334 @@ async function initReports() {
     renderReport();
 }
 
+// --- Logic for Bank Withdrawals ---
+async function initBankWithdrawals() {
+    const tableBody = document.getElementById('bank-data-body');
+    if (!tableBody) return; // Only runs on bank-withdrawals-code.html
+
+    const addAccountForm = document.getElementById('add-account-form');
+    const withdrawalForm = document.getElementById('withdrawal-form');
+    const accountViewHeader = document.getElementById('account-view-header');
+    const addWithdrawalSection = document.getElementById('add-withdrawal-section');
+    const backBtn = document.getElementById('back-to-accounts');
+    const accountsHeader = document.getElementById('accounts-header');
+    const withdrawalsHeader = document.getElementById('withdrawals-header');
+
+    // Stats
+    const fyTotalDisplay = document.getElementById('fy-total-display');
+    const fyPercentage = document.getElementById('fy-percentage');
+    const fyProgressBar = document.getElementById('fy-progress-bar');
+    const fyDatesDisplay = document.getElementById('fy-dates-display');
+
+    let currentView = 'accounts'; // accounts or withdrawals
+    let activeAccountId = null;
+
+    // Helper to calculate current FY range
+    function getCurrentFYDates() {
+        const today = new Date();
+        const year = today.getFullYear();
+        let startYear, endYear;
+        
+        if (today.getMonth() >= 3) { // April (3) to Dec (11)
+            startYear = year;
+            endYear = year + 1;
+        } else { // Jan (0) to March (2)
+            startYear = year - 1;
+            endYear = year;
+        }
+        
+        const start = new Date(startYear, 3, 1); // April 1st
+        const end = new Date(endYear, 2, 31, 23, 59, 59); // March 31st
+        return { start, end, label: `FY ${startYear}-${endYear}` };
+    }
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+    };
+
+    async function renderView() {
+        try {
+            const accounts = await loadBankAccounts();
+            const withdrawalsList = await loadBankWithdrawals();
+
+            tableBody.innerHTML = '';
+            
+            const fy = getCurrentFYDates();
+            if(fyDatesDisplay) fyDatesDisplay.innerText = fy.label;
+
+            const limitDisplay = fyDatesDisplay ? fyDatesDisplay.nextElementSibling : null;
+
+            if (currentView === 'accounts') {
+                let grandFyTotal = 0;
+                withdrawalsList.forEach(w => {
+                    const wDate = new Date(w.date);
+                    if (wDate >= fy.start && wDate <= fy.end) {
+                        grandFyTotal += (parseFloat(w.amount) || 0);
+                    }
+                });
+                
+                const totalAccounts = Math.max(1, accounts.length);
+                const grandLimit = totalAccounts * 10000000;
+                const grandPercent = (grandFyTotal / grandLimit) * 100;
+                
+                if (fyTotalDisplay) {
+                    fyTotalDisplay.innerText = formatCurrency(grandFyTotal);
+                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL YEAR WITHDRAWALS (ALL ACCOUNTS)";
+                }
+                if (fyPercentage) {
+                    fyPercentage.innerText = `${grandPercent.toFixed(1)}% Used`;
+                    fyPercentage.className = `text-lg font-bold px-3 py-1 rounded-lg ${grandPercent >= 100 ? 'bg-rose-100 text-rose-600' : (grandPercent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')}`;
+                }
+                if (fyProgressBar) {
+                    fyProgressBar.style.width = `${Math.min(grandPercent, 100)}%`;
+                    fyProgressBar.className = `h-full transition-all duration-700 ${grandPercent >= 100 ? 'bg-rose-500' : (grandPercent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
+                }
+                if (limitDisplay) limitDisplay.innerText = `Combined Limit: ${formatCurrency(grandLimit)} (Sec 194N)`;
+                if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
+                
+                accountViewHeader.querySelector('h3').innerText = "Bank Accounts";
+                if (backBtn) backBtn.classList.add('hidden');
+                if (addWithdrawalSection) addWithdrawalSection.classList.add('hidden');
+                if (addAccountForm) addAccountForm.classList.remove('hidden');
+                if (accountsHeader) accountsHeader.classList.remove('hidden');
+                if (withdrawalsHeader) withdrawalsHeader.classList.add('hidden');
+
+                if (accounts.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No bank accounts added yet.</td></tr>`;
+                } else {
+                    accounts.forEach(acc => {
+                        const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(acc.id));
+                        let fyTotal = 0;
+                        accWithdrawals.forEach(w => {
+                            const wDate = new Date(w.date);
+                            if (wDate >= fy.start && wDate <= fy.end) {
+                                fyTotal += (parseFloat(w.amount) || 0);
+                            }
+                        });
+
+                        const limit = 10000000; // 1 Crore
+                        const pecent = (fyTotal / limit) * 100;
+                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600');
+                        const statusText = pecent >= 100 ? 'OVER LIMIT' : (pecent >= 80 ? 'WARNING' : 'SAFE');
+                        
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
+                        tr.onclick = (e) => {
+                            if(e.target.closest('button')) return;
+                            showAccountDetails(acc.id);
+                        };
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 font-bold group-hover:text-primary transition-colors">${acc.name}</td>
+                            <td class="px-6 py-4 font-bold text-slate-700 text-right">${formatCurrency(fyTotal)}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
+                            </td>
+                            <td class="px-6 py-4 text-right flex justify-end gap-1">
+                                <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View">
+                                    <span class="material-symbols-outlined text-lg">visibility</span>
+                                </button>
+                                <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                }
+            } else {
+                const acc = accounts.find(a => String(a.id) === String(activeAccountId));
+                if (!acc) { showAccountsList(); return; }
+
+                accountViewHeader.querySelector('h3').innerText = "Account: " + acc.name;
+                if (backBtn) backBtn.classList.remove('hidden');
+                if (addWithdrawalSection) addWithdrawalSection.classList.remove('hidden');
+                if (addAccountForm) addAccountForm.classList.add('hidden');
+                if (accountsHeader) accountsHeader.classList.add('hidden');
+                if (withdrawalsHeader) withdrawalsHeader.classList.remove('hidden');
+
+                const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(activeAccountId));
+                accWithdrawals.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                let fyTotal = 0;
+                
+                if (accWithdrawals.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No withdrawals recorded yet.</td></tr>`;
+                } else {
+                    accWithdrawals.forEach(w => {
+                        const amount = parseFloat(w.amount) || 0;
+                        const wDate = new Date(w.date);
+                        if(wDate >= fy.start && wDate <= fy.end) {
+                            fyTotal += amount;
+                        }
+
+                        let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">${w.method}</span>`;
+                        if(w.method === 'ATM') methodHtml = `<span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">ATM</span>`;
+                        if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold">Cheque</span>`;
+                        if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-xs font-bold">Yono Cash</span>`;
+
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-primary/5 transition-colors";
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">${wDate.toLocaleDateString('en-GB')}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-right text-rose-600">${formatCurrency(amount)}</td>
+                            <td class="px-6 py-4">${methodHtml}</td>
+                            <td class="px-6 py-4 text-xs text-slate-500 italic">${w.note || ""}</td>
+                            <td class="px-6 py-4 text-right flex justify-end gap-1">
+                                <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                }
+
+                // Update limit UI
+                const limit = 10000000; // 1 Crore
+                const pecent = (fyTotal / limit) * 100;
+                if(fyTotalDisplay) {
+                    fyTotalDisplay.innerText = formatCurrency(fyTotal);
+                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL FY WITHDRAWALS (" + acc.name.toUpperCase() + ")";
+                }
+                if(fyPercentage) {
+                    fyPercentage.innerText = `${pecent.toFixed(1)}% Used`;
+                    fyPercentage.className = `text-lg font-bold px-3 py-1 rounded-lg ${pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')}`;
+                }
+                if(fyProgressBar) {
+                    fyProgressBar.style.width = `${Math.min(pecent, 100)}%`;
+                    fyProgressBar.className = `h-full transition-all duration-700 ${pecent >= 100 ? 'bg-rose-500' : (pecent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
+                }
+                if (limitDisplay) limitDisplay.innerText = `Limit: ${formatCurrency(limit)} (Sec 194N)`;
+                if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
+            }
+
+        } catch (e) { console.error("render error:", e); }
+    }
+
+    if(addAccountForm) {
+        addAccountForm.addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-account-name').value.trim();
+            const editIdInput = document.getElementById('edit-account-id');
+            const isEditing = editIdInput && editIdInput.value;
+            
+            if(name) {
+                const uniqueId = isEditing ? editIdInput.value : Date.now();
+                await saveBankAccount({ id: uniqueId, name });
+                addAccountForm.reset();
+                if (editIdInput) editIdInput.value = '';
+                const submitBtn = addAccountForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">add_card</span> Add Account';
+                await renderView();
+            }
+        });
+    }
+
+    if(withdrawalForm) {
+        const dInput = document.getElementById('withdrawal-date');
+        if(dInput) dInput.valueAsDate = new Date();
+        
+        withdrawalForm.addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const editIdInput = document.getElementById('edit-withdrawal-id');
+            const isEditing = editIdInput && editIdInput.value;
+            
+            const withdrawal = {
+                id: isEditing ? editIdInput.value : Date.now(),
+                accountId: activeAccountId,
+                date: document.getElementById('withdrawal-date').value,
+                amount: parseFloat(document.getElementById('withdrawal-amount').value),
+                method: document.getElementById('withdrawal-method').value,
+                note: document.getElementById('withdrawal-note').value
+            };
+            await saveBankWithdrawal(withdrawal);
+            withdrawalForm.reset();
+            document.getElementById('withdrawal-date').valueAsDate = new Date();
+            if (editIdInput) editIdInput.value = '';
+            const submitBtn = withdrawalForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Check & Save';
+            await renderView();
+        });
+    }
+
+    window.showAccountDetails = async (id) => {
+        currentView = 'withdrawals';
+        activeAccountId = id;
+        await renderView();
+    };
+
+    window.showAccountsList = async () => {
+        currentView = 'accounts';
+        activeAccountId = null;
+        await renderView();
+    };
+    
+    window.editBankAccountRecord = async (id) => {
+        const accs = await loadBankAccounts();
+        const acc = accs.find(x => String(x.id) === String(id));
+        if (acc) {
+            document.getElementById('new-account-name').value = acc.name;
+            let editIdInput = document.getElementById('edit-account-id');
+            if (!editIdInput) {
+                editIdInput = document.createElement('input');
+                editIdInput.type = 'hidden';
+                editIdInput.id = 'edit-account-id';
+                addAccountForm.appendChild(editIdInput);
+            }
+            editIdInput.value = acc.id;
+            const submitBtn = addAccountForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Account';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    window.deleteBankAccountRecord = async (id) => {
+        if(confirm("Are you sure you want to delete this Bank Account?")) {
+            await deleteDoc(doc(db, "bank_accounts", id.toString()));
+            await renderView();
+        }
+    };
+    
+    window.editBankWithdrawalRecord = async (id) => {
+        const wList = await loadBankWithdrawals();
+        const w = wList.find(x => String(x.id) === String(id));
+        if (w) {
+            document.getElementById('withdrawal-date').value = w.date;
+            document.getElementById('withdrawal-amount').value = w.amount;
+            document.getElementById('withdrawal-method').value = w.method;
+            document.getElementById('withdrawal-note').value = w.note || '';
+            
+            let editIdInput = document.getElementById('edit-withdrawal-id');
+            if (!editIdInput) {
+                editIdInput = document.createElement('input');
+                editIdInput.type = 'hidden';
+                editIdInput.id = 'edit-withdrawal-id';
+                withdrawalForm.appendChild(editIdInput);
+            }
+            editIdInput.value = w.id;
+            
+            const submitBtn = withdrawalForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Withdrawal';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    window.deleteBankWithdrawalRecord = async (id) => {
+        if(confirm("Are you sure you want to delete this withdrawal record?")) {
+            await deleteBankWithdrawal(id);
+            await renderView();
+        }
+    };
+
+    await renderView();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Migration first
     await migrateToDatabase();
@@ -2249,7 +3084,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { name: 'Transactions', fn: initTransactions },
         { name: 'Reports', fn: initReports }, // New module
         { name: 'CreditLedger', fn: initCreditLedger },
-        { name: 'DamagedCurrency', fn: initDamagedCurrency }
+        { name: 'DamagedCurrency', fn: initDamagedCurrency },
+        { name: 'BankWithdrawals', fn: initBankWithdrawals }
     ];
 
     for (const m of modules) {
