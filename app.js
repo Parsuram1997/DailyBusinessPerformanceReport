@@ -170,21 +170,58 @@ async function loadDamagedCurrency() {
     }
 }
 
-async function loadCashCalculator() {
+async function loadCashCalculator(date) {
     if (!db) return {};
     try {
-        const docSnap = await getDoc(doc(db, "cash_calculator", "latest"));
-        return docSnap.exists() ? docSnap.data() : {};
+        const d = new Date();
+        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const docId = date || todayStr;
+
+        // Helper: check if a counts object has any real data entered
+        const hasRealData = (data) => {
+            if (!data) return false;
+            return Object.entries(data).some(([k, v]) => k !== 'date' && v !== '' && v !== null && v !== undefined && parseFloat(v) > 0);
+        };
+
+        // 1. Try new date-specific collection
+        const docSnap = await getDoc(doc(db, "cash_calculator_data", docId));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (hasRealData(data)) {
+                console.log(`[CashCalc] Loaded from new collection for ${docId}`);
+                return data;
+            }
+            // doc exists but is empty — fall through to check legacy for today
+        }
+
+        // 2. For today's date only: check old 'cash_calculator/latest' as migration source
+        if (docId === todayStr) {
+            const legacySnap = await getDoc(doc(db, "cash_calculator", "latest"));
+            if (legacySnap.exists()) {
+                const legacyData = legacySnap.data();
+                if (hasRealData(legacyData)) {
+                    console.log(`[CashCalc] Migrating legacy data to ${docId}`);
+                    // Save to new collection so future loads use the new path
+                    await setDoc(doc(db, "cash_calculator_data", docId), { ...legacyData, date: docId });
+                    return legacyData;
+                }
+            }
+        }
+
+        // 3. No real data for this date → return empty
+        console.log(`[CashCalc] No data for ${docId}, showing empty`);
+        return {};
     } catch (e) {
         console.error("Error loading cash calculator: ", e);
         return {};
     }
 }
 
-async function saveCashCalculator(counts) {
+async function saveCashCalculator(counts, date) {
     if (!db) return null;
     try {
-        await setDoc(doc(db, "cash_calculator", "latest"), counts);
+        const docId = date || 'latest';
+        await setDoc(doc(db, "cash_calculator_data", docId), { ...counts, date: docId });
         return { message: "Cash calculator saved" };
     } catch (e) {
         console.error("Error saving cash calculator: ", e);
@@ -489,6 +526,35 @@ async function initAddEntry() {
             }
         }
 
+        // --- Restore Session Data (from when user navigated away) ---
+        const savedFormDataStr = sessionStorage.getItem('add_entry_form_data');
+        if (savedFormDataStr) {
+            try {
+                const savedData = JSON.parse(savedFormDataStr);
+                // Restore the date picker first (it's outside the form tag, so not captured by FormData)
+                const savedDate = savedData['__entry_date__'];
+                if (savedDate && datePicker && datePicker.value !== savedDate) {
+                    datePicker.value = savedDate;
+                    // Re-run checkExisting for the correct date but with session data — will be restored below
+                    // We do NOT re-trigger checkExisting here to avoid infinite loop;
+                    // Instead we'll override fields below after database lookup resolves.
+                }
+                // Apply to all inputs in the form
+                Object.keys(savedData).forEach(key => {
+                    if (key === '__entry_date__') return; // already handled above
+                    const input = form.querySelector(`[name="${key}"]`) || document.getElementById(key);
+                    if (input && savedData[key] !== undefined && savedData[key] !== '') {
+                        input.value = savedData[key];
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+                // Remove it so it doesn't persist inappropriately
+                sessionStorage.removeItem('add_entry_form_data');
+            } catch (e) {
+                console.error("Error restoring session data:", e);
+            }
+        }
+
         // --- Data Transfer Logic ---
         // Apply any pending transfers from Credit Ledger, Damaged Currency, or Cash Calculator
         const selectedCredit = localStorage.getItem('selected_credit_transfer');
@@ -525,11 +591,26 @@ async function initAddEntry() {
     }
 
     if (datePicker) {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        datePicker.value = `${yyyy}-${mm}-${dd}`;
+        // Check if we have session data (returning from a calculator with a non-today date)
+        const pendingSessionData = sessionStorage.getItem('add_entry_form_data');
+        let initialDate = null;
+        if (pendingSessionData) {
+            try {
+                const pd = JSON.parse(pendingSessionData);
+                if (pd['__entry_date__']) initialDate = pd['__entry_date__'];
+            } catch(e) {}
+        }
+        if (initialDate) {
+            // Restore the saved date (e.g. user had selected March 29)
+            datePicker.value = initialDate;
+        } else {
+            // Default to today
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            datePicker.value = `${yyyy}-${mm}-${dd}`;
+        }
 
         datePicker.addEventListener('change', checkExisting);
         
@@ -1392,22 +1473,27 @@ async function initCalculator() {
     if (!tableBody) return;
 
     const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+    let calcDatePicker = null;
+
+    const getCurrentDate = () => calcDatePicker ? calcDatePicker.value : null;
 
     const updateTotals = () => {
         let grandTotal = 0;
         let totalNotes = 0;
         const counts = {};
 
-        const inputs = tableBody.querySelectorAll('input');
+        const inputs = tableBody.querySelectorAll('input[data-denom]');
         inputs.forEach(input => {
             const denom = parseInt(input.dataset.denom);
             const count = parseInt(input.value) || 0;
             const subtotal = denom * count;
 
             const subtotalEl = input.closest('tr').querySelector('.subtotal');
-            subtotalEl.innerText = formatCurrency(subtotal);
-            subtotalEl.classList.toggle('text-slate-400', subtotal === 0);
-            subtotalEl.classList.toggle('text-primary', subtotal > 0);
+            if (subtotalEl) {
+                subtotalEl.innerText = formatCurrency(subtotal);
+                subtotalEl.classList.toggle('text-slate-400', subtotal === 0);
+                subtotalEl.classList.toggle('text-primary', subtotal > 0);
+            }
 
             grandTotal += subtotal;
             totalNotes += count;
@@ -1417,43 +1503,92 @@ async function initCalculator() {
         if (totalValDisplay) totalValDisplay.innerText = formatCurrency(grandTotal);
         if (totalNotesDisplay) totalNotesDisplay.innerText = `${totalNotes} notes total`;
 
-        // Persistence
-        saveCashCalculator(counts);
+        // Save to Firestore by date
+        const currentDate = getCurrentDate();
+        if (currentDate) saveCashCalculator(counts, currentDate);
         localStorage.setItem('cash_calculator_counts', JSON.stringify(counts));
     };
 
-    // Restore state
-    let savedCounts = await loadCashCalculator();
-    if (Object.keys(savedCounts).length === 0) {
-        savedCounts = JSON.parse(localStorage.getItem('cash_calculator_counts') || '{}');
+    // --- Inject Date Picker into header ---
+    const headerFlex = document.querySelector('header .flex');
+    calcDatePicker = document.getElementById('calc-date-picker');
+    if (!calcDatePicker && headerFlex) {
+        const pickerWrapper = document.createElement('div');
+        pickerWrapper.className = 'flex flex-col gap-1 min-w-[180px]';
+        pickerWrapper.innerHTML = `
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Date</label>
+            <input id="calc-date-picker" type="date"
+                class="px-4 py-2.5 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-200">
+        `;
+        const resetBtn = headerFlex.querySelector('#btn-reset');
+        if (resetBtn) headerFlex.insertBefore(pickerWrapper, resetBtn);
+        else headerFlex.appendChild(pickerWrapper);
+        calcDatePicker = document.getElementById('calc-date-picker');
     }
 
-    // Generate Rows
-    tableBody.innerHTML = denominations.map(denom => `
-        <tr class="hover:bg-primary/5 transition-colors group">
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">₹</div>
-                    <span class="font-semibold text-slate-700 dark:text-slate-300">${denom}</span>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
-                    class="w-24 mx-auto block bg-slate-50 dark:bg-background-dark/40 border border-primary/10 px-3 py-2 rounded-lg text-center focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold" 
-                    placeholder="0" min="0">
-            </td>
-            <td class="px-6 py-4 text-right">
-                <span class="subtotal font-mono font-bold text-slate-400 group-hover:text-primary transition-colors">₹0</span>
-            </td>
-        </tr>
-    `).join('');
+    // Determine initial date: use Add Entry session date if coming from there, else today
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const sessionData = sessionStorage.getItem('add_entry_form_data');
+    let defaultDate = todayStr;
+    if (sessionData) {
+        try {
+            const sd = JSON.parse(sessionData);
+            if (sd['__entry_date__']) defaultDate = sd['__entry_date__'];
+        } catch(e) {}
+    }
+    if (calcDatePicker) calcDatePicker.value = defaultDate;
 
-    // Events
-    tableBody.addEventListener('input', updateTotals);
+    // Generate table rows with given counts
+    const generateRows = (savedCounts) => {
+        tableBody.innerHTML = '';
+        denominations.forEach(denom => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-primary/5 transition-colors group';
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">₹</div>
+                        <span class="font-semibold text-slate-700 dark:text-slate-300">${denom}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
+                        class="w-24 mx-auto block bg-slate-50 dark:bg-background-dark/40 border border-primary/10 px-3 py-2 rounded-lg text-center focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold" 
+                        placeholder="0" min="0">
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <span class="subtotal font-mono font-bold text-slate-400 group-hover:text-primary transition-colors">₹0</span>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    };
+
+    // Load and render data for a specific date
+    const loadForDate = async (dateStr) => {
+        let savedCounts = await loadCashCalculator(dateStr);
+        delete savedCounts.date; // remove metadata field
+        generateRows(savedCounts);
+        // Re-attach event listener after regenerating rows
+        tableBody.removeEventListener('input', updateTotals);
+        tableBody.addEventListener('input', updateTotals);
+        updateTotals();
+    };
+
+    // Initial load
+    await loadForDate(defaultDate);
+
+    // Date picker change
+    if (calcDatePicker) {
+        calcDatePicker.addEventListener('change', () => {
+            loadForDate(calcDatePicker.value);
+        });
+    }
 
     if (btnReset) {
         btnReset.onclick = () => {
-            tableBody.querySelectorAll('input').forEach(i => i.value = '');
+            tableBody.querySelectorAll('input[data-denom]').forEach(i => i.value = '');
             updateTotals();
         };
     }
@@ -1462,7 +1597,6 @@ async function initCalculator() {
         btnUseCash.onclick = () => {
             const totalText = totalValDisplay.innerText.replace(/[₹,]/g, '');
             const finalAmount = parseFloat(totalText);
-
             if (finalAmount > 0) {
                 localStorage.setItem('temp_calculator_cash', finalAmount);
                 window.location.href = 'add-entry-code.html';
@@ -1471,8 +1605,6 @@ async function initCalculator() {
             }
         };
     }
-
-    updateTotals();
 }
 
 // Logic for Settings Page
@@ -2300,9 +2432,12 @@ async function initCreditLedger() {
 // Inter-page logic for selecting credit
 window.goToLedgerToSelect = () => {
     const form = document.querySelector('form');
+    const datePicker = document.getElementById('entry-date-picker');
     if (form) {
         const formData = {};
         new FormData(form).forEach((value, key) => formData[key] = value);
+        // Also save the date since date picker is outside the <form> tag
+        if (datePicker) formData['__entry_date__'] = datePicker.value;
         sessionStorage.setItem('add_entry_form_data', JSON.stringify(formData));
     }
     window.location.href = 'credit-ledger-code.html?mode=select';
@@ -2322,11 +2457,27 @@ window.useTotalPendingBalance = () => {
     }
 };
 
-window.goToDamagesToSelect = () => {
+window.goToCashCalculator = () => {
     const form = document.getElementById('add-entry-form');
+    const datePicker = document.getElementById('entry-date-picker');
     if (form) {
         const formData = {};
         new FormData(form).forEach((value, key) => formData[key] = value);
+        // Also save the date since date picker is outside the <form> tag
+        if (datePicker) formData['__entry_date__'] = datePicker.value;
+        sessionStorage.setItem('add_entry_form_data', JSON.stringify(formData));
+    }
+    window.location.href = 'cash-calculator-code.html';
+};
+
+window.goToDamagesToSelect = () => {
+    const form = document.getElementById('add-entry-form');
+    const datePicker = document.getElementById('entry-date-picker');
+    if (form) {
+        const formData = {};
+        new FormData(form).forEach((value, key) => formData[key] = value);
+        // Also save the date since date picker is outside the <form> tag
+        if (datePicker) formData['__entry_date__'] = datePicker.value;
         sessionStorage.setItem('add_entry_form_data', JSON.stringify(formData));
     }
     window.location.href = 'damaged-currency-code.html';
