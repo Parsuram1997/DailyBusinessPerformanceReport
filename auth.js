@@ -37,12 +37,12 @@ function handleLogout(event) {
     window.location.replace('index.html');
 }
 
-// Attach logout if the button exists
+// Attach triggers if buttons exist
 document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('logout-btn');
-    if (btn) {
+    const logoutTriggers = document.querySelectorAll('#logout-btn, .logout-trigger');
+    logoutTriggers.forEach(btn => {
         btn.addEventListener('click', handleLogout);
-    }
+    });
     
     // Bind login form if it exists
     const form = document.getElementById('login-form');

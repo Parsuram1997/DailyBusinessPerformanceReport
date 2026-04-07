@@ -49,7 +49,7 @@ window.addEventListener('unhandledrejection', function(e) {
 <div class="flex h-screen overflow-hidden">
 
 <!-- Sidebar -->
-<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20 transition-all duration-300">
+<aside id="sidebar" class="hidden lg:flex w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col z-20 transition-all duration-300">
 <div class="px-6 pb-6 pt-6 flex items-center gap-3 sidebar-logo-container">
     <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
         <span class="material-symbols-outlined">analytics</span>
@@ -73,7 +73,7 @@ window.addEventListener('unhandledrejection', function(e) {
 </aside>
 
 <!-- Main Content Area -->
-<main class="flex-1 flex flex-col overflow-y-auto w-full">
+<main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
 <div class="p-8 flex-1 overflow-y-auto space-y-8">
 
     <!-- 1Cr Progress Bar -->
@@ -189,6 +189,48 @@ window.addEventListener('unhandledrejection', function(e) {
 </div>
 </main>
 </div>
+
+<!-- Bottom Navigation (Mobile) -->
+<nav id="bottom-nav" class="lg:hidden fixed bottom-1 left-1 right-1 bg-white/80 dark:bg-background-dark/80 backdrop-blur-lg border border-primary/10 rounded-2xl shadow-2xl z-50 flex items-center gap-1 px-2 py-3 overflow-x-auto no-scrollbar scroll-smooth">
+    <a href="dashboard-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">dashboard</span>
+        <span class="text-[10px] font-bold">Dashboard</span>
+    </a>
+    <a href="add-entry-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">add_circle</span>
+        <span class="text-[10px] font-bold">Add Entry</span>
+    </a>
+    <a href="transactions-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">receipt_long</span>
+        <span class="text-[10px] font-bold">Trans...</span>
+    </a>
+    <a href="reports-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">bar_chart</span>
+        <span class="text-[10px] font-bold">Reports</span>
+    </a>
+    <a href="credit-ledger-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">menu_book</span>
+        <span class="text-[10px] font-bold">Credits</span>
+    </a>
+    <a href="bank-withdrawals-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl bg-primary/10 text-primary shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">account_balance</span>
+        <span class="text-[10px] font-bold">Bank</span>
+    </a>
+    <a href="settings-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">settings</span>
+        <span class="text-[10px] font-bold">Settings</span>
+    </a>
+    <a href="#" class="logout-trigger flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-rose-500 shrink-0 min-w-[75px] cursor-pointer">
+        <span class="material-symbols-outlined text-xl">logout</span>
+        <span class="text-[10px] font-bold">Logout</span>
+    </a>
+</nav>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+
 <script type="module" src="app.js"></script>
 </body>
 </html>
