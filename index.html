@@ -34,62 +34,80 @@
     </style>
     <link rel="icon" type="image/png" href="favicon.png"/>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex items-center justify-center relative overflow-hidden">
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex overflow-hidden">
     
-    <!-- Background Decor -->
-    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 blur-3xl opacity-30">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-        <div class="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
+    <!-- Left Side: Branding / Visuals -->
+    <div class="hidden lg:flex w-1/2 relative bg-gradient-to-br from-primary to-blue-600 flex-col justify-between p-16 text-white overflow-hidden">
+        <!-- Floating shapes for Left Side -->
+         <div class="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-blob"></div>
+         <div class="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-300 rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        
+        <div class="z-10 relative">
+            <div class="size-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white shadow-lg mb-8 group border border-white/30">
+                <span class="material-symbols-outlined text-3xl">trending_up</span>
+            </div>
+            <h1 class="text-5xl font-black tracking-tight mb-6 leading-tight">Master your<br/>daily insights.</h1>
+            <p class="text-white/80 text-lg max-w-md leading-relaxed">BizPerform helps you track, manage, and accurately project your daily backend reports and operational assets.</p>
+        </div>
+        
+        <p class="text-sm font-medium text-white/50 z-10">&copy; 2026 Parsuram Naik. All rights reserved.</p>
     </div>
 
-    <!-- Login Card -->
-    <div class="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-2xl relative">
-        <div class="text-center space-y-2 mb-8">
-            <div class="size-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-primary/30 mb-6 group hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-3xl">analytics</span>
-            </div>
-            <h1 class="text-2xl font-black tracking-tight">Welcome to BizPerform</h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm">Sign in to manage your daily backend reports and assets effectively.</p>
+    <!-- Right Side: Login Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center relative p-6">
+        
+        <!-- Background Decor for right side -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 blur-3xl opacity-20 dark:opacity-30">
+            <div class="absolute top-1/4 right-1/4 w-[30%] h-[30%] bg-primary rounded-full mix-blend-multiply flex-shrink blur-3xl opacity-50 animate-blob"></div>
+            <div class="absolute bottom-1/4 left-1/4 w-[40%] h-[40%] bg-purple-500 rounded-full mix-blend-multiply flex-shrink blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
         </div>
 
-        <form id="login-form" class="space-y-5">
-            <div id="login-error" class="hidden bg-rose-50 text-rose-600 px-4 py-3 rounded-xl border border-rose-100 flex items-center gap-3 text-sm font-medium">
-                <span class="material-symbols-outlined">error</span>
-                Invalid username or password.
-            </div>
-
-            <div class="space-y-1">
-                <label for="username" class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Username</label>
-                <div class="relative group">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-primary transition-colors">
-                        <span class="material-symbols-outlined text-lg">person</span>
-                    </span>
-                    <input type="text" id="username" placeholder="Enter username" required class="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm outline-none" autocomplete="username">
+        <div class="w-full max-w-md bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/40 dark:border-slate-800 p-8 sm:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none relative">
+            <div class="text-center space-y-2 mb-8">
+                <div class="lg:hidden size-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-primary/30 mb-6 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">analytics</span>
                 </div>
+                <h2 class="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Welcome Back</h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Please enter your details to sign in.</p>
             </div>
 
-            <div class="space-y-1">
-                <label for="password" class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Password</label>
-                <div class="relative group">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-primary transition-colors">
-                        <span class="material-symbols-outlined text-lg">lock</span>
-                    </span>
-                    <input type="password" id="password" placeholder="Enter password" required class="w-full bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm outline-none" autocomplete="current-password">
+            <form id="login-form" class="space-y-6">
+                <div id="login-error" class="hidden bg-rose-50 text-rose-600 px-4 py-3 rounded-xl border border-rose-100 flex items-center gap-3 text-sm font-medium">
+                    <span class="material-symbols-outlined">error</span>
+                    Invalid username or password.
                 </div>
-            </div>
 
-            <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-xl py-3.5 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all text-sm mt-2 flex items-center justify-center gap-2">
-                <span>Sign In</span>
-                <span class="material-symbols-outlined text-lg">login</span>
-            </button>
-        </form>
+                <div class="space-y-1.5">
+                    <label for="username" class="text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Username</label>
+                    <div class="relative group">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">person</span>
+                        </span>
+                        <input type="text" id="username" placeholder="Enter username" required class="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="password" class="text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Password</label>
+                    <div class="relative group">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">lock</span>
+                        </span>
+                        <input type="password" id="password" placeholder="Enter password" required class="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl py-4 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all text-sm mt-4 flex items-center justify-center gap-2">
+                    <span>Sign In to Dashboard</span>
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </button>
+            </form>
+        </div>
+
+        <p class="lg:hidden absolute bottom-6 text-xs text-slate-400 font-medium tracking-wide">
+            &copy; 2026 Parsuram Naik.
+        </p>
     </div>
-
-    <!-- Small footer element -->
-    <p class="absolute bottom-6 text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">
-        &copy; 2026 Parsuram Naik. All rights reserved.
-    </p>
 
 </body>
 </html>

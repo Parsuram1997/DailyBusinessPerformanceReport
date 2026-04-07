@@ -1113,6 +1113,7 @@ async function initDashboard() {
         let totalCapital = 0, totalWithdrawal = 0;
         let todayIncome = 0, todayExpense = 0, todayProfit = 0;
         let yesterdayIncome = 0, yesterdayExpense = 0, yesterdayProfit = 0;
+        let hasTodayEntry = false;
         let lastMonthTodayIncome = 0, lastMonthTodayExpense = 0;
         let currentMTDIncome = 0, currentMTDExpense = 0;
         let lastMTDIncome = 0, lastMTDExpense = 0;
@@ -1171,6 +1172,7 @@ async function initDashboard() {
             // 2. Today & Yesterday Comparisons
             if (eDay === currentDay && eMonth === currentMonth && eYear === currentYear) {
                 todayIncome = dailyInc; todayExpense = exp; todayProfit = dailyProf;
+                hasTodayEntry = true;
             } else if (eDay === yesterday.getDate() && eMonth === yesterday.getMonth() && eYear === yesterday.getFullYear()) {
                 yesterdayIncome = dailyInc; yesterdayExpense = exp; yesterdayProfit = dailyProf;
             }
@@ -1218,13 +1220,30 @@ async function initDashboard() {
             if (!valEl) return;
             let pct = (previous > 0) ? ((current - previous) / previous) * 100 : (current > 0 ? 100 : 0);
             const isUp = pct >= 0;
-            valEl.innerHTML = `${isUp ? '+' : ''}${pct.toFixed(1)}% <span class="font-normal text-slate-400 ml-1">vs yesterday</span>`;
+            valEl.innerHTML = `${isUp ? '+' : ''}${pct.toFixed(1)}% <span class="font-normal text-white/70 ml-1">vs yesterday</span>`;
             valEl.parentElement.classList.toggle('text-emerald-500', isUp);
             valEl.parentElement.classList.toggle('text-rose-500', !isUp);
             if (iconEl) iconEl.innerText = isUp ? 'trending_up' : 'trending_down';
         };
 
         // --- 4. Render Updates ---
+        
+        // Fallback to yesterday if today is not available
+        if (!hasTodayEntry) {
+            todayIncome = yesterdayIncome;
+            todayExpense = yesterdayExpense;
+            todayProfit = yesterdayProfit;
+        }
+
+        // Update Labels based on availability
+        const todayLabel = hasTodayEntry ? "Today's" : "Yesterday's";
+        const incomeLabelEl = document.getElementById('today-income-label');
+        const expenseLabelEl = document.getElementById('today-expense-label');
+        const profitLabelEl = document.getElementById('today-profit-label');
+        if (incomeLabelEl) incomeLabelEl.innerText = todayLabel + " Income";
+        if (expenseLabelEl) expenseLabelEl.innerText = todayLabel + " Expense";
+        if (profitLabelEl) profitLabelEl.innerText = todayLabel + " Profit";
+
         // Summary Cards (All-Time)
         setVal('total-income-top', allTimeIncome);
         setVal('total-expense-top', allTimeExpense);
@@ -1250,7 +1269,7 @@ async function initDashboard() {
             if (valEl) {
                 let pct = (previous > 0) ? ((current - previous) / previous) * 100 : (current > 0 ? 100 : 0);
                 const isUp = pct >= 0;
-                valEl.innerHTML = `${isUp ? '+' : ''}${pct.toFixed(1)}% <span class="font-normal text-slate-400 ml-1">vs last month</span>`;
+                valEl.innerHTML = `${isUp ? '+' : ''}${pct.toFixed(1)}% <span class="font-normal text-white/70 ml-1">vs last month</span>`;
                 valEl.parentElement.classList.toggle('text-emerald-500', isUp);
                 valEl.parentElement.classList.toggle('text-rose-500', !isUp);
             }
@@ -2834,11 +2853,30 @@ async function initReports() {
             dailyIncomeMap[e.date] = { inc: dailyInc, exp, cap };
         });
 
-        // Now aggregate metrics only for filtered entries
+        // Find cumulative capital up to the latest date in the filtered view
+        let maxFilteredDate = 0;
+        if (filtered.length > 0) {
+            filtered.forEach(e => {
+                const ts = new Date(e.date).getTime();
+                if (ts > maxFilteredDate) maxFilteredDate = ts;
+            });
+        }
+
         let totalCapitalAdd = 0;
+        if (maxFilteredDate > 0) {
+            allEntries.forEach(e => {
+                if (new Date(e.date).getTime() <= maxFilteredDate) {
+                    const mapped = dailyIncomeMap[e.date] || {};
+                    totalCapitalAdd += (mapped.cap || 0);
+                }
+            });
+        }
+
+        // Now aggregate metrics only for filtered entries
         let peakDayIncome = -Infinity;
         let peakDayDate = "N/A";
         const monthTotals = {};
+        const yearTotals = {};
 
         const totals = filtered.reduce((acc, e) => {
             const mapped = dailyIncomeMap[e.date] || {};
@@ -2847,7 +2885,11 @@ async function initReports() {
             acc.income += inc;
             acc.expense += exp;
             acc.profit += (inc - exp);
-            totalCapitalAdd += (mapped.cap || parseFloat(e.capitalAdd) || 0);
+            acc.periodCap += (parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0);
+            
+            const details = e.details || {};
+            acc.withdrawal += (parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0);
+            // totalCapitalAdd is pre-calculated cumulatively
 
             if (inc > peakDayIncome) {
                 peakDayIncome = inc;
@@ -2857,8 +2899,13 @@ async function initReports() {
             const mKey = new Date(e.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
             monthTotals[mKey] = (monthTotals[mKey] || 0) + inc;
 
+            const dt = new Date(e.date);
+            const yStart = dt.getMonth() < 3 ? dt.getFullYear() - 1 : dt.getFullYear();
+            const yKey = `FY ${yStart}-${(yStart + 1).toString().slice(-2)}`;
+            yearTotals[yKey] = (yearTotals[yKey] || 0) + inc;
+
             return acc;
-        }, { income: 0, expense: 0, profit: 0 });
+        }, { income: 0, expense: 0, profit: 0, periodCap: 0, withdrawal: 0 });
 
         console.log(`[Reports Debug] Resulting Totals:`, totals);
 
@@ -2878,6 +2925,16 @@ async function initReports() {
             if (val > maxMonthIncome) {
                 maxMonthIncome = val;
                 peakMonthName = m;
+            }
+        });
+
+        // Peak Year
+        let peakYearName = "N/A";
+        let maxYearIncome = -Infinity;
+        Object.entries(yearTotals).forEach(([y, val]) => {
+            if (val > maxYearIncome) {
+                maxYearIncome = val;
+                peakYearName = y;
             }
         });
 
@@ -2906,6 +2963,10 @@ async function initReports() {
         updateText('summary-total-expense', formatCurrency(totals.expense));
         updateText('summary-total-profit', formatCurrency(totals.profit));
         updateText('summary-entries-count', filtered.length);
+        updateText('summary-period-capital', formatCurrency(totals.periodCap));
+        updateText('summary-total-capital', formatCurrency(totalCapitalAdd));
+        updateText('summary-peak-year', peakYearName);
+        updateText('summary-total-withdrawal', formatCurrency(totals.withdrawal));
     }
 
     function modeToTitle(mode) {
@@ -3257,7 +3318,92 @@ async function initBankWithdrawals() {
     await renderView();
 }
 
+function protectAddEntryLinks() {
+    document.querySelectorAll('a[href="add-entry-code.html"], a[data-page="add-entry-code.html"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            
+            if (document.getElementById('pin-modal')) return;
+
+            const modalHTML = `
+            <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);">
+                <div style="background:white;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;width:90%;max-width:320px;" class="dark:bg-slate-800">
+                    <h3 style="margin-top:0;font-weight:bold;color:#1e293b;font-size:18px;margin-bottom:8px;" class="dark:text-white">Security Check</h3>
+                    <p style="color:#64748b;font-size:13px;margin-bottom:20px;" class="dark:text-slate-400">Enter the 6-digit PIN to access Add Entry.</p>
+                    
+                    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:24px;" id="pin-container">
+                        ${[1, 2, 3, 4, 5, 6].map(() => `
+                            <input type="password" class="pin-digit dark:bg-slate-900 dark:border-slate-700 dark:text-white focus:border-primary" style="width:40px;height:48px;font-size:24px;text-align:center;border:2px solid #e2e8f0;border-radius:8px;outline:none;" maxlength="1" inputmode="numeric">
+                        `).join('')}
+                    </div>
+
+                    <div style="display:flex;gap:12px;">
+                        <button id="pin-cancel" style="flex:1;padding:12px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:bold;cursor:pointer;" class="dark:bg-slate-700 dark:text-white">Cancel</button>
+                        <button id="pin-submit" style="flex:1;padding:12px;border:none;background:#7f13ec;color:white;border-radius:8px;font-weight:bold;cursor:pointer;">Unlock</button>
+                    </div>
+                </div>
+            </div>`;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            const inputs = document.querySelectorAll('.pin-digit');
+            setTimeout(() => inputs[0].focus(), 100);
+            
+            const close = () => {
+                const m = document.getElementById('pin-modal');
+                if (m) m.remove();
+            };
+            document.getElementById('pin-cancel').addEventListener('click', close);
+            
+            const attemptUnlock = () => {
+                const pin = Array.from(inputs).map(i => i.value).join('');
+                if (pin.length < 6) return; // Wait until all are filled
+
+                if (pin === "202526") {
+                    close();
+                    window.location.href = "add-entry-code.html";
+                } else {
+                    inputs.forEach(i => { i.style.borderColor = "#ef4444"; i.value = ""; });
+                    inputs[0].focus();
+                    setTimeout(() => inputs.forEach(i => i.style.borderColor = ""), 1000);
+                }
+            };
+            
+            document.getElementById('pin-submit').addEventListener('click', attemptUnlock);
+
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value && index < 5) inputs[index + 1].focus();
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !input.value && index > 0) {
+                        inputs[index - 1].focus();
+                        inputs[index - 1].value = ''; // auto clear previous box
+                    }
+                    if (e.key === 'Enter') attemptUnlock();
+                });
+
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                    for (let i = 0; i < pastedData.length; i++) {
+                        inputs[i].value = pastedData[i];
+                    }
+                    if (pastedData.length > 0) {
+                        inputs[Math.min(pastedData.length, 5)].focus();
+                    }
+                });
+            });
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // Apply Add Entry PIN Protection
+    protectAddEntryLinks();
+
     // Migration first
     await migrateToDatabase();
     // Auto-clean duplicate entries for same date
