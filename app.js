@@ -183,33 +183,18 @@ async function loadCashCalculator(date) {
             return Object.entries(data).some(([k, v]) => k !== 'date' && v !== '' && v !== null && v !== undefined && parseFloat(v) > 0);
         };
 
-        // 1. Try new date-specific collection
+        // Try loading specifically for the requested date
         const docSnap = await getDoc(doc(db, "cash_calculator_data", docId));
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (hasRealData(data)) {
-                console.log(`[CashCalc] Loaded from new collection for ${docId}`);
+                console.log(`[CashCalc] Loaded data for ${docId}`);
                 return data;
             }
-            // doc exists but is empty — fall through to check legacy for today
         }
 
-        // 2. For today's date only: check old 'cash_calculator/latest' as migration source
-        if (docId === todayStr) {
-            const legacySnap = await getDoc(doc(db, "cash_calculator", "latest"));
-            if (legacySnap.exists()) {
-                const legacyData = legacySnap.data();
-                if (hasRealData(legacyData)) {
-                    console.log(`[CashCalc] Migrating legacy data to ${docId}`);
-                    // Save to new collection so future loads use the new path
-                    await setDoc(doc(db, "cash_calculator_data", docId), { ...legacyData, date: docId });
-                    return legacyData;
-                }
-            }
-        }
-
-        // 3. No real data for this date → return empty
-        console.log(`[CashCalc] No data for ${docId}, showing empty`);
+        // If no data exists for this specific date, return empty to avoid pre-filling old data
+        console.log(`[CashCalc] No data for ${docId}, starting fresh`);
         return {};
     } catch (e) {
         console.error("Error loading cash calculator: ", e);
