@@ -2065,8 +2065,8 @@ async function initTransactions() {
         `);
     });
 
-    // Reverse the rows to show newest at top, and fix S.No (index)
-    const finalHtml = rowList.reverse().map((row, i) => row.replace('#ID#', i + 1)).join('');
+    // Reverse the rows to show newest at top, and fix S.No (total_length - current_index)
+    const finalHtml = rowList.reverse().map((row, i) => row.replace('#ID#', rowList.length - i)).join('');
     tableBody.innerHTML = finalHtml;
 }
 
