@@ -1117,6 +1117,7 @@ async function initDashboard() {
         let currentMTDIncome = 0, currentMTDExpense = 0;
         let lastMTDIncome = 0, lastMTDExpense = 0;
         let currentFYIncome = 0, currentQIncome = 0;
+        let currentFYExpense = 0, currentQExpense = 0;
         let finalRunningBalance = 0;
 
 
@@ -1189,9 +1190,11 @@ async function initDashboard() {
             }
             if (entryDate >= yStart && entryDate <= yEnd) {
                 currentFYIncome += dailyInc;
+                currentFYExpense += exp;
             }
             if (entryDate >= qStart && entryDate <= qEnd) {
                 currentQIncome += dailyInc;
+                currentQExpense += exp;
             }
 
 
@@ -1235,6 +1238,24 @@ async function initDashboard() {
         setVal('today-expense-top', todayExpense);
         setVal('today-profit-top', todayProfit);
 
+        // This Month Detail
+        setVal('this-month-income-top', currentMTDIncome);
+        setVal('this-month-expense-top', currentMTDExpense);
+        setVal('this-month-profit-top', currentMTDIncome - currentMTDExpense);
+
+        ['income', 'expense', 'profit'].forEach(type => {
+            const current = type === 'income' ? currentMTDIncome : (type === 'expense' ? currentMTDExpense : (currentMTDIncome - currentMTDExpense));
+            const previous = type === 'income' ? lastMTDIncome : (type === 'expense' ? lastMTDExpense : (lastMTDIncome - lastMTDExpense));
+            const valEl = document.getElementById(`this-month-${type}-trend-val`);
+            if (valEl) {
+                let pct = (previous > 0) ? ((current - previous) / previous) * 100 : (current > 0 ? 100 : 0);
+                const isUp = pct >= 0;
+                valEl.innerHTML = `${isUp ? '+' : ''}${pct.toFixed(1)}% <span class="font-normal text-slate-400 ml-1">vs last month</span>`;
+                valEl.parentElement.classList.toggle('text-emerald-500', isUp);
+                valEl.parentElement.classList.toggle('text-rose-500', !isUp);
+            }
+        });
+
         // Trends
         updateTrend('income-trend-val', 'income-trend-icon', todayIncome, yesterdayIncome);
         updateTrend('expense-trend-val', 'expense-trend-icon', todayExpense, yesterdayExpense);
@@ -1269,6 +1290,7 @@ async function initDashboard() {
         // 5. Projections - Forecast to Completion Model
         const daysPassed = now.getDate();
         const avgDaily = currentMTDIncome / (daysPassed || 1);
+        const avgDailyExp = currentMTDExpense / (daysPassed || 1);
         
         // Month
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -1285,18 +1307,27 @@ async function initDashboard() {
         setVal('proj-quarterly', currentQIncome + (avgDaily * daysRemainingQ));
         setVal('proj-yearly', currentFYIncome + (avgDaily * daysRemainingFY));
 
+        setVal('proj-monthly-exp', currentMTDExpense + (avgDailyExp * daysRemainingMonth));
+        setVal('proj-quarterly-exp', currentQExpense + (avgDailyExp * daysRemainingQ));
+        setVal('proj-yearly-exp', currentFYExpense + (avgDailyExp * daysRemainingFY));
+
+        setVal('proj-monthly-profit', (currentMTDIncome + (avgDaily * daysRemainingMonth)) - (currentMTDExpense + (avgDailyExp * daysRemainingMonth)));
+        setVal('proj-quarterly-profit', (currentQIncome + (avgDaily * daysRemainingQ)) - (currentQExpense + (avgDailyExp * daysRemainingQ)));
+        setVal('proj-yearly-profit', (currentFYIncome + (avgDaily * daysRemainingFY)) - (currentFYExpense + (avgDailyExp * daysRemainingFY)));
+
 
         const fmtDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         
-        const setRange = (id, s, e) => {
-            const el = document.getElementById(id);
-            if (el) el.innerText = `${fmtDate(s)} - ${fmtDate(e)}`;
+        const setRange = (selector, s, e) => {
+            document.querySelectorAll(selector).forEach(el => {
+                el.innerText = `${fmtDate(s)} - ${fmtDate(e)}`;
+            });
         };
-        setRange('proj-month-range', mStart, mEnd);
-        setRange('proj-quart-range', qStart, qEnd);
-        setRange('proj-year-range', yStart, yEnd);
+        setRange('.proj-month-range-text', mStart, mEnd);
+        setRange('.proj-quart-range-text', qStart, qEnd);
+        setRange('.proj-year-range-text', yStart, yEnd);
 
         // --- 6. Charts ---
         const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -2641,7 +2672,12 @@ async function initReports() {
             tab.classList.toggle('bg-primary', isActive);
             tab.classList.toggle('text-white', isActive);
             tab.classList.remove('text-slate-500');
-            if (!isActive) tab.classList.add('text-slate-500');
+            tab.classList.remove('hover:text-primary');
+            
+            if (!isActive) {
+                tab.classList.add('text-slate-500');
+                tab.classList.add('hover:text-primary');
+            }
         });
 
         // Show/hide containers

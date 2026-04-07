@@ -36,20 +36,11 @@
             white-space: nowrap;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        #sidebar:hover { 
-            width: 16rem !important; /* Expanded w-64 */
-            box-shadow: 4px 0 15px rgba(0,0,0,0.03);
-        }
-        
+
         /* Center icons when collapsed */
         #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
         #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
         #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
-
-        /* Restore alignment on hover */
-        #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-        #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
         
         /* Fade texts in/out */
         #sidebar .sidebar-text, 
@@ -62,13 +53,24 @@
             overflow: hidden;
         }
         
-        #sidebar:hover .sidebar-text, 
-        #sidebar:hover .nav-text { 
-            opacity: 1; 
-            transform: translateX(0);
-            transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
-            width: auto;
-            margin-left: 0.75rem;
+        @media (min-width: 1024px) {
+            #sidebar:hover { 
+                width: 16rem !important; /* Expanded w-64 */
+                box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+            }
+            
+            /* Restore alignment on hover */
+            #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+            
+            #sidebar:hover .sidebar-text, 
+            #sidebar:hover .nav-text { 
+                opacity: 1; 
+                transform: translateX(0);
+                transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+                width: auto;
+                margin-left: 0.75rem;
+            }
         }
     
         /* Hide number input arrows */
@@ -84,6 +86,7 @@
 
     </style>
     <script src="auth.js"></script>
+    <link rel="icon" type="image/png" href="favicon.png"/>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <div class="flex h-screen overflow-hidden">
@@ -128,10 +131,6 @@
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
 <span class="material-symbols-outlined">account_balance</span>
 <span class="text-sm nav-text">Bank Withdrawals</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
-<span class="material-symbols-outlined">calculate</span>
-<span class="text-sm nav-text">Cash Calculator</span>
 </a>
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
 <span class="material-symbols-outlined">settings</span>
