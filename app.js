@@ -1965,8 +1965,13 @@ async function initTransactions() {
 
     const entries = await loadEntries();
 
-    // Sort by date so newest is always at top regardless of Firestore order
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort by date so newest is always at top. Secondary sort by ID for same-day entries.
+    entries.sort((a, b) => {
+        const d1 = new Date(a.date);
+        const d2 = new Date(b.date);
+        if (d1.getTime() !== d2.getTime()) return d2 - d1;
+        return (b.id || 0) - (a.id || 0);
+    });
 
     if (entries.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="16" class="px-6 py-8 text-center text-slate-500 bg-slate-50 dark:bg-slate-800/50">No transactions recorded yet.</td></tr>`;
@@ -2241,7 +2246,12 @@ async function initCreditLedger() {
                 if (titleEl) titleEl.innerText = `Add Transaction for ${cust.name}`;
 
                 const custCredits = credits.filter(cr => String(cr.customerId) === String(activeCustomerId));
-                custCredits.sort((a, b) => new Date(b.date) - new Date(a.date));
+                custCredits.sort((a, b) => {
+                    const d1 = new Date(a.date);
+                    const d2 = new Date(b.date);
+                    if (d1.getTime() !== d2.getTime()) return d2 - d1;
+                    return (b.id || 0) - (a.id || 0);
+                });
 
                 if (custCredits.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
@@ -2793,6 +2803,10 @@ async function initReports() {
 
     async function renderReport() {
         const entries = await loadEntries();
+        const bankWithdrawals = await loadBankWithdrawals();
+        const bankAccounts = await loadBankAccounts();
+        const activeAccountIds = new Set(bankAccounts.map(a => String(a.id)));
+
         const searchInput = document.getElementById('report-search');
         const query = (searchInput?.value || '').toLowerCase();
         
@@ -2831,6 +2845,35 @@ async function initReports() {
             }
             return false;
         });
+
+        const filterWithdrawals = (w) => {
+            if (currentMode === 'overall') return true;
+            const wDate = new Date(w.date);
+            if (isNaN(wDate)) return false;
+
+            const y = wDate.getFullYear();
+            const m = wDate.getMonth();
+            const d = wDate.getDate();
+
+            if (currentMode === 'date' && dateInput) {
+                const [selY, selM, selD] = dateInput.value.split('-').map(Number);
+                return y === selY && (m+1) === selM && d === selD;
+            }
+            if (currentMode === 'month' && monthSelect) {
+                const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
+                const wMonthName = wDate.toLocaleString('default', { month: 'long' });
+                return wMonthName === selMonthName && y.toString() === selYearStr;
+            }
+            if (currentMode === 'year' && yearSelect) {
+                return getFinancialYear(wDate) === yearSelect.value;
+            }
+            return false;
+        };
+
+        const filteredWithdrawals = bankWithdrawals
+            .filter(w => activeAccountIds.has(String(w.accountId)))
+            .filter(filterWithdrawals);
+
 
         console.log(`[Reports Debug] Filtered Count: ${filtered.length}`);
 
@@ -2910,11 +2953,18 @@ async function initReports() {
             acc.expense += exp;
             acc.profit += (inc - exp);
             acc.periodCap += (parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0);
-            
+
             const details = e.details || {};
             acc.withdrawal += (parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0);
-            // totalCapitalAdd is pre-calculated cumulatively
 
+            // Aggregate Category Wise Expenses
+            acc.categories.personal += parseFloat(details.personal_expense) || 0;
+            acc.categories.salary += parseFloat(details.salary_expense) || 0;
+            acc.categories.electricity += parseFloat(details.electricity_expense) || 0;
+            acc.categories.rent += parseFloat(details.shop_rent_expense) || 0;
+            acc.categories.bizDev += parseFloat(details.business_development) || 0;
+            acc.categories.internet += parseFloat(details.internet_expense) || 0;
+            
             if (inc > peakDayIncome) {
                 peakDayIncome = inc;
                 peakDayDate = new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
@@ -2929,7 +2979,34 @@ async function initReports() {
             yearTotals[yKey] = (yearTotals[yKey] || 0) + inc;
 
             return acc;
-        }, { income: 0, expense: 0, profit: 0, periodCap: 0, withdrawal: 0 });
+        }, { 
+            income: 0, 
+            expense: 0, 
+            profit: 0, 
+            periodCap: 0, 
+            withdrawal: 0,
+            categories: {
+                personal: 0,
+                salary: 0,
+                electricity: 0,
+                rent: 0,
+                bizDev: 0,
+                internet: 0
+            }
+        });
+
+        // Aggregate Bank Withdrawal Methods
+        const withdrawalMethods = filteredWithdrawals.reduce((acc, w) => {
+            const method = w.method || 'Other';
+            const amt = parseFloat(w.amount) || 0;
+            if (method.includes('Cheque')) acc.cheque += amt;
+            else if (method.includes('ATM QR Code')) acc.qr += amt;
+            else if (method.includes('ATM Inside Branch')) acc.inside += amt;
+            else if (method.includes('ATM')) acc.atm += amt;
+            else if (method.includes('Yono')) acc.yono += amt;
+            else acc.other += amt;
+            return acc;
+        }, { cheque: 0, qr: 0, inside: 0, atm: 0, yono: 0, other: 0 });
 
         console.log(`[Reports Debug] Resulting Totals:`, totals);
 
@@ -2991,6 +3068,94 @@ async function initReports() {
         updateText('summary-total-capital', formatCurrency(totalCapitalAdd));
         updateText('summary-peak-year', peakYearName);
         updateText('summary-total-withdrawal', formatCurrency(totals.withdrawal));
+
+        // Render Category Wise Expenses Table
+        const categoryBody = document.getElementById('category-expense-body');
+        if (categoryBody) {
+            const catMap = [
+                { label: 'Personal Expense', val: totals.categories.personal, icon: 'person', color: 'text-blue-500' },
+                { label: 'Salary Expense', val: totals.categories.salary, icon: 'payments', color: 'text-emerald-500' },
+                { label: 'Electricity Expense', val: totals.categories.electricity, icon: 'bolt', color: 'text-amber-500' },
+                { label: 'Shop Rent Expense', val: totals.categories.rent, icon: 'store', color: 'text-purple-500' },
+                { label: 'Business Development', val: totals.categories.bizDev, icon: 'trending_up', color: 'text-cyan-500' },
+                { label: 'Internet Expense', val: totals.categories.internet, icon: 'wifi', color: 'text-rose-500' }
+            ];
+
+            const totalCatExpense = Object.values(totals.categories).reduce((a, b) => a + b, 0);
+
+            if (totalCatExpense === 0) {
+                categoryBody.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="px-6 py-10 text-center">
+                            <div class="flex flex-col items-center gap-2 opacity-40">
+                                <span class="material-symbols-outlined text-4xl">info</span>
+                                <p class="text-sm font-medium">Data Not Available</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                categoryBody.innerHTML = catMap.map(cat => `
+                    <tr class="hover:bg-primary/5 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${cat.color} group-hover:scale-110 transition-transform">
+                                    <span class="material-symbols-outlined text-lg">${cat.icon}</span>
+                                </div>
+                                <span class="font-semibold text-slate-700 dark:text-slate-200">${cat.label}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right font-black italic text-slate-900 dark:text-white">
+                            ${formatCurrency(cat.val)}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Render Withdrawal Methods Table
+        const methodBody = document.getElementById('method-withdrawal-body');
+        if (methodBody) {
+            const methodMap = [
+                { label: 'Self Cheque', val: withdrawalMethods.cheque, icon: 'receipt_long', color: 'text-purple-500' },
+                { label: 'ATM Withdrawal', val: withdrawalMethods.atm, icon: 'atm', color: 'text-blue-500' },
+                { label: 'ATM QR Code', val: withdrawalMethods.qr, icon: 'qr_code_2', color: 'text-indigo-500' },
+                { label: 'ATM Inside Branch', val: withdrawalMethods.inside, icon: 'apartment', color: 'text-amber-500' },
+                { label: 'Yono Cash', val: withdrawalMethods.yono, icon: 'smartphone', color: 'text-pink-500' },
+                { label: 'Other Branch Cash', val: withdrawalMethods.other, icon: 'account_balance', color: 'text-slate-500' }
+            ];
+
+            const totalMethodWithdrawal = Object.values(withdrawalMethods).reduce((a, b) => a + b, 0);
+
+            if (totalMethodWithdrawal === 0) {
+                methodBody.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="px-6 py-10 text-center">
+                            <div class="flex flex-col items-center gap-2 opacity-40">
+                                <span class="material-symbols-outlined text-4xl">info</span>
+                                <p class="text-sm font-medium">Data Not Available</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                methodBody.innerHTML = methodMap.map(m => `
+                    <tr class="hover:bg-primary/5 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${m.color} group-hover:scale-110 transition-transform">
+                                    <span class="material-symbols-outlined text-lg">${m.icon}</span>
+                                </div>
+                                <span class="font-semibold text-slate-700 dark:text-slate-200">${m.label}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right font-black italic text-slate-900 dark:text-white">
+                            ${formatCurrency(m.val)}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
     }
 
     function modeToTitle(mode) {
@@ -3035,6 +3200,13 @@ async function initBankWithdrawals() {
 
     let currentView = 'accounts'; // accounts or withdrawals
     let activeAccountId = null;
+    let deleteTargetId = null;
+    let deleteTargetType = null; // 'account' or 'withdrawal'
+
+    // Delete Modal Elements
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
 
     // Helper to calculate current FY range
     function getCurrentFYDates() {
@@ -3163,7 +3335,12 @@ async function initBankWithdrawals() {
                 if (withdrawalsHeader) withdrawalsHeader.classList.remove('hidden');
 
                 const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(activeAccountId));
-                accWithdrawals.sort((a,b) => new Date(b.date) - new Date(a.date));
+                accWithdrawals.sort((a,b) => {
+                    const d1 = new Date(a.date);
+                    const d2 = new Date(b.date);
+                    if (d1.getTime() !== d2.getTime()) return d2 - d1;
+                    return (b.id || 0) - (a.id || 0);
+                });
 
                 let fyTotal = 0;
                 
@@ -3179,6 +3356,8 @@ async function initBankWithdrawals() {
 
                         let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">${w.method}</span>`;
                         if(w.method === 'ATM') methodHtml = `<span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">ATM</span>`;
+                        if(w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs font-bold">ATM QR Code</span>`;
+                        if(w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-xs font-bold">ATM Inside Branch</span>`;
                         if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold">Cheque</span>`;
                         if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-xs font-bold">Yono Cash</span>`;
 
@@ -3301,11 +3480,14 @@ async function initBankWithdrawals() {
         }
     };
 
-    window.deleteBankAccountRecord = async (id) => {
-        if(confirm("Are you sure you want to delete this Bank Account?")) {
-            await deleteDoc(doc(db, "bank_accounts", id.toString()));
-            await renderView();
-        }
+    window.deleteBankAccountRecord = (id) => {
+        deleteTargetId = id;
+        deleteTargetType = 'account';
+        const titleEl = document.getElementById('delete-modal-title');
+        const descEl = document.getElementById('delete-modal-description');
+        if (titleEl) titleEl.innerText = "Delete Bank Account?";
+        if (descEl) descEl.innerText = "Are you sure you want to delete this bank account? All associated withdrawal history will NOT be deleted from the system, but you will lose this account entry. This action cannot be undone.";
+        if (deleteModal) deleteModal.classList.remove('hidden');
     };
     
     window.editBankWithdrawalRecord = async (id) => {
@@ -3332,12 +3514,66 @@ async function initBankWithdrawals() {
         }
     };
 
-    window.deleteBankWithdrawalRecord = async (id) => {
-        if(confirm("Are you sure you want to delete this withdrawal record?")) {
-            await deleteBankWithdrawal(id);
-            await renderView();
-        }
+    window.deleteBankWithdrawalRecord = (id) => {
+        deleteTargetId = id;
+        deleteTargetType = 'withdrawal';
+        const titleEl = document.getElementById('delete-modal-title');
+        const descEl = document.getElementById('delete-modal-description');
+        if (titleEl) titleEl.innerText = "Delete Withdrawal Record?";
+        if (descEl) descEl.innerText = "Are you sure you want to delete this withdrawal record? This action cannot be undone.";
+        if (deleteModal) deleteModal.classList.remove('hidden');
     };
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.onclick = async () => {
+            if (!deleteTargetId) return;
+            
+            confirmDeleteBtn.disabled = true;
+            const originalText = confirmDeleteBtn.innerHTML;
+            confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
+
+            try {
+                if (deleteTargetType === 'account') {
+                    // Delete the account
+                    await deleteDoc(doc(db, "bank_accounts", deleteTargetId.toString()));
+                    
+                    // Cascading delete: Delete all withdrawals for this account
+                    const allWithdrawals = await loadBankWithdrawals();
+                    const toDelete = allWithdrawals.filter(w => String(w.accountId) === String(deleteTargetId));
+                    console.log(`[Cascading Delete] Removing ${toDelete.length} withdrawals for account ${deleteTargetId}`);
+                    
+                    for (const w of toDelete) {
+                        try {
+                            await deleteDoc(doc(db, "bank_withdrawals", String(w.id || w.firebaseId)));
+                        } catch (e) {
+                            console.error(`Failed to delete withdrawal ${w.id}:`, e);
+                        }
+                    }
+                } else {
+                    await deleteBankWithdrawal(deleteTargetId);
+                }
+                
+                if (deleteModal) deleteModal.classList.add('hidden');
+                await renderView();
+            } catch (err) {
+                console.error("Delete error:", err);
+                alert("Failed to delete record.");
+            } finally {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerHTML = originalText;
+                deleteTargetId = null;
+                deleteTargetType = null;
+            }
+        };
+    }
+
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.onclick = () => {
+            if (deleteModal) deleteModal.classList.add('hidden');
+            deleteTargetId = null;
+            deleteTargetType = null;
+        };
+    }
 
     await renderView();
 }

@@ -105,8 +105,8 @@
         <nav class="flex-1 px-4 space-y-1">
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html"><span class="material-symbols-outlined">dashboard</span><span class="text-sm nav-text">Dashboard</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html"><span class="material-symbols-outlined">add_circle</span><span class="text-sm nav-text">Add Entry</span></a>
-            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html"><span class="material-symbols-outlined">receipt_long</span><span class="text-sm nav-text">Transactions</span></a>
-            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="reports-code.html"><span class="material-symbols-outlined">bar_chart</span><span class="text-sm nav-text">Reports</span></a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html"><span class="material-symbols-outlined">receipt_long</span><span class="text-sm nav-text">Table</span></a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="reports-code.html"><span class="material-symbols-outlined">bar_chart</span><span class="text-sm nav-text">Analytics</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html"><span class="material-symbols-outlined">menu_book</span><span class="text-sm nav-text">Credit Ledger</span></a>
 
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
@@ -296,7 +296,64 @@
                 </div>
             </div>
 
-            <!-- Table Section Removed as per User Request -->
+            <!-- Reports Tables Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- Category Wise Expense Table -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-primary/10 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                                <span class="material-symbols-outlined text-xl">pie_chart</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Category Wise Expense</h3>
+                                <p class="text-xs text-slate-500">Breakdown of expenses for the selected period</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="px-6 py-3">Category</th>
+                                    <th class="px-6 py-3 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="category-expense-body" class="divide-y divide-primary/5 dark:divide-primary/10">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Method Wise Bank Withdrawal Table -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-primary/10 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                <span class="material-symbols-outlined text-xl">account_balance</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Method Wise Bank Withdrawal</h3>
+                                <p class="text-xs text-slate-500">Withdrawal methods for the selected period</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="px-6 py-3">Method</th>
+                                    <th class="px-6 py-3 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="method-withdrawal-body" class="divide-y divide-primary/5 dark:divide-primary/10">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 </div>
@@ -314,11 +371,11 @@
     </a>
     <a href="transactions-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">receipt_long</span>
-        <span class="text-[10px] font-bold">Trans...</span>
+        <span class="text-[10px] font-bold">Table</span>
     </a>
     <a href="reports-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl bg-primary/10 text-primary shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">bar_chart</span>
-        <span class="text-[10px] font-bold">Reports</span>
+        <span class="text-[10px] font-bold">Analytics</span>
     </a>
     <a href="credit-ledger-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">menu_book</span>
