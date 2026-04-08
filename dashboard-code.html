@@ -323,43 +323,63 @@
 </div>
 </div>
 <!-- Chart 1: Income vs Expense -->
-<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10">
-<div class="flex items-center justify-between mb-6">
-<h5 class="font-bold">Income vs Expense Trend</h5>
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+<div class="flex items-center justify-between mb-6 header-container">
+<h5 class="font-bold chart-title">Income vs Expense Trend</h5>
+<div class="flex items-center gap-2 controls-container">
 <select id="chart-timeframe-select" class="text-xs bg-slate-100 dark:bg-slate-700 border-none rounded-lg focus:ring-1 focus:ring-primary cursor-pointer outline-none font-bold text-slate-600 dark:text-slate-300 px-3 py-1.5 transition-colors">
 <option value="30">Last 30 Days</option>
 <option value="7">Last 7 Days</option>
 </select>
+<button class="expand-chart-btn p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer" onclick="window.toggleFullscreenChart(this)">
+<span class="material-symbols-outlined text-sm">fullscreen</span>
+</button>
+</div>
 </div>
     <div class="h-64 mt-2">
         <canvas id="incomeExpenseChart"></canvas>
     </div>
 </div>
 <!-- Chart 2: Profit Trend -->
-<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10">
-<div class="flex items-center justify-between mb-6">
-<h5 class="font-bold">Profit Growth</h5>
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+<div class="flex items-center justify-between mb-6 header-container">
+<h5 class="font-bold chart-title">Profit Growth</h5>
+<div class="flex items-center gap-2 controls-container">
 <button class="text-xs text-primary font-bold">View Full Report</button>
+<button class="expand-chart-btn p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer" onclick="window.toggleFullscreenChart(this)">
+<span class="material-symbols-outlined text-sm">fullscreen</span>
+</button>
+</div>
 </div>
     <div class="h-64 mt-2">
         <canvas id="profitGrowthChart"></canvas>
     </div>
 </div>
 <!-- Chart 3: Income Growth -->
-<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide">
-    <div class="flex items-center justify-between mb-6">
-        <h5 class="font-bold text-slate-700 dark:text-slate-200">Income Growth</h5>
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+    <div class="flex items-center justify-between mb-6 header-container">
+        <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Income Growth</h5>
+        <div class="flex items-center gap-2 controls-container">
         <a href="reports-code.html" class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View Full Report</a>
+        <button class="expand-chart-btn p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer" onclick="window.toggleFullscreenChart(this)">
+        <span class="material-symbols-outlined text-sm">fullscreen</span>
+        </button>
+        </div>
     </div>
     <div class="h-64 mt-2">
         <canvas id="incomeGrowthChart"></canvas>
     </div>
 </div>
 <!-- Chart 4: Expense Growth -->
-<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide">
-    <div class="flex items-center justify-between mb-6">
-        <h5 class="font-bold text-slate-700 dark:text-slate-200">Expense Growth</h5>
+<div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+    <div class="flex items-center justify-between mb-6 header-container">
+        <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Expense Growth</h5>
+        <div class="flex items-center gap-2 controls-container">
         <a href="reports-code.html" class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View Full Report</a>
+        <button class="expand-chart-btn p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer" onclick="window.toggleFullscreenChart(this)">
+        <span class="material-symbols-outlined text-sm">fullscreen</span>
+        </button>
+        </div>
     </div>
     <div class="h-64 mt-2">
         <canvas id="expenseGrowthChart"></canvas>
@@ -386,21 +406,21 @@
                 <p class="text-[10px] text-white/60 font-bold uppercase tracking-widest flex items-center gap-2">
                     <span class="size-1.5 rounded-full bg-emerald-500"></span> <span id="mom-today-label">Today vs Same Day Last Month</span>
                 </p>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-emerald-400 to-green-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">Income</p>
-                        <h4 id="mom-today-income" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mom-last-income" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-emerald-400 to-green-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">Income</p>
+                        <h4 id="mom-today-income" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mom-last-income" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-orange-400 to-rose-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">Expense</p>
-                        <h4 id="mom-today-expense" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mom-last-expense" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-orange-400 to-rose-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">Expense</p>
+                        <h4 id="mom-today-expense" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mom-last-expense" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">Profit</p>
-                        <h4 id="mom-today-profit" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mom-last-profit" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">Profit</p>
+                        <h4 id="mom-today-profit" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mom-last-profit" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
                 </div>
             </div>
@@ -410,21 +430,21 @@
                 <p class="text-[10px] text-white/60 font-bold uppercase tracking-widest flex items-center gap-2">
                     <span class="size-1.5 rounded-full bg-blue-500"></span> <span id="mom-mtd-label">Month-to-Date vs Last Month Period</span>
                 </p>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-teal-400 to-emerald-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">In (MTD)</p>
-                        <h4 id="mtd-current-income" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mtd-last-income" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">In (MTD)</p>
+                        <h4 id="mtd-current-income" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mtd-last-income" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">Ex (MTD)</p>
-                        <h4 id="mtd-current-expense" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mtd-last-expense" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">Ex (MTD)</p>
+                        <h4 id="mtd-current-expense" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mtd-last-expense" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
-                    <div class="p-3 rounded-lg bg-gradient-to-r from-indigo-400 to-blue-500 shadow-md border-0 text-white">
-                        <p class="text-[9px] text-white/80 uppercase font-bold">Net (MTD)</p>
-                        <h4 id="mtd-current-profit" class="text-sm font-black mt-1">₹0</h4>
-                        <p id="mtd-last-profit" class="text-[9px] text-white/60 mt-1 italic">vs ₹0</p>
+                    <div class="grid grid-cols-[1fr_auto] sm:flex sm:flex-col p-3.5 sm:p-3 rounded-xl bg-gradient-to-r from-indigo-400 to-blue-500 shadow-md border-0 text-white gap-y-0.5 sm:gap-y-0 items-center sm:items-start">
+                        <p class="text-[10px] sm:text-[9px] text-white/90 uppercase font-black tracking-wider sm:tracking-normal col-start-1 row-start-1 text-left">Net (MTD)</p>
+                        <h4 id="mtd-current-profit" class="text-base sm:text-sm font-black col-start-2 row-start-1 row-span-2 place-self-center sm:mt-1 sm:place-self-auto">₹0</h4>
+                        <p id="mtd-last-profit" class="text-[10px] sm:text-[9px] text-white/70 italic col-start-1 row-start-2 text-left sm:mt-1">vs ₹0</p>
                     </div>
                 </div>
             </div>
@@ -582,4 +602,96 @@
 </style>
 
 <script type="module" src="app.js"></script>
+<script>
+    window.toggleFullscreenChart = async function(btn) {
+        const container = btn.closest('.chart-card-container');
+        if (!container) return;
+        
+        const isFullscreen = container.classList.contains('fixed');
+        const iconSpan = btn.querySelector('.material-symbols-outlined');
+        
+        if (!isFullscreen) {
+            // Enter Fullscreen
+            container.classList.add('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'm-0', 'rounded-none', 'overflow-auto');
+            container.classList.remove('lg:col-span-3', 'rounded-xl');
+            iconSpan.innerText = 'close_fullscreen';
+            
+            // Try HTML5 Fullscreen to hide browser UI
+            try {
+                if (container.requestFullscreen) {
+                    await container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) { /* Safari */
+                    await container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) { /* IE11 */
+                    await container.msRequestFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen API failed: ", err);
+            }
+            
+            // Try to force landscape orientation on mobile
+            try {
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape');
+                }
+            } catch (err) {
+                console.warn("Orientation lock failed or not supported: ", err);
+            }
+            
+            // Adjust canvas height for fullscreen
+            const canvasContainer = container.querySelector('.h-64');
+            if (canvasContainer) {
+                canvasContainer.classList.remove('h-64');
+                canvasContainer.classList.add('h-[80vh]'); // Make canvas take most of the height
+            }
+
+        } else {
+            // Exit Fullscreen
+            container.classList.remove('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'm-0', 'rounded-none', 'overflow-auto');
+            container.classList.add('lg:col-span-3', 'rounded-xl');
+            iconSpan.innerText = 'fullscreen';
+            
+            try {
+                if (document.fullscreenElement) {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) { /* Safari */
+                        await document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) { /* IE11 */
+                        await document.msExitFullscreen();
+                    }
+                }
+            } catch (err) {}
+            
+            try {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            } catch (err) {}
+            
+            // Restore canvas height
+            const canvasContainer = container.querySelector('.h-\\[80vh\\]');
+            if (canvasContainer) {
+                canvasContainer.classList.remove('h-[80vh]');
+                canvasContainer.classList.add('h-64');
+            }
+        }
+        
+        // Dispatch resize to fix chart dimensions after CSS change
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+    };
+
+    // Also handle when user exits fullscreen via ESC key or browser back button
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            const activeFullscreenContainers = document.querySelectorAll('.chart-card-container.fixed');
+            activeFullscreenContainers.forEach(container => {
+                const btn = container.querySelector('.expand-chart-btn');
+                if (btn) btn.click(); // Trigger exit logic
+            });
+        }
+    });
+</script>
 </body></html>

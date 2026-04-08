@@ -3303,19 +3303,29 @@ async function initBankWithdrawals() {
     await renderView();
 }
 
-function protectAddEntryLinks() {
-    document.querySelectorAll('a[href="add-entry-code.html"], a[data-page="add-entry-code.html"]').forEach(link => {
+function protectPrivilegedLinks() {
+    const selectors = [
+        'a[href="add-entry-code.html"]',
+        'a[data-page="add-entry-code.html"]',
+        'a[href="settings-code.html"]',
+        'a[data-page="settings-code.html"]'
+    ].join(', ');
+
+    document.querySelectorAll(selectors).forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopImmediatePropagation();
             
             if (document.getElementById('pin-modal')) return;
 
+            const targetHref = link.getAttribute('href') || link.getAttribute('data-page');
+            const routeName = (targetHref && targetHref.includes('settings')) ? 'Settings' : 'Add Entry';
+
             const modalHTML = `
             <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);">
                 <div style="background:white;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;width:90%;max-width:320px;" class="dark:bg-slate-800">
                     <h3 style="margin-top:0;font-weight:bold;color:#1e293b;font-size:18px;margin-bottom:8px;" class="dark:text-white">Security Check</h3>
-                    <p style="color:#64748b;font-size:13px;margin-bottom:20px;" class="dark:text-slate-400">Enter the 6-digit PIN to access Add Entry.</p>
+                    <p style="color:#64748b;font-size:13px;margin-bottom:20px;" class="dark:text-slate-400">Enter the 6-digit PIN to access ${routeName}.</p>
                     
                     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:24px;" id="pin-container">
                         ${[1, 2, 3, 4, 5, 6].map(() => `
@@ -3347,7 +3357,7 @@ function protectAddEntryLinks() {
 
                 if (pin === "202526") {
                     close();
-                    window.location.href = "add-entry-code.html";
+                    if(targetHref) window.location.href = targetHref;
                 } else {
                     inputs.forEach(i => { i.style.borderColor = "#ef4444"; i.value = ""; });
                     inputs[0].focus();
@@ -3386,8 +3396,8 @@ function protectAddEntryLinks() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Apply Add Entry PIN Protection
-    protectAddEntryLinks();
+    // Apply privileged page PIN Protection (Add Entry & Settings)
+    protectPrivilegedLinks();
 
     // Migration first
     await migrateToDatabase();
