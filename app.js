@@ -2068,6 +2068,45 @@ async function initTransactions() {
     // Reverse the rows to show newest at top, and fix S.No (total_length - current_index)
     const finalHtml = rowList.reverse().map((row, i) => row.replace('#ID#', rowList.length - i)).join('');
     tableBody.innerHTML = finalHtml;
+
+    // Attach CSV Download Logic
+    const dlBtn = document.getElementById('download-csv-btn');
+    if (dlBtn) {
+        dlBtn.addEventListener('click', () => {
+            const table = document.querySelector('table');
+            if (!table) return;
+
+            let csvContent = "";
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach((row) => {
+                const rowData = [];
+                // Get header cells or data cells
+                const cols = row.querySelectorAll('th, td');
+                cols.forEach((col) => {
+                    // Extract text content and escape internal quotes
+                    // Handle currency formats and clean up unnecessary line breaks/spaces
+                    let text = col.innerText || col.textContent;
+                    // Remove rupee symbol and commas for clean numeric export if applicable
+                    text = text.replace(/₹/g, '').replace(/\n/g, ' ').trim();
+                    // Wrap every cell in quotes to handle commas natively
+                    text = text.replace(/"/g, '""');
+                    rowData.push('"' + text + '"');
+                });
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            // Trigger file download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.setAttribute("download", "transactions_ledger.csv");
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+    }
 }
 
 // Logic for Credit Ledger Page
@@ -2151,19 +2190,19 @@ async function initCreditLedger() {
                         const isSelectModeFlag = urlParamsObj.get('mode') === 'select';
 
                         tr.innerHTML = `
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-2">
                                 <div class="flex items-center gap-3">
                                     <div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">${initial}</div>
                                     <span class="text-sm font-bold group-hover:text-primary transition-colors">${cust.name}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
-                            <td class="px-6 py-4 text-sm text-right">${formatCurrency(custPaid)}</td>
-                            <td class="px-6 py-4 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-2 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
+                            <td class="px-6 py-2 text-sm text-right">${formatCurrency(custPaid)}</td>
+                            <td class="px-6 py-2 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
+                            <td class="px-6 py-2 text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${status}</span>
                             </td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-2 text-right">
                                 <div class="flex gap-2 justify-end">
                                     ${isSelectModeFlag ? `
                                         <button onclick="useCustomerBalance(${custBal})" class="bg-primary text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-primary/90">
@@ -2217,11 +2256,11 @@ async function initCreditLedger() {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-colors";
                         tr.innerHTML = `
-                            <td class="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">${cr.date}</td>
-                            <td class="px-6 py-4 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
-                            <td class="px-6 py-4 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
-                            <td class="px-6 py-4 text-xs text-slate-500 italic">${cr.note || ''}</td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${cr.date}</td>
+                            <td class="px-6 py-2 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
+                            <td class="px-6 py-2 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
+                            <td class="px-6 py-2 text-xs text-slate-500 italic">${cr.note || ''}</td>
+                            <td class="px-6 py-2 text-right">
                                 <button onclick="deleteLedgerCredit('${cr.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete Transaction">
                                     <span class="material-symbols-outlined text-lg">delete</span>
                                 </button>
@@ -3092,12 +3131,12 @@ async function initBankWithdrawals() {
                             showAccountDetails(acc.id);
                         };
                         tr.innerHTML = `
-                            <td class="px-6 py-4 font-bold group-hover:text-primary transition-colors">${acc.name}</td>
-                            <td class="px-6 py-4 font-bold text-slate-700 text-right">${formatCurrency(fyTotal)}</td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-2 font-bold group-hover:text-primary transition-colors">${acc.name}</td>
+                            <td class="px-6 py-2 font-bold text-slate-700 text-right">${formatCurrency(fyTotal)}</td>
+                            <td class="px-6 py-2 text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
                             </td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-1">
+                            <td class="px-6 py-2 text-right flex justify-end gap-1">
                                 <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View">
                                     <span class="material-symbols-outlined text-lg">visibility</span>
                                 </button>
@@ -3146,11 +3185,11 @@ async function initBankWithdrawals() {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-colors";
                         tr.innerHTML = `
-                            <td class="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">${wDate.toLocaleDateString('en-GB')}</td>
-                            <td class="px-6 py-4 text-sm font-bold text-right text-rose-600">${formatCurrency(amount)}</td>
-                            <td class="px-6 py-4">${methodHtml}</td>
-                            <td class="px-6 py-4 text-xs text-slate-500 italic">${w.note || ""}</td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-1">
+                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${wDate.toLocaleDateString('en-GB')}</td>
+                            <td class="px-6 py-2 text-sm font-bold text-right text-rose-600">${formatCurrency(amount)}</td>
+                            <td class="px-6 py-2">${methodHtml}</td>
+                            <td class="px-6 py-2 text-xs text-slate-500 italic">${w.note || ""}</td>
+                            <td class="px-6 py-2 text-right flex justify-end gap-1">
                                 <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
                                     <span class="material-symbols-outlined text-lg">edit</span>
                                 </button>
