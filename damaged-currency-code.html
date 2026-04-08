@@ -79,15 +79,16 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     <script src="auth.js"></script>
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    <link rel="icon" type="image/svg+xml" href="logo.svg"/>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20">
             <div class="px-6 pb-6 pt-6 flex items-center gap-3 sidebar-logo-container border-b border-primary/5">
-                <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
-                    <span class="material-symbols-outlined">analytics</span>
+                
+                <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
+                    <img src="logo.svg" class="w-full h-full object-cover">
                 </div>
                 <div class="sidebar-text">
                     <h1 class="text-sm font-bold leading-none">BizPerform</h1>
