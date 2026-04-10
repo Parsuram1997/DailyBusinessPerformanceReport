@@ -95,15 +95,7 @@
     <link rel="icon" type="image/svg+xml" href="logo.svg"/>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-<div id="error-log" style="color:red; background:yellow; font-weight:bold; padding:10px; z-index:9999; position:relative;"></div>
-<script>
-window.addEventListener('error', function(e) {
-  document.getElementById('error-log').innerHTML += 'ERROR: ' + e.message + '<br>';
-});
-window.addEventListener('unhandledrejection', function(e) {
-  document.getElementById('error-log').innerHTML += 'PROMISE ERROR: ' + e.reason + '<br>';
-});
-</script>
+
 <div class="flex h-screen overflow-hidden">
 
 <!-- Sidebar -->
