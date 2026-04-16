@@ -2,8 +2,9 @@
 (function() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
     const isIndexPage = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
+    const isPublicTool = window.location.pathname.endsWith('img-to-pdf.html') || window.location.pathname.endsWith('passport-tool.html') || window.location.pathname.endsWith('image-compressor.html');
 
-    if (!isLoggedIn && !isIndexPage) {
+    if (!isLoggedIn && !isIndexPage && !isPublicTool) {
         window.location.replace('index.html');
     } else if (isLoggedIn && isIndexPage) {
         window.location.replace('dashboard-code.html');

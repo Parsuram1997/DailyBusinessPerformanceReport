@@ -320,6 +320,16 @@
                 </button>
                 </div>
             </div>
+            <!-- Customer Deposit Field -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-sm">account_balance_wallet</span> Customer Deposit
+                </label>
+                <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                <input id="deposit" name="deposit" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                </div>
+            </div>
         </div>
         <!-- Real-time Total Cash Flow Summary -->
         <div class="mt-8 pt-6 border-t border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -329,7 +339,7 @@
                 </div>
                 <div>
                     <h6 class="text-xs font-bold text-primary uppercase tracking-widest leading-none mb-1">Total Cash Flow (Real-time)</h6>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">C + O + R + J + G + Cr + P + Dmg</p>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">C + O + R + J + G + Cr + P + Dmg - Dep - Exp</p>
                 </div>
             </div>
             <div class="bg-primary/5 dark:bg-primary/10 px-6 py-3 rounded-2xl border border-primary/20 shadow-inner flex flex-col items-end">

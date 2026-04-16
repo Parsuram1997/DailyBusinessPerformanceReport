@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Image Resizer & Compressor - BizPerform</title>
+    <script src="auth.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem"},
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Custom Checkbox */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #7f13ec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #7f13ec;
+        }
+        .toggle-checkbox {
+            right: 0;
+            z-index: 1;
+            border-color: #e2e8f0;
+            background-color: white;
+            transition: all 0.3s;
+        }
+        .toggle-label {
+            width: 3rem;
+            height: 1.5rem;
+            background-color: #cbd5e1;
+            border-radius: 9999px;
+            transition: all 0.3s;
+        }
+    </style>
+    <link rel="icon" type="image/svg+xml" href="logo.svg"/>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+    <!-- Header -->
+    <header class="bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl border-b border-primary/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Image Compressor</h1>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Professional Resizer Tool</p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                <span class="material-symbols-outlined text-[20px]">home</span>
+                <span class="hidden sm:inline">Home</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 mt-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Left Column: Controls -->
+            <div class="space-y-6">
+                
+                <!-- Upload Area -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden">
+                    <div class="p-4 border-b border-primary/10 bg-slate-50 dark:bg-slate-800/50">
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-primary">1. Select Image</h2>
+                    </div>
+                    <div class="p-6">
+                        <label id="drop-zone" class="relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer hover:bg-primary/5 border-primary/30 transition-all group overflow-hidden">
+                            <input type="file" id="image-upload" class="hidden" accept="image/png, image/jpeg, image/webp" />
+                            
+                            <div id="upload-placeholder" class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary/50 mb-3 group-hover:scale-110 transition-transform">cloud_upload</span>
+                                <p class="mb-2 text-sm text-slate-500 font-semibold"><span class="text-primary font-bold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-slate-400">JPG, PNG, WEBP (Max: 50MB)</p>
+                            </div>
+                            
+                            <img id="image-preview" class="hidden absolute inset-0 w-full h-full object-contain bg-black/5" />
+                        </label>
+
+                        <div id="original-info" class="hidden mt-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800/50">
+                            <p class="text-xs font-semibold text-blue-700 dark:text-blue-400 flex items-center justify-between">
+                                <span>Original Size:</span>
+                                <span id="orig-size-val" class="font-black text-sm">-- KB</span>
+                            </p>
+                            <p class="text-xs font-semibold text-blue-700 dark:text-blue-400 flex items-center justify-between mt-1">
+                                <span>Dimensions:</span>
+                                <span id="orig-dim-val" class="font-black text-sm">-- x --</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resize Options -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden">
+                    <div class="p-4 border-b border-primary/10 bg-slate-50 dark:bg-slate-800/50">
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-primary">2. Resize Options</h2>
+                    </div>
+                    <div class="p-6 space-y-5">
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Width (px)</label>
+                                <input type="number" id="input-width" placeholder="e.g. 850" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm font-semibold p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Height (px)</label>
+                                <input type="number" id="input-height" placeholder="e.g. 350" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm font-semibold p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-slate-400 text-lg">aspect_ratio</span>
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Maintain Aspect Ratio</span>
+                            </div>
+                            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="aspect-toggle" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                <label for="aspect-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Compression Control -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden">
+                    <div class="p-4 border-b border-primary/10 bg-slate-50 dark:bg-slate-800/50">
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-primary">3. Target Compression</h2>
+                    </div>
+                    <div class="p-6 space-y-5">
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 text-rose-500">Target File Size (KB) *</label>
+                            <div class="relative w-full">
+                                <input type="number" id="input-size" placeholder="50" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-lg font-black text-rose-600 dark:text-rose-400 p-4 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">KB</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">The system will compress optimally within a tolerance.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Output Format</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="format" value="jpeg" checked class="peer sr-only">
+                                    <div class="text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2 text-sm font-semibold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">JPG</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="format" value="webp" class="peer sr-only">
+                                    <div class="text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2 text-sm font-semibold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">WEBP</div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="format" value="png" class="peer sr-only">
+                                    <div class="text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2 text-sm font-semibold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">PNG</div>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Result & Processing -->
+            <div class="space-y-6">
+                
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg shadow-primary/5 border border-primary/20 overflow-hidden sticky top-24">
+                    <div class="p-6 bg-gradient-to-br from-primary to-blue-600 text-white text-center">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-80">compress</span>
+                        <h2 class="text-2xl font-black">Process Image</h2>
+                        <p class="text-sm font-medium text-white/70">Execute precise binary compression</p>
+                    </div>
+                    
+                    <div class="p-6 space-y-6">
+                        
+                        <button id="btn-compress" class="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg py-4 rounded-xl shadow-xl shadow-primary/30 transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined" id="compress-icon">bolt</span>
+                            <span id="compress-text">Compress Now</span>
+                        </button>
+                        
+                        <!-- Result Area -->
+                        <div id="result-area" class="hidden space-y-4">
+                            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Final Result</h3>
+                                
+                                <div id="warning-msg" class="hidden mb-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl p-3 text-xs font-semibold flex gap-2">
+                                    <span class="material-symbols-outlined text-[16px] flex-shrink-0">warning</span>
+                                    <span id="warning-text"></span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 mb-4">
+                                    <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-3 text-center">
+                                        <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Final Size</p>
+                                        <p id="res-size" class="text-xl font-black text-emerald-700 dark:text-emerald-300 leading-none mt-1">--</p>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-3 text-center">
+                                        <p class="text-[10px] text-slate-500 font-bold uppercase">Dimensions</p>
+                                        <p id="res-dim" class="text-lg font-black text-slate-800 dark:text-slate-200 leading-none mt-1">--</p>
+                                    </div>
+                                </div>
+
+                                <div class="relative w-full aspect-video bg-black/5 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                                    <img id="final-preview" class="w-full h-full object-contain" />
+                                </div>
+                            </div>
+                            
+                            <a id="btn-download" class="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold py-3.5 rounded-xl shadow-lg transition-all cursor-pointer">
+                                <span class="material-symbols-outlined">download</span>
+                                Download Compressed Image
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        const imageUpload = document.getElementById('image-upload');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const imagePreview = document.getElementById('image-preview');
+        
+        const origInfo = document.getElementById('original-info');
+        const origSizeVal = document.getElementById('orig-size-val');
+        const origDimVal = document.getElementById('orig-dim-val');
+        
+        const inputWidth = document.getElementById('input-width');
+        const inputHeight = document.getElementById('input-height');
+        const aspectToggle = document.getElementById('aspect-toggle');
+        const inputSize = document.getElementById('input-size');
+        const btnCompress = document.getElementById('btn-compress');
+        
+        const compressText = document.getElementById('compress-text');
+        const compressIcon = document.getElementById('compress-icon');
+        
+        const resultArea = document.getElementById('result-area');
+        const resSize = document.getElementById('res-size');
+        const resDim = document.getElementById('res-dim');
+        const warningMsg = document.getElementById('warning-msg');
+        const warningText = document.getElementById('warning-text');
+        const finalPreview = document.getElementById('final-preview');
+        const btnDownload = document.getElementById('btn-download');
+
+        let originalFileBase64 = null;
+        let originalFileName = '';
+        let origWidth = null;
+        let origHeight = null;
+
+        // Drag and drop handlers
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('border-primary', 'bg-primary/5'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-primary', 'bg-primary/5'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            handleFiles(files);
+        });
+
+        imageUpload.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files && files[0]) {
+                const file = files[0];
+                
+                if (!file.type.match('image.*')) {
+                    alert('Please select a valid image file');
+                    return;
+                }
+                
+                originalFileName = file.name;
+                const sizeKb = (file.size / 1024).toFixed(2);
+                origSizeVal.textContent = `${sizeKb} KB`;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalFileBase64 = e.target.result;
+                    imagePreview.src = originalFileBase64;
+                    
+                    const img = new Image();
+                    img.onload = function() {
+                        origWidth = img.width;
+                        origHeight = img.height;
+                        origDimVal.textContent = `${origWidth} × ${origHeight}`;
+                        origInfo.classList.remove('hidden');
+                        
+                        // Default input populating
+                        if(!inputWidth.value && !inputHeight.value){
+                            inputWidth.value = origWidth;
+                            inputHeight.value = origHeight;
+                        }
+                    };
+                    img.src = originalFileBase64;
+
+                    uploadPlaceholder.classList.add('hidden');
+                    imagePreview.classList.remove('hidden');
+                    resultArea.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Live Aspect Ratio Logic
+        inputWidth.addEventListener('input', () => {
+            if (aspectToggle.checked && origWidth && origHeight && inputWidth.value) {
+                const ratio = origHeight / origWidth;
+                inputHeight.value = Math.round(inputWidth.value * ratio);
+            }
+        });
+
+        inputHeight.addEventListener('input', () => {
+            if (aspectToggle.checked && origWidth && origHeight && inputHeight.value) {
+                const ratio = origWidth / origHeight;
+                inputWidth.value = Math.round(inputHeight.value * ratio);
+            }
+        });
+
+        // Submit to API
+        btnCompress.addEventListener('click', async () => {
+            if (!originalFileBase64) {
+                alert("Please upload an image first.");
+                return;
+            }
+            if (!inputSize.value) {
+                alert("Please specify a target file size.");
+                inputSize.focus();
+                return;
+            }
+
+            const targetKb = parseFloat(inputSize.value);
+            const maintainAspect = aspectToggle.checked;
+            const width = inputWidth.value ? parseInt(inputWidth.value) : null;
+            const height = inputHeight.value ? parseInt(inputHeight.value) : null;
+            const format = document.querySelector('input[name="format"]:checked').value;
+
+            // Loading state
+            btnCompress.disabled = true;
+            compressText.textContent = "Processing...";
+            compressIcon.textContent = "hourglass_top";
+            compressIcon.classList.add("animate-spin");
+            resultArea.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/compress-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageBase64: originalFileBase64,
+                        targetSizeKb: targetKb,
+                        width: width,
+                        height: height,
+                        maintainAspectRatio: maintainAspect,
+                        format: format
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resSize.textContent = `${data.sizeKb} KB`;
+                    resDim.textContent = `${data.width} × ${data.height}`;
+                    finalPreview.src = data.base64;
+                    
+                    if (data.warning) {
+                        warningMsg.classList.remove('hidden');
+                        warningText.textContent = data.warning;
+                    } else {
+                        warningMsg.classList.add('hidden');
+                    }
+
+                    // Setup download
+                    btnDownload.href = data.base64;
+                    // remove ext and add new
+                    const nameWithoutExt = originalFileName.substring(0, originalFileName.lastIndexOf('.')) || originalFileName;
+                    btnDownload.download = `${nameWithoutExt}_optimized_${data.sizeKb}kb.${format}`;
+                    
+                    resultArea.classList.remove('hidden');
+                    
+                    // Auto scroll to result nicely on mobile
+                    if (window.innerWidth < 768) {
+                        resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                } else {
+                    alert("Compression Error: " + (data.error || "Unknown"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error connecting to compressor server.");
+            } finally {
+                btnCompress.disabled = false;
+                compressText.textContent = "Compress Now";
+                compressIcon.textContent = "bolt";
+                compressIcon.classList.remove("animate-spin");
+            }
+        });
+    </script>
+</body>
+</html>

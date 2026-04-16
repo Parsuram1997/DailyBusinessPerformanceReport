@@ -646,14 +646,14 @@ async function initAddEntry() {
             // Helper to get numeric value safely
             const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
             
-            // Formula: Cash + Online + Roinet + Jio + Go2Sms + Credit + Pending + Damages
-            const total = v('cash') + v('online') + v('roinet') + v('jio') + v('go2sms') + v('credit') + v('pending') + v('damages');
+            // Formula: Cash + Online + Roinet + Jio + Go2Sms + Credit + Pending + Damages - Deposit - Expense
+            const total = v('cash') + v('online') + v('roinet') + v('jio') + v('go2sms') + v('credit') + v('pending') + v('damages') - v('deposit') - v('expense');
             
-            display.textContent = formatCurrency(total);
+            display.textContent = formatCurrency(isNaN(total) ? 0 : total);
         };
 
         // Attach listeners to all relevant inputs for instant feedback
-        const relevantIds = ['cash', 'online', 'roinet', 'jio', 'go2sms', 'credit', 'pending', 'damages'];
+        const relevantIds = ['cash', 'online', 'roinet', 'jio', 'go2sms', 'credit', 'pending', 'damages', 'deposit', 'expense'];
         relevantIds.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
@@ -928,6 +928,8 @@ async function initAddEntry() {
                 } else if (fieldName === 'capital') {
                     capital += val;
                     // Do NOT add to income
+                } else if (fieldName === 'deposit') {
+                    // Do NOT add to income, it's a liability to be subtracted from total
                 } else if (['expense', 'purchase', 'bill', 'daily expense'].some(kw => fieldName.includes(kw))) {
                     expense += val;
                 } else {
@@ -943,7 +945,7 @@ async function initAddEntry() {
 
             const formattedDate = entryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            let totalCashFlow = (details['cash'] || 0) + (details['online'] || 0) + (details['roinet'] || 0) + (details['jio'] || 0) + (details['go2sms'] || 0) + (details['credit'] || 0) + (details['pending'] || 0) + (details['damages'] || 0);
+            let totalCashFlow = (parseFloat(details['cash']) || 0) + (parseFloat(details['online']) || 0) + (parseFloat(details['roinet']) || 0) + (parseFloat(details['jio']) || 0) + (parseFloat(details['go2sms']) || 0) + (parseFloat(details['credit']) || 0) + (parseFloat(details['pending']) || 0) + (parseFloat(details['damages']) || 0) - (parseFloat(details['deposit']) || 0);
 
             const entry = {
                 date: (datePicker && datePicker.value) ? datePicker.value : formattedDate,
@@ -1131,8 +1133,9 @@ async function initDashboard() {
             const credit = parseFloat(details.credit) || 0;
             const pending = parseFloat(details.pending) || 0;
             const damages = parseFloat(details.damages) || 0;
+            const deposit = parseFloat(details.deposit) || 0;
 
-            const tcf = cash + online + roinet + jio + go2sms + credit + pending + damages;
+            const tcf = cash + online + roinet + jio + go2sms + credit + pending + damages - deposit;
             const exp = parseFloat(e.expense) || 0;
             const cap = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
             const wit = parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0;
@@ -1989,7 +1992,7 @@ async function initTransactions() {
     chronological.forEach((e, index) => {
         // Safety extract details
         const details = e.details || {};
-        const getVal = (key) => details[key] || 0;
+        const getVal = (key) => parseFloat(details[key]) || 0;
 
         const capitalAdd = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
         const cash = getVal('cash');
@@ -2000,6 +2003,7 @@ async function initTransactions() {
         const credit = getVal('credit');
         const pending = getVal('pending');
         const damages = getVal('damages');
+        const deposit = getVal('deposit');
 
         const income = e.income || 0;
         const expense = e.expense || 0;
@@ -2016,7 +2020,7 @@ async function initTransactions() {
         const opnBalance = calculateOpeningBalance(prevCls, capital);
         
         // 4. Base Cash Flow
-        const totalCashFlow = cash + online + roinet + jio + go2sms + credit + pending + damages;
+        const totalCashFlow = cash + online + roinet + jio + go2sms + credit + pending + damages - deposit;
         
         // Universal Gross Math Logic
         const displayTotal = totalCashFlow + expense;  
@@ -2057,6 +2061,7 @@ async function initTransactions() {
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono text-amber-600 dark:text-amber-400">${f(credit)}</td>
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono text-orange-600 dark:text-orange-400">${f(pending)}</td>
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono text-rose-500 dark:text-rose-400">${f(damages)}</td>
+                <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono text-rose-600 dark:text-rose-400 font-bold italic">${f(deposit)}</td>
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono font-bold text-primary bg-primary/5">${f(displayTotal)}</td>
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/10">${f(displayIncome)}</td>
                 <td class="px-2 py-1.5 border-r border-slate-200 dark:border-slate-700 font-mono text-rose-600 dark:text-rose-400">${f(expense)}</td>
