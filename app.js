@@ -1216,7 +1216,12 @@ async function initDashboard() {
 
         // --- 4. Render Updates ---
         
-        // Fallback to yesterday if today is not available
+        // Preserve actual today's value for the MoM table
+        const actualTodayIncome = todayIncome;
+        const actualTodayExpense = todayExpense;
+        const actualTodayProfit = todayProfit;
+
+        // Fallback to yesterday if today is not available for Top Cards
         if (!hasTodayEntry) {
             todayIncome = yesterdayIncome;
             todayExpense = yesterdayExpense;
@@ -1240,7 +1245,7 @@ async function initDashboard() {
         setVal('total-capital-top', totalCapital);
         setVal('total-withdrawals-top', totalWithdrawal);
         
-        // Today Detail
+        // Today Detail (Uses fallback)
         setVal('today-income-top', todayIncome);
         setVal('today-expense-top', todayExpense);
         setVal('today-profit-top', todayProfit);
@@ -1263,7 +1268,7 @@ async function initDashboard() {
             }
         });
 
-        // Trends
+        // Trends (Uses fallback if none)
         updateTrend('income-trend-val', 'income-trend-icon', todayIncome, yesterdayIncome);
         updateTrend('expense-trend-val', 'expense-trend-icon', todayExpense, yesterdayExpense);
         updateTrend('profit-trend-val', 'profit-trend-icon', todayProfit, yesterdayProfit);
@@ -1276,9 +1281,10 @@ async function initDashboard() {
                 if (pEl) pEl.innerText = `vs ${formatCurrency(prev)}`;
             }
         };
-        setSm('mom-today-income', todayIncome, lastMonthTodayIncome);
-        setSm('mom-today-expense', todayExpense, lastMonthTodayExpense);
-        setSm('mom-today-profit', todayProfit, lastMonthTodayIncome - lastMonthTodayExpense);
+        // Use actual today values for MoM Table instead of fallback
+        setSm('mom-today-income', actualTodayIncome, lastMonthTodayIncome);
+        setSm('mom-today-expense', actualTodayExpense, lastMonthTodayExpense);
+        setSm('mom-today-profit', actualTodayProfit, lastMonthTodayIncome - lastMonthTodayExpense);
         setSm('mtd-current-income', currentMTDIncome, lastMTDIncome);
         setSm('mtd-current-expense', currentMTDExpense, lastMTDExpense);
         setSm('mtd-current-profit', currentMTDIncome - currentMTDExpense, lastMTDIncome - lastMTDExpense);
@@ -2908,8 +2914,9 @@ async function initReports() {
             const credit = parseFloat(details.credit) || 0;
             const pending = parseFloat(details.pending) || 0;
             const damages = parseFloat(details.damages) || 0;
+            const deposit = parseFloat(details.deposit) || 0;
 
-            const tcf = cash + online + roinet + jio + (crgbBc || go2sms) + credit + pending + damages;
+            const tcf = cash + online + roinet + jio + (crgbBc || go2sms) + credit + pending + damages - deposit;
             const cap = parseFloat(e.capital) || parseFloat(e.capitalAdd) || 0;
             const wit = parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0;
             const exp = parseFloat(e.expense) || 0;
