@@ -12,7 +12,8 @@ import {
     writeBatch,
     setDoc,
     getDoc,
-    onSnapshot
+    onSnapshot,
+    orderBy
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Global Dashboard State for Real-Time listeners and Charts
@@ -21,6 +22,7 @@ let incomeExpenseChart = null;
 let profitGrowthChart = null;
 let incomeGrowthChart = null;
 let expenseGrowthChart = null;
+let monthlyComparisonChart = null;
 
 // Helper for Firestore calls (maintaining naming for compatibility where possible)
 async function loadEntries() {
@@ -1108,6 +1110,9 @@ async function initDashboard() {
         let currentFYExpense = 0, currentQExpense = 0;
         let finalRunningBalance = 0;
 
+        // Monthly Comparison Data (1-31 days)
+        const currentMonthData = new Array(31).fill(0);
+        const previousMonthData = new Array(31).fill(0);
 
         // Cumulative Data for Charts
         const dailyData = {};
@@ -1187,8 +1192,14 @@ async function initDashboard() {
                 currentQExpense += exp;
             }
 
+            // 4. Monthly Comparison Data (Fixed Month Days)
+            if (eMonth === currentMonth && eYear === currentYear) {
+                if (eDay >= 1 && eDay <= 31) currentMonthData[eDay - 1] += dailyInc;
+            } else if (eMonth === lastMonthVal && eYear === lastMonthYear) {
+                if (eDay >= 1 && eDay <= 31) previousMonthData[eDay - 1] += dailyInc;
+            }
 
-            // 4. Chart Data
+            // 5. Chart Data (Last 30 Days Sliding Window)
             if (dailyData[e.date]) {
                 dailyData[e.date].income += dailyInc;
                 dailyData[e.date].expense += exp;
@@ -1459,6 +1470,52 @@ async function initDashboard() {
                     scales: {
                         y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
                         x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        // Monthly Income Comparison Chart
+        if (monthlyComparisonChart) monthlyComparisonChart.destroy();
+        const mcCtx = document.getElementById('monthlyComparisonChart');
+        if (mcCtx) {
+            const daysLabels = Array.from({ length: 31 }, (_, i) => i + 1);
+            monthlyComparisonChart = new Chart(mcCtx, {
+                type: 'line',
+                data: {
+                    labels: daysLabels,
+                    datasets: [
+                        {
+                            label: 'This Month',
+                            data: currentMonthData,
+                            borderColor: cIncome,
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Previous Month',
+                            data: previousMonthData,
+                            borderColor: cProfit, // Using blue for previous month
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => `Day ${items[0].label}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 } } }
                     }
                 }
             });
@@ -2885,6 +2942,36 @@ async function initReports() {
             .filter(w => activeAccountIds.has(String(w.accountId)))
             .filter(filterWithdrawals);
 
+        // --- Daily Transaction Analytics Calculation ---
+        const dailyTxnCollection = collection(db, 'daily_transactions');
+        const dailyTxnSnapshot = await getDocs(dailyTxnCollection);
+        let dailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Apply same time filter as entries
+        if (currentMode === 'date' && dateInput) {
+            dailyTxns = dailyTxns.filter(t => t.date === dateInput.value);
+        } else if (currentMode === 'month' && monthSelect) {
+            const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
+            dailyTxns = dailyTxns.filter(t => {
+                const d = new Date(t.date);
+                return d.toLocaleString('default', { month: 'long' }) === selMonthName && d.getFullYear().toString() === selYearStr;
+            });
+        } else if (currentMode === 'year' && yearSelect) {
+            dailyTxns = dailyTxns.filter(t => getFinancialYear(new Date(t.date)) === yearSelect.value);
+        }
+
+        const txnStats = dailyTxns.reduce((acc, t) => {
+            const type = t.type;
+            if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
+            acc[type].count++;
+            acc[type].amount += parseFloat(t.amount || 0);
+            acc[type].charges += parseFloat(t.charges || 0);
+            acc.totalAmount += parseFloat(t.amount || 0);
+            acc.totalCharges += parseFloat(t.charges || 0);
+            acc.totalCount++;
+            return acc;
+        }, { totalAmount: 0, totalCharges: 0, totalCount: 0 });
+
 
         console.log(`[Reports Debug] Filtered Count: ${filtered.length}`);
 
@@ -3080,6 +3167,39 @@ async function initReports() {
         updateText('summary-total-capital', formatCurrency(totalCapitalAdd));
         updateText('summary-peak-year', peakYearName);
         updateText('summary-total-withdrawal', formatCurrency(totals.withdrawal));
+
+        // Update Daily Transaction Analytics UI
+        const updateTxnCard = (idPrefix, data) => {
+            const amtEl = document.getElementById(`summary-txn-${idPrefix}-amount`);
+            const cntEl = document.getElementById(`summary-txn-${idPrefix}-count`);
+            if (amtEl) amtEl.innerText = formatCurrency(data.amount || 0);
+            if (cntEl) cntEl.innerText = `${(data.count || 0)} Transactions`;
+        };
+
+        updateTxnCard('total', { amount: txnStats.totalAmount, count: txnStats.totalCount });
+        updateTxnCard('aeps', txnStats['AEPS'] || {});
+        updateTxnCard('matm', txnStats['MATM'] || {});
+        updateTxnCard('deposit', txnStats['DEPOSIT'] || {});
+        updateTxnCard('withdrawal', txnStats['WITHDRAWAL'] || {});
+
+        // Update Service Stats in Reports
+        const updateServiceCard = (idPrefix, data) => {
+            const amtEl = document.getElementById(`summary-txn-${idPrefix}-amount`);
+            const cntEl = document.getElementById(`summary-txn-${idPrefix}-count`);
+            // Note: For services, 'amount' in txnStats is actually the fee/charge because amount was 0
+            // But txnStats calculation adds t.amount to amount and t.charges to totalCharges.
+            // Wait, I need to make sure txnStats aggregates charges too for individual types.
+            if (amtEl) amtEl.innerText = formatCurrency(data.charges || 0);
+            if (cntEl) cntEl.innerText = `${(data.count || 0)} Items`;
+        };
+
+        updateServiceCard('photocopy', txnStats['PHOTOCOPY'] || {});
+        updateServiceCard('printout', txnStats['PRINTOUT'] || {});
+        updateServiceCard('online_work', txnStats['ONLINE_WORK'] || {});
+        updateServiceCard('passport', txnStats['PASSPORT'] || {});
+        
+        const totalChargesEl = document.getElementById('summary-txn-total-charges');
+        if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges);
 
         // Render Category Wise Expenses Table
         const categoryBody = document.getElementById('category-expense-body');
@@ -3682,7 +3802,350 @@ function protectPrivilegedLinks() {
     });
 }
 
+// Logic for Daily Transactions
+async function initDailyTxn() {
+    console.log('Initializing DailyTxn module...');
+    const form = document.getElementById('daily-txn-form');
+    if (!form) {
+        console.warn('Daily Txn form not found on this page.');
+        return;
+    }
+
+    const tableBody = document.getElementById('daily-txn-table-body');
+    const txnAmount = document.getElementById('txn-amount');
+    const txnType = document.getElementById('txn-type');
+    const txnNote = document.getElementById('txn-note');
+    const txnAddress = document.getElementById('txn-address');
+    const txnCharges = document.getElementById('txn-charges');
+    const txnConditional = document.getElementById('txn-conditional');
+    const conditionalLabel = document.getElementById('conditional-label');
+    const conditionalContainer = document.getElementById('conditional-field-container');
+    const txnDateText = document.getElementById('current-date-text');
+    const txnCountBadge = document.getElementById('txn-count-badge');
+    const txnViewDate = document.getElementById('txn-view-date');
+    const aepsCountBadge = document.getElementById('aeps-count-badge');
+    const matmCountBadge = document.getElementById('matm-count-badge');
+    const depositCountBadge = document.getElementById('deposit-count-badge');
+    const withdrawalCountBadge = document.getElementById('withdrawal-count-badge');
+    const photocopyCountBadge = document.getElementById('photocopy-count-badge');
+    const printoutCountBadge = document.getElementById('printout-count-badge');
+    const onlineWorkCountBadge = document.getElementById('online-work-count-badge');
+    const passportCountBadge = document.getElementById('passport-count-badge');
+    const deleteModal = document.getElementById('delete-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete');
+    const confirmDeleteBtn = document.getElementById('confirm-delete');
+
+    let editingTxnId = null;
+    let deletingTxnId = null;
+    let unsubscribe = null;
+    let currentSelectedDate = new Date().toISOString().split('T')[0];
+
+    // Initialize date picker
+    if (txnViewDate) {
+        txnViewDate.value = currentSelectedDate;
+        txnViewDate.addEventListener('change', (e) => {
+            loadTransactions(e.target.value);
+        });
+    }
+
+    const showDeleteModal = (id) => {
+        deletingTxnId = id;
+        deleteModal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('delete-modal-content').classList.remove('scale-95'), 10);
+    };
+
+    const hideDeleteModal = () => {
+        document.getElementById('delete-modal-content').classList.add('scale-95');
+        setTimeout(() => deleteModal.classList.add('hidden'), 200);
+        deletingTxnId = null;
+    };
+
+    if (cancelDeleteBtn) cancelDeleteBtn.onclick = hideDeleteModal;
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.onclick = async () => {
+            if (deletingTxnId) {
+                await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
+                hideDeleteModal();
+            }
+        };
+    }
+
+    const resetFormState = () => {
+        editingTxnId = null;
+        form.reset();
+        txnType.value = 'AEPS';
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+            submitBtn.classList.remove('bg-amber-500');
+            submitBtn.classList.add('bg-primary');
+        }
+        updateConditionalField();
+    };
+
+    console.log('DailyTxn elements found, attaching listeners...');
+
+    const updateConditionalField = () => {
+        if (!txnType || !conditionalContainer) return;
+        
+        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT'];
+        const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
+
+        // Disable/Enable fields
+        txnAmount.disabled = isChargesOnly;
+        txnNote.disabled = isChargesOnly;
+        txnAddress.disabled = isChargesOnly;
+        txnConditional.disabled = isChargesOnly;
+
+        if (isChargesOnly) {
+            conditionalContainer.classList.add('hidden');
+            txnAmount.value = '';
+            txnNote.value = '';
+            txnAddress.value = '';
+            txnConditional.value = '';
+        } else if (txnType.value === 'AEPS') {
+            conditionalContainer.classList.remove('hidden');
+            conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
+            txnConditional.placeholder = 'Last 4 digits...';
+        } else if (txnType.value === 'MATM') {
+            conditionalContainer.classList.remove('hidden');
+            conditionalLabel.innerText = 'Debit Card (Last 4)';
+            txnConditional.placeholder = 'Last 4 digits...';
+        } else {
+            conditionalContainer.classList.add('hidden');
+        }
+    };
+
+    if (txnType) {
+        txnType.addEventListener('change', updateConditionalField);
+        updateConditionalField();
+    }
+
+    // Attach Submit Listener EARLY
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        console.log('Save Button Clicked - Starting process');
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Saving...';
+        }
+
+        try {
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT'];
+            const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
+            
+            const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
+            const chargesVal = parseFloat(txnCharges.value || 0);
+
+            if (!isChargesOnly && isNaN(amountVal)) {
+                alert('Please enter a valid amount.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                }
+                return;
+            }
+
+            const capitalizeWords = (str) => {
+                if (!str) return "";
+                return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+            };
+
+            const newTxn = {
+                type: txnType.value,
+                amount: amountVal,
+                charges: isNaN(chargesVal) ? 0 : chargesVal,
+                note: capitalizeWords(txnNote.value.trim()),
+                address: capitalizeWords(txnAddress.value.trim()),
+                extraDetails: (txnType.value === 'AEPS' || txnType.value === 'MATM') ? txnConditional.value.trim() : '',
+                date: currentSelectedDate,
+                timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+            };
+
+            console.log('Attempting to ' + (editingTxnId ? 'update' : 'add') + ' doc in Firestore:', newTxn);
+            const txnCollection = collection(db, 'daily_transactions');
+            
+            if (editingTxnId) {
+                await updateDoc(doc(db, 'daily_transactions', editingTxnId), newTxn);
+                console.log('Update Success!');
+            } else {
+                await addDoc(txnCollection, newTxn);
+                console.log('Add Success!');
+            }
+
+            resetFormState();
+        } catch (err) {
+            console.error('CRITICAL ERROR during save:', err);
+            alert('Failed to save: ' + err.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+            }
+        }
+    };
+
+    // Setup Firestore Listener and Load initial data
+    const loadTransactions = (date) => {
+        try {
+            if (unsubscribe) unsubscribe();
+            currentSelectedDate = date;
+
+            const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            if (txnDateText) txnDateText.innerText = displayDate;
+
+            const txnCollection = collection(db, 'daily_transactions');
+            const q = query(txnCollection, where('date', '==', date));
+
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                console.log('Snapshot received for ' + date + ', docs:', snapshot.size);
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+                
+                let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Calculate type-wise stats
+                const stats = txns.reduce((acc, txn) => {
+                    const type = txn.type;
+                    if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
+                    acc[type].count++;
+                    acc[type].amount += parseFloat(txn.amount || 0);
+                    acc[type].charges += parseFloat(txn.charges || 0);
+                    return acc;
+                }, {});
+
+                const totalDayAmount = txns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const totalDayCharges = txns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
+
+                if (txnCountBadge) txnCountBadge.innerHTML = `
+                    <div class="flex flex-col items-start leading-tight">
+                        <span class="text-[10px] opacity-60 uppercase font-black">All TXNS</span>
+                        <span class="text-sm font-black">${txns.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
+                        <span class="text-[9px] text-amber-500 font-bold">Fees: ₹${totalDayCharges.toLocaleString('en-IN')}</span>
+                    </div>
+                `;
+
+                const updateBadge = (badge, type, label) => {
+                    if (!badge) return;
+                    const s = stats[type] || { count: 0, amount: 0, charges: 0 };
+                    badge.innerHTML = `
+                        <div class="flex flex-col items-start leading-tight">
+                            <span class="text-[10px] opacity-60 uppercase font-black">${label}</span>
+                            <span class="text-xs font-black">${s.count} | ₹${s.amount.toLocaleString('en-IN')}</span>
+                            <span class="text-[8px] opacity-80 font-bold italic">F: ₹${s.charges.toLocaleString('en-IN')}</span>
+                        </div>
+                    `;
+                };
+
+                updateBadge(aepsCountBadge, 'AEPS', 'AEPS');
+                updateBadge(matmCountBadge, 'MATM', 'MATM');
+                updateBadge(depositCountBadge, 'DEPOSIT', 'DEPOSIT');
+                updateBadge(withdrawalCountBadge, 'WITHDRAWAL', 'WITHDRAW');
+                updateBadge(photocopyCountBadge, 'PHOTOCOPY', 'PHOTOCOPY');
+                updateBadge(printoutCountBadge, 'PRINTOUT', 'PRINTOUT');
+                updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
+                updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
+
+                // Client-side sorting: Latest on top
+                txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                txns.forEach((txn, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-primary/5 transition-colors group';
+                    
+                    const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                    
+                    tr.innerHTML = `
+                        <td class="px-6 py-4"><span class="text-xs font-bold text-slate-500">#${txns.length - index}</span></td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                'bg-primary/10 text-primary'
+                            }">${txn.type}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">${txn.note || '-'}</span>
+                                ${txn.address || txn.extraDetails ? `
+                                    <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                                        ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
+                                        ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right"><span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
+                        <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
+                        <td class="px-6 py-4">
+                            <div class="flex justify-center gap-2">
+                                <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                                <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                document.querySelectorAll('.edit-txn-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const txn = txns.find(t => t.id === btn.dataset.id);
+                        if (txn) {
+                            editingTxnId = txn.id;
+                            txnType.value = txn.type;
+                            txnAmount.value = txn.amount;
+                            txnCharges.value = txn.charges;
+                            txnNote.value = txn.note;
+                            txnAddress.value = txn.address;
+                            txnConditional.value = txn.extraDetails || '';
+                            updateConditionalField();
+
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            submitBtn.innerHTML = '<span class="material-symbols-outlined">edit</span> Update Transaction';
+                            submitBtn.classList.remove('bg-primary');
+                            submitBtn.classList.add('bg-amber-500');
+                            form.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    };
+                });
+
+                document.querySelectorAll('.delete-txn-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        showDeleteModal(btn.dataset.id);
+                    };
+                });
+            }, (error) => {
+                console.error('Firestore Subscription Error:', error);
+            });
+        } catch (e) {
+            console.error('Error setting up daily txn listener:', e);
+        }
+    };
+
+    // Initial load
+    loadTransactions(currentSelectedDate);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // Disable scrolling to change numbers on input type="number"
+    document.addEventListener('wheel', function(e) {
+        if (document.activeElement.type === 'number') {
+            document.activeElement.blur();
+        }
+    }, { passive: true });
+
     // Apply privileged page PIN Protection (Add Entry & Settings)
     protectPrivilegedLinks();
 
@@ -3699,6 +4162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { name: 'Transactions', fn: initTransactions },
         { name: 'Reports', fn: initReports }, // New module
         { name: 'CreditLedger', fn: initCreditLedger },
+        { name: 'DailyTxn', fn: initDailyTxn },
         { name: 'DamagedCurrency', fn: initDamagedCurrency },
         { name: 'BankWithdrawals', fn: initBankWithdrawals }
     ];

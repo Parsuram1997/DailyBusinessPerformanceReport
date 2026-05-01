@@ -106,6 +106,7 @@
         <nav class="flex-1 px-4 space-y-1">
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html"><span class="material-symbols-outlined">dashboard</span><span class="text-sm nav-text">Dashboard</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html"><span class="material-symbols-outlined">add_circle</span><span class="text-sm nav-text">Add Entry</span></a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html"><span class="material-symbols-outlined">point_of_sale</span><span class="text-sm nav-text">Daily Txn</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html"><span class="material-symbols-outlined">receipt_long</span><span class="text-sm nav-text">Table</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="reports-code.html"><span class="material-symbols-outlined">bar_chart</span><span class="text-sm nav-text">Analytics</span></a>
             <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html"><span class="material-symbols-outlined">menu_book</span><span class="text-sm nav-text">Credit Ledger</span></a>
@@ -298,6 +299,80 @@
                 </div>
             </div>
 
+            <!-- Daily Transaction Analytics Section -->
+            <div class="space-y-4 pt-4 border-t border-primary/5">
+                <h3 class="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">analytics</span>
+                    Daily Transaction Stats
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total TXN Vol</p>
+                        <h4 id="summary-txn-total-amount" class="text-xl font-black text-primary tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-total-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-blue-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">AEPS Total</p>
+                        <h4 id="summary-txn-aeps-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-aeps-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-indigo-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">MATM Total</p>
+                        <h4 id="summary-txn-matm-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-matm-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-emerald-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Deposit Total</p>
+                        <h4 id="summary-txn-deposit-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-deposit-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-rose-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Withdrawal Total</p>
+                        <h4 id="summary-txn-withdrawal-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-withdrawal-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                    </div>
+                </div>
+                <!-- Service Based Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-orange-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Photocopy Fees</p>
+                        <h4 id="summary-txn-photocopy-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-photocopy-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-sky-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Printout Fees</p>
+                        <h4 id="summary-txn-printout-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-printout-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-purple-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Online Work Fees</p>
+                        <h4 id="summary-txn-online_work-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-online_work-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-amber-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Passport Fees</p>
+                        <h4 id="summary-txn-passport-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-passport-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
+                    </div>
+                </div>
+                <!-- Additional card for Total Fees -->
+                <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-5 rounded-3xl border border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="size-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30">
+                            <span class="material-symbols-outlined text-3xl">payments</span>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-black text-amber-700 dark:text-amber-400 uppercase tracking-tight">Total Txn Charges (Income)</h4>
+                            <p class="text-[11px] font-bold text-amber-600/60 uppercase tracking-widest">Net Service Fees Collected for Period</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <h3 id="summary-txn-total-charges" class="text-4xl font-black text-amber-600 tracking-tighter italic leading-none">₹0</h3>
+                        <p class="text-[10px] font-black text-amber-500/50 uppercase mt-1">Direct Profit Contribution</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Reports Tables Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 <!-- Category Wise Expense Table -->
@@ -370,6 +445,10 @@
     <a href="add-entry-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">add_circle</span>
         <span class="text-[10px] font-bold">Add Entry</span>
+    </a>
+    <a href="daily-txn.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">point_of_sale</span>
+        <span class="text-[10px] font-bold">Daily Txn</span>
     </a>
     <a href="transactions-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">receipt_long</span>
