@@ -309,31 +309,46 @@
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total TXN Vol</p>
                         <h4 id="summary-txn-total-amount" class="text-xl font-black text-primary tracking-tight italic">₹0</h4>
-                        <p id="summary-txn-total-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p id="summary-txn-total-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                            <p id="summary-txn-total-fees" class="text-[9px] font-black text-amber-500/80">Fees: ₹0</p>
+                        </div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-blue-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">AEPS Total</p>
                         <h4 id="summary-txn-aeps-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <p id="summary-txn-aeps-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p id="summary-txn-aeps-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                            <p id="summary-txn-aeps-fees" class="text-[9px] font-black text-blue-500/80">Fees: ₹0</p>
+                        </div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-indigo-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">MATM Total</p>
                         <h4 id="summary-txn-matm-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <p id="summary-txn-matm-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p id="summary-txn-matm-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                            <p id="summary-txn-matm-fees" class="text-[9px] font-black text-indigo-500/80">Fees: ₹0</p>
+                        </div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-emerald-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Deposit Total</p>
                         <h4 id="summary-txn-deposit-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <p id="summary-txn-deposit-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p id="summary-txn-deposit-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                            <p id="summary-txn-deposit-fees" class="text-[9px] font-black text-emerald-500/80">Fees: ₹0</p>
+                        </div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-rose-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Withdrawal Total</p>
                         <h4 id="summary-txn-withdrawal-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <p id="summary-txn-withdrawal-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p id="summary-txn-withdrawal-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
+                            <p id="summary-txn-withdrawal-fees" class="text-[9px] font-black text-rose-500/80">Fees: ₹0</p>
+                        </div>
                     </div>
                 </div>
                 <!-- Service Based Stats Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-orange-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Photocopy Fees</p>
                         <h4 id="summary-txn-photocopy-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
@@ -353,6 +368,11 @@
                         <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Passport Fees</p>
                         <h4 id="summary-txn-passport-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
                         <p id="summary-txn-passport-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-teal-500 group hover:border-primary/30 transition-all">
+                        <p class="text-[10px] font-black text-teal-500 uppercase tracking-widest mb-1">Lamination Fees</p>
+                        <h4 id="summary-txn-lamination-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
+                        <p id="summary-txn-lamination-count" class="text-[10px] font-bold text-slate-400">0 Items</p>
                     </div>
                 </div>
                 <!-- Additional card for Total Fees -->

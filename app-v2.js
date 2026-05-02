@@ -1,20 +1,33 @@
-import { db } from './firebase-config.js';
-
-import {
-    collection,
-    addDoc,
-    getDocs,
-    deleteDoc,
-    doc,
-    query,
-    where,
-    updateDoc,
-    writeBatch,
-    setDoc,
-    getDoc,
-    onSnapshot,
-    orderBy
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+// Firebase Modular Shim for Compat SDK (support for file:// protocol)
+const db = window.db;
+const collection = (db, path) => db.collection(path);
+const doc = (parent, path, id) => {
+    if (typeof parent.doc === 'function') {
+        return id ? parent.doc(id) : parent.doc(path);
+    }
+    return db.doc(path + (id ? '/' + id : ''));
+};
+const query = (col, ...constraints) => {
+    let q = col;
+    constraints.forEach(c => { if(typeof c === 'function') q = c(q); });
+    return q;
+};
+const where = (f, o, v) => (q) => q.where(f, o, v);
+const orderBy = (f, d) => (q) => q.orderBy(f, d);
+const onSnapshot = (q, next, error) => q.onSnapshot(next, error);
+const getDocs = (q) => q.get();
+const getDoc = (d) => d.get().then(snap => {
+    if (typeof snap.exists !== 'function') {
+        const existsProp = snap.exists;
+        snap.exists = () => existsProp;
+    }
+    return snap;
+});
+const setDoc = (d, data) => d.set(data);
+const updateDoc = (d, data) => d.update(data);
+const deleteDoc = (d) => d.delete();
+const addDoc = (col, data) => col.add(data);
+const writeBatch = (db) => db.batch();
 
 // Global Dashboard State for Real-Time listeners and Charts
 let dashboardUnsubscribe = null;
@@ -24,17 +37,43 @@ let incomeGrowthChart = null;
 let expenseGrowthChart = null;
 let monthlyComparisonChart = null;
 
-// Helper for Firestore calls (maintaining naming for compatibility where possible)
-async function loadEntries() {
-    if (!db) { console.error("Firestore db not initialized in loadEntries"); return []; }
+// Global Cache for performance
+let entriesCache = [];
+let entriesLoaded = false;
+let entriesUnsubscribe = null;
+
+function setupEntriesListener() {
+    if (entriesUnsubscribe) return;
     try {
-        const querySnapshot = await getDocs(collection(db, "entries"));
-        return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
-    } catch (e) {
-        console.error("Error loading entries: ", e);
-        return [];
+        // Remove orderBy for now to avoid index requirements that might crash the app
+        const q = query(collection(db, "entries")); 
+        entriesUnsubscribe = onSnapshot(q, (snapshot) => {
+            entriesCache = snapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+            // Sort in memory instead
+            entriesCache.sort((a, b) => new Date(b.date) - new Date(a.date));
+            entriesLoaded = true;
+            console.log(`[Cache] entries updated: ${entriesCache.length} docs`);
+        }, (error) => {
+            console.error("[Cache] entries listener error:", error);
+            entriesLoaded = true; // Set to true even on error so app doesn't hang, will just use empty list
+        });
+    } catch (err) {
+        console.error("[Cache] setup listener failed:", err);
+        entriesLoaded = true;
     }
 }
+
+async function loadEntries() {
+    // Return cache immediately if available, otherwise fetch once and cache
+    if (entriesLoaded) return entriesCache;
+    
+    // If not loaded, we still return the cache (which might be empty) 
+    // to avoid blocking the UI. The listener will update it soon.
+    return entriesCache;
+}
+
+// Ensure listener starts early
+setupEntriesListener();
 
 async function saveEntry(entry) {
     if (!db) return null;
@@ -2943,21 +2982,43 @@ async function initReports() {
             .filter(filterWithdrawals);
 
         // --- Daily Transaction Analytics Calculation ---
-        const dailyTxnCollection = collection(db, 'daily_transactions');
-        const dailyTxnSnapshot = await getDocs(dailyTxnCollection);
-        let dailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Show loading state in cards
+        const txnTypeIds = ['total', 'aeps', 'matm', 'deposit', 'withdrawal', 'photocopy', 'printout', 'online_work', 'passport'];
+        txnTypeIds.forEach(id => {
+            const el = document.getElementById(`summary-txn-${id}-amount`);
+            if (el) el.innerText = '...';
+        });
 
-        // Apply same time filter as entries
-        if (currentMode === 'date' && dateInput) {
-            dailyTxns = dailyTxns.filter(t => t.date === dateInput.value);
-        } else if (currentMode === 'month' && monthSelect) {
-            const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
-            dailyTxns = dailyTxns.filter(t => {
-                const d = new Date(t.date);
-                return d.toLocaleString('default', { month: 'long' }) === selMonthName && d.getFullYear().toString() === selYearStr;
-            });
-        } else if (currentMode === 'year' && yearSelect) {
-            dailyTxns = dailyTxns.filter(t => getFinancialYear(new Date(t.date)) === yearSelect.value);
+        let dailyTxns = [];
+        const dailyTxnCollection = collection(db, 'daily_transactions');
+        
+        try {
+            let q;
+            if (currentMode === 'date' && dateInput) {
+                q = query(dailyTxnCollection, where('date', '==', dateInput.value));
+            } else if (currentMode === 'month' && monthSelect) {
+                // For month, we use range query on date string "YYYY-MM-DD"
+                const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
+                // Get month index (0-11)
+                const monthIdx = new Date(`${selMonthName} 1, ${selYearStr}`).getMonth();
+                const start = `${selYearStr}-${String(monthIdx + 1).padStart(2, '0')}-01`;
+                const end = `${selYearStr}-${String(monthIdx + 1).padStart(2, '0')}-31`;
+                q = query(dailyTxnCollection, where('date', '>=', start), where('date', '<=', end));
+            } else if (currentMode === 'year' && yearSelect) {
+                const year = yearSelect.value; // e.g. "2024-25"
+                const startYear = year.split('-')[0];
+                const endYear = "20" + year.split('-')[1];
+                const start = `${startYear}-04-01`;
+                const end = `${endYear}-03-31`;
+                q = query(dailyTxnCollection, where('date', '>=', start), where('date', '<=', end));
+            } else {
+                q = query(dailyTxnCollection);
+            }
+
+            const dailyTxnSnapshot = await getDocs(q);
+            dailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error fetching daily transactions for report:", error);
         }
 
         const txnStats = dailyTxns.reduce((acc, t) => {
@@ -2979,9 +3040,8 @@ async function initReports() {
         filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         // --- Use same running-balance formula as Dashboard ---
-        // We need ALL entries sorted ASC to compute the running balance correctly,
-        // then we pick only the filtered ones for aggregation.
-        const allEntries = await loadEntries();
+        // We now use the cached entries for instant access
+        const allEntries = [...entriesCache];
         allEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         // Build a map of date -> dailyIncome using running balance on ALL entries
@@ -3172,10 +3232,10 @@ async function initReports() {
         const updateTxnCard = (idPrefix, data) => {
             const amtEl = document.getElementById(`summary-txn-${idPrefix}-amount`);
             const cntEl = document.getElementById(`summary-txn-${idPrefix}-count`);
-            const feeEl = document.getElementById(`summary-txn-${idPrefix}-fees`);
+            const chgEl = document.getElementById(`summary-txn-${idPrefix}-charges`);
             if (amtEl) amtEl.innerText = formatCurrency(data.amount || 0);
             if (cntEl) cntEl.innerText = `${(data.count || 0)} Transactions`;
-            if (feeEl) feeEl.innerText = `Fees: ${formatCurrency(data.charges || 0)}`;
+            if (chgEl) chgEl.innerText = `F: ${formatCurrency(data.charges || 0)}`;
         };
 
         updateTxnCard('total', { amount: txnStats.totalAmount, count: txnStats.totalCount, charges: txnStats.totalCharges });
@@ -3808,27 +3868,6 @@ function protectPrivilegedLinks() {
 // Logic for Daily Transactions
 async function initDailyTxn() {
     console.log('Initializing DailyTxn module...');
-    
-    // Hide restricted links if not logged in
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-        console.log('User not logged in, hiding restricted navigation links...');
-        const restrictedLinks = document.querySelectorAll('.nav-link:not([href="daily-txn.html"]), #bottom-nav a:not([href="daily-txn.html"]), #logout-btn');
-        restrictedLinks.forEach(link => {
-            link.style.display = 'none';
-        });
-        
-        // Also hide the author/footer section in sidebar if it exists
-        const authorSection = document.querySelector('.mt-auto.p-4.border-t');
-        if (authorSection) authorSection.style.display = 'none';
-
-        // Show back to login button
-        const backBtnSidebar = document.getElementById('back-to-login-sidebar');
-        const backBtnBottom = document.getElementById('back-to-login-bottom');
-        if (backBtnSidebar) backBtnSidebar.classList.remove('hidden');
-        if (backBtnBottom) backBtnBottom.classList.remove('hidden');
-    }
-
     const form = document.getElementById('daily-txn-form');
     if (!form) {
         console.warn('Daily Txn form not found on this page.');
@@ -3929,7 +3968,7 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION'];
+        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION'];
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
 
         // Disable/Enable fields
@@ -3951,7 +3990,7 @@ async function initDailyTxn() {
             if (amountFieldContainer) amountFieldContainer.classList.remove('hidden');
             if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
             if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
-            
+
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
@@ -4064,168 +4103,213 @@ async function initDailyTxn() {
 
     // Setup Firestore Listener and Load initial data
     const loadTransactions = (date) => {
-        try {
-            if (unsubscribe) unsubscribe();
-            currentSelectedDate = date;
+        console.log('Loading Transactions for:', date);
+        if (unsubscribe) unsubscribe();
+        currentSelectedDate = date;
 
-            const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            if (txnDateText) txnDateText.innerText = displayDate;
+        const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        if (txnDateText) txnDateText.innerText = displayDate;
+
+        try {
+            const tableBody = document.getElementById('daily-txn-table-body');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-20 text-center">
+                            <div class="flex flex-col items-center justify-center gap-4">
+                                <div class="size-12 border-[4px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                                <div class="space-y-1">
+                                    <p class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Fetching Transactions</p>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Please wait while we sync with database...</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
 
             const txnCollection = collection(db, 'daily_transactions');
             const q = query(txnCollection, where('date', '==', date));
 
             unsubscribe = onSnapshot(q, (snapshot) => {
-                console.log('Snapshot received for ' + date + ', docs:', snapshot.size);
-                if (!tableBody) return;
-                tableBody.innerHTML = '';
-                
-                let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Calculate type-wise stats
-                const stats = txns.reduce((acc, txn) => {
-                    const type = txn.type;
-                    if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
-                    acc[type].count++;
-                    acc[type].amount += parseFloat(txn.amount || 0);
-                    acc[type].charges += parseFloat(txn.charges || 0);
-                    return acc;
-                }, {});
+                allTxnsForDate = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sort by latest first
+                allTxnsForDate.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-                const totalDayAmount = txns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-                const totalDayCharges = txns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
-
-                if (txnCountBadge) txnCountBadge.innerHTML = `
-                    <div class="flex flex-col items-start leading-tight">
-                        <span class="text-[10px] opacity-60 uppercase font-black">All TXNS</span>
-                        <span class="text-sm font-black">${txns.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
-                        <span class="text-[9px] text-amber-500 font-bold">Fees: ₹${totalDayCharges.toLocaleString('en-IN')}</span>
-                    </div>
-                `;
-
-                const updateBadge = (badge, type, label) => {
-                    if (!badge) return;
-                    const s = stats[type] || { count: 0, amount: 0, charges: 0 };
-                    badge.innerHTML = `
-                        <div class="flex flex-col items-start leading-tight">
-                            <span class="text-[10px] opacity-60 uppercase font-black">${label}</span>
-                            <span class="text-xs font-black">${s.count} | ₹${s.amount.toLocaleString('en-IN')}</span>
-                            <span class="text-[8px] opacity-80 font-bold italic">F: ₹${s.charges.toLocaleString('en-IN')}</span>
-                        </div>
-                    `;
-                };
-
-                updateBadge(aepsCountBadge, 'AEPS', 'AEPS');
-                updateBadge(matmCountBadge, 'MATM', 'MATM');
-                updateBadge(depositCountBadge, 'DEPOSIT', 'DEPOSIT');
-                updateBadge(withdrawalCountBadge, 'WITHDRAWAL', 'WITHDRAW');
-                updateBadge(photocopyCountBadge, 'PHOTOCOPY', 'PHOTOCOPY');
-                updateBadge(printoutCountBadge, 'PRINTOUT', 'PRINTOUT');
-                updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
-                updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
-                updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
-
-                // Client-side sorting: Latest on top
-                txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-                txns.forEach((txn, index) => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-primary/5 transition-colors group';
-                    
-                    const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-                    
-                    tr.innerHTML = `
-                        <td class="px-6 py-4"><span class="text-xs font-bold text-slate-500">#${txns.length - index}</span></td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
-                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col items-start gap-1">
-                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
-                                    'bg-primary/10 text-primary'
-                                }">${txn.type}</span>
-                                ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
-                                ${txn.bankName ? `
-                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
-                                        <span class="material-symbols-outlined text-[14px] text-blue-600">account_balance</span>
-                                        <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${txn.bankName}</span>
-                                    </div>
-                                ` : ''}
-                                ${txn.address || txn.extraDetails ? `
-                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
-                                        ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
-                                        ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex flex-col items-end">
-                                <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
-                        <td class="px-6 py-4">
-                            <div class="flex justify-center gap-2">
-                                <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                                    <span class="material-symbols-outlined text-sm">edit</span>
-                                </button>
-                                <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-
-                document.querySelectorAll('.edit-txn-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const txn = txns.find(t => t.id === btn.dataset.id);
-                        if (txn) {
-                            editingTxnId = txn.id;
-                            txnType.value = txn.type;
-                            txnAmount.value = txn.amount;
-                            txnCharges.value = txn.charges;
-                            txnNote.value = txn.note;
-                            txnAddress.value = txn.address;
-                            txnConditional.value = txn.extraDetails || '';
-                            txnProvider.value = txn.provider || '';
-                            txnRemaining.value = txn.remainingAmount || '';
-                            txnBank.value = txn.bankName || '';
-                            updateConditionalField();
-
-                            const submitBtn = form.querySelector('button[type="submit"]');
-                            submitBtn.innerHTML = '<span class="material-symbols-outlined">edit</span> Update Transaction';
-                            submitBtn.classList.remove('bg-primary');
-                            submitBtn.classList.add('bg-amber-500');
-                            form.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    };
-                });
-
-                document.querySelectorAll('.delete-txn-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        showDeleteModal(btn.dataset.id);
-                    };
-                });
+                renderBadgesAndTable();
             }, (error) => {
-                console.error('Firestore Subscription Error:', error);
+                console.error('Daily Transactions Listener Error:', error);
+                const tableBody = document.getElementById('daily-txn-table-body');
+                if (tableBody) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold">Error loading data. Please check connection or indexes.</td></tr>`;
+                }
             });
         } catch (e) {
             console.error('Error setting up daily txn listener:', e);
         }
     };
+
+    const renderBadgesAndTable = () => {
+        const tableBody = document.getElementById('daily-txn-table-body');
+        if (!tableBody) return;
+
+        // Calculate type-wise stats (Always based on ALL txns for the date)
+        const stats = allTxnsForDate.reduce((acc, txn) => {
+            const type = txn.type;
+            if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
+            acc[type].count++;
+            acc[type].amount += parseFloat(txn.amount || 0);
+            acc[type].charges += parseFloat(txn.charges || 0);
+            return acc;
+        }, {});
+
+        const totalDayAmount = allTxnsForDate.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        const totalDayCharges = allTxnsForDate.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
+
+        if (txnCountBadge) txnCountBadge.innerHTML = `
+            <div class="flex flex-col items-start leading-tight">
+                <span class="text-[10px] opacity-60 uppercase font-black">All TXNS</span>
+                <span class="text-sm font-black">${allTxnsForDate.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
+                <span class="text-[9px] text-amber-500 font-bold">Fees: ₹${totalDayCharges.toLocaleString('en-IN')}</span>
+            </div>
+        `;
+
+        const updateBadge = (badge, type, label) => {
+            if (!badge) return;
+            const s = stats[type] || { count: 0, amount: 0, charges: 0 };
+            badge.innerHTML = `
+                <div class="flex flex-col items-start leading-tight">
+                    <span class="text-[10px] opacity-60 uppercase font-black">${label}</span>
+                    <span class="text-xs font-black">${s.count} | ₹${s.amount.toLocaleString('en-IN')}</span>
+                    <span class="text-[8px] opacity-80 font-bold italic">F: ₹${s.charges.toLocaleString('en-IN')}</span>
+                </div>
+            `;
+        };
+
+        updateBadge(aepsCountBadge, 'AEPS', 'AEPS');
+        updateBadge(matmCountBadge, 'MATM', 'MATM');
+        updateBadge(depositCountBadge, 'DEPOSIT', 'DEPOSIT');
+        updateBadge(withdrawalCountBadge, 'WITHDRAWAL', 'WITHDRAW');
+        updateBadge(photocopyCountBadge, 'PHOTOCOPY', 'PHOTOCOPY');
+        updateBadge(printoutCountBadge, 'PRINTOUT', 'PRINTOUT');
+        updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
+        updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
+        updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
+
+        // Now filter the table data
+        const txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : allTxnsForDate.filter(t => t.type === currentTxnFilter);
+        
+        tableBody.innerHTML = '';
+        txnsToRender.forEach((txn) => {
+            const originalIndex = allTxnsForDate.indexOf(txn);
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-primary/5 transition-colors group';
+            
+            const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            
+            tr.innerHTML = `
+                <td class="px-6 py-4"><span class="text-xs font-bold text-slate-500">#${allTxnsForDate.length - originalIndex}</span></td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col items-start gap-1">
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                            txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                            txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                            'bg-primary/10 text-primary'
+                        }">${txn.type}</span>
+                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col gap-1.5">
+                        <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
+                        ${txn.bankName ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-blue-600">account_balance</span>
+                                <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${txn.bankName}</span>
+                            </div>
+                        ` : ''}
+                        ${txn.address || txn.extraDetails ? `
+                            <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
+                                ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
+                                ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex flex-col items-end">
+                        <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
+                <td class="px-6 py-4">
+                    <div class="flex justify-center gap-2">
+                        <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Re-attach edit/delete listeners
+        document.querySelectorAll('.edit-txn-btn').forEach(btn => {
+            btn.onclick = () => {
+                const txn = allTxnsForDate.find(t => t.id === btn.dataset.id);
+                if (txn) {
+                    editingTxnId = txn.id;
+                    txnType.value = txn.type;
+                    txnAmount.value = txn.amount;
+                    txnCharges.value = txn.charges;
+                    txnNote.value = txn.note;
+                    txnAddress.value = txn.address;
+                    txnConditional.value = txn.extraDetails || '';
+                    txnProvider.value = txn.provider || '';
+                    txnRemaining.value = txn.remainingAmount || '';
+                    txnBank.value = txn.bankName || '';
+                    updateConditionalField();
+
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined">edit</span> Update Transaction';
+                    submitBtn.classList.remove('bg-primary');
+                    submitBtn.classList.add('bg-amber-500');
+                    form.scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+        });
+
+        document.querySelectorAll('.delete-txn-btn').forEach(btn => {
+            btn.onclick = () => {
+                showDeleteModal(btn.dataset.id);
+            };
+        });
+    };
+
+    // Filter listeners
+    document.querySelectorAll('.txn-filter-badge').forEach(badge => {
+        badge.onclick = () => {
+            currentTxnFilter = badge.getAttribute('data-type');
+            
+            // UI Visual Feedback
+            document.querySelectorAll('.txn-filter-badge').forEach(b => {
+                b.classList.remove('active-filter', 'ring-2');
+            });
+            badge.classList.add('active-filter', 'ring-2');
+            
+            renderBadgesAndTable();
+        };
+    });
 
     // Initial load
     loadTransactions(currentSelectedDate);
@@ -4242,10 +4326,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply privileged page PIN Protection (Add Entry & Settings)
     protectPrivilegedLinks();
 
-    // Migration first
-    await migrateToDatabase();
-    // Auto-clean duplicate entries for same date
-    await deduplicateEntries();
+    // Migration & Cleanup in background (don't block initial render)
+    migrateToDatabase().catch(e => console.error("Migration failed:", e));
+    deduplicateEntries().catch(e => console.error("Dedup failed:", e));
 
     const modules = [
         { name: 'Settings', fn: initSettings }, // Prioritize Settings

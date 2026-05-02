@@ -116,6 +116,10 @@
                     <span class="material-symbols-outlined">logout</span>
                     <span class="text-sm nav-text font-semibold">Logout</span>
                 </a>
+                <a id="back-to-login-sidebar" href="index.html" class="hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary hover:bg-primary/5 transition-colors mt-auto font-bold">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    <span class="text-sm nav-text">Back to Login</span>
+                </a>
             </nav>
             <div class="mt-auto p-4 border-t border-primary/10">
                 <div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
@@ -167,7 +171,7 @@
                         </div>
                     </div>
 
-                    <form id="daily-txn-form" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <form id="daily-txn-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div class="flex flex-col gap-2">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
                             <select id="txn-type" required class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
@@ -179,20 +183,57 @@
                                 <option value="PRINTOUT">PRINTOUT</option>
                                 <option value="ONLINE_WORK">ONLINE WORK</option>
                                 <option value="PASSPORT">PASSPORT</option>
+                                <option value="LAMINATION">LAMINATION</option>
                             </select>
                         </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Amount</label>
+                        <div id="provider-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
+                            <select id="txn-provider" class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select Provider...</option>
+                                <option value="Phonepay">Phonepay</option>
+                                <option value="Gpay">Gpay</option>
+                                <option value="Slice">Slice</option>
+                                <option value="Roinet">Roinet</option>
+                                <option value="Airtel">Airtel</option>
+                                <option value="SpiceMoney">SpiceMoney</option>
+                                <option value="Crgb Bc">Crgb Bc</option>
+                                <option value="Yono sbi">Yono sbi</option>
+                            </select>
+                        </div>
+                        <div id="bank-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Bank Name</label>
+                            <input id="txn-bank" type="text" list="bank-list" placeholder="Enter or select bank..." class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                            <datalist id="bank-list">
+                                <option value="Chhattisgarh Grameen Bank">
+                                <option value="State Bank of India">
+                                <option value="India Post Payment Bank">
+                                <option value="UCO Bank">
+                                <option value="Union Bank">
+                                <option value="Airtel Bank">
+                                <option value="Fino Bank">
+                                <option value="Indian Bank">
+                                <option value="Jilla Sakahari Bank">
+                            </datalist>
+                        </div>
+                        <div id="amount-field-container" class="flex flex-col gap-2">
+                            <label id="amount-label" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Amount</label>
                             <div class="relative">
                                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                                 <input id="txn-amount" type="number" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
                             </div>
                         </div>
-                        <div class="flex flex-col gap-2">
+                        <div id="remaining-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Remaining Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input id="txn-remaining" type="number" placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
+                            </div>
+                        </div>
+                        <div id="note-field-container" class="flex flex-col gap-2">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Customer Name</label>
                             <input id="txn-note" type="text" placeholder="Enter name..." class="capitalize w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
-                        <div class="flex flex-col gap-2">
+                        <div id="address-field-container" class="flex flex-col gap-2">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Address</label>
                             <input id="txn-address" type="text" placeholder="City / Village..." class="capitalize w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
@@ -216,27 +257,28 @@
                     </form>
                 </div>
 
+                <!-- Summary Badges Section -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 px-2">
+                        <div class="size-2 w-8 bg-primary rounded-full"></div>
+                        <h2 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Today's Transactions Summary</h2>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
+                        <span id="txn-count-badge" class="px-3 py-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="aeps-count-badge" class="px-3 py-3 rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="matm-count-badge" class="px-3 py-3 rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="deposit-count-badge" class="px-3 py-3 rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="withdrawal-count-badge" class="px-3 py-3 rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="photocopy-count-badge" class="px-3 py-3 rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="printout-count-badge" class="px-3 py-3 rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="online-work-count-badge" class="px-3 py-3 rounded-2xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="passport-count-badge" class="px-3 py-3 rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="lamination-count-badge" class="px-3 py-3 rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    </div>
+                </div>
+
                 <!-- Txn Table -->
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
-                    <div class="p-4 md:p-6 border-b border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50 dark:bg-white/5">
-                        <div class="flex items-center gap-3">
-                            <div class="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                <span class="material-symbols-outlined">list_alt</span>
-                            </div>
-                            <h3 class="font-bold text-slate-900 dark:text-white">Today's Transactions</h3>
-                        </div>
-                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-2 px-2 md:mx-0 md:px-0">
-                            <span id="txn-count-badge" class="px-3 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm shrink-0"></span>
-                            <span id="aeps-count-badge" class="px-3 py-2 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm shrink-0"></span>
-                            <span id="matm-count-badge" class="px-3 py-2 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm shrink-0"></span>
-                            <span id="deposit-count-badge" class="px-3 py-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm shrink-0"></span>
-                            <span id="withdrawal-count-badge" class="px-3 py-2 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm shrink-0"></span>
-                            <span id="photocopy-count-badge" class="px-3 py-2 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm shrink-0"></span>
-                            <span id="printout-count-badge" class="px-3 py-2 rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm shrink-0"></span>
-                            <span id="online-work-count-badge" class="px-3 py-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm shrink-0"></span>
-                            <span id="passport-count-badge" class="px-3 py-2 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm shrink-0"></span>
-                        </div>
-                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50/50 dark:bg-white/5 border-b border-primary/10">
@@ -285,6 +327,10 @@
         <a href="#" class="logout-trigger flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-rose-500 shrink-0 min-w-[75px] cursor-pointer">
             <span class="material-symbols-outlined text-xl">logout</span>
             <span class="text-[10px] font-bold">Logout</span>
+        </a>
+        <a id="back-to-login-bottom" href="index.html" class="hidden flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-primary shrink-0 min-w-[75px] font-bold">
+            <span class="material-symbols-outlined text-xl">arrow_back</span>
+            <span class="text-[10px] font-bold">Login</span>
         </a>
     </nav>
 

@@ -2,7 +2,7 @@
 (function() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
     const isIndexPage = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
-    const isPublicTool = window.location.pathname.endsWith('img-to-pdf.html') || window.location.pathname.endsWith('passport-tool.html') || window.location.pathname.endsWith('image-compressor.html');
+    const isPublicTool = window.location.pathname.endsWith('img-to-pdf.html') || window.location.pathname.endsWith('passport-tool.html') || window.location.pathname.endsWith('image-compressor.html') || window.location.pathname.endsWith('daily-txn.html');
 
     if (!isLoggedIn && !isIndexPage && !isPublicTool) {
         window.location.replace('index.html');
