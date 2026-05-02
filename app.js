@@ -3713,12 +3713,105 @@ async function initBankWithdrawals() {
     await renderView();
 }
 
+window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
+    if (document.getElementById('pin-modal')) return;
+
+    const modalHTML = `
+    <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(10px);">
+        <div style="background:white;padding:32px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;width:90%;max-width:360px;border:1px solid rgba(127,19,236,0.2);" class="dark:bg-slate-900 dark:border-primary/30">
+            <div style="width:64px;height:64px;background:rgba(127,19,236,0.1);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#7f13ec;">
+                <span class="material-symbols-outlined" style="font-size:32px;">lock</span>
+            </div>
+            <h3 style="margin-top:0;font-weight:900;color:#1e293b;font-size:22px;margin-bottom:8px;letter-spacing:-0.025em;" class="dark:text-white">Security Check</h3>
+            <p style="color:#64748b;font-size:14px;margin-bottom:28px;font-weight:500;line-height:1.5;" class="dark:text-slate-400">Enter the 6-digit PIN to access <br/><span style="color:#7f13ec;font-weight:bold;">${routeName}</span>.</p>
+            
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:32px;" id="pin-container">
+                ${[1, 2, 3, 4, 5, 6].map(() => `
+                    <input type="password" class="pin-digit dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:border-primary" style="width:42px;height:52px;font-size:24px;text-align:center;border:2px solid #e2e8f0;border-radius:12px;outline:none;transition:all 0.2s;" maxlength="1" inputmode="numeric">
+                `).join('')}
+            </div>
+
+            <div style="display:flex;gap:12px;">
+                <button id="pin-cancel" style="flex:1;padding:14px;border:none;background:#f1f5f9;color:#475569;border-radius:14px;font-weight:bold;cursor:pointer;transition:all 0.2s;" class="dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200">Cancel</button>
+                <button id="pin-submit" style="flex:1;padding:14px;border:none;background:#7f13ec;color:white;border-radius:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(127,19,236,0.3);transition:all 0.2s;" class="hover:scale-[1.02] active:scale-[0.98]">Unlock</button>
+            </div>
+        </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const inputs = document.querySelectorAll('.pin-digit');
+    setTimeout(() => inputs[0].focus(), 100);
+    
+    const close = () => {
+        const m = document.getElementById('pin-modal');
+        if (m) m.remove();
+    };
+    
+    document.getElementById('pin-cancel').addEventListener('click', () => {
+        close();
+        if (onCancel) onCancel();
+    });
+    
+    const attemptUnlock = () => {
+        const pin = Array.from(inputs).map(i => i.value).join('');
+        if (pin.length < 6) return;
+
+        if (pin === "202526") {
+            close();
+            if (onSuccess) onSuccess();
+        } else {
+            inputs.forEach(i => { 
+                i.style.borderColor = "#ef4444"; 
+                i.style.background = "rgba(239, 68, 68, 0.05)";
+                i.value = ""; 
+            });
+            inputs[0].focus();
+            setTimeout(() => {
+                inputs.forEach(i => {
+                    i.style.borderColor = "";
+                    i.style.background = "";
+                });
+            }, 1000);
+        }
+    };
+    
+    document.getElementById('pin-submit').addEventListener('click', attemptUnlock);
+
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+            if (input.value && index < 5) inputs[index + 1].focus();
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+                inputs[index - 1].focus();
+                inputs[index - 1].value = '';
+            }
+            if (e.key === 'Enter') attemptUnlock();
+        });
+
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+            for (let i = 0; i < pastedData.length; i++) {
+                inputs[i].value = pastedData[i];
+            }
+            if (pastedData.length > 0) {
+                inputs[Math.min(pastedData.length, 5)].focus();
+            }
+        });
+    });
+};
+
 function protectPrivilegedLinks() {
     const selectors = [
         'a[href="add-entry-code.html"]',
         'a[data-page="add-entry-code.html"]',
         'a[href="settings-code.html"]',
-        'a[data-page="settings-code.html"]'
+        'a[data-page="settings-code.html"]',
+        'a[href="daily-txn.html"]',
+        'a[data-page="daily-txn.html"]'
     ].join(', ');
 
     document.querySelectorAll(selectors).forEach(link => {
@@ -3726,80 +3819,13 @@ function protectPrivilegedLinks() {
             e.preventDefault();
             e.stopImmediatePropagation();
             
-            if (document.getElementById('pin-modal')) return;
-
             const targetHref = link.getAttribute('href') || link.getAttribute('data-page');
-            const routeName = (targetHref && targetHref.includes('settings')) ? 'Settings' : 'Add Entry';
+            let routeName = 'Add Entry';
+            if (targetHref && targetHref.includes('settings')) routeName = 'Settings';
+            if (targetHref && targetHref.includes('daily-txn')) routeName = 'Daily Txn';
 
-            const modalHTML = `
-            <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);">
-                <div style="background:white;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;width:90%;max-width:320px;" class="dark:bg-slate-800">
-                    <h3 style="margin-top:0;font-weight:bold;color:#1e293b;font-size:18px;margin-bottom:8px;" class="dark:text-white">Security Check</h3>
-                    <p style="color:#64748b;font-size:13px;margin-bottom:20px;" class="dark:text-slate-400">Enter the 6-digit PIN to access ${routeName}.</p>
-                    
-                    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:24px;" id="pin-container">
-                        ${[1, 2, 3, 4, 5, 6].map(() => `
-                            <input type="password" class="pin-digit dark:bg-slate-900 dark:border-slate-700 dark:text-white focus:border-primary" style="width:40px;height:48px;font-size:24px;text-align:center;border:2px solid #e2e8f0;border-radius:8px;outline:none;" maxlength="1" inputmode="numeric">
-                        `).join('')}
-                    </div>
-
-                    <div style="display:flex;gap:12px;">
-                        <button id="pin-cancel" style="flex:1;padding:12px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:bold;cursor:pointer;" class="dark:bg-slate-700 dark:text-white">Cancel</button>
-                        <button id="pin-submit" style="flex:1;padding:12px;border:none;background:#7f13ec;color:white;border-radius:8px;font-weight:bold;cursor:pointer;">Unlock</button>
-                    </div>
-                </div>
-            </div>`;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
-            const inputs = document.querySelectorAll('.pin-digit');
-            setTimeout(() => inputs[0].focus(), 100);
-            
-            const close = () => {
-                const m = document.getElementById('pin-modal');
-                if (m) m.remove();
-            };
-            document.getElementById('pin-cancel').addEventListener('click', close);
-            
-            const attemptUnlock = () => {
-                const pin = Array.from(inputs).map(i => i.value).join('');
-                if (pin.length < 6) return; // Wait until all are filled
-
-                if (pin === "202526") {
-                    close();
-                    if(targetHref) window.location.href = targetHref;
-                } else {
-                    inputs.forEach(i => { i.style.borderColor = "#ef4444"; i.value = ""; });
-                    inputs[0].focus();
-                    setTimeout(() => inputs.forEach(i => i.style.borderColor = ""), 1000);
-                }
-            };
-            
-            document.getElementById('pin-submit').addEventListener('click', attemptUnlock);
-
-            inputs.forEach((input, index) => {
-                input.addEventListener('input', () => {
-                    if (input.value && index < 5) inputs[index + 1].focus();
-                });
-                
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Backspace' && !input.value && index > 0) {
-                        inputs[index - 1].focus();
-                        inputs[index - 1].value = ''; // auto clear previous box
-                    }
-                    if (e.key === 'Enter') attemptUnlock();
-                });
-
-                input.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-                    for (let i = 0; i < pastedData.length; i++) {
-                        inputs[i].value = pastedData[i];
-                    }
-                    if (pastedData.length > 0) {
-                        inputs[Math.min(pastedData.length, 5)].focus();
-                    }
-                });
+            window.showSecurityPIN(routeName, () => {
+                if(targetHref) window.location.href = targetHref;
             });
         });
     });
@@ -3809,26 +3835,41 @@ function protectPrivilegedLinks() {
 async function initDailyTxn() {
     console.log('Initializing DailyTxn module...');
     
-    // Hide restricted links if not logged in
+    // Check if user is logged in
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    const isUnlocked = sessionStorage.getItem('dailyTxnUnlocked') === 'true';
+
     if (!isLoggedIn) {
-        console.log('User not logged in, hiding restricted navigation links...');
+        // Hide other navigation
         const restrictedLinks = document.querySelectorAll('.nav-link:not([href="daily-txn.html"]), #bottom-nav a:not([href="daily-txn.html"]), #logout-btn');
-        restrictedLinks.forEach(link => {
-            link.style.display = 'none';
-        });
+        restrictedLinks.forEach(link => { link.style.display = 'none'; });
         
-        // Also hide the author/footer section in sidebar if it exists
         const authorSection = document.querySelector('.mt-auto.p-4.border-t');
         if (authorSection) authorSection.style.display = 'none';
 
-        // Show back to login button
         const backBtnSidebar = document.getElementById('back-to-login-sidebar');
         const backBtnBottom = document.getElementById('back-to-login-bottom');
         if (backBtnSidebar) backBtnSidebar.classList.remove('hidden');
         if (backBtnBottom) backBtnBottom.classList.remove('hidden');
-    }
 
+        // Force PIN check if not unlocked this session
+        if (!isUnlocked) {
+            // Hide main content until unlocked
+            const mainContent = document.querySelector('main');
+            if (mainContent) mainContent.style.opacity = '0';
+
+            window.showSecurityPIN('Daily Transactions', () => {
+                sessionStorage.setItem('dailyTxnUnlocked', 'true');
+                if (mainContent) {
+                    mainContent.style.opacity = '1';
+                    mainContent.style.transition = 'opacity 0.5s ease';
+                }
+            }, () => {
+                // If cancelled, go back to login
+                window.location.href = 'index.html';
+            });
+        }
+    }
     const form = document.getElementById('daily-txn-form');
     if (!form) {
         console.warn('Daily Txn form not found on this page.');
@@ -3849,11 +3890,14 @@ async function initDailyTxn() {
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
+    const urnContainer = document.getElementById('urn-field-container');
+    const txnUrn = document.getElementById('txn-urn');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
     const addressFieldContainer = document.getElementById('address-field-container');
     const txnBank = document.getElementById('txn-bank');
     const bankContainer = document.getElementById('bank-field-container');
+    const chargesFieldContainer = document.getElementById('charges-field-container');
     const txnDateText = document.getElementById('current-date-text');
     const txnCountBadge = document.getElementById('txn-count-badge');
     const txnViewDate = document.getElementById('txn-view-date');
@@ -3866,6 +3910,7 @@ async function initDailyTxn() {
     const onlineWorkCountBadge = document.getElementById('online-work-count-badge');
     const passportCountBadge = document.getElementById('passport-count-badge');
     const laminationCountBadge = document.getElementById('lamination-count-badge');
+    
     const deleteModal = document.getElementById('delete-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
@@ -3912,8 +3957,10 @@ async function initDailyTxn() {
         txnProvider.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
+        if (txnUrn) txnUrn.value = '';
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
+        if (urnContainer) urnContainer.classList.add('hidden');
         if (bankContainer) bankContainer.classList.add('hidden');
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -3929,28 +3976,51 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION'];
+            const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE'];
+            const amountOnlyTypes = ['JIO_RECHARGE'];
+            const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
+            const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED'];
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
+        const isSimplified = simplifiedTypes.includes(txnType.value);
+        const isAmountOnly = amountOnlyTypes.includes(txnType.value);
+        const isNoteAndAmount = noteAndAmountTypes.includes(txnType.value);
+        const isCredit = creditTypes.includes(txnType.value);
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
-        txnNote.disabled = isChargesOnly;
-        txnAddress.disabled = isChargesOnly;
-        txnConditional.disabled = isChargesOnly;
+        txnNote.disabled = isChargesOnly || isSimplified || isAmountOnly;
+        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
 
-        if (isChargesOnly) {
+        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit) {
             conditionalContainer.classList.add('hidden');
-            if (amountFieldContainer) amountFieldContainer.classList.add('hidden');
-            if (noteFieldContainer) noteFieldContainer.classList.add('hidden');
+            if (amountFieldContainer) {
+                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit) amountFieldContainer.classList.remove('hidden');
+                else amountFieldContainer.classList.add('hidden');
+            }
+            if (noteFieldContainer) {
+                if (isNoteAndAmount || isCredit) noteFieldContainer.classList.remove('hidden');
+                else noteFieldContainer.classList.add('hidden');
+            }
             if (addressFieldContainer) addressFieldContainer.classList.add('hidden');
-            txnAmount.value = '';
-            txnNote.value = '';
+            
+            // Charges Field Visibility
+            if (chargesFieldContainer) {
+                if (isAmountOnly || isNoteAndAmount || isCredit) chargesFieldContainer.classList.add('hidden');
+                else chargesFieldContainer.classList.remove('hidden');
+            }
+            
+            if (isChargesOnly) txnAmount.value = '';
+            if (isAmountOnly || isNoteAndAmount || isCredit) txnCharges.value = '';
+            if (!isNoteAndAmount && !isCredit) txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
         } else {
             if (amountFieldContainer) amountFieldContainer.classList.remove('hidden');
             if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
             if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
+            if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
             
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
@@ -3966,21 +4036,74 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED'];
+        const remainingTypes = ['AEPS', 'MATM'];
+        
+        const providerLabel = document.querySelector('#provider-field-container label');
+
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            remainingContainer.classList.remove('hidden');
-            if (amountLabel) amountLabel.innerText = 'Txn Amount';
+            if (isCredit) {
+                if (providerLabel) providerLabel.innerText = 'Pay Mode';
+                if (amountLabel) amountLabel.innerText = 'Credit Amount';
+            } else {
+                if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (amountLabel) amountLabel.innerText = 'Txn Amount';
+            }
         } else {
             providerContainer.classList.add('hidden');
-            remainingContainer.classList.add('hidden');
             txnProvider.value = '';
-            txnRemaining.value = '';
             if (amountLabel) amountLabel.innerText = 'Amount';
         }
 
+        // Service Provider Options Filtering
+        if (txnProvider) {
+            const aepsMatmProviders = ['Airtel', 'Roinet', 'SpiceMoney', 'Crgb Bc'];
+            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
+            
+            const isAepsMatm = ['AEPS', 'MATM'].includes(txnType.value);
+            const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
+            const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value);
+            
+            Array.from(txnProvider.options).forEach(opt => {
+                if (!opt.value) return; // Skip placeholder
+                
+                if (isAepsMatm) {
+                    opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
+                } else if (isDepositWithdraw) {
+                    opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
+                } else if (isCredit) {
+                    opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
+                } else {
+                    opt.style.display = ''; // Show all for other types
+                }
+            });
+
+            // If current selected option is now hidden, reset to empty
+            if (txnProvider.selectedOptions[0] && txnProvider.selectedOptions[0].style.display === 'none') {
+                txnProvider.value = '';
+            }
+        }
+
+        // URN Field Visibility
+        if (txnProvider && txnProvider.value === 'Crgb Bc') {
+            if (urnContainer) urnContainer.classList.remove('hidden');
+        } else {
+            if (urnContainer) {
+                urnContainer.classList.add('hidden');
+                if (txnUrn) txnUrn.value = '';
+            }
+        }
+
+        if (remainingTypes.includes(txnType.value)) {
+            remainingContainer.classList.remove('hidden');
+        } else {
+            remainingContainer.classList.add('hidden');
+            txnRemaining.value = '';
+        }
+
         // Bank Name Visibility
-        if (txnType.value === 'AEPS' || txnType.value === 'MATM') {
+        if (['AEPS', 'MATM'].includes(txnType.value)) {
             bankContainer.classList.remove('hidden');
         } else {
             bankContainer.classList.add('hidden');
@@ -3990,8 +4113,11 @@ async function initDailyTxn() {
 
     if (txnType) {
         txnType.addEventListener('change', updateConditionalField);
-        updateConditionalField();
     }
+    if (txnProvider) {
+        txnProvider.addEventListener('change', updateConditionalField);
+    }
+    updateConditionalField();
 
     // Attach Submit Listener EARLY
     form.onsubmit = async (e) => {
@@ -4031,10 +4157,11 @@ async function initDailyTxn() {
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
-                extraDetails: (txnType.value === 'AEPS' || txnType.value === 'MATM') ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? txnProvider.value : '',
-                remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
-                bankName: (txnType.value === 'AEPS' || txnType.value === 'MATM') ? txnBank.value.trim() : '',
+                extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) ? txnProvider.value : '',
+                remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
+                urnNumber: (txnProvider && txnProvider.value === 'Crgb Bc') ? txnUrn.value.trim() : '',
+                bankName: (['AEPS', 'MATM'].includes(txnType.value)) ? txnBank.value.trim() : '',
                 date: currentSelectedDate,
                 timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
@@ -4062,6 +4189,83 @@ async function initDailyTxn() {
         }
     };
 
+    const updateDailyBalances = async (date, txns = []) => {
+        const cashDisplay = document.getElementById('summary-cash-balance');
+        const onlineDisplay = document.getElementById('summary-online-balance');
+        if (!cashDisplay || !onlineDisplay) return;
+
+        try {
+            // Match date formats
+            const [yr, mo, dy] = date.split('-');
+            
+            // Calculate yesterday's date
+            const current = new Date(yr, mo - 1, dy);
+            const yesterday = new Date(current);
+            yesterday.setDate(current.getDate() - 1);
+            
+            const y_yyyy = yesterday.getFullYear();
+            const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const y_dd = String(yesterday.getDate()).padStart(2, '0');
+            const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+            
+            const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const entriesRef = collection(db, "entries");
+            // Query for the entry from YESTERDAY
+            const q = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+            const querySnapshot = await getDocs(q);
+            
+            let entry = null;
+            if (!querySnapshot.empty) {
+                entry = querySnapshot.docs[0].data();
+            }
+
+            if (entry) {
+                const details = entry.details || {};
+                let cashVal = parseFloat(details.cash || 0);
+                let onlineVal = parseFloat(details.online || 0);
+                let roinetVal = parseFloat(details.roinet || 0);
+                let crgbBcVal = parseFloat(details.go2sms || 0);
+                let totalOnline = onlineVal + roinetVal + crgbBcVal;
+
+                // Adjust ONLY based on specific transaction types
+                txns.forEach(t => {
+                    const amt = parseFloat(t.amount || 0);
+                    const chg = parseFloat(t.charges || 0);
+                    
+                    // Always add charges to cash (since they are collected in cash)
+                    cashVal += chg;
+
+                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                        cashVal -= amt; 
+                        totalOnline += amt;
+                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT', 'DISH_TV_RECHARGE'].includes(t.type)) {
+                        cashVal += amt;
+                        totalOnline -= amt;
+                    } else if (t.type === 'JIO_RECHARGE') {
+                        cashVal += amt;
+                    } else if (t.type === 'JIO_TOPUP') {
+                        totalOnline -= amt;
+                    } else if (t.type === 'CREDIT_GIVEN') {
+                        if (t.provider === 'Cash') cashVal -= amt;
+                        else if (t.provider === 'Online') totalOnline -= amt;
+                    } else if (t.type === 'CREDIT_RECEIVED') {
+                        if (t.provider === 'Cash') cashVal += amt;
+                        else if (t.provider === 'Online') totalOnline += amt;
+                    }
+                });
+
+                cashDisplay.innerText = `₹ ${cashVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                onlineDisplay.innerText = `₹ ${totalOnline.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            } else {
+                cashDisplay.innerText = '₹ 0.00';
+                onlineDisplay.innerText = '₹ 0.00';
+            }
+        } catch (err) {
+            console.error('Error updating daily balances:', err);
+        }
+    };
+
     // Setup Firestore Listener and Load initial data
     const loadTransactions = (date) => {
         try {
@@ -4071,16 +4275,80 @@ async function initDailyTxn() {
             const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             if (txnDateText) txnDateText.innerText = displayDate;
 
+            // Initial load of balances (will be updated by snapshot)
+            updateDailyBalances(date, []);
+
             const txnCollection = collection(db, 'daily_transactions');
             const q = query(txnCollection, where('date', '==', date));
 
-            unsubscribe = onSnapshot(q, (snapshot) => {
+            unsubscribe = onSnapshot(q, async (snapshot) => {
                 console.log('Snapshot received for ' + date + ', docs:', snapshot.size);
                 if (!tableBody) return;
-                tableBody.innerHTML = '';
                 
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                // Fetch yesterday's balance to calculate running totals
+                const [yr, mo, dy] = date.split('-');
+                const current = new Date(yr, mo - 1, dy);
+                const yesterday = new Date(current);
+                yesterday.setDate(current.getDate() - 1);
+                const y_yyyy = yesterday.getFullYear();
+                const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+                const y_dd = String(yesterday.getDate()).padStart(2, '0');
+                const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+                const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                const entriesRef = collection(db, "entries");
+                const eq = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+                const eSnapshot = await getDocs(eq);
+                
+                let startCash = 0;
+                let startOnline = 0;
+                if (!eSnapshot.empty) {
+                    const eData = eSnapshot.docs[0].data();
+                    const d = eData.details || {};
+                    startCash = parseFloat(d.cash || 0);
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0);
+                }
+
+                // Update daily summary badges
+                updateDailyBalances(date, txns);
+
+                // Calculate running balances: Sort chronologically (Oldest first)
+                txns.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                
+                let currentCash = startCash;
+                let currentOnline = startOnline;
+
+                txns = txns.map(t => {
+                    const amt = parseFloat(t.amount || 0);
+                    const chg = parseFloat(t.charges || 0);
+                    currentCash += chg;
+
+                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                        currentCash -= amt;
+                        currentOnline += amt;
+                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT', 'DISH_TV_RECHARGE'].includes(t.type)) {
+                        currentCash += amt;
+                        currentOnline -= amt;
+                    } else if (t.type === 'JIO_RECHARGE') {
+                        currentCash += amt;
+                    } else if (t.type === 'JIO_TOPUP') {
+                        currentOnline -= amt;
+                    } else if (t.type === 'CREDIT_GIVEN') {
+                        if (t.provider === 'Cash') currentCash -= amt;
+                        else if (t.provider === 'Online') currentOnline -= amt;
+                    } else if (t.type === 'CREDIT_RECEIVED') {
+                        if (t.provider === 'Cash') currentCash += amt;
+                        else if (t.provider === 'Online') currentOnline += amt;
+                    }
+                    return { ...t, runningCash: currentCash, runningOnline: currentOnline };
+                });
+
+                // Clear table and render Latest First
+                tableBody.innerHTML = '';
+                txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
                 // Calculate type-wise stats
                 const stats = txns.reduce((acc, txn) => {
                     const type = txn.type;
@@ -4118,14 +4386,32 @@ async function initDailyTxn() {
                 updateBadge(matmCountBadge, 'MATM', 'MATM');
                 updateBadge(depositCountBadge, 'DEPOSIT', 'DEPOSIT');
                 updateBadge(withdrawalCountBadge, 'WITHDRAWAL', 'WITHDRAW');
+
                 updateBadge(photocopyCountBadge, 'PHOTOCOPY', 'PHOTOCOPY');
                 updateBadge(printoutCountBadge, 'PRINTOUT', 'PRINTOUT');
                 updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
                 updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
                 updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
 
-                // Client-side sorting: Latest on top
-                txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                const getShortBankName = (name) => {
+                    if (!name) return "";
+                    const n = name.toUpperCase().trim();
+                    const map = {
+                        'CHHATTISGARH GRAMEEN BANK': 'CRGB',
+                        'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+                        'STATE BANK OF INDIA': 'SBI',
+                        'INDIA POST PAYMENT BANK': 'IPPB',
+                        'BANK OF BARODA': 'BOB',
+                        'UCO BANK': 'UCO',
+                        'UNION BANK': 'UBI',
+                        'AIRTEL BANK': 'AIRTEL',
+                        'FINO BANK': 'FINO',
+                        'INDIAN BANK': 'INDIAN',
+                        'JILLA SAKAHARI BANK': 'JSB',
+                        'CHHATTISGARH GRAMIN BANK': 'CRGB'
+                    };
+                    return map[n] || name;
+                };
 
                 txns.forEach((txn, index) => {
                     const tr = document.createElement('tr');
@@ -4144,22 +4430,35 @@ async function initDailyTxn() {
                         <td class="px-6 py-4">
                             <div class="flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                    txn.type === 'WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
+                                    txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
                                     'bg-primary/10 text-primary'
-                                }">${txn.type}</span>
+                                }">${txn.type.replace('_', ' ')}</span>
                                 ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
                             </div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-1.5">
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
                                 ${txn.bankName ? `
                                     <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
                                         <span class="material-symbols-outlined text-[14px] text-blue-600">account_balance</span>
-                                        <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${txn.bankName}</span>
+                                        <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${getShortBankName(txn.bankName)}</span>
                                     </div>
                                 ` : ''}
+                                ${txn.urnNumber ? `
+                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                        <span class="material-symbols-outlined text-[14px] text-amber-600">tag</span>
+                                        <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">URN: ${txn.urnNumber}</span>
+                                    </div>
+                                ` : ''}
+                                ${(!txn.bankName && !txn.urnNumber) ? '<span class="text-[10px] text-slate-400 font-medium">--</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-1.5">
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
                                 ${txn.address || txn.extraDetails ? `
                                     <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
                                         ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
@@ -4175,6 +4474,12 @@ async function initDailyTxn() {
                             </div>
                         </td>
                         <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                                <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full text-center">C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
+                                <span class="text-[9px] font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full text-center">O: ₹${txn.runningOnline.toLocaleString('en-IN')}</span>
+                            </div>
+                        </td>
                         <td class="px-6 py-4">
                             <div class="flex justify-center gap-2">
                                 <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
@@ -4203,6 +4508,7 @@ async function initDailyTxn() {
                             txnProvider.value = txn.provider || '';
                             txnRemaining.value = txn.remainingAmount || '';
                             txnBank.value = txn.bankName || '';
+                            if (txnUrn) txnUrn.value = txn.urnNumber || '';
                             updateConditionalField();
 
                             const submitBtn = form.querySelector('button[type="submit"]');
