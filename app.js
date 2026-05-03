@@ -441,7 +441,7 @@ async function initAddEntry() {
                 input.value = val;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.value = details[id] !== undefined ? details[id] : '';
@@ -472,7 +472,7 @@ async function initAddEntry() {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el && draft.data[id] !== undefined) {
                             el.value = draft.data[id];
@@ -491,9 +491,12 @@ async function initAddEntry() {
                         input.value = '';
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
-                        if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (el) { 
+                            el.value = (id === 'gold_sip') ? '206' : ''; 
+                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                        }
                     });
                     const notesEl = document.getElementById('expense_notes');
                     if (notesEl) { notesEl.value = ''; notesEl.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -504,9 +507,12 @@ async function initAddEntry() {
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                 });
-                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+                    if (el) { 
+                        el.value = (id === 'gold_sip') ? '206' : ''; 
+                        el.dispatchEvent(new Event('input', { bubbles: true })); 
+                    }
                 });
                 const notesEl = document.getElementById('expense_notes');
                 if (notesEl) { notesEl.value = ''; notesEl.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -613,7 +619,7 @@ async function initAddEntry() {
                     draft.data[fieldName] = parseFloat(input.value);
                 }
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.value !== '') {
                     draft.data[id] = parseFloat(el.value);
@@ -630,7 +636,7 @@ async function initAddEntry() {
                 saveDraft();
             }
         });
-        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.addEventListener('input', saveDraft);
         });
@@ -821,7 +827,8 @@ async function initAddEntry() {
                       (parseFloat(ex_e.value) || 0) + 
                       (parseFloat(ex_r.value) || 0) + 
                       (parseFloat(ex_b.value) || 0) + 
-                      (parseFloat(ex_i.value) || 0);
+                      (parseFloat(ex_i.value) || 0) +
+                      (parseFloat(document.getElementById('gold_sip')?.value) || 0);
         if(expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
     };
@@ -848,7 +855,8 @@ async function initAddEntry() {
         if(closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
         if(expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
 
-        [ex_p, ex_s, ex_e, ex_r, ex_b, ex_i].forEach(inp => {
+        ['personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+            const inp = document.getElementById(id);
             if(inp) inp.addEventListener('input', updateExpenseSplitTotal);
         });
 
@@ -905,7 +913,7 @@ async function initAddEntry() {
             let withdrawal = 0;
             const details = {};
 
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && parseFloat(el.value) > 0) {
                     details[id] = parseFloat(el.value);
@@ -932,7 +940,7 @@ async function initAddEntry() {
                     // Do NOT add to income
                 } else if (fieldName === 'deposit') {
                     // Do NOT add to income, it's a liability to be subtracted from total
-                } else if (['expense', 'purchase', 'bill', 'daily expense'].some(kw => fieldName.includes(kw))) {
+                } else if (['expense', 'purchase', 'bill', 'daily expense', 'sip'].some(kw => fieldName.includes(kw))) {
                     expense += val;
                 } else {
                     income += val;
@@ -1002,10 +1010,10 @@ async function initAddEntry() {
             form.reset();
             
             // Clear modal inputs which are outside the form
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) { 
-                    el.value = ''; 
+                    el.value = (id === 'gold_sip') ? '206' : ''; 
                     el.dispatchEvent(new Event('input', { bubbles: true })); 
                 }
             });
@@ -3885,6 +3893,7 @@ async function initDailyTxn() {
     const txnNote = document.getElementById('txn-note');
     const txnAddress = document.getElementById('txn-address');
     const txnCharges = document.getElementById('txn-charges');
+    const txnChargesType = document.getElementById('txn-charges-type');
     const txnConditional = document.getElementById('txn-conditional');
     const txnProvider = document.getElementById('txn-provider');
     const conditionalLabel = document.getElementById('conditional-label');
@@ -3898,6 +3907,7 @@ async function initDailyTxn() {
     const txnBank = document.getElementById('txn-bank');
     const bankContainer = document.getElementById('bank-field-container');
     const chargesFieldContainer = document.getElementById('charges-field-container');
+    const chargesModeContainer = document.getElementById('charges-mode-container');
     const txnDateText = document.getElementById('current-date-text');
     const txnCountBadge = document.getElementById('txn-count-badge');
     const txnViewDate = document.getElementById('txn-view-date');
@@ -3916,6 +3926,7 @@ async function initDailyTxn() {
     const confirmDeleteBtn = document.getElementById('confirm-delete');
 
     let editingTxnId = null;
+    let editingTxnTimestamp = null;
     let deletingTxnId = null;
     let unsubscribe = null;
     let currentSelectedDate = new Date().toISOString().split('T')[0];
@@ -3952,12 +3963,14 @@ async function initDailyTxn() {
 
     const resetFormState = () => {
         editingTxnId = null;
+        editingTxnTimestamp = null;
         form.reset();
         txnType.value = 'AEPS';
         txnProvider.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
         if (txnUrn) txnUrn.value = '';
+        if (txnChargesType) txnChargesType.value = 'Cash';
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
         if (urnContainer) urnContainer.classList.add('hidden');
@@ -4007,8 +4020,16 @@ async function initDailyTxn() {
             
             // Charges Field Visibility
             if (chargesFieldContainer) {
-                if (isAmountOnly || isNoteAndAmount || isCredit) chargesFieldContainer.classList.add('hidden');
-                else chargesFieldContainer.classList.remove('hidden');
+                if (isAmountOnly || isNoteAndAmount || isCredit) {
+                    chargesFieldContainer.classList.add('hidden');
+                    if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
+                } else if (['JIO_TOPUP', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
+                    chargesFieldContainer.classList.remove('hidden');
+                    if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
+                } else {
+                    chargesFieldContainer.classList.remove('hidden');
+                    if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
+                }
             }
             
             if (isChargesOnly) txnAmount.value = '';
@@ -4021,6 +4042,7 @@ async function initDailyTxn() {
             if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
             if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
             if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
+            if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
             
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
@@ -4035,17 +4057,30 @@ async function initDailyTxn() {
             }
         }
 
+        // Set Default Charges Mode based on Type
+        if (['JIO_TOPUP', 'ROINET_COMMISSION'].includes(txnType.value)) {
+            if (txnChargesType) txnChargesType.value = 'Online';
+        } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
+            // Sync with Pay Mode for recharges
+            if (txnProvider && txnChargesType) {
+                txnChargesType.value = txnProvider.value || 'Cash';
+            }
+        } else if (!editingTxnId && txnChargesType) {
+            // Default to Cash for others if creating new
+            txnChargesType.value = 'Cash';
+        }
+
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit) {
+            if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = 'Pay Mode';
-                if (amountLabel) amountLabel.innerText = 'Credit Amount';
+                if (amountLabel) amountLabel.innerText = 'Amount';
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
                 if (amountLabel) amountLabel.innerText = 'Txn Amount';
@@ -4072,7 +4107,7 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (isCredit) {
+                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
                     opt.style.display = ''; // Show all for other types
@@ -4131,7 +4166,7 @@ async function initDailyTxn() {
         }
 
         try {
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION'];
             const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
             
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
@@ -4155,6 +4190,7 @@ async function initDailyTxn() {
                 type: txnType.value,
                 amount: amountVal,
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
+                chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
@@ -4163,7 +4199,7 @@ async function initDailyTxn() {
                 urnNumber: (txnProvider && txnProvider.value === 'Crgb Bc') ? txnUrn.value.trim() : '',
                 bankName: (['AEPS', 'MATM'].includes(txnType.value)) ? txnBank.value.trim() : '',
                 date: currentSelectedDate,
-                timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+                timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
 
             console.log('Attempting to ' + (editingTxnId ? 'update' : 'add') + ' doc in Firestore:', newTxn);
@@ -4233,17 +4269,27 @@ async function initDailyTxn() {
                     const amt = parseFloat(t.amount || 0);
                     const chg = parseFloat(t.charges || 0);
                     
-                    // Always add charges to cash (since they are collected in cash)
-                    cashVal += chg;
+                    // Add charges to correct bucket
+                    if (t.chargesType === 'Online') {
+                        totalOnline += chg;
+                    } else {
+                        cashVal += chg;
+                    }
 
                     if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         cashVal -= amt; 
                         totalOnline += amt;
-                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT', 'DISH_TV_RECHARGE'].includes(t.type)) {
+                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         cashVal += amt;
                         totalOnline -= amt;
+                    } else if (t.type === 'DISHTV_RECHARGE') {
+                        totalOnline -= amt;
+                        if (t.provider === 'Online') totalOnline += amt;
+                        else cashVal += amt;
                     } else if (t.type === 'JIO_RECHARGE') {
-                        cashVal += amt;
+                        totalOnline -= amt;
+                        if (t.provider === 'Online') totalOnline += amt;
+                        else cashVal += amt;
                     } else if (t.type === 'JIO_TOPUP') {
                         totalOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
@@ -4323,16 +4369,27 @@ async function initDailyTxn() {
                 txns = txns.map(t => {
                     const amt = parseFloat(t.amount || 0);
                     const chg = parseFloat(t.charges || 0);
-                    currentCash += chg;
+                    
+                    if (t.chargesType === 'Online') {
+                        currentOnline += chg;
+                    } else {
+                        currentCash += chg;
+                    }
 
                     if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
                         currentOnline += amt;
-                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT', 'DISH_TV_RECHARGE'].includes(t.type)) {
+                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
                         currentOnline -= amt;
+                    } else if (t.type === 'DISHTV_RECHARGE') {
+                        currentOnline -= amt;
+                        if (t.provider === 'Online') currentOnline += amt;
+                        else currentCash += amt;
                     } else if (t.type === 'JIO_RECHARGE') {
-                        currentCash += amt;
+                        currentOnline -= amt;
+                        if (t.provider === 'Online') currentOnline += amt;
+                        else currentCash += amt;
                     } else if (t.type === 'JIO_TOPUP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
@@ -4359,13 +4416,17 @@ async function initDailyTxn() {
                     return acc;
                 }, {});
 
-                const totalDayAmount = txns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-                const totalDayCharges = txns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
+                // Types jo count/volume se exclude honge
+                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE'];
+                const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
+
+                const totalDayAmount = countableTxns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+                const totalDayCharges = countableTxns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
 
                 if (txnCountBadge) txnCountBadge.innerHTML = `
                     <div class="flex flex-col items-start leading-tight">
                         <span class="text-[10px] opacity-60 uppercase font-black">All TXNS</span>
-                        <span class="text-sm font-black">${txns.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
+                        <span class="text-sm font-black">${countableTxns.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
                         <span class="text-[9px] text-amber-500 font-bold">Fees: ₹${totalDayCharges.toLocaleString('en-IN')}</span>
                     </div>
                 `;
@@ -4393,6 +4454,45 @@ async function initDailyTxn() {
                 updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
                 updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
 
+                // Update type-wise detail cards
+                const updateCard = (cardId, type) => {
+                    const s = stats[type] || { count: 0, amount: 0, charges: 0 };
+                    const countEl = document.getElementById(`card-${cardId}-count`);
+                    const amountEl = document.getElementById(`card-${cardId}-amount`);
+                    const feesEl = document.getElementById(`card-${cardId}-fees`);
+                    if (countEl) countEl.textContent = s.count;
+                    if (amountEl) amountEl.textContent = '₹' + s.amount.toLocaleString('en-IN');
+                    if (feesEl) feesEl.textContent = 'Fees: ₹' + s.charges.toLocaleString('en-IN');
+                };
+
+                updateCard('aeps', 'AEPS');
+                updateCard('matm', 'MATM');
+                updateCard('deposit', 'DEPOSIT');
+                updateCard('withdrawal', 'WITHDRAWAL');
+                updateCard('photocopy', 'PHOTOCOPY');
+                updateCard('printout', 'PRINTOUT');
+                updateCard('online-work', 'ONLINE_WORK');
+                updateCard('passport', 'PASSPORT');
+                updateCard('lamination', 'LAMINATION');
+                updateCard('roinet', 'ROINET_COMMISSION');
+                updateCard('jio-topup', 'JIO_TOPUP');
+                updateCard('dishtv', 'DISHTV_RECHARGE');
+                updateCard('jio-recharge', 'JIO_RECHARGE');
+                updateCard('admin-deposit', 'ADMIN_DEPOSIT');
+                updateCard('admin-withdrawal', 'ADMIN_WITHDRAWAL');
+                updateCard('credit-given', 'CREDIT_GIVEN');
+                updateCard('credit-received', 'CREDIT_RECEIVED');
+
+                // Update 8 remaining type badges (same style as top row)
+                updateBadge(document.getElementById('roinet-count-badge'), 'ROINET_COMMISSION', 'ROINET');
+                updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
+                updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
+                updateBadge(document.getElementById('jio-recharge-count-badge'), 'JIO_RECHARGE', 'JIO RCHG');
+                updateBadge(document.getElementById('admin-deposit-count-badge'), 'ADMIN_DEPOSIT', 'ADM DEP');
+                updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'ADMIN_WITHDRAWAL', 'ADM WDRL');
+                updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
+                updateBadge(document.getElementById('credit-received-count-badge'), 'CREDIT_RECEIVED', 'CR RECD');
+
                 const getShortBankName = (name) => {
                     if (!name) return "";
                     const n = name.toUpperCase().trim();
@@ -4413,21 +4513,29 @@ async function initDailyTxn() {
                     return map[n] || name;
                 };
 
+                // Serial number sirf countable txns ke liye — latest first order mein
+                const countableIds = txns
+                    .filter(t => !excludedTypes.includes(t.type))
+                    .map(t => t.id); // already sorted latest-first
+
                 txns.forEach((txn, index) => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-primary/5 transition-colors group';
                     
                     const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                    const isExcluded = excludedTypes.includes(txn.type);
+                    // Serial: countable txns mein is txn ki position (latest = highest number)
+                    const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
                     
                     tr.innerHTML = `
-                        <td class="px-6 py-4"><span class="text-xs font-bold text-slate-500">#${txns.length - index}</span></td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-1.5"><span class="text-xs font-bold text-slate-500">${isExcluded ? '<span class="text-slate-300">—</span>' : '#' + serialPos}</span></td>
+                        <td class="px-3 py-1.5">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
                                 <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
                                     txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
@@ -4439,7 +4547,7 @@ async function initDailyTxn() {
                                 ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
                             </div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-1.5">
                             <div class="flex flex-col gap-1.5">
                                 ${txn.bankName ? `
                                     <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
@@ -4456,7 +4564,7 @@ async function initDailyTxn() {
                                 ${(!txn.bankName && !txn.urnNumber) ? '<span class="text-[10px] text-slate-400 font-medium">--</span>' : ''}
                             </div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-1.5">
                             <div class="flex flex-col gap-1.5">
                                 <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
                                 ${txn.address || txn.extraDetails ? `
@@ -4467,20 +4575,25 @@ async function initDailyTxn() {
                                 ` : ''}
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right">
+                        <td class="px-3 py-1.5 text-right">
                             <div class="flex flex-col items-end">
                                 <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                 ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right"><span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                                <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full text-center">C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
-                                <span class="text-[9px] font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full text-center">O: ₹${txn.runningOnline.toLocaleString('en-IN')}</span>
+                        <td class="px-3 py-1.5 text-right">
+                            <div class="flex flex-col items-end">
+                                <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                <span class="text-[8px] font-black uppercase tracking-widest ${txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500'}">${txn.chargesType || 'Cash'}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 py-1.5 balance-col-cell">
+                            <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full text-center">C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
+                                <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full text-center">O: ₹${txn.runningOnline.toLocaleString('en-IN')}</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-1.5">
                             <div class="flex justify-center gap-2">
                                 <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
                                     <span class="material-symbols-outlined text-sm">edit</span>
@@ -4499,6 +4612,7 @@ async function initDailyTxn() {
                         const txn = txns.find(t => t.id === btn.dataset.id);
                         if (txn) {
                             editingTxnId = txn.id;
+                            editingTxnTimestamp = txn.timestamp || null;
                             txnType.value = txn.type;
                             txnAmount.value = txn.amount;
                             txnCharges.value = txn.charges;
@@ -4509,6 +4623,7 @@ async function initDailyTxn() {
                             txnRemaining.value = txn.remainingAmount || '';
                             txnBank.value = txn.bankName || '';
                             if (txnUrn) txnUrn.value = txn.urnNumber || '';
+                            if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
                             updateConditionalField();
 
                             const submitBtn = form.querySelector('button[type="submit"]');
@@ -4532,6 +4647,25 @@ async function initDailyTxn() {
             console.error('Error setting up daily txn listener:', e);
         }
     };
+
+    // Search Functionality
+    const searchInput = document.getElementById('txn-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                // Combine relevant text from the row for searching
+                const text = row.innerText.toLowerCase();
+                if (text.includes(term)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
 
     // Initial load
     loadTransactions(currentSelectedDate);

@@ -187,6 +187,78 @@
 <p class="text-slate-500 text-sm">Manage your local data and application settings.</p>
 </section>
 
+<!-- Daily Txn Display Settings (PIN Protected) -->
+<div id="dtxn-settings-container" class="relative bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6 overflow-hidden">
+    <!-- Lock Overlay -->
+    <div id="dtxn-lock-overlay" class="absolute inset-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 transition-all duration-500">
+        <div class="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-lg shadow-primary/5 animate-bounce">
+            <span class="material-symbols-outlined text-3xl">lock</span>
+        </div>
+        <div class="text-center">
+            <h4 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Section Locked</h4>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enter PIN to access display controls</p>
+        </div>
+        <button id="btn-unlock-dtxn" class="px-8 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">key</span> UNLOCK NOW
+        </button>
+    </div>
+
+    <div class="flex items-center gap-3 mb-2">
+        <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined">point_of_sale</span>
+        </div>
+        <div>
+            <h4 class="text-lg font-bold">Daily Txn Page Display</h4>
+            <p class="text-sm text-slate-500">Control what's visible on the Daily Transactions page. Data loads in background regardless.</p>
+        </div>
+    </div>
+
+    <!-- Toggle: Summary Area -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/5">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary">dashboard</span>
+            <div>
+                <p class="font-bold text-sm">Summary Badges Area</p>
+                <p class="text-xs text-slate-500">Show/hide the Today's Transactions Summary section with all badge cards.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+        </label>
+    </div>
+
+    <!-- Toggle: Balance Column -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-indigo-600">account_balance_wallet</span>
+            <div>
+                <p class="font-bold text-sm">Balance (C/O) Column</p>
+                <p class="text-xs text-slate-500">Show/hide the running balance carry-over column in the transactions table.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-balance-col" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+    </div>
+
+    <!-- Toggle: Delete Button -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-rose-600">delete</span>
+            <div>
+                <p class="font-bold text-sm">Table Delete Button</p>
+                <p class="text-xs text-slate-500">Show/hide the delete action button in the transactions table.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-delete-btn" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+        </label>
+    </div>
+</div>
+
 <!-- Data Management Box -->
 <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-8">
         <!-- Bulk Data Import (CSV) -->
@@ -333,7 +405,78 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
+<!-- PIN Modal for Settings Section -->
+<div id="settings-pin-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-primary/10 overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300">
+        <div class="p-8 text-center bg-white dark:bg-slate-900">
+            <div class="size-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                <span class="material-symbols-outlined text-3xl">password</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Enter Access PIN</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mb-8 uppercase tracking-widest">Section Protection Enabled</p>
+            
+            <input type="password" id="settings-pin-input" maxlength="6" placeholder="******" class="w-full px-4 py-4 text-center text-2xl font-black tracking-[1rem] border border-primary/20 rounded-xl bg-slate-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-primary transition-all mb-6">
+
+            <div class="flex gap-3">
+                <button id="btn-cancel-pin" class="flex-1 px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors">Cancel</button>
+                <button id="btn-submit-pin" class="flex-1 px-6 py-3 bg-primary text-white font-bold rounded-xl text-sm shadow-lg shadow-primary/20 active:scale-95 transition-all">Verify</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="app.js"></script>
+<script>
+// Daily Txn Display Settings — localStorage based
+const summaryToggle = document.getElementById('toggle-summary-area');
+const balanceToggle = document.getElementById('toggle-balance-col');
+const deleteToggle = document.getElementById('toggle-delete-btn');
+const unlockBtn = document.getElementById('btn-unlock-dtxn');
+const lockOverlay = document.getElementById('dtxn-lock-overlay');
+const pinModal = document.getElementById('settings-pin-modal');
+const pinInput = document.getElementById('settings-pin-input');
+const submitPinBtn = document.getElementById('btn-submit-pin');
+const cancelPinBtn = document.getElementById('btn-cancel-pin');
+
+const CORRECT_PIN = "252006";
+
+// Unlock Logic
+unlockBtn.addEventListener('click', () => {
+    pinModal.classList.remove('hidden');
+    pinInput.value = '';
+    pinInput.focus();
+});
+
+cancelPinBtn.addEventListener('click', () => pinModal.classList.add('hidden'));
+
+submitPinBtn.addEventListener('click', () => {
+    if (pinInput.value === CORRECT_PIN) {
+        lockOverlay.classList.add('hidden');
+        pinModal.classList.add('hidden');
+    } else {
+        alert('❌ Incorrect PIN! Access Denied.');
+        pinInput.value = '';
+        pinInput.focus();
+    }
+});
+
+// Load saved preferences
+summaryToggle.checked = localStorage.getItem('dtxn_showSummary') !== 'false';
+balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
+deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
+
+// Save on change
+summaryToggle.addEventListener('change', () => {
+    localStorage.setItem('dtxn_showSummary', summaryToggle.checked);
+});
+balanceToggle.addEventListener('change', () => {
+    localStorage.setItem('dtxn_showBalance', balanceToggle.checked);
+});
+deleteToggle.addEventListener('change', () => {
+    localStorage.setItem('dtxn_showDelete', deleteToggle.checked);
+});
+</script>
 </body>
 </html>
 
