@@ -3991,7 +3991,7 @@ async function initDailyTxn() {
         
             const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION'];
             const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE'];
-            const amountOnlyTypes = ['JIO_RECHARGE'];
+            const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP'];
             const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
             const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED'];
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
@@ -4290,7 +4290,7 @@ async function initDailyTxn() {
                         totalOnline -= amt;
                         if (t.provider === 'Online') totalOnline += amt;
                         else cashVal += amt;
-                    } else if (t.type === 'JIO_TOPUP') {
+                    } else if (t.type === 'JIO_TOPUP' || t.type === 'GOLD_SIP') {
                         totalOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
                         if (t.provider === 'Cash') cashVal -= amt;
@@ -4333,6 +4333,31 @@ async function initDailyTxn() {
                 
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                // AUTO GOLD SIP LOGIC
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (date === todayStr) {
+                    const hasGoldSip = txns.some(t => t.type === 'GOLD_SIP');
+                    if (!hasGoldSip) {
+                        const newTxn = {
+                            type: 'GOLD_SIP',
+                            amount: 206,
+                            charges: 0,
+                            chargesType: 'Online',
+                            note: 'Auto Daily Deduction',
+                            address: '',
+                            extraDetails: '',
+                            provider: '',
+                            remainingAmount: 0,
+                            urnNumber: '',
+                            bankName: '',
+                            date: todayStr,
+                            timestamp: { seconds: Math.floor(new Date().setHours(0,0,0,0) / 1000) + 60, nanoseconds: 0 }
+                        };
+                        addDoc(txnCollection, newTxn).catch(e => console.error("Auto Gold SIP error:", e));
+                        return; // Let the next snapshot render the data
+                    }
+                }
+
                 // Fetch yesterday's balance to calculate running totals
                 const [yr, mo, dy] = date.split('-');
                 const current = new Date(yr, mo - 1, dy);
@@ -4390,7 +4415,7 @@ async function initDailyTxn() {
                         currentOnline -= amt;
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
-                    } else if (t.type === 'JIO_TOPUP') {
+                    } else if (t.type === 'JIO_TOPUP' || t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
                         if (t.provider === 'Cash') currentCash -= amt;
@@ -4483,7 +4508,8 @@ async function initDailyTxn() {
                 updateCard('credit-given', 'CREDIT_GIVEN');
                 updateCard('credit-received', 'CREDIT_RECEIVED');
 
-                // Update 8 remaining type badges (same style as top row)
+                // Update 9 remaining type badges (same style as top row)
+                updateBadge(document.getElementById('gold-sip-count-badge'), 'GOLD_SIP', 'GOLD SIP');
                 updateBadge(document.getElementById('roinet-count-badge'), 'ROINET_COMMISSION', 'ROINET');
                 updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
                 updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
@@ -4528,7 +4554,7 @@ async function initDailyTxn() {
                     const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
                     
                     tr.innerHTML = `
-                        <td class="px-3 py-1.5"><span class="text-xs font-bold text-slate-500">${isExcluded ? '<span class="text-slate-300">—</span>' : '#' + serialPos}</span></td>
+                        <td class="px-3 py-1.5"><span class="text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
@@ -4540,6 +4566,7 @@ async function initDailyTxn() {
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
                                     txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
                                     txn.type === 'WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
                                     txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
                                     'bg-primary/10 text-primary'
@@ -4561,12 +4588,12 @@ async function initDailyTxn() {
                                         <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">URN: ${txn.urnNumber}</span>
                                     </div>
                                 ` : ''}
-                                ${(!txn.bankName && !txn.urnNumber) ? '<span class="text-[10px] text-slate-400 font-medium">--</span>' : ''}
+                                ${(!txn.bankName && !txn.urnNumber) ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : ''}
                             </div>
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col gap-1.5">
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
+                                ${txn.note ? `<span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note}</span>` : `<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">No Details</span>`}
                                 ${txn.address || txn.extraDetails ? `
                                     <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
                                         ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}

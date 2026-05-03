@@ -59,7 +59,7 @@
         }
     </style>
     <script src="auth.js"></script>
-    <link rel="icon" type="image/svg+xml" href="logo.svg"/>
+    <link rel="icon" type="image/png" href="favicon.png"/>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased min-h-screen">
     <div class="flex h-screen overflow-hidden">
@@ -72,7 +72,7 @@
             </div>
             <div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
                 <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src="logo.svg" class="w-full h-full object-cover">
+                    <img src="favicon.png" class="w-full h-full object-cover">
                 </div>
                 <div class="sidebar-text overflow-hidden whitespace-nowrap">
                     <h1 class="text-sm font-bold leading-none">BizPerform</h1>
@@ -184,6 +184,7 @@
                                 <option value="ONLINE_WORK">ONLINE WORK</option>
                                 <option value="PASSPORT">PASSPORT</option>
                                 <option value="LAMINATION">LAMINATION</option>
+                                <option value="GOLD_SIP">GOLD SIP</option>
                                 <option value="ROINET_COMMISSION">ROINET COMMISSION</option>
                                 <option value="JIO_TOPUP">JIO TOPUP</option>
                                 <option value="DISHTV_RECHARGE">DISHTV RECHARGE</option>
@@ -324,8 +325,9 @@
                         <span id="lamination-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     </div>
 
-                    <!-- Remaining 8 Type Badges (same style as top) -->
+                    <!-- Remaining 9 Type Badges (same style as top) -->
                     <div class="flex flex-wrap lg:flex-nowrap gap-1">
+                        <span id="gold-sip-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
                         <span id="roinet-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
                         <span id="jio-topup-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
                         <span id="dishtv-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
