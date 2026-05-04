@@ -24,6 +24,47 @@ let incomeGrowthChart = null;
 let expenseGrowthChart = null;
 let monthlyComparisonChart = null;
 
+// Global App Settings Listener
+let globalSettingsUnsubscribe = null;
+function initGlobalSettings() {
+    if (!db) return;
+    const settingsRef = doc(db, "app_settings", "global");
+    globalSettingsUnsubscribe = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            let changed = false;
+
+            const checkAndSet = (key, val) => {
+                if (val !== undefined && localStorage.getItem(key) !== String(val)) {
+                    localStorage.setItem(key, val);
+                    changed = true;
+                }
+            };
+
+            checkAndSet('dtxn_showSummary', data.dtxn_showSummary);
+            checkAndSet('dtxn_showBalance', data.dtxn_showBalance);
+            checkAndSet('dtxn_showDelete', data.dtxn_showDelete);
+            checkAndSet('dtxn_showCharges', data.dtxn_showCharges);
+            
+            if (changed) {
+                window.dispatchEvent(new Event('appSettingsUpdated'));
+            }
+        }
+    });
+}
+window.saveAppSettings = async function(settings) {
+    if (!db) return null;
+    try {
+        await setDoc(doc(db, "app_settings", "global"), settings, { merge: true });
+        return { message: "Settings saved" };
+    } catch (e) {
+        console.error("Error saving app settings: ", e);
+        return null;
+    }
+};
+
+// Call right away to keep localStorage synced
+initGlobalSettings();
 // Helper for Firestore calls (maintaining naming for compatibility where possible)
 async function loadEntries() {
     if (!db) { console.error("Firestore db not initialized in loadEntries"); return []; }
@@ -3071,6 +3112,8 @@ async function initReports() {
             acc.categories.rent += parseFloat(details.shop_rent_expense) || 0;
             acc.categories.bizDev += parseFloat(details.business_development) || 0;
             acc.categories.internet += parseFloat(details.internet_expense) || 0;
+            acc.categories.goldSip += parseFloat(details.gold_sip) || 0;
+            
             
             if (inc > peakDayIncome) {
                 peakDayIncome = inc;
@@ -3098,7 +3141,8 @@ async function initReports() {
                 electricity: 0,
                 rent: 0,
                 bizDev: 0,
-                internet: 0
+                internet: 0,
+                goldSip: 0
             }
         });
 
@@ -3182,8 +3226,8 @@ async function initReports() {
             const cntEl = document.getElementById(`summary-txn-${idPrefix}-count`);
             const feeEl = document.getElementById(`summary-txn-${idPrefix}-fees`);
             if (amtEl) amtEl.innerText = formatCurrency(data.amount || 0);
-            if (cntEl) cntEl.innerText = `${(data.count || 0)} Transactions`;
-            if (feeEl) feeEl.innerText = `Fees: ${formatCurrency(data.charges || 0)}`;
+            if (cntEl) cntEl.innerText = (data.count || 0);
+            if (feeEl) feeEl.innerText = `F: ${formatCurrency(data.charges || 0)}`;
         };
 
         updateTxnCard('total', { amount: txnStats.totalAmount, count: txnStats.totalCount, charges: txnStats.totalCharges });
@@ -3191,6 +3235,17 @@ async function initReports() {
         updateTxnCard('matm', txnStats['MATM'] || {});
         updateTxnCard('deposit', txnStats['DEPOSIT'] || {});
         updateTxnCard('withdrawal', txnStats['WITHDRAWAL'] || {});
+        
+        // New categories from image
+        updateTxnCard('gold_sip', txnStats['GOLD_SIP'] || {});
+        updateTxnCard('roinet', txnStats['ROINET_COMMISSION'] || {});
+        updateTxnCard('jio_topup', txnStats['JIO_TOPUP'] || {});
+        updateTxnCard('dishtv', txnStats['DISHTV_RECHARGE'] || {});
+        updateTxnCard('jio_recharge', txnStats['JIO_RECHARGE'] || {});
+        updateTxnCard('admin_deposit', txnStats['ADMIN_DEPOSIT'] || {});
+        updateTxnCard('admin_withdrawal', txnStats['ADMIN_WITHDRAWAL'] || {});
+        updateTxnCard('credit_given', txnStats['CREDIT_GIVEN'] || {});
+        updateTxnCard('credit_received', txnStats['CREDIT_RECEIVED'] || {});
 
         // Update Service Stats in Reports
         const updateServiceCard = (idPrefix, data) => {
@@ -3221,7 +3276,8 @@ async function initReports() {
                 { label: 'Electricity Expense', val: totals.categories.electricity, icon: 'bolt', color: 'text-amber-500' },
                 { label: 'Shop Rent Expense', val: totals.categories.rent, icon: 'store', color: 'text-purple-500' },
                 { label: 'Business Development', val: totals.categories.bizDev, icon: 'trending_up', color: 'text-cyan-500' },
-                { label: 'Internet Expense', val: totals.categories.internet, icon: 'wifi', color: 'text-rose-500' }
+                { label: 'Internet Expense', val: totals.categories.internet, icon: 'wifi', color: 'text-rose-500' },
+                { label: 'Gold SIP', val: totals.categories.goldSip, icon: 'savings', color: 'text-amber-600' }
             ];
 
             const totalCatExpense = Object.values(totals.categories).reduce((a, b) => a + b, 0);
@@ -3899,8 +3955,6 @@ async function initDailyTxn() {
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
-    const urnContainer = document.getElementById('urn-field-container');
-    const txnUrn = document.getElementById('txn-urn');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
     const addressFieldContainer = document.getElementById('address-field-container');
@@ -3969,11 +4023,9 @@ async function initDailyTxn() {
         txnProvider.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
-        if (txnUrn) txnUrn.value = '';
         if (txnChargesType) txnChargesType.value = 'Cash';
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
-        if (urnContainer) urnContainer.classList.add('hidden');
         if (bankContainer) bankContainer.classList.add('hidden');
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -4120,15 +4172,6 @@ async function initDailyTxn() {
             }
         }
 
-        // URN Field Visibility
-        if (txnProvider && txnProvider.value === 'Crgb Bc') {
-            if (urnContainer) urnContainer.classList.remove('hidden');
-        } else {
-            if (urnContainer) {
-                urnContainer.classList.add('hidden');
-                if (txnUrn) txnUrn.value = '';
-            }
-        }
 
         if (remainingTypes.includes(txnType.value)) {
             remainingContainer.classList.remove('hidden');
@@ -4196,7 +4239,7 @@ async function initDailyTxn() {
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
-                urnNumber: (txnProvider && txnProvider.value === 'Crgb Bc') ? txnUrn.value.trim() : '',
+
                 bankName: (['AEPS', 'MATM'].includes(txnType.value)) ? txnBank.value.trim() : '',
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
@@ -4228,6 +4271,8 @@ async function initDailyTxn() {
     const updateDailyBalances = async (date, txns = []) => {
         const cashDisplay = document.getElementById('summary-cash-balance');
         const onlineDisplay = document.getElementById('summary-online-balance');
+        const cashMobileDisplay = document.getElementById('summary-cash-balance-mobile');
+        const onlineMobileDisplay = document.getElementById('summary-online-balance-mobile');
         if (!cashDisplay || !onlineDisplay) return;
 
         try {
@@ -4301,11 +4346,18 @@ async function initDailyTxn() {
                     }
                 });
 
-                cashDisplay.innerText = `₹ ${cashVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-                onlineDisplay.innerText = `₹ ${totalOnline.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                const cashFormatted = `₹ ${cashVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                const onlineFormatted = `₹ ${totalOnline.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                
+                cashDisplay.innerText = cashFormatted;
+                onlineDisplay.innerText = onlineFormatted;
+                if (cashMobileDisplay) cashMobileDisplay.innerText = cashFormatted;
+                if (onlineMobileDisplay) onlineMobileDisplay.innerText = onlineFormatted;
             } else {
                 cashDisplay.innerText = '₹ 0.00';
                 onlineDisplay.innerText = '₹ 0.00';
+                if (cashMobileDisplay) cashMobileDisplay.innerText = '₹ 0.00';
+                if (onlineMobileDisplay) onlineMobileDisplay.innerText = '₹ 0.00';
             }
         } catch (err) {
             console.error('Error updating daily balances:', err);
@@ -4348,7 +4400,7 @@ async function initDailyTxn() {
                             extraDetails: '',
                             provider: '',
                             remainingAmount: 0,
-                            urnNumber: '',
+
                             bankName: '',
                             date: todayStr,
                             timestamp: { seconds: Math.floor(new Date().setHours(0,0,0,0) / 1000) + 60, nanoseconds: 0 }
@@ -4442,7 +4494,7 @@ async function initDailyTxn() {
                 }, {});
 
                 // Types jo count/volume se exclude honge
-                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE'];
+                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP'];
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
 
                 const totalDayAmount = countableTxns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -4554,7 +4606,7 @@ async function initDailyTxn() {
                     const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
                     
                     tr.innerHTML = `
-                        <td class="px-3 py-1.5"><span class="text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
+                        <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
@@ -4582,13 +4634,7 @@ async function initDailyTxn() {
                                         <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${getShortBankName(txn.bankName)}</span>
                                     </div>
                                 ` : ''}
-                                ${txn.urnNumber ? `
-                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                        <span class="material-symbols-outlined text-[14px] text-amber-600">tag</span>
-                                        <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">URN: ${txn.urnNumber}</span>
-                                    </div>
-                                ` : ''}
-                                ${(!txn.bankName && !txn.urnNumber) ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : ''}
+                                ${(!txn.bankName) ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : ''}
                             </div>
                         </td>
                         <td class="px-3 py-1.5">
@@ -4608,7 +4654,7 @@ async function initDailyTxn() {
                                 ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
                             </div>
                         </td>
-                        <td class="px-3 py-1.5 text-right">
+                        <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
                                 <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                 <span class="text-[8px] font-black uppercase tracking-widest ${txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500'}">${txn.chargesType || 'Cash'}</span>
@@ -4649,7 +4695,7 @@ async function initDailyTxn() {
                             txnProvider.value = txn.provider || '';
                             txnRemaining.value = txn.remainingAmount || '';
                             txnBank.value = txn.bankName || '';
-                            if (txnUrn) txnUrn.value = txn.urnNumber || '';
+
                             if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
                             updateConditionalField();
 
@@ -4682,13 +4728,38 @@ async function initDailyTxn() {
             const term = e.target.value.toLowerCase().trim();
             const rows = tableBody.querySelectorAll('tr');
             
+            let visibleRowsCount = 0;
+
             rows.forEach(row => {
                 // Combine relevant text from the row for searching
                 const text = row.innerText.toLowerCase();
                 if (text.includes(term)) {
                     row.style.display = '';
+                    const serialCell = row.querySelector('.serial-cell');
+                    if (serialCell && serialCell.dataset.excluded === 'false') {
+                        visibleRowsCount++;
+                    }
                 } else {
                     row.style.display = 'none';
+                }
+            });
+
+            // Update serials dynamically
+            let currentSerial = visibleRowsCount;
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const serialCell = row.querySelector('.serial-cell');
+                    if (serialCell && serialCell.dataset.excluded === 'false') {
+                        const serialText = serialCell.querySelector('.serial-text');
+                        if (serialText) {
+                            if (term === '') {
+                                serialText.innerHTML = '#' + serialCell.dataset.original;
+                            } else {
+                                serialText.innerHTML = '#' + currentSerial;
+                                currentSerial--;
+                            }
+                        }
+                    }
                 }
             });
         });

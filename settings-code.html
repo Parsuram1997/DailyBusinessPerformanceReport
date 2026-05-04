@@ -257,6 +257,21 @@
             <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
         </label>
     </div>
+
+    <!-- Toggle: Charges Column -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-500/5 dark:border-emerald-500/20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-emerald-600">payments</span>
+            <div>
+                <p class="font-bold text-sm">Charges Column</p>
+                <p class="text-xs text-slate-500">Show/hide the charges column in the transactions table.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-charges-col" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+        </label>
+    </div>
 </div>
 
 <!-- Data Management Box -->
@@ -432,6 +447,7 @@
 const summaryToggle = document.getElementById('toggle-summary-area');
 const balanceToggle = document.getElementById('toggle-balance-col');
 const deleteToggle = document.getElementById('toggle-delete-btn');
+const chargesToggle = document.getElementById('toggle-charges-col');
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
 const lockOverlay = document.getElementById('dtxn-lock-overlay');
 const pinModal = document.getElementById('settings-pin-modal');
@@ -461,21 +477,45 @@ submitPinBtn.addEventListener('click', () => {
     }
 });
 
-// Load saved preferences
-summaryToggle.checked = localStorage.getItem('dtxn_showSummary') !== 'false';
-balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
-deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
+function applySettingsToUI() {
+    summaryToggle.checked = localStorage.getItem('dtxn_showSummary') !== 'false';
+    balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
+    deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
+    chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
+}
+
+// Initial load
+applySettingsToUI();
+
+// Refresh settings UI if updated from another browser
+window.addEventListener('appSettingsUpdated', () => {
+    applySettingsToUI();
+});
+
+// Helper to save globally
+function saveGlobalSettings() {
+    const settings = {
+        dtxn_showSummary: summaryToggle.checked,
+        dtxn_showBalance: balanceToggle.checked,
+        dtxn_showDelete: deleteToggle.checked,
+        dtxn_showCharges: chargesToggle.checked
+    };
+    if (window.saveAppSettings) {
+        window.saveAppSettings(settings);
+    } else {
+        // Fallback to local storage if app.js is not loaded yet
+        localStorage.setItem('dtxn_showSummary', settings.dtxn_showSummary);
+        localStorage.setItem('dtxn_showBalance', settings.dtxn_showBalance);
+        localStorage.setItem('dtxn_showDelete', settings.dtxn_showDelete);
+        localStorage.setItem('dtxn_showCharges', settings.dtxn_showCharges);
+    }
+}
 
 // Save on change
-summaryToggle.addEventListener('change', () => {
-    localStorage.setItem('dtxn_showSummary', summaryToggle.checked);
-});
-balanceToggle.addEventListener('change', () => {
-    localStorage.setItem('dtxn_showBalance', balanceToggle.checked);
-});
-deleteToggle.addEventListener('change', () => {
-    localStorage.setItem('dtxn_showDelete', deleteToggle.checked);
-});
+summaryToggle.addEventListener('change', saveGlobalSettings);
+balanceToggle.addEventListener('change', saveGlobalSettings);
+deleteToggle.addEventListener('change', saveGlobalSettings);
+chargesToggle.addEventListener('change', saveGlobalSettings);
 </script>
 </body>
 </html>

@@ -160,8 +160,8 @@
                 </div>
 
                 <!-- Add Txn Form -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-primary/10 shadow-xl shadow-primary/5">
-                    <div class="flex items-center gap-4 mb-8">
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-5 border border-primary/10 shadow-xl shadow-primary/5">
+                    <div class="flex items-center gap-3 mb-4 md:mb-5">
                         <div class="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                             <span class="material-symbols-outlined text-2xl">add_shopping_cart</span>
                         </div>
@@ -171,10 +171,10 @@
                         </div>
                     </div>
 
-                    <form id="daily-txn-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <form id="daily-txn-form" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                         <div class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
-                            <select id="txn-type" required class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
+                            <select id="txn-type" required class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="AEPS">AEPS</option>
                                 <option value="MATM">MATM</option>
                                 <option value="DEPOSIT">DEPOSIT</option>
@@ -196,8 +196,8 @@
                             </select>
                         </div>
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
-                            <select id="txn-provider" class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
+                            <select id="txn-provider" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="">Select Provider...</option>
                                 <option value="Phonepay">Phonepay</option>
                                 <option value="Gpay">Gpay</option>
@@ -212,14 +212,10 @@
                             </select>
                         </div>
 
-                        <!-- URN Number Field (Conditional) -->
-                        <div id="urn-field-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">URN Number</label>
-                            <input id="txn-urn" type="text" placeholder="Enter URN..." class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
-                        </div>
+
                         <div id="bank-field-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Bank Name</label>
-                            <input id="txn-bank" type="text" list="bank-list" placeholder="Enter or select bank..." class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Bank Name</label>
+                            <input id="txn-bank" type="text" list="bank-list" placeholder="Enter or select bank..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                             <datalist id="bank-list">
                                 <option value="CRGB">
                                 <option value="SBI">
@@ -234,47 +230,47 @@
                             </datalist>
                         </div>
                         <div id="amount-field-container" class="flex flex-col gap-2">
-                            <label id="amount-label" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Amount</label>
+                            <label id="amount-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Amount</label>
                             <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                <input id="txn-amount" type="number" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input id="txn-amount" type="number" required placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
                             </div>
                         </div>
                         <div id="remaining-field-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Remaining Amount</label>
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Remaining Amount</label>
                             <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                <input id="txn-remaining" type="number" placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input id="txn-remaining" type="number" placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
                             </div>
                         </div>
                         <div id="note-field-container" class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Customer Name</label>
-                            <input id="txn-note" type="text" placeholder="Enter name..." class="capitalize w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Customer Name</label>
+                            <input id="txn-note" type="text" placeholder="Enter name..." class="capitalize w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
                         <div id="address-field-container" class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Address</label>
-                            <input id="txn-address" type="text" placeholder="City / Village..." class="capitalize w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Address</label>
+                            <input id="txn-address" type="text" placeholder="City / Village..." class="capitalize w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
                         <div id="conditional-field-container" class="flex flex-col gap-2">
-                            <label id="conditional-label" class="text-xs font-bold text-slate-500 uppercase tracking-widest">Aadhar (Last 4 Digits)</label>
-                            <input id="txn-conditional" type="text" placeholder="Last 4 digits..." class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <label id="conditional-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Aadhar (Last 4 Digits)</label>
+                            <input id="txn-conditional" type="text" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
                         <div id="charges-field-container" class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Charges</label>
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges</label>
                             <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                <input id="txn-charges" type="number" placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input id="txn-charges" type="number" placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
                             </div>
                         </div>
                         <div id="charges-mode-container" class="flex flex-col gap-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">Charges Mode</label>
-                            <select id="txn-charges-type" class="w-full px-4 py-3 rounded-xl border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges Mode</label>
+                            <select id="txn-charges-type" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
                             </select>
                         </div>
                         <div class="flex flex-col justify-end">
-                            <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+                            <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-black py-2 rounded-lg text-sm shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                                 <span class="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
                                 Save Transaction
                             </button>
@@ -283,21 +279,35 @@
                 </div>
 
                 <!-- Summary Header -->
-                <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4 px-2 mb-4">
-                    <div class="flex items-center gap-3 shrink-0">
-                        <div class="size-2 w-8 bg-primary rounded-full"></div>
-                        <h2 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Today's Transactions Summary</h2>
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4 px-1 md:px-2 mb-4 w-full">
+                    <div class="flex items-center justify-between w-full md:w-auto gap-3 shrink-0">
+                        <div class="flex items-center gap-2">
+                            <div class="size-1.5 w-6 md:size-2 md:w-8 bg-primary rounded-full"></div>
+                            <h2 class="text-[13px] sm:text-sm md:text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Today's Summary</h2>
+                        </div>
+                        
+                        <!-- Balance cards (Mobile only, hidden on desktop if we want? No, let's keep them together on mobile) -->
+                        <div class="flex md:hidden items-center gap-1.5 text-[10px] font-bold shrink-0">
+                            <div class="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-100 dark:border-emerald-500/20 text-emerald-600">
+                                <span class="material-symbols-outlined text-[11px]">payments</span>
+                                <span><span id="summary-cash-balance-mobile">₹ 0.00</span></span>
+                            </div>
+                            <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-500/20 text-blue-600">
+                                <span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>
+                                <span><span id="summary-online-balance-mobile">₹ 0.00</span></span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Table Search Bar -->
-                    <div class="flex-1 max-w-md relative group">
-                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
-                        <input type="text" id="txn-search-input" placeholder="Search by note, bank, URN or type..." 
-                            class="w-full pl-11 pr-4 py-2 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary/30 focus:bg-white dark:focus:bg-slate-800 rounded-2xl outline-none text-sm font-bold transition-all shadow-sm">
+                    <div class="w-full md:flex-1 md:max-w-md relative group order-last md:order-none">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-lg">search</span>
+                        <input type="text" id="txn-search-input" placeholder="Search by note, bank or type..." 
+                            class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary/30 focus:bg-white dark:focus:bg-slate-800 rounded-xl outline-none text-xs md:text-sm font-bold transition-all shadow-sm">
                     </div>
 
-                    <!-- Balance cards (Part of Togglable Summary) -->
-                    <div id="summary-balances-pills" class="flex items-center gap-2 text-sm font-bold shrink-0">
+                    <!-- Balance cards (Desktop only) -->
+                    <div id="summary-balances-pills" class="hidden md:flex items-center gap-2 text-sm font-bold shrink-0">
                         <div class="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20 text-emerald-600">
                             <span class="material-symbols-outlined text-sm">payments</span>
                             <span>Cash: <span id="summary-cash-balance">₹ 0.00</span></span>
@@ -327,15 +337,15 @@
 
                     <!-- Remaining 9 Type Badges (same style as top) -->
                     <div class="flex flex-wrap lg:flex-nowrap gap-1">
-                        <span id="gold-sip-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="roinet-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="jio-topup-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="dishtv-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="jio-recharge-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="admin-deposit-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="admin-withdrawal-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="credit-given-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="credit-received-count-badge" class="flex-1 px-1 py-3 rounded-2xl bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="gold-sip-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="roinet-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="jio-topup-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="dishtv-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="jio-recharge-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="admin-deposit-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="admin-withdrawal-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="credit-given-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                        <span id="credit-received-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     </div>
                 </div>
 
@@ -351,7 +361,7 @@
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Bank/URN</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Details</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Amount</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Charges</th>
+                                    <th id="charges-col-header" class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Charges</th>
                                     <th id="balance-col-header" class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Balance (C/O)</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Action</th>
                                 </tr>
@@ -439,6 +449,16 @@
             document.head.appendChild(style);
         }
 
+        // Charges Column
+        const showCharges = localStorage.getItem('dtxn_showCharges') !== 'false';
+        const chargesHeader = document.getElementById('charges-col-header');
+        if (!showCharges) {
+            if (chargesHeader) chargesHeader.style.display = 'none';
+            const style = document.createElement('style');
+            style.textContent = '.charges-col-cell { display: none !important; }';
+            document.head.appendChild(style);
+        }
+
         // Table Delete Button
         const showDelete = localStorage.getItem('dtxn_showDelete') !== 'false';
         if (!showDelete) {
@@ -446,6 +466,11 @@
             style.textContent = '.delete-txn-btn { display: none !important; }';
             document.head.appendChild(style);
         }
+
+        // Listen for global settings update to dynamically refresh page UI
+        window.addEventListener('appSettingsUpdated', () => {
+            window.location.reload();
+        });
     })();
     </script>
 </body>

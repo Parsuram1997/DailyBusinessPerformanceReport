@@ -172,7 +172,7 @@
 <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
 
 <!-- Form Content -->
-<div class="p-8 max-w-5xl mx-auto w-full">
+<div class="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full mx-auto w-full">
 <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
 <div>
 <h3 id="form-title" class="text-2xl font-bold text-slate-900 dark:text-white">New Daily Record</h3>
@@ -187,43 +187,43 @@
 </div>
 <form id="add-entry-form" class="space-y-8">
     <!-- Section 1: Capital & Opening -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm relative overflow-hidden group">
+    <div class="bg-white dark:bg-slate-900 rounded-xl md:rounded-2xl p-4 md:p-6 border border-primary/10 shadow-sm relative overflow-hidden group">
         <div class="absolute right-0 top-0 size-24 bg-primary/5 rounded-bl-full flex items-start justify-end p-4 text-primary opacity-20">
             <span class="material-symbols-outlined text-4xl">account_balance</span>
         </div>
         <h5 class="text-sm font-bold text-primary uppercase tracking-wider mb-6 flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">fact_check</span> 1. Capital & Business Opening
         </h5>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             <!-- Capital Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary text-sm">account_balance</span> Capital
                 </label>
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                    <input id="capital" name="capital" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                    <input id="capital" name="capital" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Section 2: Daily Operations -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-primary/10 shadow-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-xl md:rounded-2xl p-4 md:p-8 border border-primary/10 shadow-sm">
         <h5 class="text-sm font-bold text-primary uppercase tracking-wider mb-6 flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">insights</span> 2. Daily Revenue & Expenses
         </h5>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             <!-- Cash Field -->
             <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
-                    <label class="text-sm font-semibold flex items-center gap-2">
+                    <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary text-sm">payments</span> Cash
                                             </label>
                 </div>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="cash" name="cash" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="cash" name="cash" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 <button type="button" onclick="goToCashCalculator()" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1" title="Open Note Calculator">
                 <span class="material-symbols-outlined text-xl">calculate</span>
                 </button>
@@ -231,12 +231,12 @@
             </div>
             <!-- Online Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">account_balance_wallet</span> Online
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="online" name="online" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="online" name="online" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 <button type="button" id="open-online-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Online Balances">
                 <span class="material-symbols-outlined text-xl">splitscreen</span>
                 </button>
@@ -244,12 +244,12 @@
             </div>
             <!-- Roinet Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">hub</span> Roinet
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="roinet" name="roinet" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="roinet" name="roinet" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 <button type="button" id="open-roinet-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Roinet Balances">
                 <span class="material-symbols-outlined text-xl">splitscreen</span>
                 </button>
@@ -257,32 +257,32 @@
             </div>
             <!-- Jio Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">signal_cellular_alt</span> Jio
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="jio" name="jio" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="jio" name="jio" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
             <!-- Go2Sms Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">sms</span> CRGB BC
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="go2sms" name="go2sms" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="go2sms" name="go2sms" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
             <!-- Credit Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">credit_card</span> Credit Ledger
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="credit" name="credit" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="credit" name="credit" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 <button type="button" onclick="goToLedgerToSelect()" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1" title="Select from Credit Ledger">
                 <span class="material-symbols-outlined text-xl">link</span>
                 </button>
@@ -290,22 +290,22 @@
             </div>
             <!-- Pending Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">pending_actions</span> Pending
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="pending" name="pending" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="pending" name="pending" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
             <!-- Expense Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-rose-500 text-sm">shopping_cart_checkout</span> Daily Expense
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="expense" name="expense" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold text-rose-600 dark:text-rose-400" placeholder="0.00" type="number"/>
+                <input id="expense" name="expense" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold text-rose-600 dark:text-rose-400" placeholder="0.00" type="number"/>
                 <button type="button" id="open-expense-split-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-500/70 transition-colors flex items-center justify-center p-1 bg-white dark:bg-slate-900 rounded" title="Split Daily Expenses">
                 <span class="material-symbols-outlined text-xl">splitscreen</span>
                 </button>
@@ -313,12 +313,12 @@
             </div>
             <!-- Damages Currency Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-rose-500 text-sm">money_off</span> Damages Currency
                 </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="damages" name="damages" class="w-full pl-8 pr-12 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="damages" name="damages" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 <button type="button" onclick="goToDamagesToSelect()" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1" title="Calculate Damaged Currency">
                 <span class="material-symbols-outlined text-xl">link</span>
                 </button>
@@ -326,12 +326,12 @@
             </div>
             <!-- Customer Deposit Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-sm">account_balance_wallet</span> Customer Deposit
                 </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="deposit" name="deposit" class="w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
+                <input id="deposit" name="deposit" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
         </div>
@@ -354,22 +354,22 @@
     </div>
 
     <!-- Section 3: Withdrawals -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/20 shadow-sm relative overflow-hidden group">
+    <div class="bg-white dark:bg-slate-900 rounded-xl md:rounded-2xl p-4 md:p-6 border border-primary/20 shadow-sm relative overflow-hidden group">
         <div class="absolute right-0 top-0 size-24 bg-rose-500/5 rounded-bl-full flex items-start justify-end p-4 text-rose-500 opacity-20">
             <span class="material-symbols-outlined text-4xl">atm</span>
         </div>
         <h5 class="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-6 flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">logout</span> 3. Personal Withdrawals
         </h5>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             <!-- Withdrawal Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-rose-600 dark:text-rose-400">
                 <span class="material-symbols-outlined text-sm">atm</span> Withdrawal Amount
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="withdrawal" name="withdrawal" class="w-full pl-8 pr-4 py-3 rounded-lg border border-rose-200 dark:border-rose-900/30 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-bold text-rose-700 dark:text-rose-300" placeholder="0.00" type="number"/>
+                <input id="withdrawal" name="withdrawal" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-rose-200 dark:border-rose-900/30 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-bold text-rose-700 dark:text-rose-300" placeholder="0.00" type="number"/>
                 </div>
             </div>
         </div>
@@ -420,32 +420,32 @@
         <div class="p-6 space-y-5 overflow-y-auto">
             <!-- Account 1 -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> PARSURAM NAIK
                 </label>
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                    <input id="online_p1" name="online_p1" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                    <input id="online_p1" name="online_p1" type="number" class="online-split-input w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
                 </div>
             </div>
             <!-- Account 2 -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> SHOP ACCOUNT
                 </label>
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                    <input id="online_p2" name="online_p2" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                    <input id="online_p2" name="online_p2" type="number" class="online-split-input w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
                 </div>
             </div>
             <!-- Account 3 -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">account_balance_wallet</span> RAMESH KUMAR DALAI
                 </label>
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                    <input id="online_p3" name="online_p3" type="number" class="online-split-input w-full pl-8 pr-4 py-3 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
+                    <input id="online_p3" name="online_p3" type="number" class="online-split-input w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold" placeholder="0.00">
                 </div>
             </div>
         </div>
@@ -491,7 +491,7 @@
         <div class="p-6 space-y-4 overflow-y-auto">
             <!-- ROINET-1 -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">hub</span> ROINET-1
                 </label>
                 <div class="relative">
@@ -501,7 +501,7 @@
             </div>
             <!-- ROINET-2 -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">hub</span> ROINET-2
                 </label>
                 <div class="relative">
@@ -511,7 +511,7 @@
             </div>
             <!-- AIRTEL-1 -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">cell_tower</span> AIRTEL-1
                 </label>
                 <div class="relative">
@@ -521,7 +521,7 @@
             </div>
             <!-- AIRTEL-2 -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">cell_tower</span> AIRTEL-2
                 </label>
                 <div class="relative">
@@ -531,7 +531,7 @@
             </div>
             <!-- SPICEMONEY -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-primary">payments</span> SPICEMONEY
                 </label>
                 <div class="relative">
@@ -581,7 +581,7 @@
         <!-- Body inputs -->
         <div class="p-6 space-y-4 overflow-y-auto">
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">person</span> PERSONAL EXPENSE
                 </label>
                 <div class="relative">
@@ -590,7 +590,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">payments</span> SALARY EXPENSE
                 </label>
                 <div class="relative">
@@ -599,7 +599,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">bolt</span> ELECTRICITY EXPENSE
                 </label>
                 <div class="relative">
@@ -608,7 +608,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">store</span> SHOP RENT EXPENSE
                 </label>
                 <div class="relative">
@@ -617,7 +617,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">trending_up</span> BUSINESS DEVLOPMENT
                 </label>
                 <div class="relative">
@@ -626,7 +626,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-rose-500">wifi</span> INTERNET EXPENSE
                 </label>
                 <div class="relative">
@@ -635,7 +635,7 @@
                 </div>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-amber-500">savings</span> GOLD SIP
                 </label>
                 <div class="relative">
@@ -645,7 +645,7 @@
             </div>
             <!-- Extra info context -->
             <div class="flex flex-col gap-1.5 pt-2">
-                <label class="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <label class="text-xs md:text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span class="material-symbols-outlined text-sm text-slate-400">edit_note</span> NOTES
                 </label>
                 <input id="expense_notes" name="expense_notes" type="text" class="w-full px-4 py-2.5 rounded-lg border border-primary/20 bg-background-light dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm" placeholder="Additional details...">

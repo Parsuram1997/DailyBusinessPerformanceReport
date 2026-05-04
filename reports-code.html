@@ -142,8 +142,8 @@
     <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
         <div class="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-6 pb-20 md:pb-6">
             <!-- Filters Bar -->
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-primary/10 shadow-sm space-y-6">
-                <div class="flex p-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-primary/5 w-full">
+            <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl border border-primary/10 shadow-sm space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-1 p-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-primary/5 w-full">
                     <button id="tab-overall" class="filter-tab flex-1 py-3 rounded-lg text-sm font-bold transition-all bg-primary text-white shadow-sm" data-mode="overall">Overall</button>
                     <button id="tab-date" class="filter-tab flex-1 py-3 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-primary" data-mode="date">By Date</button>
                     <button id="tab-month" class="filter-tab flex-1 py-3 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-primary" data-mode="month">By Month</button>
@@ -160,7 +160,7 @@
                 </div>
 
                 <!-- Filter Controls (Inputs) -->
-                <div class="flex flex-wrap items-end gap-6">
+                <div class="flex flex-wrap items-end gap-3 md:gap-6">
                     <div class="flex-1 min-w-[240px]">
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-primary transition-colors">search</span>
@@ -180,121 +180,121 @@
             </div>
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                 <!-- Row 1 -->
-                <div class="bg-gradient-to-br from-emerald-400 to-green-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Avg Daily Income</h4>
-                    <p id="summary-avg-income" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-emerald-400 to-green-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Income</h4>
+                    <p id="summary-avg-income" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">payments</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">payments</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-orange-400 to-red-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Avg Daily Expense</h4>
-                    <p id="summary-avg-expense" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-orange-400 to-red-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Expense</h4>
+                    <p id="summary-avg-expense" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">shopping_cart</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">shopping_cart</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-cyan-500 to-blue-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Avg Daily Profit</h4>
-                    <p id="summary-avg-profit" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Profit</h4>
+                    <p id="summary-avg-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">trending_up</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">trending_up</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Return on Invest (ROI)</h4>
-                    <p id="summary-roi" class="text-2xl font-black italic tracking-tighter text-white">0%</p>
+                <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Return on Invest (ROI)</h4>
+                    <p id="summary-roi" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0%</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">account_balance</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance</span>
                     </div>
                 </div>
 
                 <!-- Row 2 -->
-                <div class="bg-gradient-to-br from-violet-500 to-fuchsia-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Peak Income Day</h4>
+                <div class="bg-gradient-to-br from-violet-500 to-fuchsia-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Day</h4>
                     <p id="summary-peak-day" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">event_available</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">event_available</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-fuchsia-500 to-rose-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Peak Income Month</h4>
+                <div class="bg-gradient-to-br from-fuchsia-500 to-rose-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Month</h4>
                     <p id="summary-peak-month" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">calendar_month</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">calendar_month</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-teal-400 to-teal-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Growth Rate (MoM)</h4>
-                    <p id="summary-growth-rate" class="text-2xl font-black italic tracking-tighter text-white">0%</p>
+                <div class="bg-gradient-to-br from-teal-400 to-teal-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Growth Rate (MoM)</h4>
+                    <p id="summary-growth-rate" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0%</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">show_chart</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">show_chart</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-indigo-400 to-blue-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Net Profit</h4>
-                    <p id="summary-net-profit" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-indigo-400 to-blue-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Net Profit</h4>
+                    <p id="summary-net-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">savings</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">savings</span>
                     </div>
                 </div>
                 <!-- Row 3: Totals -->
-                <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Income</h4>
-                    <p id="summary-total-income" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-green-500 to-emerald-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Income</h4>
+                    <p id="summary-total-income" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">account_balance_wallet</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance_wallet</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-rose-500 to-red-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Expense</h4>
-                    <p id="summary-total-expense" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-rose-500 to-red-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Expense</h4>
+                    <p id="summary-total-expense" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">receipt_long</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">receipt_long</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-primary to-blue-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Net Profit</h4>
-                    <p id="summary-total-profit" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-primary to-blue-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Net Profit</h4>
+                    <p id="summary-total-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">trending_up</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">trending_up</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-slate-500 to-slate-700 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Entries Analyzed</h4>
-                    <p id="summary-entries-count" class="text-2xl font-black italic tracking-tighter text-white">0</p>
+                <div class="bg-gradient-to-br from-slate-500 to-slate-700 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Entries Analyzed</h4>
+                    <p id="summary-entries-count" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">list_alt</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">list_alt</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-indigo-400 to-cyan-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Period Capital Add</h4>
-                    <p id="summary-period-capital" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-indigo-400 to-cyan-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Period Capital Add</h4>
+                    <p id="summary-period-capital" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">add_card</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">add_card</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Capital</h4>
-                    <p id="summary-total-capital" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Capital</h4>
+                    <p id="summary-total-capital" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">account_balance</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-pink-500 to-orange-400 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Peak Income Year</h4>
+                <div class="bg-gradient-to-br from-pink-500 to-orange-400 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Year</h4>
                     <p id="summary-peak-year" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">calendar_today</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">calendar_today</span>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-amber-500 to-orange-500 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Total Withdrawals</h4>
-                    <p id="summary-total-withdrawal" class="text-2xl font-black italic tracking-tighter text-white">₹0</p>
+                <div class="bg-gradient-to-br from-amber-500 to-orange-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
+                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Withdrawals</h4>
+                    <p id="summary-total-withdrawal" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
                     <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-6xl text-white">account_balance_wallet</span>
+                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance_wallet</span>
                     </div>
                 </div>
             </div>
@@ -305,50 +305,111 @@
                     <span class="material-symbols-outlined text-primary">analytics</span>
                     Daily Transaction Stats
                 </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm group hover:border-primary/30 transition-all">
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total TXN Vol</p>
-                        <h4 id="summary-txn-total-amount" class="text-xl font-black text-primary tracking-tight italic">₹0</h4>
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="summary-txn-total-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
-                            <p id="summary-txn-total-fees" class="text-[9px] font-black text-amber-500/80">Fees: ₹0</p>
-                        </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3">
+                    <!-- Existing Core Stats -->
+                    <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-primary/10 shadow-sm group hover:border-primary/30 transition-all flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Total TXN Vol</p>
+                        <h4 class="text-sm font-black text-primary italic tracking-tight">
+                            <span id="summary-txn-total-count">0</span> | <span id="summary-txn-total-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-total-fees" class="text-[8px] font-bold text-amber-500/60 mt-0.5">F: ₹0</p>
                     </div>
-                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-blue-500 group hover:border-primary/30 transition-all">
-                        <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">AEPS Total</p>
-                        <h4 id="summary-txn-aeps-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="summary-txn-aeps-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
-                            <p id="summary-txn-aeps-fees" class="text-[9px] font-black text-blue-500/80">Fees: ₹0</p>
-                        </div>
+                    <div class="bg-blue-50 dark:bg-blue-500/10 p-3 rounded-xl border border-blue-100 dark:border-blue-500/20 shadow-sm group hover:border-primary/30 transition-all flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-0.5">AEPS Total</p>
+                        <h4 class="text-sm font-black text-slate-800 dark:text-white italic tracking-tight">
+                            <span id="summary-txn-aeps-count">0</span> | <span id="summary-txn-aeps-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-aeps-fees" class="text-[8px] font-bold text-blue-500/60 mt-0.5">F: ₹0</p>
                     </div>
-                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-indigo-500 group hover:border-primary/30 transition-all">
-                        <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">MATM Total</p>
-                        <h4 id="summary-txn-matm-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="summary-txn-matm-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
-                            <p id="summary-txn-matm-fees" class="text-[9px] font-black text-indigo-500/80">Fees: ₹0</p>
-                        </div>
+                    <div class="bg-indigo-50 dark:bg-indigo-500/10 p-3 rounded-xl border border-indigo-100 dark:border-indigo-500/20 shadow-sm group hover:border-primary/30 transition-all flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">MATM Total</p>
+                        <h4 class="text-sm font-black text-slate-800 dark:text-white italic tracking-tight">
+                            <span id="summary-txn-matm-count">0</span> | <span id="summary-txn-matm-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-matm-fees" class="text-[8px] font-bold text-indigo-500/60 mt-0.5">F: ₹0</p>
                     </div>
-                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-emerald-500 group hover:border-primary/30 transition-all">
-                        <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Deposit Total</p>
-                        <h4 id="summary-txn-deposit-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="summary-txn-deposit-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
-                            <p id="summary-txn-deposit-fees" class="text-[9px] font-black text-emerald-500/80">Fees: ₹0</p>
-                        </div>
+                    <div class="bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-xl border border-emerald-100 dark:border-emerald-500/20 shadow-sm group hover:border-primary/30 transition-all flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-0.5">Deposit Total</p>
+                        <h4 class="text-sm font-black text-slate-800 dark:text-white italic tracking-tight">
+                            <span id="summary-txn-deposit-count">0</span> | <span id="summary-txn-deposit-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-deposit-fees" class="text-[8px] font-bold text-emerald-500/60 mt-0.5">F: ₹0</p>
                     </div>
-                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-rose-500 group hover:border-primary/30 transition-all">
-                        <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Withdrawal Total</p>
-                        <h4 id="summary-txn-withdrawal-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="summary-txn-withdrawal-count" class="text-[10px] font-bold text-slate-400">0 Transactions</p>
-                            <p id="summary-txn-withdrawal-fees" class="text-[9px] font-black text-rose-500/80">Fees: ₹0</p>
-                        </div>
+                    <div class="bg-rose-50 dark:bg-rose-500/10 p-3 rounded-xl border border-rose-100 dark:border-rose-500/20 shadow-sm group hover:border-primary/30 transition-all flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-0.5">Withdrawal Total</p>
+                        <h4 class="text-sm font-black text-slate-800 dark:text-white italic tracking-tight">
+                            <span id="summary-txn-withdrawal-count">0</span> | <span id="summary-txn-withdrawal-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-withdrawal-fees" class="text-[8px] font-bold text-rose-500/60 mt-0.5">F: ₹0</p>
+                    </div>
+
+                    <!-- New Stats from Image -->
+                    <div class="bg-amber-50 dark:bg-amber-500/10 p-3 rounded-xl border border-amber-200 dark:border-amber-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-0.5">GOLD SIP</p>
+                        <h4 class="text-sm font-black text-amber-700 dark:text-amber-300 italic tracking-tight">
+                            <span id="summary-txn-gold_sip-count">0</span> | <span id="summary-txn-gold_sip-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-gold_sip-fees" class="text-[8px] font-bold text-amber-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-cyan-50 dark:bg-cyan-500/10 p-3 rounded-xl border border-cyan-100 dark:border-cyan-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-cyan-600 uppercase tracking-widest mb-0.5">ROINET</p>
+                        <h4 class="text-sm font-black text-cyan-700 dark:text-cyan-300 italic tracking-tight">
+                            <span id="summary-txn-roinet-count">0</span> | <span id="summary-txn-roinet-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-roinet-fees" class="text-[8px] font-bold text-cyan-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-blue-100/50 dark:bg-blue-700/10 p-3 rounded-xl border border-blue-200 dark:border-blue-700/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-blue-700 uppercase tracking-widest mb-0.5">JIO TOPUP</p>
+                        <h4 class="text-sm font-black text-blue-800 dark:text-blue-200 italic tracking-tight">
+                            <span id="summary-txn-jio_topup-count">0</span> | <span id="summary-txn-jio_topup-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-jio_topup-fees" class="text-[8px] font-bold text-blue-700/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-100 dark:border-red-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-red-600 uppercase tracking-widest mb-0.5">DISH TV</p>
+                        <h4 class="text-sm font-black text-red-700 dark:text-red-300 italic tracking-tight">
+                            <span id="summary-txn-dishtv-count">0</span> | <span id="summary-txn-dishtv-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-dishtv-fees" class="text-[8px] font-bold text-red-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-sky-50 dark:bg-sky-500/10 p-3 rounded-xl border border-sky-100 dark:border-sky-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-sky-600 uppercase tracking-widest mb-0.5">JIO RCHG</p>
+                        <h4 class="text-sm font-black text-sky-700 dark:text-sky-300 italic tracking-tight">
+                            <span id="summary-txn-jio_recharge-count">0</span> | <span id="summary-txn-jio_recharge-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-jio_recharge-fees" class="text-[8px] font-bold text-sky-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-500/10 p-3 rounded-xl border border-slate-200 dark:border-slate-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-0.5">ADM DEP</p>
+                        <h4 class="text-sm font-black text-slate-700 dark:text-slate-200 italic tracking-tight">
+                            <span id="summary-txn-admin_deposit-count">0</span> | <span id="summary-txn-admin_deposit-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-admin_deposit-fees" class="text-[8px] font-bold text-slate-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-zinc-50 dark:bg-zinc-500/10 p-3 rounded-xl border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-0.5">ADM WDRL</p>
+                        <h4 class="text-sm font-black text-zinc-700 dark:text-zinc-200 italic tracking-tight">
+                            <span id="summary-txn-admin_withdrawal-count">0</span> | <span id="summary-txn-admin_withdrawal-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-admin_withdrawal-fees" class="text-[8px] font-bold text-zinc-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-fuchsia-50 dark:bg-fuchsia-500/10 p-3 rounded-xl border border-fuchsia-100 dark:border-fuchsia-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-fuchsia-600 uppercase tracking-widest mb-0.5">CR GIVEN</p>
+                        <h4 class="text-sm font-black text-fuchsia-700 dark:text-fuchsia-300 italic tracking-tight">
+                            <span id="summary-txn-credit_given-count">0</span> | <span id="summary-txn-credit_given-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-credit_given-fees" class="text-[8px] font-bold text-fuchsia-600/60 mt-0.5">F: ₹0</p>
+                    </div>
+                    <div class="bg-lime-50 dark:bg-lime-500/10 p-3 rounded-xl border border-lime-100 dark:border-lime-500/20 shadow-sm flex flex-col items-center justify-center text-center">
+                        <p class="text-[9px] font-black text-lime-600 uppercase tracking-widest mb-0.5">CR RECD</p>
+                        <h4 class="text-sm font-black text-lime-700 dark:text-lime-300 italic tracking-tight">
+                            <span id="summary-txn-credit_received-count">0</span> | <span id="summary-txn-credit_received-amount">₹0</span>
+                        </h4>
+                        <p id="summary-txn-credit_received-fees" class="text-[8px] font-bold text-lime-600/60 mt-0.5">F: ₹0</p>
                     </div>
                 </div>
                 <!-- Service Based Stats Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mt-4">
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-primary/10 shadow-sm border-l-4 border-l-orange-500 group hover:border-primary/30 transition-all">
                         <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Photocopy Fees</p>
                         <h4 id="summary-txn-photocopy-amount" class="text-xl font-black text-slate-800 dark:text-white tracking-tight italic">₹0</h4>
