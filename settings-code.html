@@ -187,6 +187,34 @@
 <p class="text-slate-500 text-sm">Manage your local data and application settings.</p>
 </section>
 
+<!-- Global Security Settings -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6 overflow-hidden">
+    <div class="flex items-center gap-3 mb-2">
+        <div class="size-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+            <span class="material-symbols-outlined">security</span>
+        </div>
+        <div>
+            <h4 class="text-lg font-bold">Security Settings</h4>
+            <p class="text-sm text-slate-500">Control page access and sensitive data protection.</p>
+        </div>
+    </div>
+
+    <!-- Toggle: Page PIN Protection -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-amber-100 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-amber-600">lock_open</span>
+            <div>
+                <p class="font-bold text-sm">Page PIN Protection</p>
+                <p class="text-xs text-slate-500">Enable/disable PIN lock for Add Entry, Daily Transactions and Settings pages.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-pin-protection" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+        </label>
+    </div>
+</div>
+
 <!-- Daily Txn Display Settings (PIN Protected) -->
 <div id="dtxn-settings-container" class="relative bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6 overflow-hidden">
     <!-- Lock Overlay -->
@@ -448,6 +476,8 @@ const summaryToggle = document.getElementById('toggle-summary-area');
 const balanceToggle = document.getElementById('toggle-balance-col');
 const deleteToggle = document.getElementById('toggle-delete-btn');
 const chargesToggle = document.getElementById('toggle-charges-col');
+const pinToggle = document.getElementById('toggle-pin-protection');
+
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
 const lockOverlay = document.getElementById('dtxn-lock-overlay');
 const pinModal = document.getElementById('settings-pin-modal');
@@ -482,6 +512,7 @@ function applySettingsToUI() {
     balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
     deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
     chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
+    pinToggle.checked = localStorage.getItem('security_pin_enabled') !== 'false';
 }
 
 // Initial load
@@ -498,7 +529,8 @@ function saveGlobalSettings() {
         dtxn_showSummary: summaryToggle.checked,
         dtxn_showBalance: balanceToggle.checked,
         dtxn_showDelete: deleteToggle.checked,
-        dtxn_showCharges: chargesToggle.checked
+        dtxn_showCharges: chargesToggle.checked,
+        security_pin_enabled: pinToggle.checked
     };
     if (window.saveAppSettings) {
         window.saveAppSettings(settings);
@@ -508,6 +540,7 @@ function saveGlobalSettings() {
         localStorage.setItem('dtxn_showBalance', settings.dtxn_showBalance);
         localStorage.setItem('dtxn_showDelete', settings.dtxn_showDelete);
         localStorage.setItem('dtxn_showCharges', settings.dtxn_showCharges);
+        localStorage.setItem('security_pin_enabled', settings.security_pin_enabled);
     }
 }
 
@@ -516,6 +549,7 @@ summaryToggle.addEventListener('change', saveGlobalSettings);
 balanceToggle.addEventListener('change', saveGlobalSettings);
 deleteToggle.addEventListener('change', saveGlobalSettings);
 chargesToggle.addEventListener('change', saveGlobalSettings);
+pinToggle.addEventListener('change', saveGlobalSettings);
 </script>
 </body>
 </html>

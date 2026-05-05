@@ -210,9 +210,29 @@
 
     <!-- Section 2: Daily Operations -->
     <div class="bg-white dark:bg-slate-900 rounded-xl md:rounded-2xl p-4 md:p-8 border border-primary/10 shadow-sm">
-        <h5 class="text-sm font-bold text-primary uppercase tracking-wider mb-6 flex items-center gap-2">
-            <span class="material-symbols-outlined text-lg">insights</span> 2. Daily Revenue & Expenses
-        </h5>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <h5 class="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">insights</span> 2. Daily Revenue & Expenses
+            </h5>
+            
+            <!-- Online Comparison Box -->
+            <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-primary/5 border border-primary/10">
+                <div class="flex flex-col">
+                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Expected Online</p>
+                    <p id="system-online-val" class="text-xs font-black text-slate-700 dark:text-slate-200">₹0</p>
+                </div>
+                <div class="w-px h-8 bg-primary/10 mx-1"></div>
+                <div class="flex flex-col">
+                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Difference</p>
+                    <p id="online-diff-val" class="text-xs font-black italic text-slate-400">₹0</p>
+                </div>
+                <div class="w-px h-8 bg-primary/10 mx-1"></div>
+                <div class="flex flex-col">
+                    <p class="text-[9px] font-bold text-primary uppercase tracking-widest">Manual Total</p>
+                    <p id="manual-online-total" class="text-xs font-black text-primary">₹0</p>
+                </div>
+            </div>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             <!-- Cash Field -->
             <div class="flex flex-col gap-2">

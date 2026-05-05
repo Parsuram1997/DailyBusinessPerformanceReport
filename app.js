@@ -45,6 +45,7 @@ function initGlobalSettings() {
             checkAndSet('dtxn_showBalance', data.dtxn_showBalance);
             checkAndSet('dtxn_showDelete', data.dtxn_showDelete);
             checkAndSet('dtxn_showCharges', data.dtxn_showCharges);
+            checkAndSet('security_pin_enabled', data.security_pin_enabled);
             
             if (changed) {
                 window.dispatchEvent(new Event('appSettingsUpdated'));
@@ -442,6 +443,96 @@ async function initAddEntry() {
     if (!form) return;
 
     let existingEntryId = null; // tracks Firestore ID of existing entry for current date
+    let currentSystemOnline = 0;
+
+    const fetchSystemOnline = async (dateStr) => {
+        try {
+            const [yr, mo, dy] = dateStr.split('-');
+            const current = new Date(yr, mo - 1, dy);
+            const yesterday = new Date(current);
+            yesterday.setDate(current.getDate() - 1);
+            
+            const y_yyyy = yesterday.getFullYear();
+            const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const y_dd = String(yesterday.getDate()).padStart(2, '0');
+            const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+            const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const entriesRef = collection(db, "entries");
+            const qEntry = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+            const entrySnap = await getDocs(qEntry);
+            
+            let onlineVal = 0;
+            if (!entrySnap.empty) {
+                const entry = entrySnap.docs[0].data();
+                const d = entry.details || {};
+                onlineVal = (parseFloat(d.online || 0) + 
+                             parseFloat(d.roinet || 0) + 
+                             parseFloat(d.go2sms || 0) + 
+                             parseFloat(d.jio || 0) + 
+                             parseFloat(d.pending || 0));
+            }
+
+            const txnRef = collection(db, "daily_transactions");
+            const qTxn = query(txnRef, where("date", "==", dateStr));
+            const txnSnap = await getDocs(qTxn);
+            
+            txnSnap.forEach(doc => {
+                const t = doc.data();
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                
+                if (t.chargesType === 'Online') onlineVal += chg;
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    onlineVal += amt;
+                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    onlineVal -= amt;
+                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                    onlineVal -= amt;
+                    if (t.provider === 'Online') onlineVal += amt;
+                } else if (t.type === 'GOLD_SIP') {
+                    onlineVal -= amt;
+                } else if (t.type === 'CREDIT_GIVEN') {
+                    if (t.provider === 'Online') onlineVal -= amt;
+                } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
+                    if (t.provider === 'Online') onlineVal += amt;
+                } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                    if (t.provider === 'Online') onlineVal -= amt;
+                }
+            });
+
+            return onlineVal;
+        } catch (e) {
+            console.error("Error fetching system online:", e);
+            return 0;
+        }
+    };
+
+    const updateOnlineComparison = () => {
+        const manualTotalDisplay = document.getElementById('manual-online-total');
+        const systemDisplay = document.getElementById('system-online-val');
+        const diffDisplay = document.getElementById('online-diff-val');
+        
+        const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+        const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
+        
+        if (manualTotalDisplay) manualTotalDisplay.innerText = formatCurrency(manualTotal);
+        if (systemDisplay) systemDisplay.innerText = formatCurrency(currentSystemOnline);
+        
+        if (diffDisplay) {
+            const diff = manualTotal - currentSystemOnline;
+            diffDisplay.innerText = formatCurrency(diff);
+            
+            if (Math.abs(diff) < 0.01) {
+                diffDisplay.className = 'text-xs font-black italic text-slate-400';
+            } else if (diff > 0) {
+                diffDisplay.className = 'text-xs font-black italic text-emerald-500';
+            } else {
+                diffDisplay.className = 'text-xs font-black italic text-rose-500';
+            }
+        }
+    };
 
     const datePicker = document.getElementById('entry-date-picker');
     const formTitle = document.getElementById('form-title');
@@ -452,6 +543,11 @@ async function initAddEntry() {
 
     async function checkExisting() {
         if (!datePicker) return;
+        
+        // Refresh system online balance for the new date
+        currentSystemOnline = await fetchSystemOnline(datePicker.value);
+        updateOnlineComparison();
+
         const entries = await loadEntries();
 
         // Convert YYYY-MM-DD picker value to saved format "Mar 15, 2026"
@@ -699,6 +795,7 @@ async function initAddEntry() {
             const total = v('cash') + v('online') + v('roinet') + v('jio') + v('go2sms') + v('credit') + v('pending') + v('damages') - v('deposit') - v('expense');
             
             display.textContent = formatCurrency(isNaN(total) ? 0 : total);
+            updateOnlineComparison();
         };
 
         // Attach listeners to all relevant inputs for instant feedback
@@ -1627,6 +1724,87 @@ async function initCalculator() {
 
     const getCurrentDate = () => calcDatePicker ? calcDatePicker.value : null;
 
+    let currentSystemCash = 0;
+    
+    const updateSystemComparison = (physicalTotal) => {
+        const sysCashEl = document.getElementById('system-cash-val');
+        const diffEl = document.getElementById('cash-diff-val');
+        
+        if (sysCashEl) sysCashEl.innerText = formatCurrency(currentSystemCash);
+        
+        if (diffEl) {
+            const diff = (physicalTotal || 0) - currentSystemCash;
+            diffEl.innerText = formatCurrency(diff);
+            
+            // Color coding
+            if (Math.abs(diff) < 0.01) {
+                diffEl.className = 'font-bold italic text-white';
+            } else if (diff > 0) {
+                diffEl.className = 'font-bold italic text-emerald-300';
+            } else {
+                diffEl.className = 'font-bold italic text-rose-300';
+            }
+        }
+    };
+
+    const fetchSystemCash = async (dateStr) => {
+        try {
+            const [yr, mo, dy] = dateStr.split('-');
+            const current = new Date(yr, mo - 1, dy);
+            const yesterday = new Date(current);
+            yesterday.setDate(current.getDate() - 1);
+            
+            const y_yyyy = yesterday.getFullYear();
+            const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const y_dd = String(yesterday.getDate()).padStart(2, '0');
+            const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+            const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const entriesRef = collection(db, "entries");
+            const qEntry = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+            const entrySnap = await getDocs(qEntry);
+            
+            let cashVal = 0;
+            if (!entrySnap.empty) {
+                const entry = entrySnap.docs[0].data();
+                cashVal = parseFloat(entry.details?.cash || 0);
+            }
+
+            const txnRef = collection(db, "daily_transactions");
+            const qTxn = query(txnRef, where("date", "==", dateStr));
+            const txnSnap = await getDocs(qTxn);
+            
+            txnSnap.forEach(doc => {
+                const t = doc.data();
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                
+                if (t.chargesType !== 'Online') cashVal += chg;
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    cashVal -= amt; 
+                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    cashVal += amt;
+                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                    if (t.provider !== 'Online') cashVal += amt;
+                } else if (t.type === 'CREDIT_GIVEN') {
+                    if (t.provider === 'Cash') cashVal -= amt;
+                } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
+                    if (t.provider === 'Cash') cashVal += amt;
+                } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                    if (t.provider === 'Cash') cashVal -= amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    cashVal -= amt;
+                }
+            });
+
+            return cashVal;
+        } catch (e) {
+            console.error("Error fetching system cash:", e);
+            return 0;
+        }
+    };
+
     const updateTotals = () => {
         let grandTotal = 0;
         let totalNotes = 0;
@@ -1653,6 +1831,8 @@ async function initCalculator() {
         if (totalValDisplay) totalValDisplay.innerText = formatCurrency(grandTotal);
         if (totalNotesDisplay) totalNotesDisplay.innerText = `${totalNotes} notes total`;
 
+        updateSystemComparison(grandTotal);
+
         // Save to Firestore by date
         const currentDate = getCurrentDate();
         if (currentDate) saveCashCalculator(counts, currentDate);
@@ -1664,11 +1844,11 @@ async function initCalculator() {
     calcDatePicker = document.getElementById('calc-date-picker');
     if (!calcDatePicker && headerFlex) {
         const pickerWrapper = document.createElement('div');
-        pickerWrapper.className = 'flex flex-col gap-1 min-w-[180px]';
+        pickerWrapper.className = 'flex flex-col gap-1 w-full md:w-auto min-w-0 md:min-w-[180px]';
         pickerWrapper.innerHTML = `
-            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Date</label>
+            <label class="text-[10px] lg:text-xs font-bold text-slate-500 uppercase tracking-wider">Select Date</label>
             <input id="calc-date-picker" type="date"
-                class="px-4 py-2.5 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-200">
+                class="px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-xs lg:text-sm font-semibold text-slate-700 dark:text-slate-200 w-full">
         `;
         const resetBtn = headerFlex.querySelector('#btn-reset');
         if (resetBtn) headerFlex.insertBefore(pickerWrapper, resetBtn);
@@ -1696,19 +1876,19 @@ async function initCalculator() {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-primary/5 transition-colors group';
             tr.innerHTML = `
-                <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">₹</div>
-                        <span class="font-semibold text-slate-700 dark:text-slate-300">${denom}</span>
+                <td class="px-3 lg:px-6 py-2.5 lg:py-4">
+                    <div class="flex items-center gap-2 lg:gap-3">
+                        <div class="size-6 lg:size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] lg:text-xs">₹</div>
+                        <span class="text-xs lg:text-sm font-bold text-slate-700 dark:text-slate-300">${denom}</span>
                     </div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-3 lg:px-6 py-2.5 lg:py-4">
                     <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
-                        class="w-24 mx-auto block bg-slate-50 dark:bg-background-dark/40 border border-primary/10 px-3 py-2 rounded-lg text-center focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold" 
+                        class="w-16 lg:w-24 mx-auto block bg-slate-50 dark:bg-background-dark/40 border border-primary/10 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg text-center focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-xs lg:text-sm" 
                         placeholder="0" min="0">
                 </td>
-                <td class="px-6 py-4 text-right">
-                    <span class="subtotal font-mono font-bold text-slate-400 group-hover:text-primary transition-colors">₹0</span>
+                <td class="px-3 lg:px-6 py-2.5 lg:py-4 text-right">
+                    <span class="subtotal font-mono font-bold text-slate-400 group-hover:text-primary transition-colors text-xs lg:text-sm">₹0</span>
                 </td>
             `;
             tableBody.appendChild(tr);
@@ -1717,6 +1897,7 @@ async function initCalculator() {
 
     // Load and render data for a specific date
     const loadForDate = async (dateStr) => {
+        currentSystemCash = await fetchSystemCash(dateStr);
         let savedCounts = await loadCashCalculator(dateStr);
         delete savedCounts.date; // remove metadata field
         generateRows(savedCounts);
@@ -3355,6 +3536,103 @@ async function initReports() {
                 `).join('');
             }
         }
+
+        // Calculate Reconciliation Totals for Cards
+        // ONLY include dates that exist in system records AND start from 1st May 2026
+        const systemDates = new Set(dailyTxns.map(t => t.date));
+        const reconDates = [...new Set(filtered.map(e => e.date))]
+            .filter(d => systemDates.has(d) && d >= '2026-05-01');
+        
+        let totalManualCash = 0;
+        let totalSysCash = 0;
+        let totalManualOnline = 0;
+        let totalSysOnline = 0;
+        let totalManualIncome = 0;
+        let totalSysIncome = 0;
+
+        reconDates.forEach(date => {
+            const e = filtered.find(ent => ent.date === date);
+            const det = e.details || {};
+            const manualCash = parseFloat(det.cash || 0);
+            const manualOnline = (parseFloat(det.online || 0) + 
+                                 parseFloat(det.roinet || 0) + 
+                                 parseFloat(det.go2sms || 0) + 
+                                 parseFloat(det.jio || 0) +
+                                 parseFloat(det.pending || 0));
+            
+            // Use the pre-calculated daily income from the map
+            const mapped = dailyIncomeMap[date] || {};
+            totalManualIncome += (mapped.inc || 0);
+
+            const dObj = new Date(date);
+            dObj.setDate(dObj.getDate() - 1);
+            const yDateStr = dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2, '0') + '-' + String(dObj.getDate()).padStart(2, '0');
+            
+            const yEntry = allEntries.find(ent => ent.date === yDateStr);
+            let sysCash = 0;
+            let sysOnline = 0;
+            
+            if (yEntry) {
+                const yd = yEntry.details || {};
+                sysCash = parseFloat(yd.cash || 0);
+                sysOnline = parseFloat(yd.online || 0) + parseFloat(yd.roinet || 0) + parseFloat(yd.go2sms || 0) + parseFloat(yd.jio || 0) + parseFloat(yd.pending || 0);
+            }
+            
+            const dayTxns = dailyTxns.filter(t => t.date === date);
+            dayTxns.forEach(t => {
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                totalSysIncome += chg;
+                
+                if (t.chargesType === 'Online') sysOnline += chg;
+                else sysCash += chg;
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    sysCash -= amt;
+                    sysOnline += amt;
+                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    sysCash += amt;
+                    sysOnline -= amt;
+                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                    sysOnline -= amt;
+                    if (t.provider === 'Online') sysOnline += amt;
+                    else sysCash += amt;
+                } else if (t.type === 'GOLD_SIP') {
+                    sysOnline -= amt;
+                } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
+                    if (t.provider === 'Cash') sysCash += amt;
+                    else if (t.provider === 'Online') sysOnline += amt;
+                } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                    if (t.provider === 'Cash') sysCash -= amt;
+                    else if (t.provider === 'Online') sysOnline -= amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    sysCash -= amt;
+                }
+            });
+            
+            totalManualCash += manualCash;
+            totalSysCash += sysCash;
+            totalManualOnline += manualOnline;
+            totalSysOnline += sysOnline;
+        });
+
+        const finalCashDiff = totalManualCash - totalSysCash;
+        const finalOnlineDiff = totalManualOnline - totalSysOnline;
+        const finalIncomeDiff = totalManualIncome - totalSysIncome;
+
+        // Populate Summary Cards
+        const updateCard = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+        updateCard('recon-manual-cash-card', `₹${totalManualCash.toLocaleString('en-IN')}`);
+        updateCard('recon-system-cash-card', `₹${totalSysCash.toLocaleString('en-IN')}`);
+        updateCard('recon-cash-diff-card', `${finalCashDiff > 0 ? '+' : ''}${finalCashDiff.toLocaleString('en-IN')}`);
+        
+        updateCard('recon-manual-online-card', `₹${totalManualOnline.toLocaleString('en-IN')}`);
+        updateCard('recon-system-online-card', `₹${totalSysOnline.toLocaleString('en-IN')}`);
+        updateCard('recon-online-diff-card', `${finalOnlineDiff > 0 ? '+' : ''}${finalOnlineDiff.toLocaleString('en-IN')}`);
+
+        updateCard('recon-manual-income-card', `₹${totalManualIncome.toLocaleString('en-IN')}`);
+        updateCard('recon-system-income-card', `₹${totalSysIncome.toLocaleString('en-IN')}`);
+        updateCard('recon-income-diff-card', `${finalIncomeDiff > 0 ? '+' : ''}${finalIncomeDiff.toLocaleString('en-IN')}`);
     }
 
     function modeToTitle(mode) {
@@ -3869,6 +4147,9 @@ window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
 };
 
 function protectPrivilegedLinks() {
+    const pinEnabled = localStorage.getItem('security_pin_enabled') !== 'false';
+    if (!pinEnabled) return;
+
     const selectors = [
         'a[href="add-entry-code.html"]',
         'a[data-page="add-entry-code.html"]',
@@ -3917,7 +4198,8 @@ async function initDailyTxn() {
         if (backBtnBottom) backBtnBottom.classList.remove('hidden');
 
         // Force PIN check if not unlocked this session
-        if (!isUnlocked) {
+        const pinEnabled = localStorage.getItem('security_pin_enabled') !== 'false';
+        if (!isUnlocked && pinEnabled) {
             // Hide main content until unlocked
             const mainContent = document.querySelector('main');
             if (mainContent) mainContent.style.opacity = '0';
@@ -3941,6 +4223,7 @@ async function initDailyTxn() {
     }
 
     const tableBody = document.getElementById('daily-txn-table-body');
+    let currentTxnsForDownload = []; // For export
     const txnAmount = document.getElementById('txn-amount');
     const amountLabel = document.getElementById('amount-label');
     const txnRemaining = document.getElementById('txn-remaining');
@@ -4041,11 +4324,11 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
             const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE'];
             const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP'];
-            const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
-            const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED'];
+            const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY'];
+            const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
         const isSimplified = simplifiedTypes.includes(txnType.value);
         const isAmountOnly = amountOnlyTypes.includes(txnType.value);
@@ -4054,7 +4337,7 @@ async function initDailyTxn() {
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
-        txnNote.disabled = isChargesOnly || isSimplified || isAmountOnly;
+        txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly;
         txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
         txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
 
@@ -4065,7 +4348,7 @@ async function initDailyTxn() {
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
-                if (isNoteAndAmount || isCredit) noteFieldContainer.classList.remove('hidden');
+                if (isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') noteFieldContainer.classList.remove('hidden');
                 else noteFieldContainer.classList.add('hidden');
             }
             if (addressFieldContainer) addressFieldContainer.classList.add('hidden');
@@ -4086,7 +4369,7 @@ async function initDailyTxn() {
             
             if (isChargesOnly) txnAmount.value = '';
             if (isAmountOnly || isNoteAndAmount || isCredit) txnCharges.value = '';
-            if (!isNoteAndAmount && !isCredit) txnNote.value = '';
+            if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME') txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
         } else {
@@ -4123,7 +4406,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -4131,7 +4414,7 @@ async function initDailyTxn() {
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
             if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
-                if (providerLabel) providerLabel.innerText = 'Pay Mode';
+                if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : 'Pay Mode';
                 if (amountLabel) amountLabel.innerText = 'Amount';
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
@@ -4150,7 +4433,7 @@ async function initDailyTxn() {
             
             const isAepsMatm = ['AEPS', 'MATM'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
-            const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value);
+            const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
             
             Array.from(txnProvider.options).forEach(opt => {
                 if (!opt.value) return; // Skip placeholder
@@ -4237,7 +4520,7 @@ async function initDailyTxn() {
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
                 bankName: (['AEPS', 'MATM'].includes(txnType.value)) ? txnBank.value.trim() : '',
@@ -4307,7 +4590,9 @@ async function initDailyTxn() {
                 let onlineVal = parseFloat(details.online || 0);
                 let roinetVal = parseFloat(details.roinet || 0);
                 let crgbBcVal = parseFloat(details.go2sms || 0);
-                let totalOnline = onlineVal + roinetVal + crgbBcVal;
+                let jioVal = parseFloat(details.jio || 0);
+                let pendingVal = parseFloat(details.pending || 0);
+                let totalOnline = onlineVal + roinetVal + crgbBcVal + jioVal + pendingVal;
 
                 // Adjust ONLY based on specific transaction types
                 txns.forEach(t => {
@@ -4327,22 +4612,23 @@ async function initDailyTxn() {
                     } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         cashVal += amt;
                         totalOnline -= amt;
-                    } else if (t.type === 'DISHTV_RECHARGE') {
+                    } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
                         totalOnline -= amt;
                         if (t.provider === 'Online') totalOnline += amt;
                         else cashVal += amt;
-                    } else if (t.type === 'JIO_RECHARGE') {
-                        totalOnline -= amt;
-                        if (t.provider === 'Online') totalOnline += amt;
-                        else cashVal += amt;
-                    } else if (t.type === 'JIO_TOPUP' || t.type === 'GOLD_SIP') {
+                    } else if (t.type === 'GOLD_SIP') {
                         totalOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
                         if (t.provider === 'Cash') cashVal -= amt;
                         else if (t.provider === 'Online') totalOnline -= amt;
-                    } else if (t.type === 'CREDIT_RECEIVED') {
+                    } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
                         if (t.provider === 'Cash') cashVal += amt;
                         else if (t.provider === 'Online') totalOnline += amt;
+                    } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                        if (t.provider === 'Cash') cashVal -= amt;
+                        else if (t.provider === 'Online') totalOnline -= amt;
+                    } else if (t.type === 'DAMAGED_CURRENCY') {
+                        cashVal -= amt;
                     }
                 });
 
@@ -4353,11 +4639,34 @@ async function initDailyTxn() {
                 onlineDisplay.innerText = onlineFormatted;
                 if (cashMobileDisplay) cashMobileDisplay.innerText = cashFormatted;
                 if (onlineMobileDisplay) onlineMobileDisplay.innerText = onlineFormatted;
+
+                // Update Opening Balances (Manual records from Yesterday's Add Entry)
+                const opCashDisplay = document.getElementById('opening-cash-balance');
+                const opOnlineDisplay = document.getElementById('opening-online-balance');
+                const opCashMobile = document.getElementById('opening-cash-balance-mobile');
+                const opOnlineMobile = document.getElementById('opening-online-balance-mobile');
+                
+                const opCash = parseFloat(details.cash || 0);
+                const opOnline = parseFloat(details.online || 0) + parseFloat(details.roinet || 0) + parseFloat(details.go2sms || 0) + parseFloat(details.jio || 0) + parseFloat(details.pending || 0);
+                
+                const opCashFmt = `₹ ${opCash.toLocaleString('en-IN')}`;
+                const opOnlineFmt = `₹ ${opOnline.toLocaleString('en-IN')}`;
+                
+                if (opCashDisplay) opCashDisplay.innerText = opCashFmt;
+                if (opOnlineDisplay) opOnlineDisplay.innerText = opOnlineFmt;
+                if (opCashMobile) opCashMobile.innerText = opCashFmt;
+                if (opOnlineMobile) opOnlineMobile.innerText = opOnlineFmt;
             } else {
                 cashDisplay.innerText = '₹ 0.00';
                 onlineDisplay.innerText = '₹ 0.00';
                 if (cashMobileDisplay) cashMobileDisplay.innerText = '₹ 0.00';
                 if (onlineMobileDisplay) onlineMobileDisplay.innerText = '₹ 0.00';
+                
+                const opElements = ['opening-cash-balance', 'opening-online-balance', 'opening-cash-balance-mobile', 'opening-online-balance-mobile'];
+                opElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = '₹ 0';
+                });
             }
         } catch (err) {
             console.error('Error updating daily balances:', err);
@@ -4431,7 +4740,7 @@ async function initDailyTxn() {
                     const eData = eSnapshot.docs[0].data();
                     const d = eData.details || {};
                     startCash = parseFloat(d.cash || 0);
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0);
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0);
                 }
 
                 // Update daily summary badges
@@ -4459,22 +4768,23 @@ async function initDailyTxn() {
                     } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
                         currentOnline -= amt;
-                    } else if (t.type === 'DISHTV_RECHARGE') {
+                    } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
                         currentOnline -= amt;
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
-                    } else if (t.type === 'JIO_RECHARGE') {
-                        currentOnline -= amt;
-                        if (t.provider === 'Online') currentOnline += amt;
-                        else currentCash += amt;
-                    } else if (t.type === 'JIO_TOPUP' || t.type === 'GOLD_SIP') {
+                    } else if (t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
                         if (t.provider === 'Cash') currentCash -= amt;
                         else if (t.provider === 'Online') currentOnline -= amt;
-                    } else if (t.type === 'CREDIT_RECEIVED') {
+                    } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
                         if (t.provider === 'Cash') currentCash += amt;
                         else if (t.provider === 'Online') currentOnline += amt;
+                    } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                        if (t.provider === 'Cash') currentCash -= amt;
+                        else if (t.provider === 'Online') currentOnline -= amt;
+                    } else if (t.type === 'DAMAGED_CURRENCY') {
+                        currentCash -= amt;
                     }
                     return { ...t, runningCash: currentCash, runningOnline: currentOnline };
                 });
@@ -4494,7 +4804,7 @@ async function initDailyTxn() {
                 }, {});
 
                 // Types jo count/volume se exclude honge
-                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP'];
+                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
 
                 const totalDayAmount = countableTxns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -4616,8 +4926,8 @@ async function initDailyTxn() {
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                    txn.type === 'WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                                     txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
                                     txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
@@ -4656,8 +4966,12 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                <span class="text-[8px] font-black uppercase tracking-widest ${txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500'}">${txn.chargesType || 'Cash'}</span>
+                                ${((['GOLD_SIP', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                                ` : `
+                                    <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    <span class="text-[8px] font-black uppercase tracking-widest ${txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500'}">${txn.chargesType || 'Cash'}</span>
+                                `}
                             </div>
                         </td>
                         <td class="px-3 py-1.5 balance-col-cell">
@@ -4679,6 +4993,9 @@ async function initDailyTxn() {
                     `;
                     tableBody.appendChild(tr);
                 });
+                
+                // Reverse for download to match table Sl No logic (Recent first)
+                currentTxnsForDownload = [...txns].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
                 document.querySelectorAll('.edit-txn-btn').forEach(btn => {
                     btn.onclick = () => {
@@ -4763,6 +5080,107 @@ async function initDailyTxn() {
                 }
             });
         });
+    }
+
+    // Download Functionality
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const downloadExcelBtn = document.getElementById('download-excel-btn');
+
+    if (downloadPdfBtn) {
+        downloadPdfBtn.onclick = () => {
+            console.log('PDF Download clicked. Current data length:', currentTxnsForDownload.length);
+            if (currentTxnsForDownload.length === 0) {
+                alert("No transactions to download.");
+                return;
+            }
+            try {
+                const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+                
+                doc.setFontSize(18);
+                doc.text(`Daily Transaction Report - ${currentSelectedDate}`, 14, 15);
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+                const tableData = currentTxnsForDownload.map((t, index) => {
+                    const details = [
+                        t.note,
+                        t.extraDetails ? `Aadhaar: ${t.extraDetails}` : null,
+                        t.address ? `Address: ${t.address}` : null
+                    ].filter(Boolean).join('\n');
+
+                    return [
+                        currentTxnsForDownload.length - index,
+                        t.time || (t.timestamp ? new Date(t.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'),
+                        t.type,
+                        t.bankName || t.provider || 'N/A',
+                        details || 'N/A',
+                        t.amount ? `₹${parseFloat(t.amount).toLocaleString('en-IN')}` : '-',
+                        t.charges ? `₹${parseFloat(t.charges).toLocaleString('en-IN')}` : '-',
+                        `C: ${t.runningCash?.toLocaleString('en-IN') || 0}\nO: ${t.runningOnline?.toLocaleString('en-IN') || 0}`
+                    ];
+                });
+
+                doc.autoTable({
+                    startY: 30,
+                    head: [['Sl No', 'Time', 'Type', 'Bank/URN', 'Details', 'Amount', 'Charges', 'Balance (C/O)']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [127, 19, 236], textColor: 255, fontSize: 7, fontStyle: 'bold' },
+                    columnStyles: {
+                        0: { cellWidth: 8 },
+                        1: { cellWidth: 15 },
+                        2: { cellWidth: 25 },
+                        3: { cellWidth: 25 },
+                        4: { cellWidth: 'auto' },
+                        5: { halign: 'right', cellWidth: 30 },
+                        6: { halign: 'right', cellWidth: 25 },
+                        7: { halign: 'right', cellWidth: 35, fontSize: 6 }
+                    },
+                    styles: { 
+                        fontSize: 7, 
+                        cellPadding: 1.5, 
+                        overflow: 'linebreak',
+                        font: 'helvetica'
+                    }
+                });
+
+                doc.save(`Transactions_${currentSelectedDate}.pdf`);
+            } catch (err) {
+                console.error('PDF Generation Error:', err);
+                alert('Error generating PDF: ' + err.message);
+            }
+        };
+    }
+
+    if (downloadExcelBtn) {
+        downloadExcelBtn.onclick = () => {
+            console.log('Excel Download clicked. Current data length:', currentTxnsForDownload.length);
+            if (currentTxnsForDownload.length === 0) {
+                alert("No transactions to download.");
+                return;
+            }
+            try {
+                const data = currentTxnsForDownload.map((t, index) => ({
+                    'Sl No': currentTxnsForDownload.length - index,
+                    'Time': t.time,
+                    'Type': t.type,
+                    'Bank or URN': t.bankName || t.provider || '',
+                    'Transaction Details': t.note || '',
+                    'Amount': t.amount || 0,
+                    'Charges': t.charges || 0,
+                    'Balance': t.balance || ''
+                }));
+
+                const ws = window.XLSX.utils.json_to_sheet(data);
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, "Daily Transactions");
+                window.XLSX.writeFile(wb, `Transactions_${currentSelectedDate}.xlsx`);
+            } catch (err) {
+                console.error('Excel Generation Error:', err);
+                alert('Error generating Excel: ' + err.message);
+            }
+        };
     }
 
     // Initial load

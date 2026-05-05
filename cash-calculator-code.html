@@ -166,32 +166,32 @@
         <!-- Main Content -->
         <main class="flex-1 flex flex-col overflow-y-auto pb-24 lg:pb-0">
             <!-- Header -->
-            <header class="p-8 pb-0">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-primary/10 pb-8">
+            <header class="p-4 lg:p-8 pb-0">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-primary/10 pb-4 lg:pb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <span class="material-symbols-outlined text-primary text-4xl">calculate</span>
-                            Currency Denomination Calculator
+                        <h2 class="text-xl lg:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2 lg:gap-3">
+                            <span class="material-symbols-outlined text-primary text-2xl lg:text-4xl">calculate</span>
+                            Cash Calculator
                         </h2>
-                        <p class="text-slate-500 dark:text-slate-400 mt-1">Calculate daily cash totals by counting physical notes.</p>
+                        <p class="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Count physical notes and calculate totals.</p>
                     </div>
-                    <button id="btn-reset" class="text-xs font-bold text-slate-400 hover:text-primary uppercase tracking-widest flex items-center gap-2 transition-colors">
-                        <span class="material-symbols-outlined text-sm">refresh</span> Reset All
+                    <button id="btn-reset" class="text-[10px] lg:text-xs font-bold text-slate-400 hover:text-primary uppercase tracking-widest flex items-center gap-1.5 transition-colors w-fit">
+                        <span class="material-symbols-outlined text-sm">refresh</span> Reset
                     </button>
                 </div>
             </header>
 
             <!-- Calculator Body -->
-            <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
                 <!-- Denominations Table -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="lg:col-span-2 space-y-4 lg:space-y-6">
                     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-primary/10">
                                 <tr>
-                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Denomination</th>
-                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Note Count</th>
-                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Value (₹)</th>
+                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500">Note</th>
+                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Count</th>
+                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Value (₹)</th>
                                 </tr>
                             </thead>
                             <tbody id="cash-denomination-rows" class="divide-y divide-primary/5">
@@ -202,19 +202,34 @@
                 </div>
  
                 <!-- Summary Card -->
-                <div class="space-y-6">
-                    <div class="bg-primary p-8 rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
+                <div class="space-y-4 lg:space-y-6">
+                    <div class="bg-primary p-6 lg:p-8 rounded-2xl lg:rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
                         <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div>
-                                <p class="text-primary-100/80 text-sm font-medium mb-1">Total Cash Value</p>
-                                <h3 id="cash-total-val-display" class="text-4xl font-black tracking-tight">₹0</h3>
-                                <div class="mt-2 flex items-center gap-2 text-primary-100/60 text-xs">
+                            <div class="flex items-center justify-between lg:block">
+                                <div>
+                                    <p class="text-primary-100/80 text-[10px] lg:text-sm font-medium mb-0.5 lg:mb-1">Total Value</p>
+                                    <h3 id="cash-total-val-display" class="text-2xl lg:text-4xl font-black tracking-tight">₹0</h3>
+                                </div>
+                                <div class="mt-0 lg:mt-2 flex items-center gap-1.5 lg:gap-2 text-primary-100/60 text-[10px]">
                                     <span class="material-symbols-outlined text-xs">analytics</span>
-                                    <span id="cash-total-notes-count">0 notes total</span>
+                                    <span id="cash-total-notes-count">0 notes</span>
                                 </div>
                             </div>
-                            <button id="btn-use-cash" class="mt-8 w-full bg-white text-primary hover:bg-primary-50 font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined">check_circle</span>
+
+                            <!-- System Comparison -->
+                            <div class="mt-4 pt-4 border-t border-white/20 space-y-2">
+                                <div class="flex justify-between items-center text-[10px] lg:text-xs">
+                                    <span class="text-primary-100/70">Daily Txn Cash:</span>
+                                    <span id="system-cash-val" class="font-bold">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center text-[10px] lg:text-xs">
+                                    <span class="text-primary-100/70">Difference:</span>
+                                    <span id="cash-diff-val" class="font-bold italic">₹0</span>
+                                </div>
+                            </div>
+
+                            <button id="btn-use-cash" class="mt-4 lg:mt-8 w-full bg-white text-primary hover:bg-primary-50 font-bold py-3 lg:py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm lg:text-base">
+                                <span class="material-symbols-outlined text-lg lg:text-xl">check_circle</span>
                                 Use as Cash
                             </button>
                         </div>
@@ -222,12 +237,12 @@
                         <div class="absolute -right-10 -bottom-10 size-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-primary/10 border-dashed flex flex-col gap-4">
-                        <div class="flex items-center gap-3 text-slate-500">
-                            <span class="material-symbols-outlined text-primary">info</span>
-                            <span class="text-xs font-medium uppercase tracking-wider">Instructions</span>
+                    <div class="bg-white dark:bg-slate-900 p-4 lg:p-6 rounded-xl lg:rounded-2xl border border-primary/10 border-dashed flex flex-col gap-2 lg:gap-4">
+                        <div class="flex items-center gap-2 lg:gap-3 text-slate-500">
+                            <span class="material-symbols-outlined text-primary text-lg lg:text-xl">info</span>
+                            <span class="text-[10px] lg:text-xs font-bold uppercase tracking-wider">Instructions</span>
                         </div>
-                        <p class="text-sm text-slate-600 dark:text-slate-400">Please enter the count of notes for each denomination in the table. The total value will be calculated automatically and can be sent directly to your "Add Entry" form.</p>
+                        <p class="text-[11px] lg:text-sm text-slate-600 dark:text-slate-400">Enter note counts. Total calculates automatically and can be sent to "Add Entry".</p>
                     </div>
                 </div>
             </div>

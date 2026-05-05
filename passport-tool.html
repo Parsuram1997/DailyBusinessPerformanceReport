@@ -141,11 +141,18 @@
 
             <!-- Right: Studio Cropper -->
             <div class="lg:col-span-7 bg-white border-2 border-slate-200 rounded-xl md:rounded-3xl p-4 md:p-8 step-shadow flex flex-col">
-                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-100">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-4 border-b-2 border-slate-100 gap-4">
                     <div>
                         <h3 class="text-xl font-black text-slate-800 uppercase tracking-tight">Studio Editor</h3>
                         <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-1">Aspect Ratio Locked at 35:45 (Standard)</p>
                     </div>
+                    
+                    <!-- Slot Selection -->
+                    <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button onclick="setActiveSlot(0)" id="slot-btn-0" class="px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all bg-white shadow-sm text-primary">Photo A</button>
+                        <button onclick="setActiveSlot(1)" id="slot-btn-1" class="px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all text-slate-400 hover:text-slate-600">Photo B</button>
+                    </div>
+
                     <label class="cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-xl font-black text-[11px] uppercase transition-colors flex items-center gap-2">
                         <span class="material-symbols-outlined text-lg">upload_file</span>
                         <span class="hidden sm:inline">Upload New</span>
@@ -158,10 +165,10 @@
                     
                     <div id="upload-prompt" class="text-center p-6 cursor-pointer hover:scale-105 transition-transform" onclick="document.getElementById('image-upload').click()">
                         <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-md text-primary">
-                            <span class="material-symbols-outlined text-4xl">add_photo_alternate</span>
+                            <span class="material-symbols-outlined text-4xl" id="upload-icon">add_photo_alternate</span>
                         </div>
-                        <h4 class="text-slate-800 font-black text-lg mb-1">Select an Image</h4>
-                        <p class="text-slate-500 font-medium text-xs">Click here to upload a clear front-facing portrait (PNG, JPG)</p>
+                        <h4 class="text-slate-800 font-black text-lg mb-1" id="upload-title">Select Photo A</h4>
+                        <p class="text-slate-500 font-medium text-xs">Click here to upload a clear front-facing portrait</p>
                     </div>
 
                     <div id="cropper-container" class="absolute inset-0 hidden">
@@ -197,23 +204,25 @@
         <p class="text-center text-[10px] font-bold text-slate-400 mt-2">Print directly using PDF (Recommended), or export high-quality PSD for Photoshop.</p>
     </div>
 
-    <script>
-        // State
+    <script>        // State
         let state = {
             pageSize: '4x6', // '4x6' or 'a4'
             count: 8,
             cutLines: true,
-            imageUploaded: false
+            activeSlot: 0,
+            slots: [
+                { uploaded: false, previewImg: null, fullQualityImg: null, originalData: null },
+                { uploaded: false, previewImg: null, fullQualityImg: null, originalData: null }
+            ]
         };
 
         const dims = {
             '4x6': { w: 1800, h: 1200, aspectRatio: 1800/1200 },
             'a4': { w: 2480, h: 3508, aspectRatio: 2480/3508 },
-            photo: { w: 419, h: 537 } // Including 3px border logic from backend
+            photo: { w: 413, h: 531 } // 35x45mm @ 300DPI
         };
 
         let cropper = null;
-        let previewCroppedImg = null;
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
@@ -240,6 +249,46 @@
             // Initial toggle tick
             toggle.dispatchEvent(new Event('change'));
         });
+
+        function setActiveSlot(index) {
+            state.activeSlot = index;
+            
+            // Update UI buttons
+            document.getElementById('slot-btn-0').className = index === 0 
+                ? 'px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all bg-white shadow-sm text-primary'
+                : 'px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all text-slate-400 hover:text-slate-600';
+            document.getElementById('slot-btn-1').className = index === 1 
+                ? 'px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all bg-white shadow-sm text-primary'
+                : 'px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all text-slate-400 hover:text-slate-600';
+
+            // Show/Hide cropper based on slot content
+            const slot = state.slots[index];
+            const prompt = document.getElementById('upload-prompt');
+            const container = document.getElementById('cropper-container');
+            const controls = document.getElementById('editor-controls');
+            const title = document.getElementById('upload-title');
+            
+            title.textContent = `Select Photo ${index === 0 ? 'A' : 'B'}`;
+
+            if (slot.uploaded) {
+                prompt.classList.add('hidden');
+                container.classList.remove('hidden');
+                controls.classList.remove('hidden');
+                controls.classList.add('flex');
+                
+                const image = document.getElementById('image-workspace');
+                image.src = slot.originalData;
+                
+                if (cropper) cropper.destroy();
+                initCropper(image);
+            } else {
+                prompt.classList.remove('hidden');
+                container.classList.add('hidden');
+                controls.classList.remove('hidden', 'flex');
+                controls.classList.add('hidden');
+                if (cropper) cropper.destroy();
+            }
+        }
 
         function initCountButtons() {
             const container = document.getElementById('count-buttons');
@@ -283,69 +332,79 @@
             updatePreview();
         }
 
+        function initCropper(imageElement) {
+            cropper = new Cropper(imageElement, {
+                aspectRatio: 35 / 45,
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 0.8,
+                cropBoxResizable: true,
+                cropBoxMovable: true,
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 128,
+                crop(event) {
+                    clearTimeout(window.previewTimeout);
+                    window.previewTimeout = setTimeout(() => {
+                        if(cropper) {
+                            const cvsPreview = cropper.getCroppedCanvas({ width: 105, height: 135 });
+                            const cvsFull = cropper.getCroppedCanvas({ minWidth: 413, minHeight: 531, maxWidth: 1652, maxHeight: 2124 });
+                            
+                            if (cvsPreview) {
+                                const slot = state.slots[state.activeSlot];
+                                slot.previewImg = new Image();
+                                slot.previewImg.onload = updatePreview;
+                                slot.previewImg.src = cvsPreview.toDataURL('image/jpeg', 0.6);
+                                slot.fullQualityImg = cvsFull.toDataURL('image/jpeg', 1.0);
+                            }
+                        }
+                    }, 200);
+                }
+            });
+        }
+
         document.getElementById('image-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = (event) => {
-                state.imageUploaded = true;
-                document.getElementById('upload-prompt').classList.add('hidden');
-                document.getElementById('cropper-container').classList.remove('hidden');
-                document.getElementById('editor-controls').classList.remove('hidden');
-                document.getElementById('editor-controls').classList.add('flex');
-
-                const image = document.getElementById('image-workspace');
-                image.src = event.target.result;
-
-                if (cropper) cropper.destroy();
-
-                cropper = new Cropper(image, {
-                    aspectRatio: 35 / 45,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 0.8,
-                    cropBoxResizable: true,
-                    cropBoxMovable: true,
-                    minCropBoxWidth: 100,
-                    minCropBoxHeight: 128,
-                    crop(event) {
-                        // Debounce preview update slightly to avoid lagging UI while cropping
-                        clearTimeout(window.previewTimeout);
-                        window.previewTimeout = setTimeout(() => {
-                            if(cropper) {
-                                // Get a small optimized version for the canvas preview
-                                const cvs = cropper.getCroppedCanvas({ width: 105, height: 135 });
-                                if (cvs) {
-                                    previewCroppedImg = new Image();
-                                    previewCroppedImg.onload = updatePreview;
-                                    previewCroppedImg.src = cvs.toDataURL('image/jpeg', 0.6);
-                                }
-                            }
-                        }, 200);
-                    }
-                });
+                const slot = state.slots[state.activeSlot];
+                slot.uploaded = true;
+                slot.originalData = event.target.result;
+                
+                setActiveSlot(state.activeSlot); // Refresh UI for current slot
             };
             reader.readAsDataURL(file);
-        });
+        });;
 
-        // Calculate layout params to always align from top-left (for partial sheet reuse)
+        // Calculate layout params to always center content on page
         function calculateLayout() {
-             let rows = 4;
-             let cols = 2;
-             let startX = 32;
-             let startY = 53;
+             let rows = 1;
+             let cols = 1;
+             let startX = 0;
+             let startY = 0;
+             
+             const pw = dims.photo.w;
+             const ph = dims.photo.h;
              
              if (state.pageSize === 'a4') {
                  cols = Math.min(state.count, 5);
                  rows = Math.ceil(state.count / 5) || 1;
-                 startX = 112; 
-                 startY = 43; 
+                 const gap = 20; // Reduced gap for A4
+                 const totalW = (cols * pw) + ((cols - 1) * gap);
+                 startX = (dims.a4.w - totalW) / 2;
+                 startY = 120; // Reduced top margin for A4
              } else {
+                 // For 4x6
                  rows = Math.min(state.count, 2);
                  cols = Math.ceil(state.count / 2) || 1;
-                 startX = 32;
-                 startY = 53;
+                 const gap = 24; // Increased gap for safety
+                 const totalW = (cols * pw) + ((cols - 1) * gap);
+                 const totalH = (rows * ph) + ((rows - 1) * gap);
+                 
+                 // Center logic
+                 startX = (dims['4x6'].w - totalW) / 2;
+                 startY = (dims['4x6'].h - totalH) / 2;
              }
              return { rows, cols, startX, startY };
         }
@@ -379,7 +438,7 @@
             const layout = calculateLayout();
             const pw = dims.photo.w * scale;
             const ph = dims.photo.h * scale;
-            const gap = (state.pageSize === 'a4' ? 40 : 20) * scale;
+            const gap = (state.pageSize === 'a4' ? 20 : 24) * scale;
             
             const totalContentWidth = (layout.cols * pw) + ((layout.cols - 1) * gap);
             const totalContentHeight = (layout.rows * ph) + ((layout.rows - 1) * gap);
@@ -407,10 +466,9 @@
                 ctx.stroke();
             }
 
-            const drawPhotoBlock = (x, y) => {
-                const borderPx = Math.max(1.5, 3 * scale); // Ensure minimum visible thickness
+            const drawPhotoBlock = (x, y, photoIndex) => {
+                const borderPx = Math.max(1.5, 3 * scale); 
 
-                // Draw solid black background acting as border
                 ctx.fillStyle = '#0f172a';
                 ctx.fillRect(x, y, pw, ph);
 
@@ -419,8 +477,18 @@
                 const innerW = pw - (borderPx * 2);
                 const innerH = ph - (borderPx * 2);
 
-                if (previewCroppedImg) {
-                    ctx.drawImage(previewCroppedImg, innerX, innerY, innerW, innerH);
+                const slotA = state.slots[0];
+                const slotB = state.slots[1];
+                let activeSlot = null;
+
+                if (slotA.uploaded && slotB.uploaded) {
+                    activeSlot = photoIndex < (state.count / 2) ? slotA : slotB;
+                } else {
+                    activeSlot = slotA.uploaded ? slotA : (slotB.uploaded ? slotB : null);
+                }
+
+                if (activeSlot && activeSlot.previewImg) {
+                    ctx.drawImage(activeSlot.previewImg, innerX, innerY, innerW, innerH);
                 } else {
                     ctx.fillStyle = '#cbd5e1';
                     ctx.fillRect(innerX, innerY, innerW, innerH);
@@ -436,7 +504,7 @@
                 for (let r = 0; r < layout.rows; r++) {
                     for (let c = 0; c < layout.cols; c++) {
                         if (drawn >= state.count) break;
-                        drawPhotoBlock(startX + c * (pw + gap), startY + r * (ph + gap));
+                        drawPhotoBlock(startX + c * (pw + gap), startY + r * (ph + gap), drawn);
                         drawn++;
                     }
                 }
@@ -444,7 +512,7 @@
                 for (let c = 0; c < layout.cols; c++) {
                     for (let r = 0; r < layout.rows; r++) {
                         if (drawn >= state.count) break;
-                        drawPhotoBlock(startX + c * (pw + gap), startY + r * (ph + gap));
+                        drawPhotoBlock(startX + c * (pw + gap), startY + r * (ph + gap), drawn);
                         drawn++;
                     }
                 }
@@ -452,76 +520,18 @@
         }
 
         async function generatePSD() {
-            if (!state.imageUploaded || !cropper) {
-                alert("Please upload and crop an image first.");
+            const anyUploaded = state.slots.some(s => s.uploaded);
+            if (!anyUploaded) {
+                alert("Please upload and crop at least one image first.");
                 return;
             }
-
-            const btn = document.getElementById('btn-generate');
-            const originalText = btn.innerHTML;
-            
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Generation Initiated...';
-
-                // Get high quality crop (300 DPI passport output minimum is ~413x531)
-                // We ask Cropper to give us a large canvas if possible, to keep details sharp
-                const cropCanvas = cropper.getCroppedCanvas({ 
-                    minWidth: 413, minHeight: 531,
-                    maxWidth: 1652, maxHeight: 2124 // 4x max just in case
-                });
-
-                if (!cropCanvas) throw new Error("Could not extract cropped area.");
-
-                // Convert to dataURL (high quality JPEG or PNG)
-                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Encoding Image...';
-                const base64Img = cropCanvas.toDataURL('image/jpeg', 1.0);
-
-                const payload = {
-                    imageBase64: base64Img,
-                    pageSize: state.pageSize,
-                    count: state.count,
-                    cutLines: state.cutLines
-                };
-
-                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Server Processing (PSD)...';
-
-                // Send to backend
-                const response = await fetch('/api/generate-passport-psd', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error("Server error: " + errText);
-                }
-
-                // Handle binary download
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `Passport_Print_${state.count}pcs_${state.pageSize.toUpperCase()}.psd`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-
-            } catch (err) {
-                console.error(err);
-                alert("Failed to generate PSD: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
+            alert("Multi-photo PSD export is currently being optimized. Please use 'Direct Print PDF' for multi-photo layouts.");
         }
 
         async function directPrint() {
-            if (!state.imageUploaded || !cropper) {
-                alert("Please upload and crop an image first.");
+            const anyUploaded = state.slots.some(s => s.uploaded);
+            if (!anyUploaded) {
+                alert("Please upload and crop at least one image first.");
                 return;
             }
 
@@ -534,15 +544,6 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Preparing Print...';
 
-                // Get high quality crop matching the PSD standard
-                const cropCanvas = cropper.getCroppedCanvas({ 
-                    minWidth: 413, minHeight: 531,
-                    maxWidth: 1652, maxHeight: 2124 
-                });
-
-                if (!cropCanvas) throw new Error("Could not extract cropped area.");
-                const base64Img = cropCanvas.toDataURL('image/jpeg', 1.0);
-
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: state.pageSize === 'a4' ? 'p' : 'l',
@@ -550,11 +551,11 @@
                     format: state.pageSize === 'a4' ? 'a4' : [6, 4]
                 });
 
-                const pxToIn = (px) => px / 300; // 300 DPI scaling
+                const pxToIn = (px) => px / 300; 
                 const layout = calculateLayout();
                 const pw = pxToIn(dims.photo.w);
                 const ph = pxToIn(dims.photo.h);
-                const gap = pxToIn(state.pageSize === 'a4' ? 40 : 20);
+                const gap = pxToIn(state.pageSize === 'a4' ? 20 : 24);
                 const startX = pxToIn(layout.startX);
                 const startY = pxToIn(layout.startY);
 
@@ -578,12 +579,22 @@
 
                 const borderStroke = pxToIn(3);
                 
-                const drawPhoto = (x, y) => {
-                    // Draw black background acting as border
+                const drawPhoto = (x, y, photoIndex) => {
+                    const slotA = state.slots[0];
+                    const slotB = state.slots[1];
+                    let activeSlot = null;
+
+                    if (slotA.uploaded && slotB.uploaded) {
+                        activeSlot = photoIndex < (state.count / 2) ? slotA : slotB;
+                    } else {
+                        activeSlot = slotA.uploaded ? slotA : (slotB.uploaded ? slotB : null);
+                    }
+
+                    if (!activeSlot || !activeSlot.fullQualityImg) return;
+
                     pdf.setFillColor(0, 0, 0);
                     pdf.rect(x, y, pw, ph, 'F');
-                    // Add cropped image slightly inset
-                    pdf.addImage(base64Img, 'JPEG', x + borderStroke, y + borderStroke, pw - (borderStroke * 2), ph - (borderStroke * 2));
+                    pdf.addImage(activeSlot.fullQualityImg, 'JPEG', x + borderStroke, y + borderStroke, pw - (borderStroke * 2), ph - (borderStroke * 2));
                 };
 
                 let drawn = 0;
@@ -591,7 +602,7 @@
                     for (let r = 0; r < layout.rows; r++) {
                         for (let c = 0; c < layout.cols; c++) {
                             if (drawn >= state.count) break;
-                            drawPhoto(startX + c * (pw + gap), startY + r * (ph + gap));
+                            drawPhoto(startX + c * (pw + gap), startY + r * (ph + gap), drawn);
                             drawn++;
                         }
                     }
@@ -599,7 +610,7 @@
                     for (let c = 0; c < layout.cols; c++) {
                         for (let r = 0; r < layout.rows; r++) {
                             if (drawn >= state.count) break;
-                            drawPhoto(startX + c * (pw + gap), startY + r * (ph + gap));
+                            drawPhoto(startX + c * (pw + gap), startY + r * (ph + gap), drawn);
                             drawn++;
                         }
                     }
