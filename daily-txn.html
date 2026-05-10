@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script id="tailwind-config">
         tailwind.config = {
           darkMode: "class",
@@ -197,10 +198,12 @@
                                 <option value="ADMIN_DEPOSIT">ADMIN DEPOSIT</option>
                                 <option value="ADMIN_WITHDRAWAL">ADMIN WITHDRAWAL</option>
                                 <option value="DAMAGED_CURRENCY">DAMAGED CURRENCY</option>
+                                <option value="DAMAGED_RECOVERY">DAMAGED RECOVERY (Convert to Cash)</option>
                                 <option value="CUST_MONEY_IN">CUST MONEY IN (AMANAT)</option>
                                 <option value="CUST_MONEY_OUT">CUST MONEY OUT</option>
                                 <option value="CREDIT_GIVEN">CREDIT GIVEN</option>
                                 <option value="CREDIT_RECEIVED">CREDIT RECEIVED</option>
+                                <option value="SETTLEMENT">SETTLEMENT (ID to Bank)</option>
                             </select>
                         </div>
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
@@ -287,104 +290,309 @@
                 </div>
 
                 <!-- Summary Header -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4 px-1 md:px-2 mb-4 w-full">
-                    <div class="flex items-center justify-between w-full md:w-auto gap-3 shrink-0">
-                        <div class="flex items-center gap-2">
-                            <div class="size-1.5 w-6 md:size-2 md:w-8 bg-primary rounded-full"></div>
-                            <h2 class="text-[13px] sm:text-sm md:text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Today's Summary</h2>
-                        </div>
-                        
-                        <!-- Balance cards (Mobile only) -->
-                        <div class="flex md:hidden flex-col gap-1 items-end">
-                            <div class="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
-                                <span>Op: <span id="opening-cash-balance-mobile">₹ 0</span></span>
-                                <span class="text-slate-300">|</span>
-                                <span><span id="opening-online-balance-mobile">₹ 0</span></span>
-                            </div>
-                            <div class="flex items-center gap-1.5 text-[10px] font-bold shrink-0">
-                                <div class="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-100 dark:border-emerald-500/20 text-emerald-600">
-                                    <span class="material-symbols-outlined text-[11px]">payments</span>
-                                    <span><span id="summary-cash-balance-mobile">₹ 0.00</span></span>
-                                </div>
-                                <div class="flex items-center gap-1 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-500/20 text-blue-600">
-                                    <span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>
-                                    <span><span id="summary-online-balance-mobile">₹ 0.00</span></span>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Summary Controls & Title -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="size-2 w-8 bg-primary rounded-full"></div>
+                        <h2 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Today's Summary</h2>
                     </div>
 
-                    <!-- Table Search Bar -->
-                    <div class="flex items-center gap-2 w-full md:w-auto order-last md:order-none">
-                        <div class="flex-1 md:w-44 relative group">
+                    <!-- Table Search & Downloads -->
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <div class="flex-1 md:w-64 relative group">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-lg">search</span>
-                            <input type="text" id="txn-search-input" placeholder="Search..." 
-                                class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-white/5 border border-transparent focus:border-primary/30 focus:bg-white dark:focus:bg-slate-800 rounded-xl outline-none text-xs md:text-sm font-bold transition-all shadow-sm">
+                            <input type="text" id="txn-search-input" placeholder="Search transactions..." 
+                                class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl outline-none text-sm font-bold transition-all shadow-sm">
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button id="download-pdf-btn" class="size-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-500/20" title="Download PDF">
-                                <span class="material-symbols-outlined text-xl">picture_as_pdf</span>
+                        <div class="flex items-center gap-1.5">
+                            <button id="download-pdf-btn" class="size-10 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20" title="Download PDF">
+                                <span class="material-symbols-outlined">picture_as_pdf</span>
                             </button>
-                            <button id="download-excel-btn" class="size-9 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm border border-emerald-500/20" title="Download Excel">
-                                <span class="material-symbols-outlined text-xl">description</span>
+                            <button id="download-excel-btn" class="size-10 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20" title="Download Excel">
+                                <span class="material-symbols-outlined">description</span>
                             </button>
-                        </div>
-                    </div>
-
-                    <!-- Opening Balance cards (Desktop) -->
-                    <div id="opening-balances-pills" class="hidden md:flex items-center gap-2 text-[10px] font-bold shrink-0 opacity-70">
-                        <div class="flex items-center gap-2 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500">
-                            <span class="material-symbols-outlined text-xs">start</span>
-                            <span>Op. Cash: <span id="opening-cash-balance">₹ 0.00</span></span>
-                        </div>
-                        <div class="flex items-center gap-2 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500">
-                            <span class="material-symbols-outlined text-xs">start</span>
-                            <span>Op. Online: <span id="opening-online-balance">₹ 0.00</span></span>
-                        </div>
-                    </div>
-
-                    <!-- Balance cards (Desktop only) -->
-                    <div id="summary-balances-pills" class="hidden md:flex items-center gap-2 text-sm font-bold shrink-0">
-                        <div class="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20 text-emerald-600">
-                            <span class="material-symbols-outlined text-sm">payments</span>
-                            <span>Cash: <span id="summary-cash-balance">₹ 0.00</span></span>
-                        </div>
-                        <div class="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-500/20 text-blue-600">
-                            <span class="material-symbols-outlined text-sm">account_balance_wallet</span>
-                            <span>Online: <span id="summary-online-balance">₹ 0.00</span></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Summary Badges Section (Togglable) -->
-                <div id="summary-badges-area" class="space-y-4">
-                    <div class="flex flex-wrap lg:flex-nowrap gap-1">
-                        <span id="txn-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[1.2] px-1 py-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="aeps-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[1.2] px-1 py-3 rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="matm-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[1.2] px-1 py-3 rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="deposit-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[1.2] px-1 py-3 rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="withdrawal-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[1.2] px-1 py-3 rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        
-                        <span id="photocopy-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="printout-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="online-work-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="passport-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="lamination-count-badge" class="w-[49%] sm:w-[32%] md:w-[19%] lg:flex-[0.8] px-1 py-3 rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                <!-- Unified Summary Grid -->
+                <div id="summary-balances-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-4">
+                    <!-- Cash -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-500/10 dark:to-slate-900 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cash</span>
+                            <svg class="w-4 h-4 text-emerald-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-emerald-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-cash" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-cash" class="text-[10px] font-black text-emerald-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-cash-balance" class="text-xl font-black text-emerald-600 dark:text-emerald-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Online -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-blue-50 to-white dark:from-blue-500/10 dark:to-slate-900 border border-blue-100 dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Online</span>
+                            <svg class="w-4 h-4 text-blue-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-blue-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-online" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-online" class="text-[10px] font-black text-blue-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-online-balance" class="text-xl font-black text-blue-600 dark:text-blue-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Remaining 9 Type Badges (same style as top) -->
-                    <div class="flex flex-wrap lg:flex-nowrap gap-1">
-                        <span id="gold-sip-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="roinet-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="jio-topup-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="dishtv-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="jio-recharge-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="admin-deposit-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="admin-withdrawal-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="credit-given-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                        <span id="credit-received-count-badge" class="w-[48%] sm:w-[32%] md:w-[19%] lg:flex-1 px-1 py-3 rounded-2xl bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <!-- Roinet -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-500/10 dark:to-slate-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Roinet</span>
+                            <svg class="w-4 h-4 text-indigo-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-indigo-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-roinet" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-roinet" class="text-[10px] font-black text-indigo-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-roinet-balance" class="text-xl font-black text-indigo-600 dark:text-indigo-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Jio -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-500/10 dark:to-slate-900 border border-cyan-100 dark:border-cyan-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-cyan-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">Jio</span>
+                            <svg class="w-4 h-4 text-cyan-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a11 11 0 0115.658 0M2.929 6.929a17.5 17.5 0 0124.742 0"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-cyan-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-jio" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-jio" class="text-[10px] font-black text-cyan-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-jio-balance" class="text-xl font-black text-cyan-600 dark:text-cyan-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CRGB BC -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-violet-50 to-white dark:from-violet-500/10 dark:to-slate-900 border border-violet-100 dark:border-violet-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">CRGB BC</span>
+                            <svg class="w-4 h-4 text-violet-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-violet-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-crgb" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-crgb" class="text-[10px] font-black text-violet-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-crgb-balance" class="text-xl font-black text-violet-600 dark:text-violet-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-slate-900 border border-amber-100 dark:border-amber-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Pending</span>
+                            <svg class="w-4 h-4 text-amber-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-amber-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-pending" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-pending" class="text-[10px] font-black text-amber-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-pending-balance" class="text-xl font-black text-amber-600 dark:text-amber-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-rose-50 to-white dark:from-rose-500/10 dark:to-slate-900 border border-rose-100 dark:border-rose-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Expense</span>
+                            <svg class="w-4 h-4 text-rose-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-rose-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-expense" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-expense" class="text-[10px] font-black text-rose-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-expense-balance" class="text-xl font-black text-rose-600 dark:text-rose-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Damaged -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-white dark:from-slate-500/10 dark:to-slate-900 border border-slate-100 dark:border-slate-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-slate-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">Damaged</span>
+                            <svg class="w-4 h-4 text-slate-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-slate-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-damaged" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-damaged" class="text-[10px] font-black text-slate-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-damaged-balance" class="text-xl font-black text-slate-700 dark:text-slate-300 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credit Ledger -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-orange-50 to-white dark:from-orange-500/10 dark:to-slate-900 border border-orange-100 dark:border-orange-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest">Credit Ledger</span>
+                            <svg class="w-4 h-4 text-orange-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-orange-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-credit-ledger" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-credit-ledger" class="text-[10px] font-black text-orange-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-credit-ledger" class="text-xl font-black text-orange-600 dark:text-orange-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cust. Deposit -->
+                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-teal-50 to-white dark:from-teal-500/10 dark:to-slate-900 border border-teal-100 dark:border-teal-500/20 shadow-sm hover:shadow-md transition-all group">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-teal-500"></div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest">Cust. Deposit</span>
+                            <svg class="w-4 h-4 text-teal-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-teal-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span id="op-cust-deposit" class="text-[10px] font-black text-slate-600 dark:text-slate-300">₹ 0</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                    <span id="cl-cust-deposit" class="text-[10px] font-black text-teal-500">₹ 0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="summary-cust-deposit" class="text-xl font-black text-teal-600 dark:text-teal-400 leading-none">₹ 0</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Transaction Volume Badges -->
+                <div id="summary-badges-area" class="flex flex-wrap gap-1 mb-4">
+                    <span id="txn-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="aeps-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="matm-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="deposit-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    
+                    <span id="photocopy-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="printout-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="online-work-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="passport-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="lamination-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    
+                    <span id="gold-sip-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="roinet-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="jio-topup-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="dishtv-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="jio-recharge-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="admin-deposit-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="admin-withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="credit-given-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="credit-received-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                </div>
+
 
                 <!-- Txn Table -->
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
@@ -506,19 +714,90 @@
         </a>
     </nav>
 
-    <script type="module" src="app.js"></script>
+    <!-- Smart Script Loader: Handles both file:// (Compat) and http:// (Modular) protocols -->
+    <script>
+        (function() {
+            // Immediate UI feedback: Set current date even before scripts load
+            const txnViewDate = document.getElementById('txn-view-date');
+            if (txnViewDate) {
+                txnViewDate.value = new Date().toISOString().split('T')[0];
+            }
+
+            const isLocalFile = window.location.protocol === 'file:';
+            console.log('%c[PROTOCOL LOADER] Detected:', 'color: #7f13ec; font-weight: bold;', window.location.protocol);
+
+            window.onerror = function(msg, url, lineNo, columnNo, error) {
+                console.error('%c[GLOBAL ERROR]', 'color: white; background: red; padding: 2px 5px;', msg, '\nAt:', url, 'line:', lineNo);
+                return false;
+            };
+
+            function loadScript(src, isModule = false) {
+                console.log('%c[LOADER] Starting:', 'color: #3b82f6;', src);
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    if (isModule) script.type = 'module';
+                    script.src = src;
+                    script.onload = () => {
+                        console.log('%c[LOADER] Success:', 'color: #10b981;', src);
+                        resolve();
+                    };
+                    script.onerror = (e) => {
+                        console.error('%c[LOADER] Failed:', 'color: #ef4444;', src, e);
+                        reject(e);
+                    };
+                    document.body.appendChild(script);
+                });
+            }
+
+            async function initApp() {
+                try {
+                    const v = Date.now();
+                    if (isLocalFile) {
+                        console.log('%c[LOADER] Using File Fallback (Compat SDK)', 'color: #f59e0b; font-weight: bold;');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js');
+                        await loadScript('firebase-config-v2.js?v=' + v);
+                        await loadScript('app-v2.js?v=' + v);
+                    } else {
+                        console.log('%c[LOADER] Using Server Mode (Modular SDK)', 'color: #7f13ec; font-weight: bold;');
+                        await loadScript('app.js?v=' + v, true);
+                    }
+                    console.log('%c[LOADER] All scripts loaded successfully.', 'color: #10b981; font-weight: bold;');
+                } catch (err) {
+                    console.error('%c[LOADER] Initialization Failed:', 'color: white; background: red; padding: 5px;', err);
+                    const tableBody = document.getElementById('daily-txn-table-body');
+                    if (tableBody) {
+                        tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold">CRITICAL ERROR: Failed to load database scripts.<br><span class="text-[10px] font-normal">Please check your internet connection or try running a local server.</span></td></tr>`;
+                    }
+                }
+            }
+
+            // Start initialization when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        })();
+    </script>
     <script>
     // Apply Daily Txn Display Preferences from Settings
     (function() {
         const showSummary = localStorage.getItem('dtxn_showSummary') !== 'false';
+        const showBalancesGrid = localStorage.getItem('dtxn_showBalancesGrid') !== 'false';
         const showBalance = localStorage.getItem('dtxn_showBalance') !== 'false';
 
-        // Summary area
+        // Volume Badges area
         const summaryArea = document.getElementById('summary-badges-area');
-        const summaryPills = document.getElementById('summary-balances-pills');
-        if (!showSummary) {
-            if (summaryArea) summaryArea.style.display = 'none';
-            if (summaryPills) summaryPills.style.display = 'none';
+        if (!showSummary && summaryArea) {
+            summaryArea.style.display = 'none';
+        }
+
+        // Balances Grid area
+        const balancesGrid = document.getElementById('summary-balances-grid');
+        if (!showBalancesGrid && balancesGrid) {
+            balancesGrid.style.display = 'none';
         }
 
         // Balance column: hide header + inject CSS to hide all balance-col cells in rows

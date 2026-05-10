@@ -244,15 +244,30 @@
     <!-- Toggle: Summary Area -->
     <div class="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/5">
         <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-primary">dashboard</span>
+            <span class="material-symbols-outlined text-primary">analytics</span>
             <div>
-                <p class="font-bold text-sm">Summary Badges Area</p>
-                <p class="text-xs text-slate-500">Show/hide the Today's Transactions Summary section with all badge cards.</p>
+                <p class="font-bold text-sm">Volume Badges Area</p>
+                <p class="text-xs text-slate-500">Show/hide the Transaction Volume section (AEPS, MATM, Recharge counts).</p>
             </div>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
             <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+        </label>
+    </div>
+
+    <!-- Toggle: Balances Grid Area -->
+    <div class="flex items-center justify-between p-4 rounded-xl border border-violet-100 bg-violet-50 dark:bg-violet-500/5 dark:border-violet-500/20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-violet-600">dashboard</span>
+            <div>
+                <p class="font-bold text-sm">Balance Summary Grid</p>
+                <p class="text-xs text-slate-500">Show/hide the Cash, Online, Roinet, Jio etc. balance grid cards.</p>
+            </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-balances-grid" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
         </label>
     </div>
 
@@ -473,6 +488,7 @@
 <script>
 // Daily Txn Display Settings — localStorage based
 const summaryToggle = document.getElementById('toggle-summary-area');
+const balancesGridToggle = document.getElementById('toggle-balances-grid');
 const balanceToggle = document.getElementById('toggle-balance-col');
 const deleteToggle = document.getElementById('toggle-delete-btn');
 const chargesToggle = document.getElementById('toggle-charges-col');
@@ -509,6 +525,7 @@ submitPinBtn.addEventListener('click', () => {
 
 function applySettingsToUI() {
     summaryToggle.checked = localStorage.getItem('dtxn_showSummary') !== 'false';
+    balancesGridToggle.checked = localStorage.getItem('dtxn_showBalancesGrid') !== 'false';
     balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
     deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
     chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
@@ -527,6 +544,7 @@ window.addEventListener('appSettingsUpdated', () => {
 function saveGlobalSettings() {
     const settings = {
         dtxn_showSummary: summaryToggle.checked,
+        dtxn_showBalancesGrid: balancesGridToggle.checked,
         dtxn_showBalance: balanceToggle.checked,
         dtxn_showDelete: deleteToggle.checked,
         dtxn_showCharges: chargesToggle.checked,
@@ -537,6 +555,7 @@ function saveGlobalSettings() {
     } else {
         // Fallback to local storage if app.js is not loaded yet
         localStorage.setItem('dtxn_showSummary', settings.dtxn_showSummary);
+        localStorage.setItem('dtxn_showBalancesGrid', settings.dtxn_showBalancesGrid);
         localStorage.setItem('dtxn_showBalance', settings.dtxn_showBalance);
         localStorage.setItem('dtxn_showDelete', settings.dtxn_showDelete);
         localStorage.setItem('dtxn_showCharges', settings.dtxn_showCharges);
@@ -546,6 +565,7 @@ function saveGlobalSettings() {
 
 // Save on change
 summaryToggle.addEventListener('change', saveGlobalSettings);
+balancesGridToggle.addEventListener('change', saveGlobalSettings);
 balanceToggle.addEventListener('change', saveGlobalSettings);
 deleteToggle.addEventListener('change', saveGlobalSettings);
 chargesToggle.addEventListener('change', saveGlobalSettings);

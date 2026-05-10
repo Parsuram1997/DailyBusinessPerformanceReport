@@ -26,7 +26,64 @@ let monthlyComparisonChart = null;
 
 // Global App Settings Listener
 let globalSettingsUnsubscribe = null;
+
+/**
+ * Returns an array of strings representing the input date in various formats used across the app.
+ * This is used for Firestore 'in' queries to ensure legacy records are retrieved.
+ */
+function getPossibleDateFormats(dateStr) {
+    if (!dateStr || dateStr === 'Invalid Date') return [];
+    
+    try {
+        let d;
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                // Handle YYYY-MM-DD
+                d = new Date(parts[0], parts[1] - 1, parts[2]);
+            } else {
+                d = new Date(dateStr);
+            }
+        } else {
+            d = new Date(dateStr);
+        }
+
+        if (isNaN(d.getTime())) return [dateStr];
+
+        const formats = new Set();
+        formats.add(dateStr); 
+
+        // YYYY-MM-DD
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        formats.add(`${y}-${m}-${day}`);
+
+        // US Format: "May 7, 2026"
+        formats.add(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+        
+        // GB Format with dashes: "7-May-2026"
+        const gbShort = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+        formats.add(gbShort);
+        
+        // GB Format with 2-digit day: "07-May-2026"
+        const gbTwo = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+        formats.add(gbTwo);
+
+        // Standard locales
+        formats.add(d.toLocaleDateString('en-GB')); // DD/MM/YYYY
+        formats.add(d.toLocaleDateString('en-IN')); // DD/MM/YYYY
+        formats.add(d.toLocaleDateString('en-US')); // MM/DD/YYYY
+
+        return Array.from(formats);
+    } catch (e) {
+        console.warn("Date formatting error:", e);
+        return [dateStr];
+    }
+}
+
 function initGlobalSettings() {
+
     if (!db) return;
     const settingsRef = doc(db, "app_settings", "global");
     globalSettingsUnsubscribe = onSnapshot(settingsRef, (docSnap) => {
@@ -42,6 +99,7 @@ function initGlobalSettings() {
             };
 
             checkAndSet('dtxn_showSummary', data.dtxn_showSummary);
+            checkAndSet('dtxn_showBalancesGrid', data.dtxn_showBalancesGrid);
             checkAndSet('dtxn_showBalance', data.dtxn_showBalance);
             checkAndSet('dtxn_showDelete', data.dtxn_showDelete);
             checkAndSet('dtxn_showCharges', data.dtxn_showCharges);
@@ -452,29 +510,26 @@ async function initAddEntry() {
             const yesterday = new Date(current);
             yesterday.setDate(current.getDate() - 1);
             
-            const y_yyyy = yesterday.getFullYear();
-            const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const y_dd = String(yesterday.getDate()).padStart(2, '0');
-            const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
-            const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const yesterdayDateStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
             const entriesRef = collection(db, "entries");
-            const qEntry = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
-            const entrySnap = await getDocs(qEntry);
-            
-            let onlineVal = 0;
+            const dateQueries = getPossibleDateFormats(dateStr);
+            const q = query(entriesRef, where("date", "in", dateQueries));
+            const entrySnap = await getDocs(q);
+            let details = {};
             if (!entrySnap.empty) {
-                const entry = entrySnap.docs[0].data();
-                const d = entry.details || {};
-                onlineVal = (parseFloat(d.online || 0) + 
+                details = entrySnap.docs[0].data().details || {};
+            }
+            const d = details;
+            let onlineVal = (parseFloat(d.online || 0) + 
                              parseFloat(d.roinet || 0) + 
                              parseFloat(d.go2sms || 0) + 
                              parseFloat(d.jio || 0) + 
                              parseFloat(d.pending || 0));
-            }
 
             const txnRef = collection(db, "daily_transactions");
-            const qTxn = query(txnRef, where("date", "==", dateStr));
+            const dateQueriesTxn = getPossibleDateFormats(dateStr);
+            const qTxn = query(txnRef, where("date", "in", dateQueriesTxn));
             const txnSnap = await getDocs(qTxn);
             
             txnSnap.forEach(doc => {
@@ -1761,7 +1816,8 @@ async function initCalculator() {
             const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             const entriesRef = collection(db, "entries");
-            const qEntry = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+            const yesterdayDateQueries = getPossibleDateFormats(yesterdayDateStr);
+            const qEntry = query(entriesRef, where("date", "in", yesterdayDateQueries));
             const entrySnap = await getDocs(qEntry);
             
             let cashVal = 0;
@@ -1771,7 +1827,8 @@ async function initCalculator() {
             }
 
             const txnRef = collection(db, "daily_transactions");
-            const qTxn = query(txnRef, where("date", "==", dateStr));
+            const dateQueriesTxn = getPossibleDateFormats(dateStr);
+            const qTxn = query(txnRef, where("date", "in", dateQueriesTxn));
             const txnSnap = await getDocs(qTxn);
             
             txnSnap.forEach(doc => {
@@ -4266,7 +4323,9 @@ async function initDailyTxn() {
     let editingTxnTimestamp = null;
     let deletingTxnId = null;
     let unsubscribe = null;
-    let currentSelectedDate = new Date().toISOString().split('T')[0];
+    let currentSelectedDate = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+    let currentAvailableCash = 0; // Tracks live cash for validation
+    let currentAvailableOnline = 0; // Tracks live online for validation
 
     // Initialize date picker
     if (txnViewDate) {
@@ -4324,11 +4383,12 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'ONLINE_WORK', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
-            const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE'];
-            const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP'];
-            const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY'];
-            const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
+        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE'];
+        const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'SETTLEMENT'];
+        const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY'];
+        const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+        const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
         const isSimplified = simplifiedTypes.includes(txnType.value);
         const isAmountOnly = amountOnlyTypes.includes(txnType.value);
@@ -4337,27 +4397,36 @@ async function initDailyTxn() {
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
-        txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly;
-        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
-        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit;
+        txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery;
+        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery;
 
-        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit) {
+        // Reset Labels
+        if (chargesModeContainer) {
+            const label = chargesModeContainer.querySelector('label');
+            if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : 'CHARGES MODE';
+        }
+
+        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) {
             conditionalContainer.classList.add('hidden');
             if (amountFieldContainer) {
-                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit) amountFieldContainer.classList.remove('hidden');
+                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) amountFieldContainer.classList.remove('hidden');
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
-                if (isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') noteFieldContainer.classList.remove('hidden');
+                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') && !isDamagedRecovery) noteFieldContainer.classList.remove('hidden');
                 else noteFieldContainer.classList.add('hidden');
             }
             if (addressFieldContainer) addressFieldContainer.classList.add('hidden');
             
             // Charges Field Visibility
             if (chargesFieldContainer) {
-                if (isAmountOnly || isNoteAndAmount || isCredit) {
+                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) {
                     chargesFieldContainer.classList.add('hidden');
-                    if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
+                    if (chargesModeContainer) {
+                        if (isDamagedRecovery) chargesModeContainer.classList.remove('hidden');
+                        else chargesModeContainer.classList.add('hidden');
+                    }
                 } else if (['JIO_TOPUP', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
                     chargesFieldContainer.classList.remove('hidden');
                     if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
@@ -4368,8 +4437,8 @@ async function initDailyTxn() {
             }
             
             if (isChargesOnly) txnAmount.value = '';
-            if (isAmountOnly || isNoteAndAmount || isCredit) txnCharges.value = '';
-            if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME') txnNote.value = '';
+            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) txnCharges.value = '';
+            if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery) txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
         } else {
@@ -4406,7 +4475,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -4431,7 +4500,7 @@ async function initDailyTxn() {
             const aepsMatmProviders = ['Airtel', 'Roinet', 'SpiceMoney', 'Crgb Bc'];
             const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
             
-            const isAepsMatm = ['AEPS', 'MATM'].includes(txnType.value);
+            const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
             const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
             
@@ -4442,7 +4511,7 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
+                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ONLINE_WORK'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
                     opt.style.display = ''; // Show all for other types
@@ -4464,7 +4533,7 @@ async function initDailyTxn() {
         }
 
         // Bank Name Visibility
-        if (['AEPS', 'MATM'].includes(txnType.value)) {
+        if (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) {
             bankContainer.classList.remove('hidden');
         } else {
             bankContainer.classList.add('hidden');
@@ -4507,6 +4576,40 @@ async function initDailyTxn() {
                 return;
             }
 
+            // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL
+            if (['AEPS', 'MATM', 'WITHDRAWAL'].includes(txnType.value)) {
+                if (amountVal > currentAvailableCash) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Cash',
+                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+            }
+
+            // Online Sufficiency Check for DEPOSIT
+            if (txnType.value === 'DEPOSIT') {
+                if (amountVal > currentAvailableOnline) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Online Balance',
+                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+            }
+
             const capitalizeWords = (str) => {
                 if (!str) return "";
                 return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
@@ -4520,10 +4623,10 @@ async function initDailyTxn() {
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT'].includes(txnType.value)) ? txnProvider.value : (txnType.value === 'DAMAGED_RECOVERY' ? txnChargesType.value : ''),
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
-                bankName: (['AEPS', 'MATM'].includes(txnType.value)) ? txnBank.value.trim() : '',
+                bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
@@ -4552,126 +4655,161 @@ async function initDailyTxn() {
     };
 
     const updateDailyBalances = async (date, txns = []) => {
-        const cashDisplay = document.getElementById('summary-cash-balance');
-        const onlineDisplay = document.getElementById('summary-online-balance');
-        const cashMobileDisplay = document.getElementById('summary-cash-balance-mobile');
-        const onlineMobileDisplay = document.getElementById('summary-online-balance-mobile');
-        if (!cashDisplay || !onlineDisplay) return;
+        const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
+        if (!document.getElementById('summary-cash-balance')) return;
 
         try {
-            // Match date formats
-            const [yr, mo, dy] = date.split('-');
+            const dateQueries = getPossibleDateFormats(date);
+            console.log("Querying entries for formats:", dateQueries);
             
-            // Calculate yesterday's date
-            const current = new Date(yr, mo - 1, dy);
-            const yesterday = new Date(current);
-            yesterday.setDate(current.getDate() - 1);
-            
-            const y_yyyy = yesterday.getFullYear();
-            const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const y_dd = String(yesterday.getDate()).padStart(2, '0');
-            const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
-            
-            const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
             const entriesRef = collection(db, "entries");
-            // Query for the entry from YESTERDAY
-            const q = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
-            const querySnapshot = await getDocs(q);
+            const q = query(entriesRef, where("date", "in", dateQueries));
+            let querySnapshot = await getDocs(q);
             
-            let entry = null;
+            let entryData = {};
             if (!querySnapshot.empty) {
-                entry = querySnapshot.docs[0].data();
-            }
-
-            if (entry) {
-                const details = entry.details || {};
-                let cashVal = parseFloat(details.cash || 0);
-                let onlineVal = parseFloat(details.online || 0);
-                let roinetVal = parseFloat(details.roinet || 0);
-                let crgbBcVal = parseFloat(details.go2sms || 0);
-                let jioVal = parseFloat(details.jio || 0);
-                let pendingVal = parseFloat(details.pending || 0);
-                let totalOnline = onlineVal + roinetVal + crgbBcVal + jioVal + pendingVal;
-
-                // Adjust ONLY based on specific transaction types
-                txns.forEach(t => {
-                    const amt = parseFloat(t.amount || 0);
-                    const chg = parseFloat(t.charges || 0);
-                    
-                    // Add charges to correct bucket
-                    if (t.chargesType === 'Online') {
-                        totalOnline += chg;
-                    } else {
-                        cashVal += chg;
-                    }
-
-                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
-                        cashVal -= amt; 
-                        totalOnline += amt;
-                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
-                        cashVal += amt;
-                        totalOnline -= amt;
-                    } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
-                        totalOnline -= amt;
-                        if (t.provider === 'Online') totalOnline += amt;
-                        else cashVal += amt;
-                    } else if (t.type === 'GOLD_SIP') {
-                        totalOnline -= amt;
-                    } else if (t.type === 'CREDIT_GIVEN') {
-                        if (t.provider === 'Cash') cashVal -= amt;
-                        else if (t.provider === 'Online') totalOnline -= amt;
-                    } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
-                        if (t.provider === 'Cash') cashVal += amt;
-                        else if (t.provider === 'Online') totalOnline += amt;
-                    } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
-                        if (t.provider === 'Cash') cashVal -= amt;
-                        else if (t.provider === 'Online') totalOnline -= amt;
-                    } else if (t.type === 'DAMAGED_CURRENCY') {
-                        cashVal -= amt;
-                    }
-                });
-
-                const cashFormatted = `₹ ${cashVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-                const onlineFormatted = `₹ ${totalOnline.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-                
-                cashDisplay.innerText = cashFormatted;
-                onlineDisplay.innerText = onlineFormatted;
-                if (cashMobileDisplay) cashMobileDisplay.innerText = cashFormatted;
-                if (onlineMobileDisplay) onlineMobileDisplay.innerText = onlineFormatted;
-
-                // Update Opening Balances (Manual records from Yesterday's Add Entry)
-                const opCashDisplay = document.getElementById('opening-cash-balance');
-                const opOnlineDisplay = document.getElementById('opening-online-balance');
-                const opCashMobile = document.getElementById('opening-cash-balance-mobile');
-                const opOnlineMobile = document.getElementById('opening-online-balance-mobile');
-                
-                const opCash = parseFloat(details.cash || 0);
-                const opOnline = parseFloat(details.online || 0) + parseFloat(details.roinet || 0) + parseFloat(details.go2sms || 0) + parseFloat(details.jio || 0) + parseFloat(details.pending || 0);
-                
-                const opCashFmt = `₹ ${opCash.toLocaleString('en-IN')}`;
-                const opOnlineFmt = `₹ ${opOnline.toLocaleString('en-IN')}`;
-                
-                if (opCashDisplay) opCashDisplay.innerText = opCashFmt;
-                if (opOnlineDisplay) opOnlineDisplay.innerText = opOnlineFmt;
-                if (opCashMobile) opCashMobile.innerText = opCashFmt;
-                if (opOnlineMobile) opOnlineMobile.innerText = opOnlineFmt;
+                entryData = querySnapshot.docs[0].data();
             } else {
-                cashDisplay.innerText = '₹ 0.00';
-                onlineDisplay.innerText = '₹ 0.00';
-                if (cashMobileDisplay) cashMobileDisplay.innerText = '₹ 0.00';
-                if (onlineMobileDisplay) onlineMobileDisplay.innerText = '₹ 0.00';
-                
-                const opElements = ['opening-cash-balance', 'opening-online-balance', 'opening-cash-balance-mobile', 'opening-online-balance-mobile'];
-                opElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerText = '₹ 0';
-                });
+                // Look back logic: If no entry today, find most recent one in last 7 days
+                let lookBackDate = new Date(date);
+                for (let i = 0; i < 7; i++) {
+                    lookBackDate.setDate(lookBackDate.getDate() - 1);
+                    const lbStr = lookBackDate.getFullYear() + '-' + String(lookBackDate.getMonth() + 1).padStart(2, '0') + '-' + String(lookBackDate.getDate()).padStart(2, '0');
+                    const lbQueries = getPossibleDateFormats(lbStr);
+                    const lbQ = query(entriesRef, where("date", "in", lbQueries));
+                    const lbSnap = await getDocs(lbQ);
+                    if (!lbSnap.empty) {
+                        entryData = lbSnap.docs[0].data();
+                        console.log("Auto-carried balances from " + lbStr);
+                        break;
+                    }
+                }
             }
+            const details = entryData.details || {};
+
+            const balances = {
+                cash: 0,
+                online: 0,
+                roinet: 0,
+                crgb: 0,
+                jio: 0,
+                pending: 0,
+                expense: 0,
+                damaged: 0,
+                'credit-ledger': 0,
+                'cust-deposit': 0
+            };
+
+            const opValues = {
+                cash: details.cash || 0,
+                online: details.online || 0,
+                roinet: details.roinet || 0,
+                jio: details.jio || 0,
+                crgb: details.go2sms || 0,
+                pending: details.pending || 0,
+                expense: 0,
+                damaged: details.damages || 0,
+                'credit-ledger': details.credit || 0,
+                'cust-deposit': details.deposit || 0
+            };
+
+            txns.forEach(t => {
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                const provider = (t.provider || "").trim().toLowerCase();
+                
+                if (t.chargesType === 'Online') balances.online += chg;
+                else balances.cash += chg;
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    balances.cash -= amt; 
+                    if (provider.includes('roinet')) balances.roinet += amt;
+                    else if (provider.includes('crgb')) balances.crgb += amt;
+                    else if (provider.includes('jio')) balances.jio += amt;
+                    else balances.online += amt;
+                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    balances.cash += amt;
+                    if (provider.includes('roinet')) balances.roinet -= amt;
+                    else if (provider.includes('crgb')) balances.crgb -= amt;
+                    else if (provider.includes('jio')) balances.jio -= amt;
+                    else balances.online -= amt;
+                } else if (t.type === 'DISHTV_RECHARGE') {
+                    balances.roinet -= amt; 
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'JIO_RECHARGE' || t.type === 'JIO_TOPUP') {
+                    balances.jio -= amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'ROINET_COMMISSION') {
+                    balances.roinet += chg;
+                } else if (t.type === 'GOLD_SIP') {
+                    balances.online -= amt;
+                    balances.expense += amt;
+                } else if (t.type === 'CREDIT_GIVEN') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances['credit-ledger'] += amt;
+                } else if (t.type === 'CREDIT_RECEIVED') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                    balances['credit-ledger'] -= amt;
+                } else if (t.type === 'CUST_MONEY_IN') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                    balances['cust-deposit'] += amt;
+                } else if (t.type === 'CUST_MONEY_OUT') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances['cust-deposit'] -= amt;
+                } else if (t.type === 'DAILY_EXPENSE') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances.expense += amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    balances.cash -= amt;
+                    balances.damaged += amt;
+                } else if (t.type === 'DAMAGED_RECOVERY') {
+                    balances.damaged -= amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'OTHER_INCOME') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'SETTLEMENT') {
+                    // IDs to Bank
+                    balances.online += amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) balances.roinet -= amt;
+                    else if (provider.includes('crgb')) balances.crgb -= amt;
+                    else if (provider.includes('jio')) balances.jio -= amt;
+                    else balances.online -= amt; 
+                } else if (t.type === 'ONLINE_WORK') {
+                    // Shop pays fee online
+                    balances.online -= amt;
+                    // Customer reimburses shop
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                }
+            });
+
+            const fmt = (val) => `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            
+            ids.forEach(id => {
+                const d = document.getElementById(`summary-${id}-balance`);
+                const o = document.getElementById(`op-${id}`);
+                const c = document.getElementById(`cl-${id}`);
+                if (d) d.innerText = fmt(balances[id]);
+                if (o) o.innerText = `₹ ${parseFloat(opValues[id] || 0).toLocaleString('en-IN')}`;
+                if (c) c.innerText = `₹ ${(parseFloat(opValues[id] || 0) + (balances[id] || 0)).toLocaleString('en-IN')}`;
+            });
+            // Update global available cash for validation
+            currentAvailableCash = (parseFloat(opValues.cash || 0) + (balances.cash || 0));
+            currentAvailableOnline = (parseFloat(opValues.online || 0) + (balances.online || 0));
         } catch (err) {
             console.error('Error updating daily balances:', err);
         }
     };
+
 
     // Setup Firestore Listener and Load initial data
     const loadTransactions = (date) => {
@@ -4682,11 +4820,31 @@ async function initDailyTxn() {
             const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             if (txnDateText) txnDateText.innerText = displayDate;
 
-            // Initial load of balances (will be updated by snapshot)
+            // Initial load of balances
             updateDailyBalances(date, []);
 
+            const dateQueries = getPossibleDateFormats(date);
+            console.log("Querying transactions for formats:", dateQueries);
+
+            const tableBody = document.getElementById('daily-txn-table-body');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-20 text-center">
+                            <div class="flex flex-col items-center justify-center gap-4">
+                                <div class="size-12 border-[4px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                                <div class="space-y-1">
+                                    <p class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Fetching Transactions</p>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Please wait while we sync with database...</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
             const txnCollection = collection(db, 'daily_transactions');
-            const q = query(txnCollection, where('date', '==', date));
+            const q = query(txnCollection, where('date', 'in', dateQueries));
 
             unsubscribe = onSnapshot(q, async (snapshot) => {
                 console.log('Snapshot received for ' + date + ', docs:', snapshot.size);
@@ -4695,7 +4853,7 @@ async function initDailyTxn() {
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // AUTO GOLD SIP LOGIC
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
                 if (date === todayStr) {
                     const hasGoldSip = txns.some(t => t.type === 'GOLD_SIP');
                     if (!hasGoldSip) {
@@ -4715,32 +4873,42 @@ async function initDailyTxn() {
                             timestamp: { seconds: Math.floor(new Date().setHours(0,0,0,0) / 1000) + 60, nanoseconds: 0 }
                         };
                         addDoc(txnCollection, newTxn).catch(e => console.error("Auto Gold SIP error:", e));
-                        return; // Let the next snapshot render the data
                     }
                 }
 
                 // Fetch yesterday's balance to calculate running totals
-                const [yr, mo, dy] = date.split('-');
-                const current = new Date(yr, mo - 1, dy);
-                const yesterday = new Date(current);
-                yesterday.setDate(current.getDate() - 1);
-                const y_yyyy = yesterday.getFullYear();
-                const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-                const y_dd = String(yesterday.getDate()).padStart(2, '0');
-                const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
-                const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
+                const dateQueries = getPossibleDateFormats(date);
                 const entriesRef = collection(db, "entries");
-                const eq = query(entriesRef, where("date", "in", [yesterdayDateStr, yesterdayFormatted]));
+                const eq = query(entriesRef, where("date", "in", dateQueries));
                 const eSnapshot = await getDocs(eq);
                 
                 let startCash = 0;
                 let startOnline = 0;
+                let entryData = {};
+
                 if (!eSnapshot.empty) {
-                    const eData = eSnapshot.docs[0].data();
-                    const d = eData.details || {};
+                    entryData = eSnapshot.docs[0].data();
+                } else {
+                    // Look back logic: If no entry today, find most recent one in last 7 days
+                    let lookBackDate = new Date(date);
+                    for (let i = 0; i < 7; i++) {
+                        lookBackDate.setDate(lookBackDate.getDate() - 1);
+                        const lbStr = lookBackDate.getFullYear() + '-' + String(lookBackDate.getMonth() + 1).padStart(2, '0') + '-' + String(lookBackDate.getDate()).padStart(2, '0');
+                        const lbQueries = getPossibleDateFormats(lbStr);
+                        const lbQ = query(entriesRef, where("date", "in", lbQueries));
+                        const lbSnap = await getDocs(lbQ);
+                        if (!lbSnap.empty) {
+                            entryData = lbSnap.docs[0].data();
+                            console.log("Table Start Balances: Auto-carried from " + lbStr);
+                            break;
+                        }
+                    }
+                }
+
+                if (entryData.details) {
+                    const d = entryData.details;
                     startCash = parseFloat(d.cash || 0);
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0);
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0) + parseFloat(d.pending || 0);
                 }
 
                 // Update daily summary badges
@@ -4768,23 +4936,35 @@ async function initDailyTxn() {
                     } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
                         currentOnline -= amt;
-                    } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                    } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP'].includes(t.type)) {
                         currentOnline -= amt;
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
+                    } else if (t.type === 'ROINET_COMMISSION' || t.type === 'OTHER_INCOME') {
+                        if (t.provider === 'Cash') currentCash += amt;
+                        else currentOnline += amt;
                     } else if (t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
                         if (t.provider === 'Cash') currentCash -= amt;
-                        else if (t.provider === 'Online') currentOnline -= amt;
+                        else currentOnline -= amt;
                     } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
                         if (t.provider === 'Cash') currentCash += amt;
-                        else if (t.provider === 'Online') currentOnline += amt;
-                    } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
+                        else currentOnline += amt;
+                    } else if (['CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
                         if (t.provider === 'Cash') currentCash -= amt;
-                        else if (t.provider === 'Online') currentOnline -= amt;
+                        else currentOnline -= amt;
                     } else if (t.type === 'DAMAGED_CURRENCY') {
                         currentCash -= amt;
+                    } else if (t.type === 'SETTLEMENT') {
+                        if (t.provider === 'Cash') {
+                            currentCash -= amt;
+                            currentOnline += amt;
+                        }
+                    } else if (t.type === 'ONLINE_WORK') {
+                        currentOnline -= amt;
+                        if (t.provider === 'Cash') currentCash += amt;
+                        else currentOnline += amt;
                     }
                     return { ...t, runningCash: currentCash, runningOnline: currentOnline };
                 });
@@ -4966,7 +5146,7 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                ${((['GOLD_SIP', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                ${((['GOLD_SIP', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'ROINET_COMMISSION', 'OTHER_INCOME'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                                     <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                                 ` : `
                                     <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -4993,6 +5173,22 @@ async function initDailyTxn() {
                     `;
                     tableBody.appendChild(tr);
                 });
+
+                // Add Opening Balance Row at the bottom
+                const opRow = document.createElement('tr');
+                opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
+                opRow.innerHTML = `
+                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${date}</span></td>
+                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
+                    <td class="px-3 py-2 text-right">
+                        <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                            <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full text-center">C: ₹${startCash.toLocaleString('en-IN')}</span>
+                            <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full text-center">O: ₹${startOnline.toLocaleString('en-IN')}</span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+                `;
+                tableBody.appendChild(opRow);
                 
                 // Reverse for download to match table Sl No logic (Recent first)
                 currentTxnsForDownload = [...txns].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
@@ -5031,7 +5227,19 @@ async function initDailyTxn() {
                     };
                 });
             }, (error) => {
-                console.error('Firestore Subscription Error:', error);
+                console.error('Daily Transactions Listener Error:', error);
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold border-2 border-rose-100 rounded-xl bg-rose-50/50">
+                                <span class="material-symbols-outlined text-4xl mb-2">error</span>
+                                <div class="text-lg">Failed to load transactions</div>
+                                <div class="text-xs opacity-70 font-medium mt-1">Error: ${error.message}</div>
+                                <div class="mt-4 text-[10px] text-slate-500 font-normal">If you are using a local file, please run 'node server.js' first.</div>
+                            </td>
+                        </tr>
+                    `;
+                }
             });
         } catch (e) {
             console.error('Error setting up daily txn listener:', e);
@@ -5187,7 +5395,7 @@ async function initDailyTxn() {
     loadTransactions(currentSelectedDate);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function startApp() {
     // Disable scrolling to change numbers on input type="number"
     document.addEventListener('wheel', function(e) {
         if (document.activeElement.type === 'number') {
@@ -5198,10 +5406,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply privileged page PIN Protection (Add Entry & Settings)
     protectPrivilegedLinks();
 
-    // Migration first
-    await migrateToDatabase();
-    // Auto-clean duplicate entries for same date
-    await deduplicateEntries();
+    // Migration & Cleanup in background (don't block initial render)
+    migrateToDatabase().catch(e => console.error("Migration failed:", e));
+    deduplicateEntries().catch(e => console.error("Dedup failed:", e));
 
     const modules = [
         { name: 'Settings', fn: initSettings }, // Prioritize Settings
@@ -5223,5 +5430,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error(`Module ${m.name} failed to init:`, err);
         }
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApp);
+} else {
+    startApp();
+}
 
