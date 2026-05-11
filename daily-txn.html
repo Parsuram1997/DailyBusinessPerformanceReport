@@ -218,6 +218,7 @@
                                 <option value="SpiceMoney">SpiceMoney</option>
                                 <option value="Crgb Bc">Crgb Bc</option>
                                 <option value="Yono sbi">Yono sbi</option>
+                                <option value="Jio">Jio</option>
                                 <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
                             </select>
@@ -264,7 +265,7 @@
                         </div>
                         <div id="conditional-field-container" class="flex flex-col gap-2">
                             <label id="conditional-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Aadhar (Last 4 Digits)</label>
-                            <input id="txn-conditional" type="text" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <input id="txn-conditional" type="text" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
                         <div id="charges-field-container" class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges</label>
@@ -367,12 +368,15 @@
                         </div>
                     </div>
 
-                    <!-- Roinet -->
-                    <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-500/10 dark:to-slate-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm hover:shadow-md transition-all group">
+                    <!-- Roinet (Clickable - shows provider breakdown) -->
+                    <div id="roinet-card" onclick="showRoinetBreakdown()" class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-500/10 dark:to-slate-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all group cursor-pointer select-none">
                         <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Roinet</span>
-                            <svg class="w-4 h-4 text-indigo-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[8px] font-bold text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">Tap for details</span>
+                                <svg class="w-4 h-4 text-indigo-500 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                            </div>
                         </div>
                         <div class="flex flex-col">
                             <div class="flex flex-col gap-1 mb-2 pb-2 border-b border-indigo-500/10">
@@ -391,6 +395,65 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Roinet Breakdown Modal -->
+                    <div id="roinet-breakdown-modal" class="fixed inset-0 z-[200] hidden items-center justify-center px-4">
+                        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeRoinetBreakdown()"></div>
+                        <div class="relative bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-xs w-full border border-indigo-100 dark:border-indigo-500/20 shadow-2xl shadow-indigo-500/10">
+                            <div class="flex items-center justify-between mb-5">
+                                <div>
+                                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">Balance Breakdown</p>
+                                    <h3 class="text-lg font-black text-slate-900 dark:text-white">Roinet Account</h3>
+                                </div>
+                                <button onclick="closeRoinetBreakdown()" class="size-8 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Headers -->
+                                <div class="flex items-center justify-between px-3 mb-1">
+                                    <span class="w-1/3"></span>
+                                    <span class="w-1/3 text-right text-[9px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                                    <span class="w-1/3 text-right text-[9px] font-bold text-slate-400 uppercase tracking-tight">Closing</span>
+                                </div>
+                                
+                                <!-- Roinet row -->
+                                <div class="flex items-center justify-between p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+                                    <div class="w-1/3 flex items-center gap-2">
+                                        <div class="size-6 sm:size-8 shrink-0 rounded-xl bg-indigo-500 flex items-center justify-center text-white text-[10px] font-black">RN</div>
+                                        <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Roinet</span>
+                                    </div>
+                                    <span id="op-breakdown-roinet" class="w-1/3 text-right text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">₹ 0</span>
+                                    <span id="cl-breakdown-roinet" class="w-1/3 text-right text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400">₹ 0</span>
+                                </div>
+                                <!-- Airtel row -->
+                                <div class="flex items-center justify-between p-3 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
+                                    <div class="w-1/3 flex items-center gap-2">
+                                        <div class="size-6 sm:size-8 shrink-0 rounded-xl bg-red-500 flex items-center justify-center text-white text-[10px] font-black">AT</div>
+                                        <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Airtel</span>
+                                    </div>
+                                    <span id="op-breakdown-airtel" class="w-1/3 text-right text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">₹ 0</span>
+                                    <span id="cl-breakdown-airtel" class="w-1/3 text-right text-xs sm:text-sm font-black text-red-600 dark:text-red-400">₹ 0</span>
+                                </div>
+                                <!-- SpiceMoney row -->
+                                <div class="flex items-center justify-between p-3 rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20">
+                                    <div class="w-1/3 flex items-center gap-2">
+                                        <div class="size-6 sm:size-8 shrink-0 rounded-xl bg-orange-500 flex items-center justify-center text-white text-[10px] font-black">SM</div>
+                                        <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">Spice</span>
+                                    </div>
+                                    <span id="op-breakdown-spicemoney" class="w-1/3 text-right text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">₹ 0</span>
+                                    <span id="cl-breakdown-spicemoney" class="w-1/3 text-right text-xs sm:text-sm font-black text-orange-600 dark:text-orange-400">₹ 0</span>
+                                </div>
+                                <!-- Total -->
+                                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 mt-1">
+                                    <span class="w-1/3 text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-widest">Total</span>
+                                    <span id="op-breakdown-total" class="w-1/3 text-right text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300">₹ 0</span>
+                                    <span id="cl-breakdown-total" class="w-1/3 text-right text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400">₹ 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <!-- Jio -->
                     <div class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-500/10 dark:to-slate-900 border border-cyan-100 dark:border-cyan-500/20 shadow-sm hover:shadow-md transition-all group">
@@ -536,7 +599,7 @@
                                 </div>
                             </div>
                             <div class="flex items-baseline justify-between">
-                                <span id="summary-credit-ledger" class="text-xl font-black text-orange-600 dark:text-orange-400 leading-none">₹ 0</span>
+                                <span id="summary-credit-ledger-balance" class="text-xl font-black text-orange-600 dark:text-orange-400 leading-none">₹ 0</span>
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
                             </div>
                         </div>
@@ -561,7 +624,7 @@
                                 </div>
                             </div>
                             <div class="flex items-baseline justify-between">
-                                <span id="summary-cust-deposit" class="text-xl font-black text-teal-600 dark:text-teal-400 leading-none">₹ 0</span>
+                                <span id="summary-cust-deposit-balance" class="text-xl font-black text-teal-600 dark:text-teal-400 leading-none">₹ 0</span>
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60 italic">Today</span>
                             </div>
                         </div>
@@ -570,26 +633,28 @@
 
                 <!-- Transaction Volume Badges -->
                 <div id="summary-badges-area" class="flex flex-wrap gap-1 mb-4">
-                    <span id="txn-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="aeps-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="matm-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="deposit-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <!-- First 5: Wider cards -->
+                    <span id="txn-count-badge"        class="flex-grow flex-shrink-0 basis-[45%] sm:basis-[30%] md:basis-[18%] lg:basis-[13%] px-2 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="aeps-count-badge"       class="flex-grow flex-shrink-0 basis-[45%] sm:basis-[30%] md:basis-[18%] lg:basis-[13%] px-2 py-2 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="matm-count-badge"       class="flex-grow flex-shrink-0 basis-[45%] sm:basis-[30%] md:basis-[18%] lg:basis-[13%] px-2 py-2 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="deposit-count-badge"    class="flex-grow flex-shrink-0 basis-[45%] sm:basis-[30%] md:basis-[18%] lg:basis-[13%] px-2 py-2 rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[45%] sm:basis-[30%] md:basis-[18%] lg:basis-[13%] px-2 py-2 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     
-                    <span id="photocopy-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="printout-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="online-work-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="passport-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="lamination-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <!-- Last 5: Narrower cards -->
+                    <span id="photocopy-count-badge"  class="flex-grow flex-shrink-0 basis-[28%] sm:basis-[18%] md:basis-[12%] lg:basis-[8%] px-1 py-2 rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="printout-count-badge"   class="flex-grow flex-shrink-0 basis-[28%] sm:basis-[18%] md:basis-[12%] lg:basis-[8%] px-1 py-2 rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="online-work-count-badge" class="flex-grow flex-shrink-0 basis-[28%] sm:basis-[18%] md:basis-[12%] lg:basis-[8%] px-1 py-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="passport-count-badge"   class="flex-grow flex-shrink-0 basis-[28%] sm:basis-[18%] md:basis-[12%] lg:basis-[8%] px-1 py-2 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="lamination-count-badge" class="flex-grow flex-shrink-0 basis-[28%] sm:basis-[18%] md:basis-[12%] lg:basis-[8%] px-1 py-2 rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     
-                    <span id="gold-sip-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="roinet-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="jio-topup-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="dishtv-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="jio-recharge-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="admin-deposit-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="gold-sip-count-badge"       class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="roinet-count-badge"          class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="jio-topup-count-badge"       class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="dishtv-count-badge"          class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="jio-recharge-count-badge"    class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="admin-deposit-count-badge"   class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="admin-withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
-                    <span id="credit-given-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="credit-given-count-badge"    class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="credit-received-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20 shadow-sm flex items-center justify-center text-center"></span>
                 </div>
 
@@ -833,6 +898,47 @@
             window.location.reload();
         });
     })();
+    </script>
+
+    <!-- Roinet Breakdown Modal Functions -->
+    <script>
+        function showRoinetBreakdown() {
+            const modal = document.getElementById('roinet-breakdown-modal');
+            if (!modal) return;
+
+            const fmt = (v) => `₹ ${parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            const bd = window._roinetBreakdown || { 
+                opening: { roinet: 0, airtel: 0, spicemoney: 0, total: 0 },
+                closing: { roinet: 0, airtel: 0, spicemoney: 0, total: 0 }
+            };
+
+            // Opening
+            document.getElementById('op-breakdown-roinet').textContent     = fmt(bd.opening.roinet);
+            document.getElementById('op-breakdown-airtel').textContent     = fmt(bd.opening.airtel);
+            document.getElementById('op-breakdown-spicemoney').textContent = fmt(bd.opening.spicemoney);
+            document.getElementById('op-breakdown-total').textContent      = fmt(bd.opening.total);
+
+            // Closing
+            document.getElementById('cl-breakdown-roinet').textContent     = fmt(bd.closing.roinet);
+            document.getElementById('cl-breakdown-airtel').textContent     = fmt(bd.closing.airtel);
+            document.getElementById('cl-breakdown-spicemoney').textContent = fmt(bd.closing.spicemoney);
+            document.getElementById('cl-breakdown-total').textContent      = fmt(bd.closing.total);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeRoinetBreakdown() {
+            const modal = document.getElementById('roinet-breakdown-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeRoinetBreakdown();
+        });
     </script>
 </body>
 </html>
