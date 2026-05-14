@@ -18,9 +18,33 @@
     }
 </script>
 <style>
-    body { font-family: 'Inter', sans-serif; }
+    body { 
+        font-family: 'Inter', sans-serif; 
+        background: linear-gradient(135deg, #f7f6f8 0%, #f0ebf8 100%);
+    }
+    .dark body {
+        background: linear-gradient(135deg, #191022 0%, #1e142d 100%);
+    }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #7f13ec33; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7f13ec66; }
+
+    /* Glassmorphism effects */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(127, 19, 236, 0.1);
+    }
+    .dark .glass-card {
+        background: rgba(25, 16, 34, 0.7);
+        border: 1px solid rgba(127, 19, 236, 0.2);
+    }
+
     /* Desktop-only Sidebar Styles */
     @media (min-width: 1024px) {
         #sidebar { 
@@ -31,7 +55,7 @@
         }
         #sidebar:hover { 
             width: 16rem !important; 
-            box-shadow: 4px 0 15px rgba(0,0,0,0.03); 
+            box-shadow: 4px 0 30px rgba(127, 19, 236, 0.1); 
         }
         #sidebar .sidebar-logo-container { 
             padding-top: 1.5rem !important; 
@@ -77,6 +101,12 @@
             width: auto; 
             margin-left: 0.75rem; 
         }
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        .main-content-p { padding: 1rem !important; }
+        .stats-grid { grid-template-columns: 1fr !important; }
     }
 
     /* Hide number input arrows */
@@ -148,27 +178,6 @@
         </p>
     </div>
 
-    <!-- Account Management Form -->
-    <div id="account-view-header" class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold">Bank Accounts</h3>
-            <button onclick="showAccountsList()" id="back-to-accounts" class="hidden flex items-center gap-2 text-primary text-sm font-bold hover:underline">
-                <span class="material-symbols-outlined text-sm">arrow_back</span> Back to Banks
-            </button>
-        </div>
-        <form id="add-account-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1.5 md:col-span-2">
-                <label class="text-xs font-bold text-slate-500">Bank Name / Details</label>
-                <input id="new-account-name" class="form-input rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary" placeholder="e.g. SBI A/c 4859" type="text" required/>
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="w-full bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">add_card</span> Add Account
-                </button>
-            </div>
-        </form>
-    </div>
-
     <!-- Withdrawal Tracker Form -->
     <div id="add-withdrawal-section" class="hidden bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
         <div class="flex items-center justify-between mb-4">
@@ -207,33 +216,49 @@
         </form>
     </div>
 
-    <!-- Data Table -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-primary/10 flex items-center justify-between">
-            <h3 class="text-base font-bold">Withdrawal History</h3>
+    <!-- Data Table Section -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden transition-all">
+        <div id="account-view-header" class="p-4 px-6 border-b border-primary/10 bg-gradient-to-r from-white to-primary/5 dark:from-slate-900 dark:to-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="text-base font-black text-slate-800 dark:text-white">Withdrawal History</h3>
+                <p class="text-[11px] text-slate-500 font-medium">Manage your bank accounts and monitor withdrawal limits</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="showAccountsList()" id="back-to-accounts" class="hidden flex items-center gap-2 px-3 py-2 rounded-xl text-primary text-xs font-bold hover:bg-primary/5 transition-all">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span> Back
+                </button>
+                <button onclick="openAccountModal()" id="add-job-account-btn" class="flex-1 sm:flex-none bg-primary text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <span class="material-symbols-outlined text-[18px]">add_card</span> Add Account
+                </button>
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
+        <div class="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20">
+            <table class="w-full text-left border-collapse">
                 <!-- Accounts Header -->
-                <thead id="accounts-header" class="bg-background-light/50 dark:bg-slate-800/50">
+                <thead id="accounts-header" class="sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-primary/10">
                     <tr>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bank Account</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Withdrawn (Current FY)</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center w-12">S.No</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest">Account Holder</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center">Bank</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center">A/c Number</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center">Type</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-right">Total Withdrawn</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center">Status</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-right">Actions</th>
                     </tr>
                 </thead>
                 <!-- Withdrawals Header -->
-                <thead id="withdrawals-header" class="hidden bg-background-light/50 dark:bg-slate-800/50">
+                <thead id="withdrawals-header" class="hidden sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-primary/10">
                     <tr>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Amount (₹)</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Method</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Note</th>
-                        <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center w-12">S.No</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest">Date</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-right">Amount (₹)</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-center">Method</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest">Note</th>
+                        <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="bank-data-body" class="divide-y divide-primary/5">
+                <tbody id="bank-data-body" class="divide-y divide-slate-100 dark:divide-slate-800">
                     <!-- Dynamic rendering -->
                 </tbody>
             </table>
@@ -307,6 +332,65 @@
                 </button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Account Management Modal -->
+<div id="account-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-primary/10 overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined">account_balance</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-800 dark:text-white" id="account-modal-title">Add Job Account</h3>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Account Details</p>
+                </div>
+            </div>
+            <button onclick="closeAccountModal()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all">
+                <span class="material-symbols-outlined text-slate-400">close</span>
+            </button>
+        </div>
+        <form id="account-form" class="p-6 space-y-5">
+            <input type="hidden" id="edit-account-id"/>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1.5 md:col-span-2">
+                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Account Holder Name</label>
+                    <input id="modal-acc-holder" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" placeholder="Enter Full Name" type="text" required/>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Bank Name</label>
+                    <input id="modal-acc-bank" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" placeholder="e.g. SBI, HDFC" type="text" required/>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Account Type</label>
+                    <select id="modal-acc-type" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner cursor-pointer">
+                        <option value="CURRENT">Current Account</option>
+                        <option value="SAVING">Savings Account</option>
+                        <option value="CC/OD">CC / OD Account</option>
+                        <option value="LOAN">Loan Account</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Account Number</label>
+                    <input id="modal-acc-number" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-3.5 text-sm font-mono font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" placeholder="0000 0000 0000" type="text" required/>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Branch Name</label>
+                    <input id="modal-acc-branch" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" placeholder="e.g. Downtown Branch" type="text" required/>
+                </div>
+            </div>
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="closeAccountModal()" class="flex-1 px-4 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-[2] px-4 py-4 rounded-2xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:bg-primary/90 shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:scale-95 transition-all">
+                    Save Account
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

@@ -332,7 +332,10 @@ async function loadBankAccounts() {
     if (!db) return [];
     try {
         const querySnapshot = await getDocs(collection(db, "bank_accounts"));
-        return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { ...data, id: data.id || doc.id, firebaseId: doc.id };
+        });
     } catch (e) {
         console.error("Error loading bank accounts: ", e);
         return [];
@@ -343,7 +346,8 @@ async function saveBankAccount(account) {
     try {
         const id = String(account.id || Date.now());
         const docRef = doc(db, "bank_accounts", id);
-        await setDoc(docRef, account);
+        // Ensure id is part of the data
+        await setDoc(docRef, { ...account, id });
         return { message: "Bank account saved" };
     } catch (e) {
         console.error("Error saving bank account: ", e);
@@ -354,7 +358,10 @@ async function loadBankWithdrawals() {
     if (!db) return [];
     try {
         const querySnapshot = await getDocs(collection(db, "bank_withdrawals"));
-        return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { ...data, id: data.id || doc.id, firebaseId: doc.id };
+        });
     } catch (e) {
         console.error("Error loading bank withdrawals: ", e);
         return [];
@@ -365,7 +372,7 @@ async function saveBankWithdrawal(withdrawal) {
     try {
         const id = String(withdrawal.id || Date.now());
         const docRef = doc(db, "bank_withdrawals", id);
-        await setDoc(docRef, withdrawal);
+        await setDoc(docRef, { ...withdrawal, id });
         return { message: "Withdrawal saved" };
     } catch (e) {
         console.error("Error saving withdrawal: ", e);
@@ -539,9 +546,9 @@ async function initAddEntry() {
                 
                 if (t.chargesType === 'Online') onlineVal += chg;
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) {
                     onlineVal += amt;
-                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     onlineVal -= amt;
                 } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
                     onlineVal -= amt;
@@ -1012,6 +1019,7 @@ async function initAddEntry() {
     const ex_r = document.getElementById('shop_rent_expense');
     const ex_b = document.getElementById('business_development');
     const ex_i = document.getElementById('internet_expense');
+    const ex_st = document.getElementById('settlement_charges');
 
     const updateExpenseSplitTotal = () => {
         if(!ex_p) return 0;
@@ -1021,6 +1029,7 @@ async function initAddEntry() {
                       (parseFloat(ex_r.value) || 0) + 
                       (parseFloat(ex_b.value) || 0) + 
                       (parseFloat(ex_i.value) || 0) +
+                      (parseFloat(ex_st?.value) || 0) +
                       (parseFloat(document.getElementById('gold_sip')?.value) || 0);
         if(expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
@@ -1048,7 +1057,7 @@ async function initAddEntry() {
         if(closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
         if(expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
 
-        ['personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+        ['personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
             const inp = document.getElementById(id);
             if(inp) inp.addEventListener('input', updateExpenseSplitTotal);
         });
@@ -1106,7 +1115,7 @@ async function initAddEntry() {
             let withdrawal = 0;
             const details = {};
 
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && parseFloat(el.value) > 0) {
                     details[id] = parseFloat(el.value);
@@ -1203,7 +1212,7 @@ async function initAddEntry() {
             form.reset();
             
             // Clear modal inputs which are outside the form
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) { 
                     el.value = (id === 'gold_sip') ? '206' : ''; 
@@ -1838,9 +1847,9 @@ async function initCalculator() {
                 
                 if (t.chargesType !== 'Online') cashVal += chg;
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) {
                     cashVal -= amt; 
-                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
                 } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
                     if (t.provider !== 'Online') cashVal += amt;
@@ -2475,12 +2484,14 @@ async function initCreditLedger() {
     if (!addCustomerForm) return;
 
     const addTransactionForm = document.getElementById('credit-transaction-form');
-    const customerViewHeader = document.getElementById('customer-view-header');
     const addTransactionSection = document.getElementById('add-transaction-section');
     const backBtn = document.getElementById('back-to-ledger');
     const tableBody = document.getElementById('credit-table-body');
     const ledgerHeader = document.getElementById('ledger-header');
     const historyHeader = document.getElementById('history-header');
+    const ledgerTitle = document.getElementById('ledger-title');
+    const addCustomerBtn = document.getElementById('add-customer-btn');
+    const addCustomerModal = document.getElementById('add-customer-modal');
 
     const summaryTotal = document.getElementById('summary-total-credit');
     const summaryReceived = document.getElementById('summary-received');
@@ -2504,10 +2515,10 @@ async function initCreditLedger() {
             tableBody.innerHTML = '';
 
             if (currentView === 'ledger') {
-                customerViewHeader.querySelector('h3').innerText = "Customer Management";
+                if (ledgerTitle) ledgerTitle.innerText = "Ledger Details";
                 if (backBtn) backBtn.classList.add('hidden');
                 if (addTransactionSection) addTransactionSection.classList.add('hidden');
-                if (addCustomerForm) addCustomerForm.classList.remove('hidden');
+                if (addCustomerBtn) addCustomerBtn.classList.remove('hidden');
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
                 if (useTotalBtn) useTotalBtn.classList.remove('hidden');
@@ -2589,10 +2600,10 @@ async function initCreditLedger() {
                     return;
                 }
 
-                customerViewHeader.querySelector('h3').innerText = "Customer: " + cust.name;
+                if (ledgerTitle) ledgerTitle.innerText = cust.name;
                 if (backBtn) backBtn.classList.remove('hidden');
                 if (addTransactionSection) addTransactionSection.classList.remove('hidden');
-                if (addCustomerForm) addCustomerForm.classList.add('hidden');
+                if (addCustomerBtn) addCustomerBtn.classList.add('hidden');
                 if (ledgerHeader) ledgerHeader.classList.add('hidden');
                 if (historyHeader) historyHeader.classList.remove('hidden');
                 if (useTotalBtn) useTotalBtn.classList.add('hidden');
@@ -2717,6 +2728,18 @@ async function initCreditLedger() {
         }, 2500);
     }
 
+    // Modal Handlers
+    window.openAddCustomerModal = () => {
+        if (addCustomerModal) addCustomerModal.classList.remove('hidden');
+        const input = document.getElementById('new-customer-name');
+        if (input) input.focus();
+    };
+
+    window.closeAddCustomerModal = () => {
+        if (addCustomerModal) addCustomerModal.classList.add('hidden');
+        if (addCustomerForm) addCustomerForm.reset();
+    };
+
     // Handlers
     addCustomerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2732,7 +2755,7 @@ async function initCreditLedger() {
                 }
                 const res = await saveCustomer({ id: Date.now(), name });
                 if (res) {
-                    addCustomerForm.reset();
+                    closeAddCustomerModal();
                     showSuccessToast('Customer added successfully! 🎉');
                     await renderView();
                 }
@@ -3480,8 +3503,8 @@ async function initReports() {
         updateTxnCard('jio_topup', txnStats['JIO_TOPUP'] || {});
         updateTxnCard('dishtv', txnStats['DISHTV_RECHARGE'] || {});
         updateTxnCard('jio_recharge', txnStats['JIO_RECHARGE'] || {});
-        updateTxnCard('admin_deposit', txnStats['ADMIN_DEPOSIT'] || {});
-        updateTxnCard('admin_withdrawal', txnStats['ADMIN_WITHDRAWAL'] || {});
+        updateTxnCard('admin_deposit', txnStats['FREE_DEPOSIT'] || {});
+        updateTxnCard('admin_withdrawal', txnStats['FREE_WITHDRAWAL'] || {});
         updateTxnCard('credit_given', txnStats['CREDIT_GIVEN'] || {});
         updateTxnCard('credit_received', txnStats['CREDIT_RECEIVED'] || {});
 
@@ -3644,10 +3667,10 @@ async function initReports() {
                 if (t.chargesType === 'Online') sysOnline += chg;
                 else sysCash += chg;
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) {
                     sysCash -= amt;
                     sysOnline += amt;
-                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     sysCash += amt;
                     sysOnline -= amt;
                 } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
@@ -3715,10 +3738,15 @@ async function initReports() {
 
 // --- Logic for Bank Withdrawals ---
 async function initBankWithdrawals() {
+    console.log("[DEBUG] initBankWithdrawals starting...");
     const tableBody = document.getElementById('bank-data-body');
-    if (!tableBody) return; // Only runs on bank-withdrawals-code.html
+    if (!tableBody) {
+        console.log("[DEBUG] tableBody not found, exiting initBankWithdrawals.");
+        return;
+    }
+    console.log("[DEBUG] tableBody found, proceeding with init...");
 
-    const addAccountForm = document.getElementById('add-account-form');
+    const accountForm = document.getElementById('account-form');
     const withdrawalForm = document.getElementById('withdrawal-form');
     const accountViewHeader = document.getElementById('account-view-header');
     const addWithdrawalSection = document.getElementById('add-withdrawal-section');
@@ -3736,6 +3764,29 @@ async function initBankWithdrawals() {
     let activeAccountId = null;
     let deleteTargetId = null;
     let deleteTargetType = null; // 'account' or 'withdrawal'
+    
+    // Account Modal Elements
+    const accountModal = document.getElementById('account-modal');
+    const modalTitle = document.getElementById('account-modal-title');
+    
+    function openAccountModal(id = null) {
+        if (accountModal) {
+            accountModal.classList.remove('hidden');
+            if (id) {
+                modalTitle.innerText = "Edit Account";
+            } else {
+                modalTitle.innerText = "Add Account";
+                accountForm.reset();
+                document.getElementById('edit-account-id').value = '';
+            }
+        }
+    }
+    window.openAccountModal = openAccountModal;
+
+    function closeAccountModal() {
+        if (accountModal) accountModal.classList.add('hidden');
+    }
+    window.closeAccountModal = closeAccountModal;
 
     // Delete Modal Elements
     const deleteModal = document.getElementById('delete-confirm-modal');
@@ -3766,13 +3817,17 @@ async function initBankWithdrawals() {
     };
 
     async function renderView() {
+        console.log("[DEBUG] renderView starting, currentView:", currentView);
         try {
+            console.log("[DEBUG] Loading bank accounts and withdrawals...");
             const accounts = await loadBankAccounts();
             const withdrawalsList = await loadBankWithdrawals();
+            console.log(`[DEBUG] Loaded ${accounts.length} accounts and ${withdrawalsList.length} withdrawals.`);
 
             tableBody.innerHTML = '';
             
             const fy = getCurrentFYDates();
+            console.log("[DEBUG] Current FY:", fy.label);
             if(fyDatesDisplay) fyDatesDisplay.innerText = fy.label;
 
             const limitDisplay = fyDatesDisplay ? fyDatesDisplay.nextElementSibling : null;
@@ -3805,17 +3860,16 @@ async function initBankWithdrawals() {
                 if (limitDisplay) limitDisplay.innerText = `Combined Limit: ${formatCurrency(grandLimit)} (Sec 194N)`;
                 if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
                 
-                accountViewHeader.querySelector('h3').innerText = "Bank Accounts";
+                if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Bank Accounts";
                 if (backBtn) backBtn.classList.add('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.add('hidden');
-                if (addAccountForm) addAccountForm.classList.remove('hidden');
                 if (accountsHeader) accountsHeader.classList.remove('hidden');
                 if (withdrawalsHeader) withdrawalsHeader.classList.add('hidden');
 
                 if (accounts.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No bank accounts added yet.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 font-medium">No bank accounts added yet.</td></tr>`;
                 } else {
-                    accounts.forEach(acc => {
+                    accounts.forEach((acc, index) => {
                         const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(acc.id));
                         let fyTotal = 0;
                         accWithdrawals.forEach(w => {
@@ -3827,31 +3881,107 @@ async function initBankWithdrawals() {
 
                         const limit = 10000000; // 1 Crore
                         const pecent = (fyTotal / limit) * 100;
-                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600');
+                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600 border-rose-200' : (pecent >= 80 ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200');
                         const statusText = pecent >= 100 ? 'OVER LIMIT' : (pecent >= 80 ? 'WARNING' : 'SAFE');
                         
+                        // Parse Account Name
+                        let holder = acc.name;
+                        let bank = "-";
+                        let accNo = "-";
+                        let type = "-";
+                        let branch = "-";
+
+                        if (acc.name.includes('|')) {
+                            const parts = acc.name.split('|');
+                            holder = parts[0] || "-";
+                            bank = parts[1] || "-";
+                            accNo = parts[2] || "-";
+                            type = parts[3] || "-";
+                            branch = parts[4] || "-";
+                        } else {
+                            // Intelligent Parsing Fallback
+                            const nameParts = acc.name.toUpperCase().split(/\s+/);
+                            const banks = ["SBI", "HDFC", "ICICI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDFC", "KOTAK", "CRGB"];
+                            const types = ["CURRENT", "SAVING", "FD", "RD", "LOAN", "CC"];
+                            
+                            let foundBankIdx = -1;
+                            let foundTypeIdx = -1;
+                            
+                            nameParts.forEach((part, i) => {
+                                if (banks.includes(part)) foundBankIdx = i;
+                                if (types.includes(part)) foundTypeIdx = i;
+                            });
+
+                            if (foundBankIdx !== -1) {
+                                bank = nameParts[foundBankIdx];
+                                holder = nameParts.slice(0, foundBankIdx).join(" ");
+                            }
+                            
+                            if (foundTypeIdx !== -1) {
+                                type = nameParts[foundTypeIdx];
+                                if (foundBankIdx === -1) {
+                                    holder = nameParts.slice(0, foundTypeIdx).join(" ");
+                                } else if (foundTypeIdx > foundBankIdx) {
+                                    const middle = nameParts.slice(foundBankIdx + 1, foundTypeIdx).join(" ");
+                                    if (middle && !middle.includes("A/C")) accNo = middle;
+                                }
+                            }
+
+                            const acMatch = acc.name.match(/A\/c\s*(\d+)/i) || acc.name.match(/(\d{4,})/);
+                            if (acMatch) {
+                                accNo = acMatch[1];
+                                holder = holder.replace(acMatch[0], "").trim();
+                            }
+                            if (!holder) holder = acc.name;
+                        }
+
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
+                        tr.className = "hover:bg-primary/5 transition-all cursor-pointer group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-left-2 duration-300";
+                        tr.style.animationDelay = `${index * 50}ms`;
                         tr.onclick = (e) => {
                             if(e.target.closest('button')) return;
                             showAccountDetails(acc.id);
                         };
                         tr.innerHTML = `
-                            <td class="px-6 py-2 font-bold group-hover:text-primary transition-colors">${acc.name}</td>
-                            <td class="px-6 py-2 font-bold text-slate-700 text-right">${formatCurrency(fyTotal)}</td>
-                            <td class="px-6 py-2 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
+                            <td class="px-4 py-2 text-center">
+                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">${index + 1}</span>
                             </td>
-                            <td class="px-6 py-2 text-right flex justify-end gap-1">
-                                <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View">
-                                    <span class="material-symbols-outlined text-lg">visibility</span>
-                                </button>
-                                <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
-                                    <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
-                                    <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                            <td class="px-4 py-2">
+                                <div class="flex flex-col leading-tight">
+                                    <span class="text-[13px] font-black text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase lg:hidden">${bank} • ${type}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-2 text-center hidden md:table-cell">
+                                <span class="text-[9px] font-black px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-600 dark:text-slate-400">${bank}</span>
+                            </td>
+                            <td class="px-4 py-2 text-center hidden lg:table-cell">
+                                <span class="text-[11px] font-mono font-bold text-slate-500">${accNo}</span>
+                            </td>
+                            <td class="px-4 py-2 text-center hidden md:table-cell">
+                                <span class="text-[9px] font-black px-1.5 py-0.5 bg-primary/5 text-primary rounded-md border border-primary/10">${type}</span>
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <span class="text-[13px] font-black text-slate-700 dark:text-slate-200">${formatCurrency(fyTotal)}</span>
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                                <div class="flex flex-col items-center gap-0.5">
+                                    <span class="px-1.5 py-0.5 rounded-full text-[8px] font-black border ${statusClass}">${statusText}</span>
+                                    <span class="text-[8px] font-bold text-slate-400">${pecent.toFixed(1)}%</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                    <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-all" title="View Details">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Edit Account">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete Account">
+                                        <span class="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                </div>
                             </td>
                         `;
                         tableBody.appendChild(tr);
@@ -3861,10 +3991,9 @@ async function initBankWithdrawals() {
                 const acc = accounts.find(a => String(a.id) === String(activeAccountId));
                 if (!acc) { showAccountsList(); return; }
 
-                accountViewHeader.querySelector('h3').innerText = "Account: " + acc.name;
+                if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Account: " + (acc.name.includes('|') ? acc.name.split('|')[0] : acc.name);
                 if (backBtn) backBtn.classList.remove('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.remove('hidden');
-                if (addAccountForm) addAccountForm.classList.add('hidden');
                 if (accountsHeader) accountsHeader.classList.add('hidden');
                 if (withdrawalsHeader) withdrawalsHeader.classList.remove('hidden');
 
@@ -3879,48 +4008,59 @@ async function initBankWithdrawals() {
                 let fyTotal = 0;
                 
                 if (accWithdrawals.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No withdrawals recorded yet.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">No withdrawals recorded yet.</td></tr>`;
                 } else {
-                    accWithdrawals.forEach(w => {
+                    accWithdrawals.forEach((w, index) => {
                         const amount = parseFloat(w.amount) || 0;
                         const wDate = new Date(w.date);
                         if(wDate >= fy.start && wDate <= fy.end) {
                             fyTotal += amount;
                         }
 
-                        let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">${w.method}</span>`;
-                        if(w.method === 'ATM') methodHtml = `<span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">ATM</span>`;
-                        if(w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs font-bold">ATM QR Code</span>`;
-                        if(w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-xs font-bold">ATM Inside Branch</span>`;
-                        if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold">Cheque</span>`;
-                        if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-xs font-bold">Yono Cash</span>`;
+                        let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">${w.method}</span>`;
+                        if(w.method === 'ATM') methodHtml = `<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">ATM</span>`;
+                        if(w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-indigo-100">ATM QR</span>`;
+                        if(w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-amber-100">In-Branch ATM</span>`;
+                        if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-purple-100">Cheque</span>`;
+                        if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 text-pink-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-pink-100">Yono Cash</span>`;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors";
+                        tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
+                        tr.style.animationDelay = `${index * 50}ms`;
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${wDate.toLocaleDateString('en-GB')}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right text-rose-600">${formatCurrency(amount)}</td>
-                            <td class="px-6 py-2">${methodHtml}</td>
-                            <td class="px-6 py-2 text-xs text-slate-500 italic">${w.note || ""}</td>
-                            <td class="px-6 py-2 text-right flex justify-end gap-1">
-                                <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
-                                    <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
-                                    <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                            <td class="px-4 py-2 text-center">
+                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">${index + 1}</span>
+                            </td>
+                            <td class="px-4 py-2">
+                                <span class="text-[13px] font-bold text-slate-600 dark:text-slate-300">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <span class="text-[13px] font-black text-rose-600">${formatCurrency(amount)}</span>
+                            </td>
+                            <td class="px-4 py-2 text-center">${methodHtml}</td>
+                            <td class="px-4 py-2">
+                                <span class="text-[10px] text-slate-500 font-medium italic">${w.note || "-"}</span>
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                    <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Edit Record">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete Record">
+                                        <span class="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                </div>
                             </td>
                         `;
                         tableBody.appendChild(tr);
                     });
                 }
 
-                // Update limit UI
-                const limit = 10000000; // 1 Crore
+                const limit = 10000000;
                 const pecent = (fyTotal / limit) * 100;
                 if(fyTotalDisplay) {
                     fyTotalDisplay.innerText = formatCurrency(fyTotal);
-                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL FY WITHDRAWALS (" + acc.name.toUpperCase() + ")";
+                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL FY WITHDRAWALS (" + (acc.name.includes('|') ? acc.name.split('|')[0].toUpperCase() : acc.name.toUpperCase()) + ")";
                 }
                 if(fyPercentage) {
                     fyPercentage.innerText = `${pecent.toFixed(1)}% Used`;
@@ -3930,27 +4070,27 @@ async function initBankWithdrawals() {
                     fyProgressBar.style.width = `${Math.min(pecent, 100)}%`;
                     fyProgressBar.className = `h-full transition-all duration-700 ${pecent >= 100 ? 'bg-rose-500' : (pecent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
                 }
-                if (limitDisplay) limitDisplay.innerText = `Limit: ${formatCurrency(limit)} (Sec 194N)`;
-                if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
             }
 
         } catch (e) { console.error("render error:", e); }
     }
 
-    if(addAccountForm) {
-        addAccountForm.addEventListener('submit', async(e) => {
+    if(accountForm) {
+        accountForm.addEventListener('submit', async(e) => {
             e.preventDefault();
-            const name = document.getElementById('new-account-name').value.trim();
-            const editIdInput = document.getElementById('edit-account-id');
-            const isEditing = editIdInput && editIdInput.value;
+            const holder = document.getElementById('modal-acc-holder').value.trim();
+            const bank = document.getElementById('modal-acc-bank').value.trim();
+            const number = document.getElementById('modal-acc-number').value.trim();
+            const type = document.getElementById('modal-acc-type').value.trim();
+            const branch = document.getElementById('modal-acc-branch').value.trim();
             
-            if(name) {
-                const uniqueId = isEditing ? editIdInput.value : Date.now();
-                await saveBankAccount({ id: uniqueId, name });
-                addAccountForm.reset();
-                if (editIdInput) editIdInput.value = '';
-                const submitBtn = addAccountForm.querySelector('button[type="submit"]');
-                if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">add_card</span> Add Account';
+            const editId = document.getElementById('edit-account-id').value;
+            
+            if(holder && bank && number) {
+                const combinedName = `${holder}|${bank}|${number}|${type}|${branch}`;
+                const uniqueId = editId || Date.now();
+                await saveBankAccount({ id: uniqueId, name: combinedName });
+                closeAccountModal();
                 await renderView();
             }
         });
@@ -3983,48 +4123,56 @@ async function initBankWithdrawals() {
         });
     }
 
-    window.showAccountDetails = async (id) => {
+    async function showAccountDetails(id) {
         currentView = 'withdrawals';
         activeAccountId = id;
         await renderView();
-    };
+    }
+    window.showAccountDetails = showAccountDetails;
 
-    window.showAccountsList = async () => {
+    async function showAccountsList() {
         currentView = 'accounts';
         activeAccountId = null;
         await renderView();
-    };
+    }
+    window.showAccountsList = showAccountsList;
     
-    window.editBankAccountRecord = async (id) => {
+    async function editBankAccountRecord(id) {
         const accs = await loadBankAccounts();
         const acc = accs.find(x => String(x.id) === String(id));
         if (acc) {
-            document.getElementById('new-account-name').value = acc.name;
-            let editIdInput = document.getElementById('edit-account-id');
-            if (!editIdInput) {
-                editIdInput = document.createElement('input');
-                editIdInput.type = 'hidden';
-                editIdInput.id = 'edit-account-id';
-                addAccountForm.appendChild(editIdInput);
+            document.getElementById('edit-account-id').value = acc.id;
+            if (acc.name.includes('|')) {
+                const parts = acc.name.split('|');
+                document.getElementById('modal-acc-holder').value = parts[0] || '';
+                document.getElementById('modal-acc-bank').value = parts[1] || '';
+                document.getElementById('modal-acc-number').value = parts[2] || '';
+                document.getElementById('modal-acc-type').value = parts[3] || 'CURRENT';
+                document.getElementById('modal-acc-branch').value = parts[4] || '';
+            } else {
+                document.getElementById('modal-acc-holder').value = acc.name;
+                document.getElementById('modal-acc-bank').value = '';
+                document.getElementById('modal-acc-number').value = '';
+                document.getElementById('modal-acc-type').value = 'CURRENT';
+                document.getElementById('modal-acc-branch').value = '';
             }
-            editIdInput.value = acc.id;
-            const submitBtn = addAccountForm.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Account';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openAccountModal(acc.id);
         }
-    };
+    }
+    window.editBankAccountRecord = editBankAccountRecord;
 
-    window.deleteBankAccountRecord = (id) => {
+    function deleteBankAccountRecord(id) {
         deleteTargetId = id;
         deleteTargetType = 'account';
         const titleEl = document.getElementById('delete-modal-title');
         const descEl = document.getElementById('delete-modal-description');
         if (titleEl) titleEl.innerText = "Delete Bank Account?";
-        if (descEl) descEl.innerText = "Are you sure you want to delete this bank account? All associated withdrawal history will NOT be deleted from the system, but you will lose this account entry. This action cannot be undone.";
+        if (descEl) descEl.innerText = "Are you sure you want to delete this bank account? All associated withdrawal history will be permanently removed. This action cannot be undone.";
         if (deleteModal) deleteModal.classList.remove('hidden');
-    };
+    }
+    window.deleteBankAccountRecord = deleteBankAccountRecord;
     
-    window.editBankWithdrawalRecord = async (id) => {
+    async function editBankWithdrawalRecord(id) {
         const wList = await loadBankWithdrawals();
         const w = wList.find(x => String(x.id) === String(id));
         if (w) {
@@ -4046,9 +4194,10 @@ async function initBankWithdrawals() {
             if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Withdrawal';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    };
+    }
+    window.editBankWithdrawalRecord = editBankWithdrawalRecord;
 
-    window.deleteBankWithdrawalRecord = (id) => {
+    function deleteBankWithdrawalRecord(id) {
         deleteTargetId = id;
         deleteTargetType = 'withdrawal';
         const titleEl = document.getElementById('delete-modal-title');
@@ -4056,7 +4205,8 @@ async function initBankWithdrawals() {
         if (titleEl) titleEl.innerText = "Delete Withdrawal Record?";
         if (descEl) descEl.innerText = "Are you sure you want to delete this withdrawal record? This action cannot be undone.";
         if (deleteModal) deleteModal.classList.remove('hidden');
-    };
+    }
+    window.deleteBankWithdrawalRecord = deleteBankWithdrawalRecord;
 
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
@@ -4402,10 +4552,10 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
+        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
-        const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
+        const noteAndAmountTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
@@ -4413,12 +4563,13 @@ async function initDailyTxn() {
         const isAmountOnly = amountOnlyTypes.includes(txnType.value);
         const isNoteAndAmount = noteAndAmountTypes.includes(txnType.value);
         const isCredit = creditTypes.includes(txnType.value);
+        const isCapital = ['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value);
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
         txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery;
-        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery;
-        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery;
+        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital;
 
         // Reset Labels
         if (chargesModeContainer) {
@@ -4426,10 +4577,10 @@ async function initDailyTxn() {
             if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : 'CHARGES MODE';
         }
 
-        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) {
+        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) {
             conditionalContainer.classList.add('hidden');
             if (amountFieldContainer) {
-                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) amountFieldContainer.classList.remove('hidden');
+                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) amountFieldContainer.classList.remove('hidden');
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
@@ -4446,12 +4597,12 @@ async function initDailyTxn() {
             
             // Charges Field Visibility
             if (chargesFieldContainer) {
-                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) {
+                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) {
                     chargesFieldContainer.classList.add('hidden');
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
                     }
-                } else if (['JIO_TOPUP', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'SETTLEMENT'].includes(txnType.value)) {
+                } else if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'SETTLEMENT'].includes(txnType.value)) {
                     chargesFieldContainer.classList.remove('hidden');
                     if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
                 } else {
@@ -4461,7 +4612,7 @@ async function initDailyTxn() {
             }
             
             if (isChargesOnly) txnAmount.value = '';
-            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery) txnCharges.value = '';
+            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) txnCharges.value = '';
             if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery) txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
@@ -4486,7 +4637,7 @@ async function initDailyTxn() {
         }
 
         // Set Default Charges Mode based on Type
-        if (['JIO_TOPUP', 'ROINET_COMMISSION'].includes(txnType.value)) {
+        if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) {
             if (txnChargesType) txnChargesType.value = 'Online';
         } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
             // Sync with Pay Mode for recharges
@@ -4499,15 +4650,15 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
-                if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
+            if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
+                if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value) ? 'Amount Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode'));
                 if (amountLabel) amountLabel.innerText = 'Amount';
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
@@ -4524,9 +4675,10 @@ async function initDailyTxn() {
             const aepsMatmProviders = ['Airtel', 'Roinet', 'SpiceMoney', 'Crgb Bc'];
             const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
             
-            const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value);
+            const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT', 'CSP_COMMISSION'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
             const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value);
+            const isCspComm = txnType.value === 'CSP_COMMISSION';
             
             Array.from(txnProvider.options).forEach(opt => {
                 if (!opt.value) return; // Skip placeholder
@@ -4535,7 +4687,7 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
+                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
                     opt.style.display = ''; // Show all for other types
@@ -4585,7 +4737,7 @@ async function initDailyTxn() {
         }
 
         try {
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
             const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
             
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
@@ -4624,6 +4776,25 @@ async function initDailyTxn() {
                         icon: 'error',
                         title: 'Insufficient Online Balance',
                         text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+            }
+
+            // Sufficiency Check for SHARE_WITHDRAWN
+            if (txnType.value === 'SHARE_WITHDRAWN') {
+                const available = txnProvider.value === 'Online' ? currentAvailableOnline : currentAvailableCash;
+                const mode = txnProvider.value || 'Cash';
+                if (amountVal > available) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: `Insufficient ${mode} Balance`,
+                        text: `You only have ₹ ${available.toLocaleString('en-IN')} available in ${mode.toLowerCase()}.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -4713,7 +4884,7 @@ async function initDailyTxn() {
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
                 bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
@@ -4823,34 +4994,71 @@ async function initDailyTxn() {
             // Per-provider roinet breakdown tracking
             const roinetBreakdown = { roinet: 0, airtel: 0, spicemoney: 0 };
 
-            txns.forEach(t => {
+            const lastChanges = {
+                cash: 0, online: 0, roinet: 0, crgb: 0, jio: 0,
+                pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
+            };
+            const lastRoinetChanges = { roinet: 0, airtel: 0, spicemoney: 0, total: 0 };
+
+            // Ensure chronological order for "Last Change" tracking
+            const sortedTxns = [...txns].sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+
+            sortedTxns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
                 
-                if (t.chargesType === 'Online') balances.online += chg;
-                else balances.cash += chg;
+                const prevBals = { ...balances };
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                    // Commission goes to wallet only, skip global cash/online update
+                } else {
+                    if (t.chargesType === 'Online') balances.online += chg;
+                    else balances.cash += chg;
+                }
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     balances.cash -= amt; 
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet += amt;
-                        // Track breakdown per provider
-                        if (provider.includes('airtel')) roinetBreakdown.airtel += amt;
-                        else if (provider.includes('spicemoney')) roinetBreakdown.spicemoney += amt;
-                        else roinetBreakdown.roinet += amt;
+                        if (provider.includes('airtel')) {
+                            roinetBreakdown.airtel += amt;
+                            lastRoinetChanges.airtel = amt;
+                        } else if (provider.includes('spicemoney')) {
+                            roinetBreakdown.spicemoney += amt;
+                            lastRoinetChanges.spicemoney = amt;
+                        } else {
+                            roinetBreakdown.roinet += amt;
+                            lastRoinetChanges.roinet = amt;
+                        }
+                        lastRoinetChanges.total = amt;
                     }
                     else if (provider.includes('crgb')) balances.crgb += amt;
                     else if (provider.includes('jio')) balances.jio += amt;
                     else balances.online += amt;
-                } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                     balances.cash += amt;
-                    if (provider.includes('roinet')) balances.roinet -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        if (provider.includes('airtel')) {
+                            roinetBreakdown.airtel -= amt;
+                            lastRoinetChanges.airtel = -amt;
+                        } else if (provider.includes('spicemoney')) {
+                            roinetBreakdown.spicemoney -= amt;
+                            lastRoinetChanges.spicemoney = -amt;
+                        } else {
+                            roinetBreakdown.roinet -= amt;
+                            lastRoinetChanges.roinet = -amt;
+                        }
+                        lastRoinetChanges.total = -amt;
+                    }
                     else if (provider.includes('crgb')) balances.crgb -= amt;
                     else if (provider.includes('jio')) balances.jio -= amt;
                     else balances.online -= amt;
                 } else if (t.type === 'DISHTV_RECHARGE') {
                     balances.roinet -= amt; 
+                    lastRoinetChanges.roinet = -amt;
+                    lastRoinetChanges.total = -amt;
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
@@ -4861,11 +5069,21 @@ async function initDailyTxn() {
                 } else if (t.type === 'JIO_TOPUP') {
                     balances.jio += (amt + chg);
                     balances.online -= amt;
-                    // Remove chg from where it was generically added
                     if (t.chargesType === 'Online') balances.online -= chg;
                     else balances.cash -= chg;
-                } else if (t.type === 'ROINET_COMMISSION') {
+                } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
                     balances.roinet += chg;
+                    if (provider.includes('airtel')) {
+                        roinetBreakdown.airtel += chg;
+                        lastRoinetChanges.airtel = chg;
+                    } else if (provider.includes('spicemoney')) {
+                        roinetBreakdown.spicemoney += chg;
+                        lastRoinetChanges.spicemoney = chg;
+                    } else {
+                        roinetBreakdown.roinet += chg;
+                        lastRoinetChanges.roinet = chg;
+                    }
+                    lastRoinetChanges.total = chg;
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
@@ -4905,43 +5123,71 @@ async function initDailyTxn() {
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
                 } else if (t.type === 'SETTLEMENT') {
-                    // IDs to Bank
                     balances.online += amt;
-                    // Subtract charges from where they were generically added
                     if (t.chargesType === 'Online') balances.online -= chg;
                     else balances.cash -= chg;
-
-                    // But track individual account changes (Amount + Charges deducted from wallet)
                     const totalDeduction = amt + chg;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= totalDeduction;
-                        // Track breakdown per provider
-                        if (provider.includes('airtel')) roinetBreakdown.airtel -= totalDeduction;
-                        else if (provider.includes('spicemoney')) roinetBreakdown.spicemoney -= totalDeduction;
-                        else roinetBreakdown.roinet -= totalDeduction;
+                        if (provider.includes('airtel')) {
+                            roinetBreakdown.airtel -= totalDeduction;
+                            lastRoinetChanges.airtel = -totalDeduction;
+                        } else if (provider.includes('spicemoney')) {
+                            roinetBreakdown.spicemoney -= totalDeduction;
+                            lastRoinetChanges.spicemoney = -totalDeduction;
+                        } else {
+                            roinetBreakdown.roinet -= totalDeduction;
+                            lastRoinetChanges.roinet = -totalDeduction;
+                        }
+                        lastRoinetChanges.total = -totalDeduction;
                     }
                     else if (provider.includes('crgb')) balances.crgb -= totalDeduction;
                     else if (provider.includes('jio')) balances.jio -= totalDeduction;
                     else balances.online -= totalDeduction;
-
-                    // Add charges to expense
                     balances.expense += chg;
                 } else if (t.type === 'ONLINE_WORK') {
-                    // Shop pays fee online
                     balances.online -= amt;
-                    // Customer reimburses shop
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
+                } else if (t.type === 'ADD_CAPITAL') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'SHARE_WITHDRAWN') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
                 }
+
+                // Capture the latest change for each category
+                Object.keys(balances).forEach(key => {
+                    const diff = balances[key] - prevBals[key];
+                    if (diff !== 0) lastChanges[key] = diff;
+                });
             });
 
             const fmt = (val) => `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            const fmtChange = (val) => {
+                const sign = val > 0 ? '+' : (val < 0 ? '-' : '');
+                return `${sign}₹${Math.abs(val).toLocaleString('en-IN')}`;
+            };
+            
+            const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
             
             ids.forEach(id => {
                 const d = document.getElementById(`summary-${id}-balance`);
                 const o = document.getElementById(`op-${id}`);
                 const c = document.getElementById(`cl-${id}`);
-                if (d) d.innerText = fmt(balances[id]);
+                const changeVal = lastChanges[id] || 0;
+                
+                if (d) {
+                    d.innerText = fmtChange(changeVal);
+                    // Update color based on positive/negative
+                    if (changeVal > 0) {
+                        d.classList.remove('text-rose-500', 'dark:text-rose-400');
+                        // Use existing card colors (emerald/blue/etc)
+                    } else if (changeVal < 0) {
+                        d.classList.add('text-rose-500', 'dark:text-rose-400');
+                    }
+                }
                 if (o) o.innerText = `₹ ${parseFloat(opValues[id] || 0).toLocaleString('en-IN')}`;
                 if (c) c.innerText = `₹ ${(parseFloat(opValues[id] || 0) + (balances[id] || 0)).toLocaleString('en-IN')}`;
             });
@@ -4975,6 +5221,12 @@ async function initDailyTxn() {
                     airtel: opAirtel + roinetBreakdown.airtel,
                     spicemoney: opSpiceMoney + roinetBreakdown.spicemoney,
                     total: roinetOpeningFallback + (balances.roinet || 0)
+                },
+                lastChange: {
+                    roinet: lastRoinetChanges.roinet,
+                    airtel: lastRoinetChanges.airtel,
+                    spicemoney: lastRoinetChanges.spicemoney,
+                    total: lastRoinetChanges.total
                 }
             };
         } catch (err) {
@@ -5119,10 +5371,10 @@ async function initDailyTxn() {
                         currentCash += chg;
                     }
 
-                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
                         currentOnline += amt; // All providers add to total online in the running balance column
-                    } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
                         currentOnline -= amt;
                     } else if (t.type === 'DISHTV_RECHARGE' || t.type === 'JIO_RECHARGE') {
@@ -5155,13 +5407,22 @@ async function initDailyTxn() {
                             currentCash -= amt;
                             currentOnline += amt;
                         }
-                        // Subtract charges from where they were generically added
-                        if (t.chargesType === 'Online') currentOnline -= chg;
-                        else currentCash -= chg;
+                        // Settlement charges always deducted from Online (Wallet)
+                        if (t.chargesType === 'Online') currentOnline -= (2 * chg); // Net -chg
+                        else {
+                            currentCash -= chg; // Undo generic cash addition
+                            currentOnline -= chg; // Deduct from online
+                        }
                     } else if (t.type === 'ONLINE_WORK') {
                         currentOnline -= amt;
                         if (t.provider === 'Cash') currentCash += amt;
                         else currentOnline += amt;
+                    } else if (t.type === 'ADD_CAPITAL') {
+                        if (t.provider === 'Cash') currentCash += amt;
+                        else currentOnline += amt;
+                    } else if (t.type === 'SHARE_WITHDRAWN') {
+                        if (t.provider === 'Cash') currentCash -= amt;
+                        else currentOnline -= amt;
                     }
                     return { 
                         ...t, 
@@ -5187,7 +5448,7 @@ async function initDailyTxn() {
                 }, {});
 
                 // Types jo count/volume se exclude honge
-                const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT'];
                 const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
                 
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
@@ -5251,8 +5512,8 @@ async function initDailyTxn() {
                 updateCard('jio-topup', 'JIO_TOPUP');
                 updateCard('dishtv', 'DISHTV_RECHARGE');
                 updateCard('jio-recharge', 'JIO_RECHARGE');
-                updateCard('admin-deposit', 'ADMIN_DEPOSIT');
-                updateCard('admin-withdrawal', 'ADMIN_WITHDRAWAL');
+                updateCard('admin-deposit', 'FREE_DEPOSIT');
+                updateCard('admin-withdrawal', 'FREE_WITHDRAWAL');
                 updateCard('credit-given', 'CREDIT_GIVEN');
                 updateCard('credit-received', 'CREDIT_RECEIVED');
 
@@ -5262,8 +5523,8 @@ async function initDailyTxn() {
                 updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
                 updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
                 updateBadge(document.getElementById('jio-recharge-count-badge'), 'JIO_RECHARGE', 'JIO RCHG');
-                updateBadge(document.getElementById('admin-deposit-count-badge'), 'ADMIN_DEPOSIT', 'ADM DEP');
-                updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'ADMIN_WITHDRAWAL', 'ADM WDRL');
+                updateBadge(document.getElementById('admin-deposit-count-badge'), 'FREE_DEPOSIT', 'FREE DEP');
+                updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'FREE_WITHDRAWAL', 'FREE WDRL');
                 updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
                 updateBadge(document.getElementById('credit-received-count-badge'), 'CREDIT_RECEIVED', 'CR RECD');
 
@@ -5314,8 +5575,8 @@ async function initDailyTxn() {
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                                     txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
                                     txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
@@ -5348,17 +5609,21 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right">
                             <div class="flex flex-col items-end">
-                                <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                                ` : `
+                                    <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                `}
                                 ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
                             </div>
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                ${((['GOLD_SIP', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'ROINET_COMMISSION', 'OTHER_INCOME'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                ${((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                                     <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                                 ` : `
                                     <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                    <span class="text-[8px] font-black uppercase tracking-widest ${txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500'}">${txn.chargesType || 'Cash'}</span>
+                                    <span class="text-[8px] font-black uppercase tracking-widest ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'text-indigo-500' : (txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500')}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType || 'Cash')}</span>
                                 `}
                             </div>
                         </td>
