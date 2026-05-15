@@ -511,60 +511,150 @@ async function initAddEntry() {
     let currentSystemOnline = 0;
 
     const fetchSystemOnline = async (dateStr) => {
+        if (!dateStr) return 0;
+        
         try {
-            const [yr, mo, dy] = dateStr.split('-');
-            const current = new Date(yr, mo - 1, dy);
-            const yesterday = new Date(current);
-            yesterday.setDate(current.getDate() - 1);
+            // 1. Get Opening Balances from Previous Day
+            const normDate = (dStr) => {
+                if (!dStr) return 0;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                }
+                const parsed = new Date(dStr);
+                return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+            };
             
-            const yesterdayDateStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-
-            const entriesRef = collection(db, "entries");
-            const dateQueries = getPossibleDateFormats(dateStr);
-            const q = query(entriesRef, where("date", "in", dateQueries));
-            const entrySnap = await getDocs(q);
-            let details = {};
-            if (!entrySnap.empty) {
-                details = entrySnap.docs[0].data().details || {};
+            const selectedTime = normDate(dateStr);
+            const allEntries = [...(window._entriesCache || [])];
+            let prevEntry = null;
+            
+            if (allEntries.length > 0) {
+                // Sort descending and find most recent entry BEFORE selected date
+                allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
+                prevEntry = allEntries.find(e => normDate(e.date) < selectedTime);
             }
-            const d = details;
-            let onlineVal = (parseFloat(d.online || 0) + 
-                             parseFloat(d.roinet || 0) + 
-                             parseFloat(d.go2sms || 0) + 
-                             parseFloat(d.jio || 0) + 
-                             parseFloat(d.pending || 0));
+            
+            // Fallback: Direct Firestore query if cache doesn't have it
+            if (!prevEntry) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                let lbDate = new Date(y, m - 1, d);
+                for (let i = 0; i < 7; i++) {
+                    lbDate.setDate(lbDate.getDate() - 1);
+                    const lbStr = lbDate.getFullYear() + '-' + String(lbDate.getMonth() + 1).padStart(2, '0') + '-' + String(lbDate.getDate()).padStart(2, '0');
+                    const lbQueries = getPossibleDateFormats(lbStr);
+                    const lbSnap = await getDocs(query(collection(db, "entries"), where("date", "in", lbQueries)));
+                    if (!lbSnap.empty) {
+                        prevEntry = lbSnap.docs[0].data();
+                        break;
+                    }
+                }
+            }
+            
+            const details = prevEntry?.details || {};
+            const opValues = {
+                online: Number(details.online || 0),
+                roinet: Number(details.roinet || 0),
+                jio: Number(details.jio || 0),
+                crgb_bc: Number(details.crgb_bc || details.go2sms || 0),
+                pending: Number(details.pending || 0)
+            };
 
+            // 2. Fetch Today's Transactions
             const txnRef = collection(db, "daily_transactions");
             const dateQueriesTxn = getPossibleDateFormats(dateStr);
-            const qTxn = query(txnRef, where("date", "in", dateQueriesTxn));
-            const txnSnap = await getDocs(qTxn);
+            const txnSnap = await getDocs(query(txnRef, where("date", "in", dateQueriesTxn)));
+            const txns = txnSnap.docs.map(doc => doc.data());
+
+            // 3. Calculate Deltas for each online module
+            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0 };
             
-            txnSnap.forEach(doc => {
-                const t = doc.data();
+            txns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
+                const provider = (t.provider || "").trim().toLowerCase();
                 
-                if (t.chargesType === 'Online') onlineVal += chg;
+                // Track charges if they are Online
+                if (!['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                    if (t.chargesType === 'Online') deltas.online += chg;
+                }
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) {
-                    onlineVal += amt;
-                } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
-                    onlineVal -= amt;
-                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
-                    onlineVal -= amt;
-                    if (t.provider === 'Online') onlineVal += amt;
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet += amt;
+                    else if (provider.includes('crgb')) deltas.crgb_bc += amt;
+                    else if (provider.includes('jio')) deltas.jio += amt;
+                    else deltas.online += amt;
+                } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= amt;
+                    else if (provider.includes('crgb')) deltas.crgb_bc -= amt;
+                    else if (provider.includes('jio')) deltas.jio -= amt;
+                    else deltas.online -= amt;
+                } else if (t.type === 'DISHTV_RECHARGE') {
+                    deltas.roinet -= amt;
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'JIO_RECHARGE') {
+                    deltas.jio -= amt;
+                    deltas.online -= amt;
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'JIO_TOPUP') {
+                    deltas.jio += (amt + chg);
+                    deltas.online -= amt;
+                    if (t.chargesType === 'Online') deltas.online -= chg;
+                } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
+                    deltas.roinet += chg;
                 } else if (t.type === 'GOLD_SIP') {
-                    onlineVal -= amt;
+                    deltas.online -= amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
-                    if (t.provider === 'Online') onlineVal -= amt;
-                } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
-                    if (t.provider === 'Online') onlineVal += amt;
-                } else if (['CREDIT_GIVEN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
-                    if (t.provider === 'Online') onlineVal -= amt;
+                    if (provider !== 'cash') deltas.online -= amt;
+                } else if (t.type === 'CREDIT_RECEIVED') {
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'CUST_MONEY_IN') {
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'CUST_MONEY_OUT') {
+                    if (provider !== 'cash') deltas.online -= amt;
+                } else if (t.type === 'DAILY_EXPENSE') {
+                    if (provider !== 'cash') deltas.online -= amt;
+                } else if (t.type === 'DAMAGED_RECOVERY') {
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet += amt;
+                        else if (provider.includes('crgb')) deltas.crgb_bc += amt;
+                        else if (provider.includes('jio')) deltas.jio += amt;
+                    }
+                } else if (t.type === 'OTHER_INCOME') {
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'SETTLEMENT') {
+                    deltas.online += amt;
+                    if (t.chargesType === 'Online') deltas.online -= chg;
+                    const totalDeduction = amt + chg;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= totalDeduction;
+                    else if (provider.includes('crgb')) deltas.crgb_bc -= totalDeduction;
+                    else if (provider.includes('jio')) deltas.jio -= totalDeduction;
+                    else deltas.online -= totalDeduction;
+                } else if (t.type === 'ONLINE_WORK') {
+                    deltas.online -= amt;
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'ADD_CAPITAL') {
+                    if (provider !== 'cash') deltas.online += amt;
+                } else if (t.type === 'SHARE_WITHDRAWN') {
+                    if (provider !== 'cash') deltas.online -= amt;
                 }
             });
 
-            return onlineVal;
+            // 4. Calculate Closing Balances and use the requested Reduce pattern
+            const data = {};
+            const ONLINE_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending"];
+            
+            ONLINE_FIELDS.forEach(key => {
+                data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
+            });
+
+            const expectedOnline = ONLINE_FIELDS.reduce(
+                (sum, key) => sum + Number(data[key]?.closing || 0),
+                0
+            );
+
+            return expectedOnline;
         } catch (e) {
             console.error("Error fetching system online:", e);
             return 0;
