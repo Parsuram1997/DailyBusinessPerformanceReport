@@ -559,7 +559,8 @@ async function initAddEntry() {
                 crgb_bc: Number(details.crgb_bc || details.go2sms || 0),
                 pending: Number(details.pending || 0),
                 deposit: Number(details.deposit || 0),
-                capital: Number(details.capital || 0)
+                capital: Number(details.capital || 0),
+                damaged: Number(details.damages || 0)
             };
 
             // 2. Fetch Today's Transactions
@@ -569,7 +570,7 @@ async function initAddEntry() {
             const txns = txnSnap.docs.map(doc => doc.data());
 
             // 3. Calculate Deltas for each online module
-            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0 };
+            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
             
             txns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
@@ -608,6 +609,8 @@ async function initAddEntry() {
                     else deltas.roinet += chg;
                 } else if (t.type === 'GOLD_SIP') {
                     deltas.online -= amt;
+                    deltas.expense += amt;
+                    deltas.expenseDetails['gold_sip'] = (deltas.expenseDetails['gold_sip'] || 0) + amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
                     if (provider !== 'cash') deltas.online -= amt;
                 } else if (t.type === 'CREDIT_RECEIVED') {
@@ -620,7 +623,23 @@ async function initAddEntry() {
                     deltas.deposit -= amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider !== 'cash') deltas.online -= amt;
+                    deltas.expense += amt;
+                    const catMap = {
+                        'PERSONAL EXPENSE': 'personal_expense',
+                        'SALARY EXPENSE': 'salary_expense',
+                        'ELECTRICITY EXPENSE': 'electricity_expense',
+                        'SHOP RENT EXPENSE': 'shop_rent_expense',
+                        'BUSINESS DEVLOPMENT': 'business_development',
+                        'SETTLEMENT CHARGES': 'settlement_charges',
+                        'INTERNET EXPENSE': 'internet_expense',
+                        'GOLD SIP': 'gold_sip'
+                    };
+                    const catId = catMap[t.note] || 'other_expense';
+                    deltas.expenseDetails[catId] = (deltas.expenseDetails[catId] || 0) + amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    deltas.damaged += amt;
                 } else if (t.type === 'DAMAGED_RECOVERY') {
+                    deltas.damaged -= amt;
                     if (provider !== 'cash') {
                         deltas.online += amt;
                         if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet += amt;
@@ -633,6 +652,8 @@ async function initAddEntry() {
                     deltas.online += amt;
                     if (t.chargesType === 'Online') deltas.online -= chg;
                     const totalDeduction = amt + chg;
+                    deltas.expense += chg;
+                    deltas.expenseDetails['settlement_charges'] = (deltas.expenseDetails['settlement_charges'] || 0) + chg;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= totalDeduction;
                     else if (provider.includes('crgb')) deltas.crgb_bc -= totalDeduction;
                     else if (provider.includes('jio')) deltas.jio -= totalDeduction;
@@ -658,7 +679,7 @@ async function initAddEntry() {
             // 4. Calculate Closing Balances and use the requested Reduce pattern
             const data = {};
             const ONLINE_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending"];
-            const ALL_SYNC_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal"];
+            const ALL_SYNC_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal", "expense", "damaged"];
             
             ALL_SYNC_FIELDS.forEach(key => {
                 data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
@@ -669,7 +690,7 @@ async function initAddEntry() {
                 0
             );
 
-            return { total: expectedOnline, breakdown: data };
+            return { total: expectedOnline, breakdown: { ...data, expenseDetails: deltas.expenseDetails } };
         } catch (e) {
             console.error("Error fetching system online:", e);
             return { total: 0, breakdown: {} };
@@ -711,12 +732,15 @@ async function initAddEntry() {
     let syncListenerUnsubscribe = null;
 
     const clearAutoSync = () => {
-        const ids = ['jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal'];
+        const ids = ['jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal', 'expense', 'damages', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'settlement_charges', 'internet_expense', 'gold_sip'];
         ids.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
                 input.readOnly = false;
-                input.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
+                input.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30', 'pr-14');
+                input.style.paddingRight = ''; // Reset custom padding
+                const button = input.parentElement.querySelector('button');
+                if (button) button.style.display = ''; // Restore button
                 const indicator = input.parentElement.querySelector('.sync-indicator');
                 if (indicator) indicator.remove();
             }
@@ -755,21 +779,42 @@ async function initAddEntry() {
                 'pending': breakdown.pending?.closing || 0,
                 'deposit': breakdown.deposit?.closing || 0,
                 'capital': breakdown.capital?.closing || 0,
-                'withdrawal': breakdown.withdrawal?.closing || 0
+                'withdrawal': breakdown.withdrawal?.closing || 0,
+                'expense': breakdown.expense?.closing || 0,
+                'damages': breakdown.damaged?.closing || 0,
+                // All expense categories should be locked when auto-sync is on
+                'personal_expense': 0,
+                'salary_expense': 0,
+                'electricity_expense': 0,
+                'shop_rent_expense': 0,
+                'business_development': 0,
+                'settlement_charges': 0,
+                'internet_expense': 0,
+                'gold_sip': 0
             };
+            
+            // Sync detailed expense categories
+            if (breakdown.expenseDetails) {
+                Object.keys(breakdown.expenseDetails).forEach(key => {
+                    syncFields[key] = breakdown.expenseDetails[key];
+                });
+            }
 
             Object.keys(syncFields).forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
                     input.value = syncFields[id];
                     input.readOnly = true;
-                    // Apply visual style for auto-sync
+                    // Apply visual style for auto-sync and fix padding overlap
                     input.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
+                    input.style.paddingRight = '56px'; // Prevent text from being hidden behind the sync button
                     
                     let indicator = input.parentElement.querySelector('.sync-indicator');
                     if (!indicator) {
                         indicator = document.createElement('div');
-                        indicator.className = 'sync-indicator absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-60 pointer-events-none';
+                        const button = input.parentElement.querySelector('button');
+                        if (button) button.style.display = 'none'; // Hide manual button during auto-sync
+                        indicator.className = `sync-indicator absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-60 pointer-events-none`;
                         indicator.innerHTML = `
                             <span class="text-[8px] font-black text-primary uppercase tracking-tighter">Sync</span>
                             <span class="material-symbols-outlined text-[14px] text-primary animate-spin-slow">sync</span>
@@ -5872,7 +5917,7 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                ${((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                                     <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                                 ` : `
                                     <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
