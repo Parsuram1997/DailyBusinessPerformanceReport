@@ -601,7 +601,9 @@ async function initAddEntry() {
                     deltas.online -= amt;
                     if (t.chargesType === 'Online') deltas.online -= chg;
                 } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
-                    deltas.roinet += chg;
+                    if (provider.includes('crgb')) deltas.crgb_bc += chg;
+                    else if (provider.includes('jio')) deltas.jio += chg;
+                    else deltas.roinet += chg;
                 } else if (t.type === 'GOLD_SIP') {
                     deltas.online -= amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
@@ -4974,7 +4976,7 @@ async function initDailyTxn() {
                 note: capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
                 bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
@@ -5162,16 +5164,22 @@ async function initDailyTxn() {
                     if (t.chargesType === 'Online') balances.online -= chg;
                     else balances.cash -= chg;
                 } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
-                    balances.roinet += chg;
-                    if (provider.includes('airtel')) {
-                        roinetBreakdown.airtel += chg;
-                        lastRoinetChanges.airtel = chg;
-                    } else if (provider.includes('spicemoney')) {
-                        roinetBreakdown.spicemoney += chg;
-                        lastRoinetChanges.spicemoney = chg;
+                    if (provider.includes('crgb')) {
+                        balances.crgb += chg;
+                    } else if (provider.includes('jio')) {
+                        balances.jio += chg;
                     } else {
-                        roinetBreakdown.roinet += chg;
-                        lastRoinetChanges.roinet = chg;
+                        balances.roinet += chg;
+                        if (provider.includes('airtel')) {
+                            roinetBreakdown.airtel += chg;
+                            lastRoinetChanges.airtel = chg;
+                        } else if (provider.includes('spicemoney')) {
+                            roinetBreakdown.spicemoney += chg;
+                            lastRoinetChanges.spicemoney = chg;
+                        } else {
+                            roinetBreakdown.roinet += chg;
+                            lastRoinetChanges.roinet = chg;
+                        }
                     }
                     lastRoinetChanges.total = chg;
                 } else if (t.type === 'GOLD_SIP') {
@@ -5476,9 +5484,9 @@ async function initDailyTxn() {
                         // Commission stays in JIO wallet
                         if (t.chargesType === 'Online') currentOnline -= chg;
                         else currentCash -= chg;
-                    } else if (t.type === 'ROINET_COMMISSION' || t.type === 'OTHER_INCOME') {
-                        if (t.provider === 'Cash') currentCash += amt;
-                        else currentOnline += amt;
+                    } else if (['CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'].includes(t.type)) {
+                        if (t.provider === 'Cash') currentCash += (amt + chg);
+                        else currentOnline += (amt + chg);
                     } else if (t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
@@ -5675,7 +5683,7 @@ async function initDailyTxn() {
                                 ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
                             </div>
                         </td>
-                        <td class="px-3 py-1.5">
+                         <td class="px-3 py-1.5">
                             <div class="flex flex-col gap-1.5">
                                 ${txn.bankName ? `
                                     <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
@@ -5683,7 +5691,14 @@ async function initDailyTxn() {
                                         <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${getShortBankName(txn.bankName)}</span>
                                     </div>
                                 ` : ''}
-                                ${(!txn.bankName) ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : ''}
+                                ${(!txn.bankName) ? `
+                                    ${txn.provider ? `
+                                        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                            <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
+                                            <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                                        </div>
+                                    ` : '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>'}
+                                ` : ''}
                             </div>
                         </td>
                         <td class="px-3 py-1.5">
