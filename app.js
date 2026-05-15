@@ -4636,6 +4636,7 @@ async function initDailyTxn() {
     const remainingContainer = document.getElementById('remaining-field-container');
     const txnType = document.getElementById('txn-type');
     const txnNote = document.getElementById('txn-note');
+    const txnExpenseType = document.getElementById('txn-expense-type');
     const txnAddress = document.getElementById('txn-address');
     const txnCharges = document.getElementById('txn-charges');
     const txnChargesType = document.getElementById('txn-charges-type');
@@ -4718,6 +4719,7 @@ async function initDailyTxn() {
         form.reset();
         txnType.value = 'AEPS';
         txnProvider.value = '';
+        if (txnExpenseType) txnExpenseType.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
         if (txnChargesType) txnChargesType.value = 'Cash';
@@ -4775,9 +4777,19 @@ async function initDailyTxn() {
                 if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
-                    const input = noteFieldContainer.querySelector('input');
-                    if (label) label.innerText = txnType.value === 'DAILY_EXPENSE' ? 'DESCRIPTION' : (isPending ? 'ACCOUNT NAME' : 'CUSTOMER NAME');
-                    if (input) input.placeholder = txnType.value === 'DAILY_EXPENSE' ? 'Enter description...' : (isPending ? 'Enter account name...' : 'Enter Name...');
+                    
+                    if (txnType.value === 'DAILY_EXPENSE') {
+                        if (label) label.innerText = 'EXPENSE TYPE';
+                        if (txnNote) txnNote.classList.add('hidden');
+                        if (txnExpenseType) txnExpenseType.classList.remove('hidden');
+                    } else {
+                        if (label) label.innerText = isPending ? 'ACCOUNT NAME' : 'CUSTOMER NAME';
+                        if (txnNote) {
+                            txnNote.classList.remove('hidden');
+                            txnNote.placeholder = isPending ? 'Enter account name...' : 'Enter Name...';
+                        }
+                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                    }
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
@@ -5069,7 +5081,7 @@ async function initDailyTxn() {
                 amount: amountVal,
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
-                note: capitalizeWords(txnNote.value.trim()),
+                note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
@@ -5187,6 +5199,7 @@ async function initDailyTxn() {
                 pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
             };
             const lastRoinetChanges = { roinet: 0, airtel: 0, spicemoney: 0, total: 0 };
+            const expenseBreakdown = {};
 
             // Ensure chronological order for "Last Change" tracking
             const sortedTxns = [...txns].sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
@@ -5197,6 +5210,16 @@ async function initDailyTxn() {
                 const provider = (t.provider || "").trim().toLowerCase();
                 
                 const prevBals = { ...balances };
+
+                // Expense Breakdown Tracking
+                if (t.type === 'DAILY_EXPENSE') {
+                    const category = (t.note || 'Other').toUpperCase();
+                    expenseBreakdown[category] = (expenseBreakdown[category] || 0) + amt;
+                } else if (t.type === 'GOLD_SIP') {
+                    expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
+                } else if (t.type === 'SETTLEMENT' && chg > 0) {
+                    expenseBreakdown['SETTLEMENT CHARGES'] = (expenseBreakdown['SETTLEMENT CHARGES'] || 0) + chg;
+                }
 
                 if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
                     // Commission goes to wallet only, skip global cash/online update
@@ -5429,6 +5452,7 @@ async function initDailyTxn() {
                     total: lastRoinetChanges.total
                 }
             };
+            window._expenseBreakdown = expenseBreakdown;
         } catch (err) {
             console.error('Error updating daily balances:', err);
         }
@@ -5848,7 +5872,7 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                ${((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                ${((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                                     <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                                 ` : `
                                     <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -5915,6 +5939,7 @@ async function initDailyTxn() {
                             txnAmount.value = txn.amount;
                             txnCharges.value = txn.charges;
                             txnNote.value = txn.note;
+                            if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
                             txnAddress.value = txn.address;
                             txnConditional.value = txn.extraDetails || '';
                             txnProvider.value = txn.provider || '';

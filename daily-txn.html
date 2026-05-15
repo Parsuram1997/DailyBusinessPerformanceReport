@@ -284,6 +284,17 @@
                         <div id="note-field-container" class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Customer Name</label>
                             <input id="txn-note" type="text" placeholder="Enter name..." class="capitalize w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <select id="txn-expense-type" class="hidden w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select Expense Type...</option>
+                                <option value="PERSONAL EXPENSE">PERSONAL EXPENSE</option>
+                                <option value="SALARY EXPENSE">SALARY EXPENSE</option>
+                                <option value="ELECTRICITY EXPENSE">ELECTRICITY EXPENSE</option>
+                                <option value="SHOP RENT EXPENSE">SHOP RENT EXPENSE</option>
+                                <option value="BUSINESS DEVLOPMENT">BUSINESS DEVLOPMENT</option>
+                                <option value="SETTLEMENT CHARGES">SETTLEMENT CHARGES</option>
+                                <option value="INTERNET EXPENSE">INTERNET EXPENSE</option>
+                                <option value="GOLD SIP">GOLD SIP</option>
+                            </select>
                         </div>
                         <div id="address-field-container" class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Address</label>
@@ -495,7 +506,7 @@
                     </div>
 
                     <!-- Expense -->
-                    <div class="relative overflow-hidden p-3 rounded-2xl bg-gradient-to-br from-rose-50 to-white dark:from-rose-500/10 dark:to-slate-900 border border-rose-100 dark:border-rose-500/20 shadow-sm hover:shadow-md transition-all group flex flex-col min-h-[140px]">
+                    <div id="expense-card" onclick="showExpenseBreakdown()" class="relative overflow-hidden p-3 rounded-2xl bg-gradient-to-br from-rose-50 to-white dark:from-rose-500/10 dark:to-slate-900 border border-rose-100 dark:border-rose-500/20 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all group cursor-pointer select-none flex flex-col min-h-[140px]">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Expense</span>
@@ -946,8 +957,106 @@
         </div>
     </div>
 
-    <!-- Roinet Breakdown Modal Functions -->
+    <!-- Expense Breakdown Modal -->
+    <div id="expense-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-rose-500 to-rose-600">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined">payments</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-black text-lg leading-none">Expense Breakdown</h3>
+                        <p class="text-white/70 text-[10px] uppercase tracking-widest font-bold mt-1">Category Wise Split</p>
+                    </div>
+                </div>
+                <button onclick="closeExpenseBreakdown()" class="size-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-separate border-spacing-y-2">
+                        <thead>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="px-3 pb-2">Category</th>
+                                <th class="px-3 pb-2 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense-breakdown-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-rose-500 rounded-2xl overflow-hidden shadow-lg shadow-rose-200 dark:shadow-none">
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-rose-400">
+                                    <p class="text-[10px] font-black text-white uppercase">TOTAL EXPENSE</p>
+                                </td>
+                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-rose-400 text-right">
+                                    <p id="bd-expense-total" class="text-sm font-black text-white">₹ 0</p>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-white/5 text-center">
+                <button onclick="closeExpenseBreakdown()" class="px-8 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">
+                    Got It
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Functions -->
     <script>
+        function showExpenseBreakdown() {
+            const modal = document.getElementById('expense-breakdown-modal');
+            const tableBody = document.getElementById('expense-breakdown-table-body');
+            const totalEl = document.getElementById('bd-expense-total');
+            if (!modal || !tableBody) return;
+
+            const breakdown = window._expenseBreakdown || {};
+            const categories = Object.keys(breakdown).sort();
+            
+            let html = '';
+            let total = 0;
+
+            if (categories.length === 0) {
+                html = `<tr><td colspan="2" class="px-3 py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No expenses recorded today</td></tr>`;
+            } else {
+                categories.forEach(cat => {
+                    const amt = breakdown[cat];
+                    total += amt;
+                    html += `
+                        <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                            <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10">
+                                <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">${cat}</p>
+                            </td>
+                            <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <p class="text-xs font-black text-slate-800 dark:text-white">₹ ${amt.toLocaleString('en-IN')}</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            tableBody.innerHTML = html;
+            totalEl.textContent = `₹ ${total.toLocaleString('en-IN')}`;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeExpenseBreakdown() {
+            const modal = document.getElementById('expense-breakdown-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
         function showRoinetBreakdown() {
             const modal = document.getElementById('roinet-breakdown-modal');
             if (!modal) return;
@@ -959,13 +1068,17 @@
             };
 
             const updateRow = (id, op, cl) => {
-                const lastChg = bd.lastChange[id === 'spice' ? 'spicemoney' : id] || 0;
-                document.getElementById(`bd-${id}-op`).textContent = fmt(op);
-                document.getElementById(`bd-${id}-cl`).textContent = fmt(cl);
-                
+                const lastChg = bd.lastChange ? (bd.lastChange[id === 'spice' ? 'spicemoney' : id] || 0) : 0;
+                const opEl = document.getElementById(`bd-${id}-op`);
+                const clEl = document.getElementById(`bd-${id}-cl`);
                 const chgEl = document.getElementById(`bd-${id}-chg`);
-                chgEl.textContent = (lastChg >= 0 ? '+' : '') + fmt(lastChg);
-                chgEl.className = `text-[10px] font-black ${id === 'total' ? 'text-white/90' : (lastChg > 0 ? 'text-emerald-500' : (lastChg < 0 ? 'text-rose-500' : 'text-slate-400'))}`;
+                
+                if (opEl) opEl.textContent = fmt(op);
+                if (clEl) clEl.textContent = fmt(cl);
+                if (chgEl) {
+                    chgEl.textContent = (lastChg >= 0 ? '+' : '') + fmt(lastChg);
+                    chgEl.className = `text-[10px] font-black ${id === 'total' ? 'text-white/90' : (lastChg > 0 ? 'text-emerald-500' : (lastChg < 0 ? 'text-rose-500' : 'text-slate-400'))}`;
+                }
             };
 
             updateRow('roinet', bd.opening.roinet, bd.closing.roinet);
@@ -986,7 +1099,10 @@
 
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeRoinetBreakdown();
+            if (e.key === 'Escape') {
+                closeRoinetBreakdown();
+                closeExpenseBreakdown();
+            }
         });
     </script>
 </body>
