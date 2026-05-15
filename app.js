@@ -557,7 +557,9 @@ async function initAddEntry() {
                 roinet: Number(details.roinet || 0),
                 jio: Number(details.jio || 0),
                 crgb_bc: Number(details.crgb_bc || details.go2sms || 0),
-                pending: Number(details.pending || 0)
+                pending: Number(details.pending || 0),
+                deposit: Number(details.deposit || 0),
+                capital: Number(details.capital || 0)
             };
 
             // 2. Fetch Today's Transactions
@@ -567,7 +569,7 @@ async function initAddEntry() {
             const txns = txnSnap.docs.map(doc => doc.data());
 
             // 3. Calculate Deltas for each online module
-            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0 };
+            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0 };
             
             txns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
@@ -612,8 +614,10 @@ async function initAddEntry() {
                     if (provider !== 'cash') deltas.online += amt;
                 } else if (t.type === 'CUST_MONEY_IN') {
                     if (provider !== 'cash') deltas.online += amt;
+                    deltas.deposit += amt;
                 } else if (t.type === 'CUST_MONEY_OUT') {
                     if (provider !== 'cash') deltas.online -= amt;
+                    deltas.deposit -= amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider !== 'cash') deltas.online -= amt;
                 } else if (t.type === 'DAMAGED_RECOVERY') {
@@ -638,16 +642,25 @@ async function initAddEntry() {
                     if (provider !== 'cash') deltas.online += amt;
                 } else if (t.type === 'ADD_CAPITAL') {
                     if (provider !== 'cash') deltas.online += amt;
+                    deltas.capital += amt;
                 } else if (t.type === 'SHARE_WITHDRAWN') {
                     if (provider !== 'cash') deltas.online -= amt;
+                    deltas.withdrawal += amt;
+                } else if (t.type === 'PENDING_ADD') {
+                    deltas.pending += amt;
+                    deltas.online -= amt;
+                } else if (t.type === 'PENDING_REMOVE') {
+                    deltas.pending -= amt;
+                    deltas.online += amt;
                 }
             });
 
             // 4. Calculate Closing Balances and use the requested Reduce pattern
             const data = {};
             const ONLINE_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending"];
+            const ALL_SYNC_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal"];
             
-            ONLINE_FIELDS.forEach(key => {
+            ALL_SYNC_FIELDS.forEach(key => {
                 data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
             });
 
@@ -656,10 +669,10 @@ async function initAddEntry() {
                 0
             );
 
-            return expectedOnline;
+            return { total: expectedOnline, breakdown: data };
         } catch (e) {
             console.error("Error fetching system online:", e);
-            return 0;
+            return { total: 0, breakdown: {} };
         }
     };
 
@@ -695,11 +708,88 @@ async function initAddEntry() {
     const submitIcon = document.getElementById('submit-icon');
     const submitText = document.getElementById('submit-text');
 
+    let syncListenerUnsubscribe = null;
+
+    const clearAutoSync = () => {
+        const ids = ['jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal'];
+        ids.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.readOnly = false;
+                input.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
+                const indicator = input.parentElement.querySelector('.sync-indicator');
+                if (indicator) indicator.remove();
+            }
+        });
+    };
+
+    const setupRealTimeSync = (dateStr) => {
+        if (syncListenerUnsubscribe) {
+            syncListenerUnsubscribe();
+            syncListenerUnsubscribe = null;
+        }
+
+        if (!dateStr || existingEntryId) {
+            clearAutoSync();
+            return;
+        }
+
+        const txnRef = collection(db, "daily_transactions");
+        const dateQueriesTxn = getPossibleDateFormats(dateStr);
+        const q = query(txnRef, where("date", "in", dateQueriesTxn));
+
+        syncListenerUnsubscribe = onSnapshot(q, async (snapshot) => {
+            // Guard: If we are no longer in "New Entry" mode for this date, stop
+            if (existingEntryId) {
+                if (syncListenerUnsubscribe) syncListenerUnsubscribe();
+                clearAutoSync();
+                return;
+            }
+
+            const systemData = await fetchSystemOnline(dateStr);
+            const breakdown = systemData.breakdown;
+
+            const syncFields = {
+                'jio': breakdown.jio?.closing || 0,
+                'go2sms': breakdown.crgb_bc?.closing || 0,
+                'pending': breakdown.pending?.closing || 0,
+                'deposit': breakdown.deposit?.closing || 0,
+                'capital': breakdown.capital?.closing || 0,
+                'withdrawal': breakdown.withdrawal?.closing || 0
+            };
+
+            Object.keys(syncFields).forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = syncFields[id];
+                    input.readOnly = true;
+                    // Apply visual style for auto-sync
+                    input.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
+                    
+                    let indicator = input.parentElement.querySelector('.sync-indicator');
+                    if (!indicator) {
+                        indicator = document.createElement('div');
+                        indicator.className = 'sync-indicator absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-60 pointer-events-none';
+                        indicator.innerHTML = `
+                            <span class="text-[8px] font-black text-primary uppercase tracking-tighter">Sync</span>
+                            <span class="material-symbols-outlined text-[14px] text-primary animate-spin-slow">sync</span>
+                        `;
+                        input.parentElement.appendChild(indicator);
+                    }
+                }
+            });
+            
+            // Refresh summary and totals
+            if (typeof updateRealTimeTotal === 'function') updateRealTimeTotal();
+        });
+    };
+
     async function checkExisting() {
         if (!datePicker) return;
         
         // Refresh system online balance for the new date
-        currentSystemOnline = await fetchSystemOnline(datePicker.value);
+        const systemRes = await fetchSystemOnline(datePicker.value);
+        currentSystemOnline = systemRes.total;
         updateOnlineComparison();
 
         const entries = await loadEntries();
@@ -719,6 +809,7 @@ async function initAddEntry() {
 
         if (existing) {
             existingEntryId = existing.firebaseId || existing.id || null;
+            clearAutoSync(); // Stop sync for existing entries
             if (formTitle) formTitle.innerText = "Edit Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Modifying the record for " + datePicker.value;
             if (submitText) submitText.innerText = "Update Entry";
@@ -750,6 +841,10 @@ async function initAddEntry() {
             if (submitText) submitText.innerText = "Save Entry";
             if (submitIcon) submitIcon.innerText = "save";
             existingEntryId = null;
+            
+            // Start real-time sync for the new entry
+            setupRealTimeSync(datePicker.value);
+
             // No data for this date — check if there is a local draft
             const draftStr = localStorage.getItem('add_entry_draft');
             if (draftStr) {
@@ -4656,12 +4751,13 @@ async function initDailyTxn() {
         const isNoteAndAmount = noteAndAmountTypes.includes(txnType.value);
         const isCredit = creditTypes.includes(txnType.value);
         const isCapital = ['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value);
+        const isPending = ['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value);
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
         txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery;
-        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital;
-        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital;
+        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending;
 
         // Reset Labels
         if (chargesModeContainer) {
@@ -4669,19 +4765,19 @@ async function initDailyTxn() {
             if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : 'CHARGES MODE';
         }
 
-        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) {
+        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) {
             conditionalContainer.classList.add('hidden');
             if (amountFieldContainer) {
-                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) amountFieldContainer.classList.remove('hidden');
+                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) amountFieldContainer.classList.remove('hidden');
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
-                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') && !isDamagedRecovery) {
+                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
                     const input = noteFieldContainer.querySelector('input');
-                    if (label) label.innerText = txnType.value === 'DAILY_EXPENSE' ? 'DESCRIPTION' : 'CUSTOMER NAME';
-                    if (input) input.placeholder = txnType.value === 'DAILY_EXPENSE' ? 'Enter description...' : 'Enter Name...';
+                    if (label) label.innerText = txnType.value === 'DAILY_EXPENSE' ? 'DESCRIPTION' : (isPending ? 'ACCOUNT NAME' : 'CUSTOMER NAME');
+                    if (input) input.placeholder = txnType.value === 'DAILY_EXPENSE' ? 'Enter description...' : (isPending ? 'Enter account name...' : 'Enter Name...');
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
@@ -4689,7 +4785,7 @@ async function initDailyTxn() {
             
             // Charges Field Visibility
             if (chargesFieldContainer) {
-                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) {
+                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) {
                     chargesFieldContainer.classList.add('hidden');
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
@@ -4704,8 +4800,8 @@ async function initDailyTxn() {
             }
             
             if (isChargesOnly) txnAmount.value = '';
-            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital) txnCharges.value = '';
-            if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery) txnNote.value = '';
+            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) txnCharges.value = '';
+            if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery && !isPending) txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
         } else {
@@ -5253,6 +5349,12 @@ async function initDailyTxn() {
                 } else if (t.type === 'SHARE_WITHDRAWN') {
                     if (provider === 'cash') balances.cash -= amt;
                     else balances.online -= amt;
+                } else if (t.type === 'PENDING_ADD') {
+                    balances.pending += amt;
+                    balances.online -= amt;
+                } else if (t.type === 'PENDING_REMOVE') {
+                    balances.pending -= amt;
+                    balances.online += amt;
                 }
 
                 // Capture the latest change for each category
@@ -5444,9 +5546,10 @@ async function initDailyTxn() {
                 if (entryData.details) {
                     const d = entryData.details;
                     startCash = parseFloat(d.cash || 0);
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0) + parseFloat(d.pending || 0);
+                    // Table 'O' column now represents active wallets/bank, excluding Pending.
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0);
                 }
-
+                
                 // Update daily summary badges
                 updateDailyBalances(date, txns);
 
@@ -5521,6 +5624,12 @@ async function initDailyTxn() {
                     } else if (t.type === 'SHARE_WITHDRAWN') {
                         if (t.provider === 'Cash') currentCash -= amt;
                         else currentOnline -= amt;
+                    } else if (t.type === 'PENDING_ADD') {
+                        // Move from Bank/Wallet to Pending (decrease active online)
+                        currentOnline -= amt;
+                    } else if (t.type === 'PENDING_REMOVE') {
+                        // Move from Pending to Bank/Wallet (increase active online)
+                        currentOnline += amt;
                     }
                     return { 
                         ...t, 
@@ -5546,7 +5655,7 @@ async function initDailyTxn() {
                 }, {});
 
                 // Types jo count/volume se exclude honge
-                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT'];
+                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE'];
                 const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
                 
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
@@ -5625,6 +5734,21 @@ async function initDailyTxn() {
                 updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'FREE_WITHDRAWAL', 'FREE WDRL');
                 updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
                 updateBadge(document.getElementById('credit-received-count-badge'), 'CREDIT_RECEIVED', 'CR RECD');
+                updateBadge(document.getElementById('pending-count-badge'), 'PENDING_ADD', 'PEND ADD');
+                // Note: PENDING_REMOVE usually doesn't need a separate badge but we can add one if needed.
+                // For now, let's just show PENDING_ADD as the main count or combine them.
+                const pendingRemoveBadge = document.getElementById('pending-count-badge');
+                if (pendingRemoveBadge) {
+                    const sAdd = stats['PENDING_ADD'] || { count: 0, amount: 0, charges: 0 };
+                    const sRem = stats['PENDING_REMOVE'] || { count: 0, amount: 0, charges: 0 };
+                    pendingRemoveBadge.innerHTML = `
+                        <div class="flex flex-col items-start leading-tight">
+                            <span class="text-[10px] opacity-60 uppercase font-black">PENDING</span>
+                            <span class="text-xs font-black">${sAdd.count + sRem.count} | ₹${(sAdd.amount - sRem.amount).toLocaleString('en-IN')}</span>
+                            <span class="text-[8px] opacity-80 font-bold italic">Net Change</span>
+                        </div>
+                    `;
+                }
 
                 const getShortBankName = (name) => {
                     if (!name) return "";
@@ -5673,8 +5797,8 @@ async function initDailyTxn() {
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                    txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                                     txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
                                     txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
