@@ -209,6 +209,15 @@ async function loadCustomers() {
 async function saveCustomer(customer) {
     if (!db) { console.error("Firestore db not initialized in saveCustomer"); return null; }
     try {
+        if (customer && customer.name) {
+            customer.name = customer.name.replace(/\s+/g, ' ').trim();
+            const existing = await loadCustomers();
+            const duplicate = existing.find(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === customer.name.toLowerCase() && String(c.id) !== String(customer.id));
+            if (duplicate) {
+                console.warn(`[saveCustomer] Duplicate blocked: "${customer.name}"`);
+                throw new Error("Customer already exists in Credit Ledger.");
+            }
+        }
         const id = String(customer.id || Date.now());
         console.log("Saving customer with doc ID:", id, "Data:", customer);
         const docRef = doc(db, "customers", id);
@@ -495,6 +504,17 @@ async function migrateToDatabase() {
 // Formatting currency
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+}
+
+function formatStandardDate(dateStr) {
+    if (!dateStr) return '';
+    if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
 }
 
 // Formula: Opening Balance = Previous Day Closing + Same Day Capital Add
@@ -2759,9 +2779,9 @@ async function initCreditLedger() {
                 const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(queryStr));
 
                 if (filteredCustomers.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No customers found. Add one above!</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No customers found. Add one above!</td></tr>`;
                 } else {
-                    filteredCustomers.forEach(cust => {
+                    filteredCustomers.forEach((cust, index) => {
                         const custCredits = credits.filter(cr => String(cr.customerId) === String(cust.id));
                         let custTotal = 0;
                         let custPaid = 0;
@@ -2793,15 +2813,16 @@ async function initCreditLedger() {
                         const isSelectModeFlag = urlParamsObj.get('mode') === 'select';
 
                         tr.innerHTML = `
+                            <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
                             <td class="px-6 py-2">
                                 <div class="flex items-center gap-3">
                                     <div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">${initial}</div>
                                     <span class="text-sm font-bold group-hover:text-primary transition-colors">${cust.name}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-2 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
-                            <td class="px-6 py-2 text-sm text-right">${formatCurrency(custPaid)}</td>
                             <td class="px-6 py-2 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
+                            <td class="px-6 py-2 text-sm text-right">${formatCurrency(custPaid)}</td>
+                            <td class="px-6 py-2 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
                             <td class="px-6 py-2 text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${status}</span>
                             </td>
@@ -2834,14 +2855,12 @@ async function initCreditLedger() {
 
                 if (ledgerTitle) ledgerTitle.innerText = cust.name;
                 if (backBtn) backBtn.classList.remove('hidden');
-                if (addTransactionSection) addTransactionSection.classList.remove('hidden');
+                if (addTransactionSection) addTransactionSection.classList.add('hidden');
                 if (addCustomerBtn) addCustomerBtn.classList.add('hidden');
                 if (ledgerHeader) ledgerHeader.classList.add('hidden');
                 if (historyHeader) historyHeader.classList.remove('hidden');
                 if (useTotalBtn) useTotalBtn.classList.add('hidden');
 
-                const titleEl = document.getElementById('transaction-form-title');
-                if (titleEl) titleEl.innerText = `Add Transaction for ${cust.name}`;
 
                 const custCredits = credits.filter(cr => String(cr.customerId) === String(activeCustomerId));
                 custCredits.sort((a, b) => {
@@ -2852,9 +2871,9 @@ async function initCreditLedger() {
                 });
 
                 if (custCredits.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
                 } else {
-                    custCredits.forEach(cr => {
+                    custCredits.forEach((cr, index) => {
                         const creditAmt = cr.amount || 0;
                         const paidAmt = cr.paid || 0;
 
@@ -2864,7 +2883,8 @@ async function initCreditLedger() {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-colors";
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${cr.date}</td>
+                            <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
+                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
                             <td class="px-6 py-2 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
                             <td class="px-6 py-2 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
                             <td class="px-6 py-2 text-xs text-slate-500 italic">${cr.note || ''}</td>
@@ -2976,24 +2996,26 @@ async function initCreditLedger() {
     addCustomerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const input = document.getElementById('new-customer-name');
-        const name = input?.value.trim();
-        if (name) {
+        const rawName = input?.value || '';
+        const normalizedName = rawName.replace(/\s+/g, ' ').trim();
+        if (normalizedName) {
             try {
                 const existingCustomers = await loadCustomers();
-                const isDuplicate = existingCustomers.some(c => c.name.toLowerCase() === name.toLowerCase());
+                const isDuplicate = existingCustomers.some(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === normalizedName.toLowerCase());
                 if (isDuplicate) {
-                    showErrorToast(`"${name}" already exists!`);
+                    showErrorToast('Customer already exists in Credit Ledger.');
                     return;
                 }
-                const res = await saveCustomer({ id: Date.now(), name });
+                const res = await saveCustomer({ id: Date.now(), name: normalizedName });
                 if (res) {
-                    closeAddCustomerModal();
+                    if (typeof closeAddCustomerModal === 'function') closeAddCustomerModal();
+                    else addCustomerForm.reset();
                     showSuccessToast('Customer added successfully! 🎉');
                     await renderView();
                 }
             } catch (err) {
                 console.error("Add customer error:", err);
-                alert("Error: " + err.message);
+                showErrorToast(err.message);
             }
         }
     });
@@ -3509,7 +3531,9 @@ async function initReports() {
             acc[type].amount += parseFloat(t.amount || 0);
             acc[type].charges += parseFloat(t.charges || 0);
             acc.totalAmount += parseFloat(t.amount || 0);
-            acc.totalCharges += parseFloat(t.charges || 0);
+            if (type !== 'SETTLEMENT' && type !== 'DAILY_EXPENSE' && type !== 'GOLD_SIP') {
+                acc.totalCharges += parseFloat(t.charges || 0);
+            }
             acc.totalCount++;
             return acc;
         }, { totalAmount: 0, totalCharges: 0, totalCount: 0 });
@@ -3586,6 +3610,49 @@ async function initReports() {
         const monthTotals = {};
         const yearTotals = {};
 
+        // Calculate Category Wise Expenses across both Entries and Daily Transactions to ensure real-time accuracy
+        const dtxnCatByDate = {};
+        dailyTxns.forEach(t => {
+            const date = t.date;
+            if (!dtxnCatByDate[date]) {
+                dtxnCatByDate[date] = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0 };
+            }
+            const amt = parseFloat(t.amount || 0);
+            const chg = parseFloat(t.charges || 0);
+            if (t.type === 'GOLD_SIP') {
+                dtxnCatByDate[date].goldSip += amt;
+            } else if (t.type === 'SETTLEMENT' && chg > 0) {
+                dtxnCatByDate[date].settlement += chg;
+            } else if (t.type === 'DAILY_EXPENSE') {
+                const note = (t.note || '').toUpperCase();
+                if (note === 'PERSONAL EXPENSE') dtxnCatByDate[date].personal += amt;
+                else if (note === 'SALARY EXPENSE') dtxnCatByDate[date].salary += amt;
+                else if (note === 'ELECTRICITY EXPENSE') dtxnCatByDate[date].electricity += amt;
+                else if (note === 'SHOP RENT EXPENSE') dtxnCatByDate[date].rent += amt;
+                else if (note === 'BUSINESS DEVLOPMENT' || note === 'BUSINESS DEVELOPMENT') dtxnCatByDate[date].bizDev += amt;
+                else if (note === 'SETTLEMENT CHARGES') dtxnCatByDate[date].settlement += amt;
+                else if (note === 'INTERNET EXPENSE') dtxnCatByDate[date].internet += amt;
+            }
+        });
+
+        const allReportDates = new Set([...filtered.map(e => e.date), ...Object.keys(dtxnCatByDate)]);
+        const entryByDate = {};
+        filtered.forEach(e => { entryByDate[e.date] = e; });
+
+        const realTimeCategories = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0 };
+        allReportDates.forEach(d => {
+            const entryDet = (entryByDate[d] && entryByDate[d].details) ? entryByDate[d].details : {};
+            const dtxnDet = dtxnCatByDate[d] || {};
+            realTimeCategories.personal += Math.max(parseFloat(entryDet.personal_expense) || 0, dtxnDet.personal || 0);
+            realTimeCategories.salary += Math.max(parseFloat(entryDet.salary_expense) || 0, dtxnDet.salary || 0);
+            realTimeCategories.electricity += Math.max(parseFloat(entryDet.electricity_expense) || 0, dtxnDet.electricity || 0);
+            realTimeCategories.rent += Math.max(parseFloat(entryDet.shop_rent_expense) || 0, dtxnDet.rent || 0);
+            realTimeCategories.bizDev += Math.max(parseFloat(entryDet.business_development) || 0, dtxnDet.bizDev || 0);
+            realTimeCategories.settlement += Math.max(parseFloat(entryDet.settlement_charges) || 0, dtxnDet.settlement || 0);
+            realTimeCategories.internet += Math.max(parseFloat(entryDet.internet_expense) || 0, dtxnDet.internet || 0);
+            realTimeCategories.goldSip += Math.max(parseFloat(entryDet.gold_sip) || 0, dtxnDet.goldSip || 0);
+        });
+
         const totals = filtered.reduce((acc, e) => {
             const mapped = dailyIncomeMap[e.date] || {};
             const inc = mapped.inc || 0;
@@ -3598,16 +3665,6 @@ async function initReports() {
             const details = e.details || {};
             acc.withdrawal += (parseFloat(details.withdrawal) || parseFloat(e.withdrawal) || 0);
 
-            // Aggregate Category Wise Expenses
-            acc.categories.personal += parseFloat(details.personal_expense) || 0;
-            acc.categories.salary += parseFloat(details.salary_expense) || 0;
-            acc.categories.electricity += parseFloat(details.electricity_expense) || 0;
-            acc.categories.rent += parseFloat(details.shop_rent_expense) || 0;
-            acc.categories.bizDev += parseFloat(details.business_development) || 0;
-            acc.categories.internet += parseFloat(details.internet_expense) || 0;
-            acc.categories.goldSip += parseFloat(details.gold_sip) || 0;
-            
-            
             if (inc > peakDayIncome) {
                 peakDayIncome = inc;
                 peakDayDate = new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
@@ -3628,15 +3685,7 @@ async function initReports() {
             profit: 0, 
             periodCap: 0, 
             withdrawal: 0,
-            categories: {
-                personal: 0,
-                salary: 0,
-                electricity: 0,
-                rent: 0,
-                bizDev: 0,
-                internet: 0,
-                goldSip: 0
-            }
+            categories: realTimeCategories
         });
 
         // Aggregate Bank Withdrawal Methods
@@ -3769,6 +3818,7 @@ async function initReports() {
                 { label: 'Electricity Expense', val: totals.categories.electricity, icon: 'bolt', color: 'text-amber-500' },
                 { label: 'Shop Rent Expense', val: totals.categories.rent, icon: 'store', color: 'text-purple-500' },
                 { label: 'Business Development', val: totals.categories.bizDev, icon: 'trending_up', color: 'text-cyan-500' },
+                { label: 'Settlement Charges', val: totals.categories.settlement, icon: 'price_check', color: 'text-indigo-500' },
                 { label: 'Internet Expense', val: totals.categories.internet, icon: 'wifi', color: 'text-rose-500' },
                 { label: 'Gold SIP', val: totals.categories.goldSip, icon: 'savings', color: 'text-amber-600' }
             ];
@@ -4615,6 +4665,84 @@ function protectPrivilegedLinks() {
     });
 }
 
+async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
+    try {
+        const existingCredits = await loadCredits();
+        let linkedCredit = existingCredits.find(cr => cr.dailyTxnId === dailyTxnId);
+        
+        if (!linkedCredit && newTxn && newTxn.note) {
+            const targetName = newTxn.note.trim().toLowerCase();
+            const customers = await loadCustomers();
+            const customer = customers.find(c => c.name && c.name.trim().toLowerCase() === targetName);
+            if (customer) {
+                linkedCredit = existingCredits.find(cr => (cr.description === 'Synced from Daily Txn' || cr.note === newTxn.note.trim() || cr.note?.startsWith(newTxn.note.trim())) && cr.date === newTxn.date && String(cr.customerId) === String(customer.id));
+            }
+        }
+
+        if (isDelete) {
+            if (linkedCredit) {
+                await deleteCredit(linkedCredit.id);
+                console.log('[CreditSync] Successfully deleted linked credit entry:', linkedCredit.id);
+            }
+            return;
+        }
+
+        if (!newTxn || !['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(newTxn.type)) {
+            if (linkedCredit) {
+                await deleteCredit(linkedCredit.id);
+                console.log('[CreditSync] Deleted linked credit entry because txn type changed or cleared:', linkedCredit.id);
+            }
+            return;
+        }
+
+        const customers = await loadCustomers();
+        const targetName = newTxn.note.trim().toLowerCase();
+        let customer = customers.find(c => c.name && c.name.trim().toLowerCase() === targetName);
+        
+        if (!customer) {
+            const newCust = {
+                id: Date.now().toString(),
+                name: newTxn.note.trim(),
+                phone: '',
+                address: newTxn.address || '',
+                date: newTxn.date
+            };
+            await saveCustomer(newCust);
+            customer = newCust;
+        }
+
+        const amountVal = newTxn.type === 'CREDIT_GIVEN' ? Number(newTxn.amount || 0) : 0;
+        const paidVal = newTxn.type === 'CREDIT_RECEIVED' ? Number(newTxn.amount || 0) : 0;
+        const noteStr = newTxn.note ? newTxn.note.trim() + (newTxn.address ? ` (${newTxn.address})` : '') : 'Synced from Daily Txn';
+
+        if (linkedCredit) {
+            linkedCredit.amount = amountVal;
+            linkedCredit.paid = paidVal;
+            linkedCredit.date = newTxn.date;
+            linkedCredit.note = noteStr;
+            linkedCredit.type = newTxn.type === 'CREDIT_GIVEN' ? 'given' : 'received';
+            await saveCredit(linkedCredit);
+            console.log('[CreditSync] Successfully updated credit entry for:', customer.name);
+        } else {
+            const creditEntry = {
+                id: (Date.now() + 1).toString(),
+                dailyTxnId: dailyTxnId,
+                customerId: customer.id,
+                amount: amountVal,
+                paid: paidVal,
+                date: newTxn.date,
+                note: noteStr,
+                description: `Synced from Daily Txn`,
+                type: newTxn.type === 'CREDIT_GIVEN' ? 'given' : 'received'
+            };
+            await saveCredit(creditEntry);
+            console.log('[CreditSync] Successfully created credit entry for:', customer.name);
+        }
+    } catch (err) {
+        console.error('[CreditSync] Error syncing credit:', err);
+    }
+}
+
 // Logic for Daily Transactions
 async function initDailyTxn() {
     console.log('Initializing DailyTxn module...');
@@ -4630,6 +4758,28 @@ async function initDailyTxn() {
             console.error("[Cache] Failed to load entries:", e);
         }
     }
+
+    // Populate customer suggestions for Credit transactions
+    const populateCustomerSuggestions = async () => {
+        try {
+            const customers = await loadCustomers();
+            const list = document.getElementById('customer-list');
+            if (list) {
+                list.innerHTML = '';
+                // Use a Set to avoid duplicates and ensure unique names
+                const names = [...new Set(customers.map(c => c.name).filter(Boolean))];
+                names.sort().forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    list.appendChild(option);
+                });
+                console.log(`[DailyTxn] Populated ${names.length} customer suggestions.`);
+            }
+        } catch (e) {
+            console.error("[DailyTxn] Failed to populate customer suggestions:", e);
+        }
+    };
+    populateCustomerSuggestions();
 
     // Check if user is logged in
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
@@ -4752,6 +4902,15 @@ async function initDailyTxn() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
             if (deletingTxnId) {
+                try {
+                    const snap = await getDocs(collection(db, 'daily_transactions'));
+                    const targetTxnDoc = snap.docs.find(d => d.id === deletingTxnId);
+                    if (targetTxnDoc) {
+                        await syncCreditFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
+                    } else {
+                        await syncCreditFromDailyTxn(null, deletingTxnId, true);
+                    }
+                } catch(e) { console.error(e); }
                 await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
                 hideDeleteModal();
             }
@@ -4960,6 +5119,15 @@ async function initDailyTxn() {
             bankContainer.classList.add('hidden');
             txnBank.value = '';
         }
+
+        if (txnNote) {
+            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+                txnNote.setAttribute('list', 'customer-list');
+                populateCustomerSuggestions();
+            } else {
+                txnNote.removeAttribute('list');
+            }
+        }
     };
 
     if (txnType) {
@@ -4995,6 +5163,26 @@ async function initDailyTxn() {
                     submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
                 }
                 return;
+            }
+
+            // Strict Customer Validation for Credit Transactions
+            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+                const customers = await loadCustomers();
+                const inputName = txnNote.value.trim().toLowerCase();
+                const exists = customers.some(c => c.name && c.name.trim().toLowerCase() === inputName);
+                if (!exists) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Customer Not Found',
+                        text: 'Please add customer first in Credit Ledger page.',
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
             }
 
             // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
@@ -5143,9 +5331,11 @@ async function initDailyTxn() {
             if (editingTxnId) {
                 await updateDoc(doc(db, 'daily_transactions', editingTxnId), newTxn);
                 console.log('Update Success!');
+                await syncCreditFromDailyTxn(newTxn, editingTxnId, false);
             } else {
-                await addDoc(txnCollection, newTxn);
-                console.log('Add Success!');
+                const docRef = await addDoc(txnCollection, newTxn);
+                console.log('Add Success! ID:', docRef.id);
+                await syncCreditFromDailyTxn(newTxn, docRef.id, false);
             }
 
             resetFormState();

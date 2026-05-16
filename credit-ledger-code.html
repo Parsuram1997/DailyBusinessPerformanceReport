@@ -222,40 +222,6 @@
 </button>
 </div>
 </div>
-<!-- Transaction Entry Form (Shown when a customer is selected) -->
-<div id="add-transaction-section" class="hidden bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
-    <div class="flex items-center justify-between mb-4">
-        <h3 id="transaction-form-title" class="text-base font-bold text-primary">Add Transaction for ...</h3>
-    </div>
-    <form id="credit-transaction-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input type="hidden" id="selected-customer-id"/>
-        <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold text-slate-500">Amount (₹)</label>
-            <input id="trans-amount" class="form-input rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20" placeholder="0.00" type="number" required/>
-        </div>
-        <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold text-slate-500">Type</label>
-            <select id="trans-type" class="form-select rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20">
-                <option value="credit">Credit (Udhaar)</option>
-                <option value="payment">Payment (Received)</option>
-            </select>
-        </div>
-        <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold text-slate-500">Date</label>
-            <input id="trans-date" class="form-input rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20" type="date" required/>
-        </div>
-        <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold text-slate-500">Note</label>
-            <input id="trans-note" class="form-input rounded-lg border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20" placeholder="Optional remark" type="text"/>
-        </div>
-        <div class="md:col-span-4 flex justify-end">
-            <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 hover:bg-primary/90">
-                <span class="material-symbols-outlined text-sm">save</span>
-                Save Transaction
-            </button>
-        </div>
-    </form>
-</div>
 
 <!-- Ledger Table Card -->
 <div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
@@ -290,16 +256,18 @@
 <table class="w-full text-left">
 <thead id="ledger-header" class="bg-background-light/50 dark:bg-slate-800/50">
     <tr>
+        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Customer Name</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Credit</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Paid</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance Due</th>
+        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Paid</th>
+        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Credit</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
     </tr>
 </thead>
 <thead id="history-header" class="hidden bg-background-light/50 dark:bg-slate-800/50">
     <tr>
+        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Credit (+)</th>
         <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Paid (-)</th>
