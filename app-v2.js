@@ -4890,7 +4890,8 @@ async function initDailyTxn() {
                 if (entryData.details) {
                     const d = entryData.details;
                     startCash = parseFloat(d.cash || 0);
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0) + parseFloat(d.pending || 0);
+                    const isNewLogic = normalizeDate(date) >= normalizeDate('2026-05-01');
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.pending || 0) + (isNewLogic ? 0 : parseFloat(d.jio || 0));
                 }
 
                 // Update summary badges with fetched opening balances
@@ -4920,18 +4921,28 @@ async function initDailyTxn() {
                     const amt = parseFloat(t.amount || 0);
                     const chg = parseFloat(t.charges || 0);
                     const provider = (t.provider || "").trim().toLowerCase();
+                    const isNewLogic = normalizeDate(date) >= normalizeDate('2026-05-01');
+                    const isJio = provider.includes('jio');
                     
-                    if (t.chargesType === 'Online') currentOnline += chg;
-                    else currentCash += chg;
+                    if (t.type !== 'ROINET_COMMISSION') {
+                        if (t.chargesType === 'Online') currentOnline += chg;
+                        else currentCash += chg;
+                    }
 
                     if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
-                        currentOnline += amt;
+                        if (!(isNewLogic && isJio)) {
+                            currentOnline += amt;
+                        }
                     } else if (['DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
-                        currentOnline -= amt;
+                        if (!(isNewLogic && isJio)) {
+                            currentOnline -= amt;
+                        }
                     } else if (t.type === 'DISHTV_RECHARGE' || t.type === 'JIO_RECHARGE') {
-                        currentOnline -= amt;
+                        if (!(isNewLogic && t.type === 'JIO_RECHARGE')) {
+                            currentOnline -= amt;
+                        }
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
                     } else if (t.type === 'JIO_TOPUP') {
@@ -4940,7 +4951,9 @@ async function initDailyTxn() {
                         if (t.chargesType === 'Online') currentOnline -= chg;
                         else currentCash -= chg;
                     } else if (t.type === 'ROINET_COMMISSION') {
-                        currentOnline += chg;
+                        if (!(isNewLogic && isJio)) {
+                            currentOnline += chg;
+                        }
                     } else if (t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
@@ -4965,11 +4978,17 @@ async function initDailyTxn() {
                         else currentOnline += amt;
                     } else if (t.type === 'OTHER_INCOME') {
                         if (provider === 'cash') currentCash += amt;
-                        else currentOnline += amt;
+                        else {
+                            if (!(isNewLogic && isJio)) {
+                                currentOnline += amt;
+                            }
+                        }
                     } else if (t.type === 'SETTLEMENT') {
                         // Settlement between digital accounts has no net effect on 'Total Online'
                         if (provider === 'cash') {
                             currentCash -= amt;
+                            currentOnline += amt;
+                        } else if (isNewLogic && isJio) {
                             currentOnline += amt;
                         }
                         // Subtract charges from where they were generically added

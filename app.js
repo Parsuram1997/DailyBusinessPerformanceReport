@@ -33,7 +33,7 @@ let globalSettingsUnsubscribe = null;
  */
 function getPossibleDateFormats(dateStr) {
     if (!dateStr || dateStr === 'Invalid Date') return [];
-    
+
     try {
         let d;
         if (dateStr.includes('-')) {
@@ -51,7 +51,7 @@ function getPossibleDateFormats(dateStr) {
         if (isNaN(d.getTime())) return [dateStr];
 
         const formats = new Set();
-        formats.add(dateStr); 
+        formats.add(dateStr);
 
         // YYYY-MM-DD
         const y = d.getFullYear();
@@ -61,11 +61,11 @@ function getPossibleDateFormats(dateStr) {
 
         // US Format: "May 7, 2026"
         formats.add(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
-        
+
         // GB Format with dashes: "7-May-2026"
         const gbShort = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ /g, '-');
         formats.add(gbShort);
-        
+
         // GB Format with 2-digit day: "07-May-2026"
         const gbTwo = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
         formats.add(gbTwo);
@@ -104,14 +104,14 @@ function initGlobalSettings() {
             checkAndSet('dtxn_showDelete', data.dtxn_showDelete);
             checkAndSet('dtxn_showCharges', data.dtxn_showCharges);
             checkAndSet('security_pin_enabled', data.security_pin_enabled);
-            
+
             if (changed) {
                 window.dispatchEvent(new Event('appSettingsUpdated'));
             }
         }
     });
 }
-window.saveAppSettings = async function(settings) {
+window.saveAppSettings = async function (settings) {
     if (!db) return null;
     try {
         await setDoc(doc(db, "app_settings", "global"), settings, { merge: true });
@@ -141,11 +141,11 @@ async function saveEntry(entry) {
     try {
         const id = String(entry.id || Date.now());
         const docRef = doc(collection(db, "entries"), id);
-        
+
         // Ensure id property is a valid string if it exists in the object
         const dataToSave = { ...entry };
-        dataToSave.id = id; 
-        
+        dataToSave.id = id;
+
         await setDoc(docRef, dataToSave);
         return { message: "Entry saved" };
     } catch (e) {
@@ -285,7 +285,7 @@ async function loadCashCalculator(date) {
     if (!db) return {};
     try {
         const d = new Date();
-        const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const docId = date || todayStr;
 
         // Helper: check if a counts object has any real data entered
@@ -532,7 +532,7 @@ async function initAddEntry() {
 
     const fetchSystemOnline = async (dateStr) => {
         if (!dateStr) return 0;
-        
+
         try {
             // 1. Get Opening Balances from Previous Day
             const normDate = (dStr) => {
@@ -544,17 +544,17 @@ async function initAddEntry() {
                 const parsed = new Date(dStr);
                 return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
             };
-            
+
             const selectedTime = normDate(dateStr);
             const allEntries = [...(window._entriesCache || [])];
             let prevEntry = null;
-            
+
             if (allEntries.length > 0) {
                 // Sort descending and find most recent entry BEFORE selected date
                 allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
                 prevEntry = allEntries.find(e => normDate(e.date) < selectedTime);
             }
-            
+
             // Fallback: Direct Firestore query if cache doesn't have it
             if (!prevEntry) {
                 const [y, m, d] = dateStr.split('-').map(Number);
@@ -570,7 +570,7 @@ async function initAddEntry() {
                     }
                 }
             }
-            
+
             const details = prevEntry?.details || {};
             const opValues = {
                 online: Number(details.online || 0),
@@ -591,12 +591,12 @@ async function initAddEntry() {
 
             // 3. Calculate Deltas for each online module
             const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
-            
+
             txns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
-                
+
                 // Track charges if they are Online
                 if (!['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
                     if (t.chargesType === 'Online') deltas.online += chg;
@@ -700,7 +700,7 @@ async function initAddEntry() {
             const data = {};
             const ONLINE_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending"];
             const ALL_SYNC_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal", "expense", "damaged"];
-            
+
             ALL_SYNC_FIELDS.forEach(key => {
                 data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
             });
@@ -721,17 +721,17 @@ async function initAddEntry() {
         const manualTotalDisplay = document.getElementById('manual-online-total');
         const systemDisplay = document.getElementById('system-online-val');
         const diffDisplay = document.getElementById('online-diff-val');
-        
+
         const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
         const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
-        
+
         if (manualTotalDisplay) manualTotalDisplay.innerText = formatCurrency(manualTotal);
         if (systemDisplay) systemDisplay.innerText = formatCurrency(currentSystemOnline);
-        
+
         if (diffDisplay) {
             const diff = manualTotal - currentSystemOnline;
             diffDisplay.innerText = formatCurrency(diff);
-            
+
             if (Math.abs(diff) < 0.01) {
                 diffDisplay.className = 'text-xs font-black italic text-slate-400';
             } else if (diff > 0) {
@@ -812,7 +812,7 @@ async function initAddEntry() {
                 'internet_expense': 0,
                 'gold_sip': 0
             };
-            
+
             // Sync detailed expense categories
             if (breakdown.expenseDetails) {
                 Object.keys(breakdown.expenseDetails).forEach(key => {
@@ -828,7 +828,7 @@ async function initAddEntry() {
                     // Apply visual style for auto-sync and fix padding overlap
                     input.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
                     input.style.paddingRight = '56px'; // Prevent text from being hidden behind the sync button
-                    
+
                     let indicator = input.parentElement.querySelector('.sync-indicator');
                     if (!indicator) {
                         indicator = document.createElement('div');
@@ -843,7 +843,7 @@ async function initAddEntry() {
                     }
                 }
             });
-            
+
             // Refresh summary and totals
             if (typeof updateRealTimeTotal === 'function') updateRealTimeTotal();
         });
@@ -851,7 +851,7 @@ async function initAddEntry() {
 
     async function checkExisting() {
         if (!datePicker) return;
-        
+
         // Refresh system online balance for the new date
         const systemRes = await fetchSystemOnline(datePicker.value);
         currentSystemOnline = systemRes.total;
@@ -906,7 +906,7 @@ async function initAddEntry() {
             if (submitText) submitText.innerText = "Save Entry";
             if (submitIcon) submitIcon.innerText = "save";
             existingEntryId = null;
-            
+
             // Start real-time sync for the new entry
             setupRealTimeSync(datePicker.value);
 
@@ -944,9 +944,9 @@ async function initAddEntry() {
                     });
                     ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
-                        if (el) { 
-                            el.value = (id === 'gold_sip') ? '206' : ''; 
-                            el.dispatchEvent(new Event('input', { bubbles: true })); 
+                        if (el) {
+                            el.value = (id === 'gold_sip') ? '206' : '';
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     });
                     const notesEl = document.getElementById('expense_notes');
@@ -960,9 +960,9 @@ async function initAddEntry() {
                 });
                 ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) { 
-                        el.value = (id === 'gold_sip') ? '206' : ''; 
-                        el.dispatchEvent(new Event('input', { bubbles: true })); 
+                    if (el) {
+                        el.value = (id === 'gold_sip') ? '206' : '';
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 });
                 const notesEl = document.getElementById('expense_notes');
@@ -1042,7 +1042,7 @@ async function initAddEntry() {
             try {
                 const pd = JSON.parse(pendingSessionData);
                 if (pd['__entry_date__']) initialDate = pd['__entry_date__'];
-            } catch(e) {}
+            } catch (e) { }
         }
         if (initialDate) {
             // Restore the saved date (e.g. user had selected March 29)
@@ -1057,7 +1057,7 @@ async function initAddEntry() {
         }
 
         datePicker.addEventListener('change', checkExisting);
-        
+
         // Auto-save draft on input
         const saveDraft = () => {
             const draft = {
@@ -1089,7 +1089,7 @@ async function initAddEntry() {
         });
         ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
             const el = document.getElementById(id);
-            if(el) el.addEventListener('input', saveDraft);
+            if (el) el.addEventListener('input', saveDraft);
         });
         const notesElForListener = document.getElementById('expense_notes');
         if (notesElForListener) notesElForListener.addEventListener('input', saveDraft);
@@ -1101,13 +1101,13 @@ async function initAddEntry() {
         const updateRealTimeTotal = () => {
             const display = document.getElementById('realtime-total-display');
             if (!display) return;
-            
+
             // Helper to get numeric value safely
             const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
-            
+
             // Formula: Cash + Online + Roinet + Jio + Go2Sms + Credit + Pending + Damages - Deposit - Expense
             const total = v('cash') + v('online') + v('roinet') + v('jio') + v('go2sms') + v('credit') + v('pending') + v('damages') - v('deposit') - v('expense');
-            
+
             display.textContent = formatCurrency(isNaN(total) ? 0 : total);
             updateOnlineComparison();
         };
@@ -1123,7 +1123,7 @@ async function initAddEntry() {
 
         // Also update when the form is reset or pre-filled
         form.addEventListener('reset', () => setTimeout(updateRealTimeTotal, 0));
-        
+
         // Initial call
         updateRealTimeTotal();
     }
@@ -1137,51 +1137,51 @@ async function initAddEntry() {
     const useOnlineBtn = document.getElementById('use-online-amount-btn');
     const onlineSplitTotalDisplay = document.getElementById('online-split-total-display');
     const onlineInput = document.getElementById('online');
-    
+
     const p1Input = document.getElementById('online_p1');
     const p2Input = document.getElementById('online_p2');
     const p3Input = document.getElementById('online_p3');
 
     const updateOnlineSplitTotal = () => {
-        if(!p1Input) return 0;
+        if (!p1Input) return 0;
         const p1 = parseFloat(p1Input.value) || 0;
         const p2 = parseFloat(p2Input.value) || 0;
         const p3 = parseFloat(p3Input.value) || 0;
         const total = p1 + p2 + p3;
-        if(onlineSplitTotalDisplay) onlineSplitTotalDisplay.textContent = formatCurrency(total);
+        if (onlineSplitTotalDisplay) onlineSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
     };
 
     if (openOnlineBtn && onlineSplitModal) {
         openOnlineBtn.addEventListener('click', () => {
-             onlineSplitModal.classList.remove('hidden');
-             onlineSplitModal.classList.add('flex');
-             void onlineSplitModal.offsetWidth;
-             onlineSplitPanel.classList.remove('scale-95', 'opacity-0');
-             onlineSplitPanel.classList.add('scale-100', 'opacity-100');
-             updateOnlineSplitTotal();
+            onlineSplitModal.classList.remove('hidden');
+            onlineSplitModal.classList.add('flex');
+            void onlineSplitModal.offsetWidth;
+            onlineSplitPanel.classList.remove('scale-95', 'opacity-0');
+            onlineSplitPanel.classList.add('scale-100', 'opacity-100');
+            updateOnlineSplitTotal();
         });
 
         const closeOnlineModal = () => {
-             onlineSplitPanel.classList.remove('scale-100', 'opacity-100');
-             onlineSplitPanel.classList.add('scale-95', 'opacity-0');
-             setTimeout(() => {
-                 onlineSplitModal.classList.add('hidden');
-                 onlineSplitModal.classList.remove('flex');
-             }, 300);
+            onlineSplitPanel.classList.remove('scale-100', 'opacity-100');
+            onlineSplitPanel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                onlineSplitModal.classList.add('hidden');
+                onlineSplitModal.classList.remove('flex');
+            }, 300);
         };
 
-        if(closeOnlineBtn) closeOnlineBtn.addEventListener('click', closeOnlineModal);
-        if(onlineBackdrop) onlineBackdrop.addEventListener('click', closeOnlineModal);
+        if (closeOnlineBtn) closeOnlineBtn.addEventListener('click', closeOnlineModal);
+        if (onlineBackdrop) onlineBackdrop.addEventListener('click', closeOnlineModal);
 
         [p1Input, p2Input, p3Input].forEach(inp => {
-            if(inp) inp.addEventListener('input', updateOnlineSplitTotal);
+            if (inp) inp.addEventListener('input', updateOnlineSplitTotal);
         });
 
-        if(useOnlineBtn) {
+        if (useOnlineBtn) {
             useOnlineBtn.addEventListener('click', () => {
                 const total = updateOnlineSplitTotal();
-                if(onlineInput) {
+                if (onlineInput) {
                     onlineInput.value = total || '';
                     onlineInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -1199,7 +1199,7 @@ async function initAddEntry() {
     const useRoinetBtn = document.getElementById('use-roinet-amount-btn');
     const roinetSplitTotalDisplay = document.getElementById('roinet-split-total-display');
     const roinetInput = document.getElementById('roinet');
-    
+
     const r1Input = document.getElementById('roinet_1');
     const r2Input = document.getElementById('roinet_2');
     const a1Input = document.getElementById('airtel_1');
@@ -1207,46 +1207,46 @@ async function initAddEntry() {
     const sInput = document.getElementById('spicemoney');
 
     const updateRoinetSplitTotal = () => {
-        if(!r1Input) return 0;
-        const total = (parseFloat(r1Input.value) || 0) + 
-                      (parseFloat(r2Input.value) || 0) + 
-                      (parseFloat(a1Input.value) || 0) + 
-                      (parseFloat(a2Input.value) || 0) + 
-                      (parseFloat(sInput.value) || 0);
-        if(roinetSplitTotalDisplay) roinetSplitTotalDisplay.textContent = formatCurrency(total);
+        if (!r1Input) return 0;
+        const total = (parseFloat(r1Input.value) || 0) +
+            (parseFloat(r2Input.value) || 0) +
+            (parseFloat(a1Input.value) || 0) +
+            (parseFloat(a2Input.value) || 0) +
+            (parseFloat(sInput.value) || 0);
+        if (roinetSplitTotalDisplay) roinetSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
     };
 
     if (openRoinetBtn && roinetSplitModal) {
         openRoinetBtn.addEventListener('click', () => {
-             roinetSplitModal.classList.remove('hidden');
-             roinetSplitModal.classList.add('flex');
-             void roinetSplitModal.offsetWidth;
-             roinetSplitPanel.classList.remove('scale-95', 'opacity-0');
-             roinetSplitPanel.classList.add('scale-100', 'opacity-100');
-             updateRoinetSplitTotal();
+            roinetSplitModal.classList.remove('hidden');
+            roinetSplitModal.classList.add('flex');
+            void roinetSplitModal.offsetWidth;
+            roinetSplitPanel.classList.remove('scale-95', 'opacity-0');
+            roinetSplitPanel.classList.add('scale-100', 'opacity-100');
+            updateRoinetSplitTotal();
         });
 
         const closeRoinetModal = () => {
-             roinetSplitPanel.classList.remove('scale-100', 'opacity-100');
-             roinetSplitPanel.classList.add('scale-95', 'opacity-0');
-             setTimeout(() => {
-                 roinetSplitModal.classList.add('hidden');
-                 roinetSplitModal.classList.remove('flex');
-             }, 300);
+            roinetSplitPanel.classList.remove('scale-100', 'opacity-100');
+            roinetSplitPanel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                roinetSplitModal.classList.add('hidden');
+                roinetSplitModal.classList.remove('flex');
+            }, 300);
         };
 
-        if(closeRoinetBtn) closeRoinetBtn.addEventListener('click', closeRoinetModal);
-        if(roinetBackdrop) roinetBackdrop.addEventListener('click', closeRoinetModal);
+        if (closeRoinetBtn) closeRoinetBtn.addEventListener('click', closeRoinetModal);
+        if (roinetBackdrop) roinetBackdrop.addEventListener('click', closeRoinetModal);
 
         [r1Input, r2Input, a1Input, a2Input, sInput].forEach(inp => {
-            if(inp) inp.addEventListener('input', updateRoinetSplitTotal);
+            if (inp) inp.addEventListener('input', updateRoinetSplitTotal);
         });
 
-        if(useRoinetBtn) {
+        if (useRoinetBtn) {
             useRoinetBtn.addEventListener('click', () => {
                 const total = updateRoinetSplitTotal();
-                if(roinetInput) {
+                if (roinetInput) {
                     roinetInput.value = total || '';
                     roinetInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -1264,7 +1264,7 @@ async function initAddEntry() {
     const useExpenseBtn = document.getElementById('use-expense-amount-btn');
     const expenseSplitTotalDisplay = document.getElementById('expense-split-total-display');
     const expenseInput = document.getElementById('expense');
-    
+
     const ex_p = document.getElementById('personal_expense');
     const ex_s = document.getElementById('salary_expense');
     const ex_e = document.getElementById('electricity_expense');
@@ -1274,50 +1274,50 @@ async function initAddEntry() {
     const ex_st = document.getElementById('settlement_charges');
 
     const updateExpenseSplitTotal = () => {
-        if(!ex_p) return 0;
-        const total = (parseFloat(ex_p.value) || 0) + 
-                      (parseFloat(ex_s.value) || 0) + 
-                      (parseFloat(ex_e.value) || 0) + 
-                      (parseFloat(ex_r.value) || 0) + 
-                      (parseFloat(ex_b.value) || 0) + 
-                      (parseFloat(ex_i.value) || 0) +
-                      (parseFloat(ex_st?.value) || 0) +
-                      (parseFloat(document.getElementById('gold_sip')?.value) || 0);
-        if(expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
+        if (!ex_p) return 0;
+        const total = (parseFloat(ex_p.value) || 0) +
+            (parseFloat(ex_s.value) || 0) +
+            (parseFloat(ex_e.value) || 0) +
+            (parseFloat(ex_r.value) || 0) +
+            (parseFloat(ex_b.value) || 0) +
+            (parseFloat(ex_i.value) || 0) +
+            (parseFloat(ex_st?.value) || 0) +
+            (parseFloat(document.getElementById('gold_sip')?.value) || 0);
+        if (expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
     };
 
     if (openExpenseBtn && expenseSplitModal) {
         openExpenseBtn.addEventListener('click', () => {
-             expenseSplitModal.classList.remove('hidden');
-             expenseSplitModal.classList.add('flex');
-             void expenseSplitModal.offsetWidth;
-             expenseSplitPanel.classList.remove('scale-95', 'opacity-0');
-             expenseSplitPanel.classList.add('scale-100', 'opacity-100');
-             updateExpenseSplitTotal();
+            expenseSplitModal.classList.remove('hidden');
+            expenseSplitModal.classList.add('flex');
+            void expenseSplitModal.offsetWidth;
+            expenseSplitPanel.classList.remove('scale-95', 'opacity-0');
+            expenseSplitPanel.classList.add('scale-100', 'opacity-100');
+            updateExpenseSplitTotal();
         });
 
         const closeExpenseModal = () => {
-             expenseSplitPanel.classList.remove('scale-100', 'opacity-100');
-             expenseSplitPanel.classList.add('scale-95', 'opacity-0');
-             setTimeout(() => {
-                 expenseSplitModal.classList.add('hidden');
-                 expenseSplitModal.classList.remove('flex');
-             }, 300);
+            expenseSplitPanel.classList.remove('scale-100', 'opacity-100');
+            expenseSplitPanel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                expenseSplitModal.classList.add('hidden');
+                expenseSplitModal.classList.remove('flex');
+            }, 300);
         };
 
-        if(closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
-        if(expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
+        if (closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
+        if (expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
 
         ['personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
             const inp = document.getElementById(id);
-            if(inp) inp.addEventListener('input', updateExpenseSplitTotal);
+            if (inp) inp.addEventListener('input', updateExpenseSplitTotal);
         });
 
-        if(useExpenseBtn) {
+        if (useExpenseBtn) {
             useExpenseBtn.addEventListener('click', () => {
                 const total = updateExpenseSplitTotal();
-                if(expenseInput) {
+                if (expenseInput) {
                     expenseInput.value = total || '';
                     expenseInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -1427,7 +1427,7 @@ async function initAddEntry() {
             if (existingEntryId) {
                 payload.id = existingEntryId;
             }
-            
+
             await saveEntry(payload);
             // Success Toast
             (function showAddEntryToast() {
@@ -1462,13 +1462,13 @@ async function initAddEntry() {
                 toast._t = setTimeout(() => { toast.style.transform = 'translateX(120%)'; }, 3000);
             })();
             form.reset();
-            
+
             // Clear modal inputs which are outside the form
             ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) { 
-                    el.value = (id === 'gold_sip') ? '206' : ''; 
-                    el.dispatchEvent(new Event('input', { bubbles: true })); 
+                if (el) {
+                    el.value = (id === 'gold_sip') ? '206' : '';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
             const notesElForm = document.getElementById('expense_notes');
@@ -1491,7 +1491,7 @@ async function initAddEntry() {
                 if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
                 if (submitBtn) {
                     const iconBox = submitBtn.querySelector('.material-symbols-outlined');
-                    if(iconBox) iconBox.innerText = "save";
+                    if (iconBox) iconBox.innerText = "save";
                     // Note: submitText is handled in finally block
                 }
             }
@@ -1553,7 +1553,7 @@ async function initDashboard() {
         const yStart = new Date(fyStartYear, 3, 1); // April 1
         const yEnd = new Date(fyStartYear + 1, 2, 31); // March 31
 
-        const currentQ = Math.floor((nowMonth >= 3 ? nowMonth - 3 : nowMonth + 9) / 3); 
+        const currentQ = Math.floor((nowMonth >= 3 ? nowMonth - 3 : nowMonth + 9) / 3);
         const qStartMonth = currentQ * 3 + 3;
         const qStartYearVal = qStartMonth > 11 ? fyStartYear + 1 : fyStartYear;
         const qStartActual = qStartMonth > 11 ? 0 : qStartMonth;
@@ -1590,7 +1590,7 @@ async function initDashboard() {
             const eDay = entryDate.getDate();
             const eMonth = entryDate.getMonth();
             const eYear = entryDate.getFullYear();
-            
+
             const details = e.details || {};
             const cash = parseFloat(details.cash) || 0;
             const online = parseFloat(details.online) || 0;
@@ -1610,7 +1610,7 @@ async function initDashboard() {
             // Universal Gross Math Logic
             const baseOpn = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : finalRunningBalance;
             const opn = baseOpn + cap;
-            const displayTotalBase = tcf + exp; 
+            const displayTotalBase = tcf + exp;
             const dailyInc = Math.max(0, displayTotalBase - opn);
             const dailyProf = dailyInc - exp;
             const netFlow = displayTotalBase - exp;
@@ -1688,7 +1688,7 @@ async function initDashboard() {
         };
 
         // --- 4. Render Updates ---
-        
+
         // Preserve actual today's value for the MoM table
         const actualTodayIncome = todayIncome;
         const actualTodayExpense = todayExpense;
@@ -1717,7 +1717,7 @@ async function initDashboard() {
         setVal('closing-balance-top', finalRunningBalance);
         setVal('total-capital-top', totalCapital);
         setVal('total-withdrawals-top', totalWithdrawal);
-        
+
         // Today Detail (Uses fallback)
         setVal('today-income-top', todayIncome);
         setVal('today-expense-top', todayExpense);
@@ -1777,15 +1777,15 @@ async function initDashboard() {
         const daysPassed = now.getDate();
         const avgDaily = currentMTDIncome / (daysPassed || 1);
         const avgDailyExp = currentMTDExpense / (daysPassed || 1);
-        
+
         // Month
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const daysRemainingMonth = Math.max(0, daysInMonth - daysPassed);
-        
+
         // Quarter
         const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const daysRemainingQ = Math.max(0, Math.round((qEnd - nowMidnight) / (1000 * 60 * 60 * 24)));
-        
+
         // Year
         const daysRemainingFY = Math.max(0, Math.round((yEnd - nowMidnight) / (1000 * 60 * 60 * 24)));
 
@@ -1805,7 +1805,7 @@ async function initDashboard() {
         const fmtDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        
+
         const setRange = (selector, s, e) => {
             document.querySelectorAll(selector).forEach(el => {
                 el.innerText = `${fmtDate(s)} - ${fmtDate(e)}`;
@@ -1840,7 +1840,7 @@ async function initDashboard() {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { 
+                    plugins: {
                         legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
                     },
                     scales: {
@@ -1870,7 +1870,7 @@ async function initDashboard() {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { 
+                    plugins: {
                         legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
                     },
                     scales: {
@@ -1967,7 +1967,7 @@ async function initDashboard() {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { 
+                    plugins: {
                         legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
                         tooltip: {
                             callbacks: {
@@ -2018,7 +2018,7 @@ async function initDashboard() {
                     expenseGrowthChart.update();
                 }
             };
-            
+
             // Trigger it once to match current selection
             timeframeSelect.dispatchEvent(new Event('change'));
         }
@@ -2041,17 +2041,17 @@ async function initCalculator() {
     const getCurrentDate = () => calcDatePicker ? calcDatePicker.value : null;
 
     let currentSystemCash = 0;
-    
+
     const updateSystemComparison = (physicalTotal) => {
         const sysCashEl = document.getElementById('system-cash-val');
         const diffEl = document.getElementById('cash-diff-val');
-        
+
         if (sysCashEl) sysCashEl.innerText = formatCurrency(currentSystemCash);
-        
+
         if (diffEl) {
             const diff = (physicalTotal || 0) - currentSystemCash;
             diffEl.innerText = formatCurrency(diff);
-            
+
             // Color coding
             if (Math.abs(diff) < 0.01) {
                 diffEl.className = 'font-bold italic text-white';
@@ -2069,7 +2069,7 @@ async function initCalculator() {
             const current = new Date(yr, mo - 1, dy);
             const yesterday = new Date(current);
             yesterday.setDate(current.getDate() - 1);
-            
+
             const y_yyyy = yesterday.getFullYear();
             const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
             const y_dd = String(yesterday.getDate()).padStart(2, '0');
@@ -2080,7 +2080,7 @@ async function initCalculator() {
             const yesterdayDateQueries = getPossibleDateFormats(yesterdayDateStr);
             const qEntry = query(entriesRef, where("date", "in", yesterdayDateQueries));
             const entrySnap = await getDocs(qEntry);
-            
+
             let cashVal = 0;
             if (!entrySnap.empty) {
                 const entry = entrySnap.docs[0].data();
@@ -2091,16 +2091,16 @@ async function initCalculator() {
             const dateQueriesTxn = getPossibleDateFormats(dateStr);
             const qTxn = query(txnRef, where("date", "in", dateQueriesTxn));
             const txnSnap = await getDocs(qTxn);
-            
+
             txnSnap.forEach(doc => {
                 const t = doc.data();
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
-                
+
                 if (t.chargesType !== 'Online') cashVal += chg;
 
                 if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) {
-                    cashVal -= amt; 
+                    cashVal -= amt;
                 } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
                 } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
@@ -2176,14 +2176,14 @@ async function initCalculator() {
 
     // Determine initial date: use Add Entry session date if coming from there, else today
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const sessionData = sessionStorage.getItem('add_entry_form_data');
     let defaultDate = todayStr;
     if (sessionData) {
         try {
             const sd = JSON.parse(sessionData);
             if (sd['__entry_date__']) defaultDate = sd['__entry_date__'];
-        } catch(e) {}
+        } catch (e) { }
     }
     if (calcDatePicker) calcDatePicker.value = defaultDate;
 
@@ -2377,7 +2377,7 @@ async function initSettings() {
         btnRepair.onclick = async () => {
             btnRepair.disabled = true;
             btnRepair.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Repairing...';
-            
+
             try {
                 const entries = await loadEntries();
                 const batch = writeBatch(db);
@@ -2433,10 +2433,10 @@ async function initSettings() {
         btnDownloadTemplate.addEventListener('click', () => {
             const headers = ['Date', 'Capital_Add', 'Cash', 'Online', 'Roinet', 'Jio', 'CRGB_BC', 'Credit', 'Pending', 'Damages', 'Expense', 'Withdrawal'];
             const example = ['2024-01-01', '0', '5000', '2000', '0', '0', '0', '500', '0', '0', '200', '1000'];
-            
+
             const csvContent = "\ufeff" + [headers.join(','), example.join(',')].join('\n');
             const encodedUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent);
-            
+
             const a = document.createElement('a');
             a.setAttribute("href", encodedUri);
             a.setAttribute("download", "BizPerform_Import_Template.csv");
@@ -2500,7 +2500,7 @@ async function initSettings() {
                         // Case 1: YYYY-MM-DD or YYYY-M-D
                         if (parts[0].length === 4) {
                             finalDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                        } 
+                        }
                         // Case 2: DD-MM-YYYY or D-M-YYYY
                         else if (parts.length === 3 && parts[2].length === 4) {
                             finalDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
@@ -2527,7 +2527,7 @@ async function initSettings() {
                     // Compute income and profit (Basic calculation for historical data)
                     // Note: True income calculation requires previous day closing, but we'll set raw values here.
                     // The dashboard refactored logic will re-calculate income correctly in the loop if we provide the base fields.
-                    
+
                     entries.push({
                         id: Date.parse(finalDate) || Date.now() + i,
                         date: finalDate,
@@ -2545,7 +2545,7 @@ async function initSettings() {
                 if (entries.length > 0) {
                     btnBulkImportTrigger.disabled = true;
                     btnBulkImportTrigger.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Importing History...';
-                    
+
                     try {
                         // Batch in chunks of 400 (Firestore limit is 500)
                         for (let i = 0; i < entries.length; i += 400) {
@@ -2623,21 +2623,21 @@ async function initTransactions() {
         // CSP Ledger Logic:
         // 1. Prev Closing Balance (Carryforward or Explicit historical Opening)
         const prevCls = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : runningBalance;
-        
+
         // 2. Capital Add
         const capital = capitalAdd || 0;
-        
+
         // 3. Opening Balance (Display Only) = Prev Closing + Capital Add
         const opnBalance = calculateOpeningBalance(prevCls, capital);
-        
+
         // 4. Base Cash Flow
         const totalCashFlow = cash + online + roinet + jio + go2sms + credit + pending + damages - deposit;
-        
+
         // Universal Gross Math Logic
-        const displayTotal = totalCashFlow + expense;  
-        const displayIncome = Math.max(0, displayTotal - opnBalance); 
-        const displayProfit = displayIncome - expense; 
-        const displayNet = displayTotal - expense; 
+        const displayTotal = totalCashFlow + expense;
+        const displayIncome = Math.max(0, displayTotal - opnBalance);
+        const displayProfit = displayIncome - expense;
+        const displayNet = displayTotal - expense;
         const displayCls = displayNet - withdrawal;
 
         // Carryforward for NEXT day uses true closing
@@ -3105,7 +3105,7 @@ async function initCreditLedger() {
                 confirmDeleteBtn.disabled = true;
                 const originalText = confirmDeleteBtn.innerHTML;
                 confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
-                
+
                 try {
                     if (deleteType === 'customer') {
                         await deleteCustomer(deleteId);
@@ -3114,7 +3114,7 @@ async function initCreditLedger() {
                         await deleteCredit(deleteId);
                         showSuccessToast('Transaction deleted successfully. ✅');
                     }
-                    
+
                     if (deleteModal) deleteModal.classList.add('hidden');
                     await renderView();
                 } catch (err) {
@@ -3358,7 +3358,7 @@ async function initReports() {
             tab.classList.toggle('text-white', isActive);
             tab.classList.remove('text-slate-500');
             tab.classList.remove('hover:text-primary');
-            
+
             if (!isActive) {
                 tab.classList.add('text-slate-500');
                 tab.classList.add('hover:text-primary');
@@ -3441,7 +3441,7 @@ async function initReports() {
 
         const searchInput = document.getElementById('report-search');
         const query = (searchInput?.value || '').toLowerCase();
-        
+
         console.log(`[Reports Debug] Mode: ${currentMode}, Query: "${query}", Total DB Entries: ${entries.length}`);
 
         let filtered = entries.filter(e => {
@@ -3489,7 +3489,7 @@ async function initReports() {
 
             if (currentMode === 'date' && dateInput) {
                 const [selY, selM, selD] = dateInput.value.split('-').map(Number);
-                return y === selY && (m+1) === selM && d === selD;
+                return y === selY && (m + 1) === selM && d === selD;
             }
             if (currentMode === 'month' && monthSelect) {
                 const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
@@ -3555,7 +3555,7 @@ async function initReports() {
         const dailyIncomeMap = {};
         // Sort strictly chronologically to ensure accurate running balance calculation
         allEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        
+
         allEntries.forEach(e => {
             const details = e.details || {};
             const cash = parseFloat(details.cash) || 0;
@@ -3576,7 +3576,7 @@ async function initReports() {
 
             const baseOpn = (e.openingBalance !== undefined && e.openingBalance > 0) ? parseFloat(e.openingBalance) : runningBalance;
             const opn = baseOpn + cap;
-            const displayTotalBase = tcf + exp; 
+            const displayTotalBase = tcf + exp;
             const dailyInc = Math.max(0, displayTotalBase - opn);
             const netFlow = displayTotalBase - exp;
             const cls = netFlow - wit;
@@ -3679,11 +3679,11 @@ async function initReports() {
             yearTotals[yKey] = (yearTotals[yKey] || 0) + inc;
 
             return acc;
-        }, { 
-            income: 0, 
-            expense: 0, 
-            profit: 0, 
-            periodCap: 0, 
+        }, {
+            income: 0,
+            expense: 0,
+            profit: 0,
+            periodCap: 0,
             withdrawal: 0,
             categories: realTimeCategories
         });
@@ -3777,7 +3777,7 @@ async function initReports() {
         updateTxnCard('matm', txnStats['MATM'] || {});
         updateTxnCard('deposit', txnStats['DEPOSIT'] || {});
         updateTxnCard('withdrawal', txnStats['WITHDRAWAL'] || {});
-        
+
         // New categories from image
         updateTxnCard('gold_sip', txnStats['GOLD_SIP'] || {});
         updateTxnCard('roinet', txnStats['ROINET_COMMISSION'] || {});
@@ -3805,7 +3805,7 @@ async function initReports() {
         updateServiceCard('online_work', txnStats['ONLINE_WORK'] || {});
         updateServiceCard('passport', txnStats['PASSPORT'] || {});
         updateServiceCard('lamination', txnStats['LAMINATION'] || {});
-        
+
         const totalChargesEl = document.getElementById('summary-txn-total-charges');
         if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges);
 
@@ -3904,7 +3904,7 @@ async function initReports() {
         const systemDates = new Set(dailyTxns.map(t => t.date));
         const reconDates = [...new Set(filtered.map(e => e.date))]
             .filter(d => systemDates.has(d) && d >= '2026-05-01');
-        
+
         let totalManualCash = 0;
         let totalSysCash = 0;
         let totalManualOnline = 0;
@@ -3916,12 +3916,12 @@ async function initReports() {
             const e = filtered.find(ent => ent.date === date);
             const det = e.details || {};
             const manualCash = parseFloat(det.cash || 0);
-            const manualOnline = (parseFloat(det.online || 0) + 
-                                 parseFloat(det.roinet || 0) + 
-                                 parseFloat(det.go2sms || 0) + 
-                                 parseFloat(det.jio || 0) +
-                                 parseFloat(det.pending || 0));
-            
+            const manualOnline = (parseFloat(det.online || 0) +
+                parseFloat(det.roinet || 0) +
+                parseFloat(det.go2sms || 0) +
+                parseFloat(det.jio || 0) +
+                parseFloat(det.pending || 0));
+
             // Use the pre-calculated daily income from the map
             const mapped = dailyIncomeMap[date] || {};
             totalManualIncome += (mapped.inc || 0);
@@ -3929,23 +3929,23 @@ async function initReports() {
             const dObj = new Date(date);
             dObj.setDate(dObj.getDate() - 1);
             const yDateStr = dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2, '0') + '-' + String(dObj.getDate()).padStart(2, '0');
-            
+
             const yEntry = allEntries.find(ent => ent.date === yDateStr);
             let sysCash = 0;
             let sysOnline = 0;
-            
+
             if (yEntry) {
                 const yd = yEntry.details || {};
                 sysCash = parseFloat(yd.cash || 0);
                 sysOnline = parseFloat(yd.online || 0) + parseFloat(yd.roinet || 0) + parseFloat(yd.go2sms || 0) + parseFloat(yd.jio || 0) + parseFloat(yd.pending || 0);
             }
-            
+
             const dayTxns = dailyTxns.filter(t => t.date === date);
             dayTxns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
                 totalSysIncome += chg;
-                
+
                 if (t.chargesType === 'Online') sysOnline += chg;
                 else sysCash += chg;
 
@@ -3971,7 +3971,7 @@ async function initReports() {
                     sysCash -= amt;
                 }
             });
-            
+
             totalManualCash += manualCash;
             totalSysCash += sysCash;
             totalManualOnline += manualOnline;
@@ -3987,7 +3987,7 @@ async function initReports() {
         updateCard('recon-manual-cash-card', `₹${totalManualCash.toLocaleString('en-IN')}`);
         updateCard('recon-system-cash-card', `₹${totalSysCash.toLocaleString('en-IN')}`);
         updateCard('recon-cash-diff-card', `${finalCashDiff > 0 ? '+' : ''}${finalCashDiff.toLocaleString('en-IN')}`);
-        
+
         updateCard('recon-manual-online-card', `₹${totalManualOnline.toLocaleString('en-IN')}`);
         updateCard('recon-system-online-card', `₹${totalSysOnline.toLocaleString('en-IN')}`);
         updateCard('recon-online-diff-card', `${finalOnlineDiff > 0 ? '+' : ''}${finalOnlineDiff.toLocaleString('en-IN')}`);
@@ -4046,11 +4046,11 @@ async function initBankWithdrawals() {
     let activeAccountId = null;
     let deleteTargetId = null;
     let deleteTargetType = null; // 'account' or 'withdrawal'
-    
+
     // Account Modal Elements
     const accountModal = document.getElementById('account-modal');
     const modalTitle = document.getElementById('account-modal-title');
-    
+
     function openAccountModal(id = null) {
         if (accountModal) {
             accountModal.classList.remove('hidden');
@@ -4080,7 +4080,7 @@ async function initBankWithdrawals() {
         const today = new Date();
         const year = today.getFullYear();
         let startYear, endYear;
-        
+
         if (today.getMonth() >= 3) { // April (3) to Dec (11)
             startYear = year;
             endYear = year + 1;
@@ -4088,7 +4088,7 @@ async function initBankWithdrawals() {
             startYear = year - 1;
             endYear = year;
         }
-        
+
         const start = new Date(startYear, 3, 1); // April 1st
         const end = new Date(endYear, 2, 31, 23, 59, 59); // March 31st
         return { start, end, label: `FY ${startYear}-${endYear}` };
@@ -4107,10 +4107,10 @@ async function initBankWithdrawals() {
             console.log(`[DEBUG] Loaded ${accounts.length} accounts and ${withdrawalsList.length} withdrawals.`);
 
             tableBody.innerHTML = '';
-            
+
             const fy = getCurrentFYDates();
             console.log("[DEBUG] Current FY:", fy.label);
-            if(fyDatesDisplay) fyDatesDisplay.innerText = fy.label;
+            if (fyDatesDisplay) fyDatesDisplay.innerText = fy.label;
 
             const limitDisplay = fyDatesDisplay ? fyDatesDisplay.nextElementSibling : null;
 
@@ -4122,11 +4122,11 @@ async function initBankWithdrawals() {
                         grandFyTotal += (parseFloat(w.amount) || 0);
                     }
                 });
-                
+
                 const totalAccounts = Math.max(1, accounts.length);
                 const grandLimit = totalAccounts * 10000000;
                 const grandPercent = (grandFyTotal / grandLimit) * 100;
-                
+
                 if (fyTotalDisplay) {
                     fyTotalDisplay.innerText = formatCurrency(grandFyTotal);
                     fyTotalDisplay.previousElementSibling.innerText = "TOTAL YEAR WITHDRAWALS (ALL ACCOUNTS)";
@@ -4141,7 +4141,7 @@ async function initBankWithdrawals() {
                 }
                 if (limitDisplay) limitDisplay.innerText = `Combined Limit: ${formatCurrency(grandLimit)} (Sec 194N)`;
                 if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
-                
+
                 if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Bank Accounts";
                 if (backBtn) backBtn.classList.add('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.add('hidden');
@@ -4165,7 +4165,7 @@ async function initBankWithdrawals() {
                         const pecent = (fyTotal / limit) * 100;
                         const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600 border-rose-200' : (pecent >= 80 ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200');
                         const statusText = pecent >= 100 ? 'OVER LIMIT' : (pecent >= 80 ? 'WARNING' : 'SAFE');
-                        
+
                         // Parse Account Name
                         let holder = acc.name;
                         let bank = "-";
@@ -4185,10 +4185,10 @@ async function initBankWithdrawals() {
                             const nameParts = acc.name.toUpperCase().split(/\s+/);
                             const banks = ["SBI", "HDFC", "ICICI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDFC", "KOTAK", "CRGB"];
                             const types = ["CURRENT", "SAVING", "FD", "RD", "LOAN", "CC"];
-                            
+
                             let foundBankIdx = -1;
                             let foundTypeIdx = -1;
-                            
+
                             nameParts.forEach((part, i) => {
                                 if (banks.includes(part)) foundBankIdx = i;
                                 if (types.includes(part)) foundTypeIdx = i;
@@ -4198,7 +4198,7 @@ async function initBankWithdrawals() {
                                 bank = nameParts[foundBankIdx];
                                 holder = nameParts.slice(0, foundBankIdx).join(" ");
                             }
-                            
+
                             if (foundTypeIdx !== -1) {
                                 type = nameParts[foundTypeIdx];
                                 if (foundBankIdx === -1) {
@@ -4221,7 +4221,7 @@ async function initBankWithdrawals() {
                         tr.className = "hover:bg-primary/5 transition-all cursor-pointer group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-left-2 duration-300";
                         tr.style.animationDelay = `${index * 50}ms`;
                         tr.onclick = (e) => {
-                            if(e.target.closest('button')) return;
+                            if (e.target.closest('button')) return;
                             showAccountDetails(acc.id);
                         };
                         tr.innerHTML = `
@@ -4280,7 +4280,7 @@ async function initBankWithdrawals() {
                 if (withdrawalsHeader) withdrawalsHeader.classList.remove('hidden');
 
                 const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(activeAccountId));
-                accWithdrawals.sort((a,b) => {
+                accWithdrawals.sort((a, b) => {
                     const d1 = new Date(a.date);
                     const d2 = new Date(b.date);
                     if (d1.getTime() !== d2.getTime()) return d2 - d1;
@@ -4288,23 +4288,23 @@ async function initBankWithdrawals() {
                 });
 
                 let fyTotal = 0;
-                
+
                 if (accWithdrawals.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">No withdrawals recorded yet.</td></tr>`;
                 } else {
                     accWithdrawals.forEach((w, index) => {
                         const amount = parseFloat(w.amount) || 0;
                         const wDate = new Date(w.date);
-                        if(wDate >= fy.start && wDate <= fy.end) {
+                        if (wDate >= fy.start && wDate <= fy.end) {
                             fyTotal += amount;
                         }
 
                         let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">${w.method}</span>`;
-                        if(w.method === 'ATM') methodHtml = `<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">ATM</span>`;
-                        if(w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-indigo-100">ATM QR</span>`;
-                        if(w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-amber-100">In-Branch ATM</span>`;
-                        if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-purple-100">Cheque</span>`;
-                        if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 text-pink-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-pink-100">Yono Cash</span>`;
+                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">ATM</span>`;
+                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-indigo-100">ATM QR</span>`;
+                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-amber-100">In-Branch ATM</span>`;
+                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-purple-100">Cheque</span>`;
+                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 text-pink-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-pink-100">Yono Cash</span>`;
 
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
@@ -4340,15 +4340,15 @@ async function initBankWithdrawals() {
 
                 const limit = 10000000;
                 const pecent = (fyTotal / limit) * 100;
-                if(fyTotalDisplay) {
+                if (fyTotalDisplay) {
                     fyTotalDisplay.innerText = formatCurrency(fyTotal);
                     fyTotalDisplay.previousElementSibling.innerText = "TOTAL FY WITHDRAWALS (" + (acc.name.includes('|') ? acc.name.split('|')[0].toUpperCase() : acc.name.toUpperCase()) + ")";
                 }
-                if(fyPercentage) {
+                if (fyPercentage) {
                     fyPercentage.innerText = `${pecent.toFixed(1)}% Used`;
                     fyPercentage.className = `text-lg font-bold px-3 py-1 rounded-lg ${pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')}`;
                 }
-                if(fyProgressBar) {
+                if (fyProgressBar) {
                     fyProgressBar.style.width = `${Math.min(pecent, 100)}%`;
                     fyProgressBar.className = `h-full transition-all duration-700 ${pecent >= 100 ? 'bg-rose-500' : (pecent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
                 }
@@ -4357,18 +4357,18 @@ async function initBankWithdrawals() {
         } catch (e) { console.error("render error:", e); }
     }
 
-    if(accountForm) {
-        accountForm.addEventListener('submit', async(e) => {
+    if (accountForm) {
+        accountForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const holder = document.getElementById('modal-acc-holder').value.trim();
             const bank = document.getElementById('modal-acc-bank').value.trim();
             const number = document.getElementById('modal-acc-number').value.trim();
             const type = document.getElementById('modal-acc-type').value.trim();
             const branch = document.getElementById('modal-acc-branch').value.trim();
-            
+
             const editId = document.getElementById('edit-account-id').value;
-            
-            if(holder && bank && number) {
+
+            if (holder && bank && number) {
                 const combinedName = `${holder}|${bank}|${number}|${type}|${branch}`;
                 const uniqueId = editId || Date.now();
                 await saveBankAccount({ id: uniqueId, name: combinedName });
@@ -4378,15 +4378,15 @@ async function initBankWithdrawals() {
         });
     }
 
-    if(withdrawalForm) {
+    if (withdrawalForm) {
         const dInput = document.getElementById('withdrawal-date');
-        if(dInput) dInput.valueAsDate = new Date();
-        
-        withdrawalForm.addEventListener('submit', async(e) => {
+        if (dInput) dInput.valueAsDate = new Date();
+
+        withdrawalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const editIdInput = document.getElementById('edit-withdrawal-id');
             const isEditing = editIdInput && editIdInput.value;
-            
+
             const withdrawal = {
                 id: isEditing ? editIdInput.value : Date.now(),
                 accountId: activeAccountId,
@@ -4418,7 +4418,7 @@ async function initBankWithdrawals() {
         await renderView();
     }
     window.showAccountsList = showAccountsList;
-    
+
     async function editBankAccountRecord(id) {
         const accs = await loadBankAccounts();
         const acc = accs.find(x => String(x.id) === String(id));
@@ -4453,7 +4453,7 @@ async function initBankWithdrawals() {
         if (deleteModal) deleteModal.classList.remove('hidden');
     }
     window.deleteBankAccountRecord = deleteBankAccountRecord;
-    
+
     async function editBankWithdrawalRecord(id) {
         const wList = await loadBankWithdrawals();
         const w = wList.find(x => String(x.id) === String(id));
@@ -4462,7 +4462,7 @@ async function initBankWithdrawals() {
             document.getElementById('withdrawal-amount').value = w.amount;
             document.getElementById('withdrawal-method').value = w.method;
             document.getElementById('withdrawal-note').value = w.note || '';
-            
+
             let editIdInput = document.getElementById('edit-withdrawal-id');
             if (!editIdInput) {
                 editIdInput = document.createElement('input');
@@ -4471,7 +4471,7 @@ async function initBankWithdrawals() {
                 withdrawalForm.appendChild(editIdInput);
             }
             editIdInput.value = w.id;
-            
+
             const submitBtn = withdrawalForm.querySelector('button[type="submit"]');
             if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Withdrawal';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4493,7 +4493,7 @@ async function initBankWithdrawals() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
             if (!deleteTargetId) return;
-            
+
             confirmDeleteBtn.disabled = true;
             const originalText = confirmDeleteBtn.innerHTML;
             confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
@@ -4502,12 +4502,12 @@ async function initBankWithdrawals() {
                 if (deleteTargetType === 'account') {
                     // Delete the account
                     await deleteDoc(doc(db, "bank_accounts", deleteTargetId.toString()));
-                    
+
                     // Cascading delete: Delete all withdrawals for this account
                     const allWithdrawals = await loadBankWithdrawals();
                     const toDelete = allWithdrawals.filter(w => String(w.accountId) === String(deleteTargetId));
                     console.log(`[Cascading Delete] Removing ${toDelete.length} withdrawals for account ${deleteTargetId}`);
-                    
+
                     for (const w of toDelete) {
                         try {
                             await deleteDoc(doc(db, "bank_withdrawals", String(w.id || w.firebaseId)));
@@ -4518,7 +4518,7 @@ async function initBankWithdrawals() {
                 } else {
                     await deleteBankWithdrawal(deleteTargetId);
                 }
-                
+
                 if (deleteModal) deleteModal.classList.add('hidden');
                 await renderView();
             } catch (err) {
@@ -4544,7 +4544,7 @@ async function initBankWithdrawals() {
     await renderView();
 }
 
-window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
+window.showSecurityPIN = function (routeName, onSuccess, onCancel) {
     if (document.getElementById('pin-modal')) return;
 
     const modalHTML = `
@@ -4568,22 +4568,22 @@ window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
             </div>
         </div>
     </div>`;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
     const inputs = document.querySelectorAll('.pin-digit');
     setTimeout(() => inputs[0].focus(), 100);
-    
+
     const close = () => {
         const m = document.getElementById('pin-modal');
         if (m) m.remove();
     };
-    
+
     document.getElementById('pin-cancel').addEventListener('click', () => {
         close();
         if (onCancel) onCancel();
     });
-    
+
     const attemptUnlock = () => {
         const pin = Array.from(inputs).map(i => i.value).join('');
         if (pin.length < 6) return;
@@ -4592,10 +4592,10 @@ window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
             close();
             if (onSuccess) onSuccess();
         } else {
-            inputs.forEach(i => { 
-                i.style.borderColor = "#ef4444"; 
+            inputs.forEach(i => {
+                i.style.borderColor = "#ef4444";
                 i.style.background = "rgba(239, 68, 68, 0.05)";
-                i.value = ""; 
+                i.value = "";
             });
             inputs[0].focus();
             setTimeout(() => {
@@ -4606,14 +4606,14 @@ window.showSecurityPIN = function(routeName, onSuccess, onCancel) {
             }, 1000);
         }
     };
-    
+
     document.getElementById('pin-submit').addEventListener('click', attemptUnlock);
 
     inputs.forEach((input, index) => {
         input.addEventListener('input', () => {
             if (input.value && index < 5) inputs[index + 1].focus();
         });
-        
+
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && !input.value && index > 0) {
                 inputs[index - 1].focus();
@@ -4652,14 +4652,14 @@ function protectPrivilegedLinks() {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopImmediatePropagation();
-            
+
             const targetHref = link.getAttribute('href') || link.getAttribute('data-page');
             let routeName = 'Add Entry';
             if (targetHref && targetHref.includes('settings')) routeName = 'Settings';
             if (targetHref && targetHref.includes('daily-txn')) routeName = 'Daily Txn';
 
             window.showSecurityPIN(routeName, () => {
-                if(targetHref) window.location.href = targetHref;
+                if (targetHref) window.location.href = targetHref;
             });
         });
     });
@@ -4669,7 +4669,7 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     try {
         const existingCredits = await loadCredits();
         let linkedCredit = existingCredits.find(cr => cr.dailyTxnId === dailyTxnId);
-        
+
         if (!linkedCredit && newTxn && newTxn.note) {
             const targetName = newTxn.note.trim().toLowerCase();
             const customers = await loadCustomers();
@@ -4698,7 +4698,7 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
         const customers = await loadCustomers();
         const targetName = newTxn.note.trim().toLowerCase();
         let customer = customers.find(c => c.name && c.name.trim().toLowerCase() === targetName);
-        
+
         if (!customer) {
             const newCust = {
                 id: Date.now().toString(),
@@ -4789,7 +4789,7 @@ async function initDailyTxn() {
         // Hide other navigation
         const restrictedLinks = document.querySelectorAll('.nav-link:not([href="daily-txn.html"]), #bottom-nav a:not([href="daily-txn.html"]), #logout-btn');
         restrictedLinks.forEach(link => { link.style.display = 'none'; });
-        
+
         const authorSection = document.querySelector('.mt-auto.p-4.border-t');
         if (authorSection) authorSection.style.display = 'none';
 
@@ -4859,7 +4859,7 @@ async function initDailyTxn() {
     const onlineWorkCountBadge = document.getElementById('online-work-count-badge');
     const passportCountBadge = document.getElementById('passport-count-badge');
     const laminationCountBadge = document.getElementById('lamination-count-badge');
-    
+
     const deleteModal = document.getElementById('delete-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
@@ -4910,7 +4910,7 @@ async function initDailyTxn() {
                     } else {
                         await syncCreditFromDailyTxn(null, deletingTxnId, true);
                     }
-                } catch(e) { console.error(e); }
+                } catch (e) { console.error(e); }
                 await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
                 hideDeleteModal();
             }
@@ -4944,7 +4944,7 @@ async function initDailyTxn() {
 
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
-        
+
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
@@ -4981,7 +4981,7 @@ async function initDailyTxn() {
                 if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
-                    
+
                     if (txnType.value === 'DAILY_EXPENSE') {
                         if (label) label.innerText = 'EXPENSE TYPE';
                         if (txnNote) txnNote.classList.add('hidden');
@@ -4998,7 +4998,7 @@ async function initDailyTxn() {
                 else noteFieldContainer.classList.add('hidden');
             }
             if (addressFieldContainer) addressFieldContainer.classList.add('hidden');
-            
+
             // Charges Field Visibility
             if (chargesFieldContainer) {
                 if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) {
@@ -5014,7 +5014,7 @@ async function initDailyTxn() {
                     if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
                 }
             }
-            
+
             if (isChargesOnly) txnAmount.value = '';
             if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) txnCharges.value = '';
             if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery && !isPending) txnNote.value = '';
@@ -5026,7 +5026,7 @@ async function initDailyTxn() {
             if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
             if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
             if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
-            
+
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
@@ -5056,7 +5056,7 @@ async function initDailyTxn() {
         // Service Provider & Remaining Amount Visibility
         const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
         const remainingTypes = ['AEPS', 'MATM'];
-        
+
         const providerLabel = document.querySelector('#provider-field-container label');
 
         if (providerTypes.includes(txnType.value)) {
@@ -5078,15 +5078,15 @@ async function initDailyTxn() {
         if (txnProvider) {
             const aepsMatmProviders = ['Airtel', 'Roinet', 'SpiceMoney', 'Crgb Bc'];
             const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
-            
+
             const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT', 'CSP_COMMISSION'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
             const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value);
             const isCspComm = txnType.value === 'CSP_COMMISSION';
-            
+
             Array.from(txnProvider.options).forEach(opt => {
                 if (!opt.value) return; // Skip placeholder
-                
+
                 if (isAepsMatm) {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
@@ -5142,7 +5142,7 @@ async function initDailyTxn() {
     form.onsubmit = async (e) => {
         e.preventDefault();
         console.log('Save Button Clicked - Starting process');
-        
+
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = true;
@@ -5152,7 +5152,7 @@ async function initDailyTxn() {
         try {
             const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
             const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
-            
+
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
             const chargesVal = parseFloat(txnCharges.value || 0);
 
@@ -5272,7 +5272,7 @@ async function initDailyTxn() {
                     return;
                 }
             }
-            
+
             // Settlement Sufficiency Check
             if (txnType.value === 'SETTLEMENT') {
                 const provider = txnProvider.value;
@@ -5327,7 +5327,7 @@ async function initDailyTxn() {
 
             console.log('Attempting to ' + (editingTxnId ? 'update' : 'add') + ' doc in Firestore:', newTxn);
             const txnCollection = collection(db, 'daily_transactions');
-            
+
             if (editingTxnId) {
                 await updateDoc(doc(db, 'daily_transactions', editingTxnId), newTxn);
                 console.log('Update Success!');
@@ -5368,7 +5368,7 @@ async function initDailyTxn() {
             };
             const selectedTime = normDate(date);
             const allEntries = [...(window._entriesCache || [])];
-            
+
             let entryData = {};
 
             if (allEntries.length > 0) {
@@ -5380,7 +5380,7 @@ async function initDailyTxn() {
                     console.log(`[Lookback] updateDailyBalances: found ${prevEntry.date} for ${date}`);
                 }
             }
-            
+
             // Fallback: Direct Firestore query if cache is empty
             if (!entryData.date) {
                 const [y, m, d] = date.split('-').map(Number);
@@ -5443,7 +5443,7 @@ async function initDailyTxn() {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
-                
+
                 const prevBals = { ...balances };
 
                 // Expense Breakdown Tracking
@@ -5464,7 +5464,7 @@ async function initDailyTxn() {
                 }
 
                 if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
-                    balances.cash -= amt; 
+                    balances.cash -= amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet += amt;
                         if (provider.includes('airtel')) {
@@ -5502,7 +5502,7 @@ async function initDailyTxn() {
                     else if (provider.includes('jio')) balances.jio -= amt;
                     else balances.online -= amt;
                 } else if (t.type === 'DISHTV_RECHARGE') {
-                    balances.roinet -= amt; 
+                    balances.roinet -= amt;
                     lastRoinetChanges.roinet = -amt;
                     lastRoinetChanges.total = -amt;
                     if (provider === 'cash') balances.cash += amt;
@@ -5627,15 +5627,15 @@ async function initDailyTxn() {
                 const sign = val > 0 ? '+' : (val < 0 ? '-' : '');
                 return `${sign}₹${Math.abs(val).toLocaleString('en-IN')}`;
             };
-            
+
             const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
-            
+
             ids.forEach(id => {
                 const d = document.getElementById(`summary-${id}-balance`);
                 const o = document.getElementById(`op-${id}`);
                 const c = document.getElementById(`cl-${id}`);
                 const changeVal = lastChanges[id] || 0;
-                
+
                 if (d) {
                     d.innerText = fmtChange(changeVal);
                     // Update color based on positive/negative
@@ -5732,9 +5732,9 @@ async function initDailyTxn() {
             unsubscribe = onSnapshot(q, async (snapshot) => {
                 console.log('Snapshot received for ' + date + ', docs:', snapshot.size);
                 if (!tableBody) return;
-                
+
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
+
                 // AUTO GOLD SIP LOGIC
                 const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
                 if (date === todayStr) {
@@ -5753,7 +5753,7 @@ async function initDailyTxn() {
 
                             bankName: '',
                             date: todayStr,
-                            timestamp: { seconds: Math.floor(new Date().setHours(0,0,0,0) / 1000) + 60, nanoseconds: 0 }
+                            timestamp: { seconds: Math.floor(new Date().setHours(0, 0, 0, 0) / 1000) + 60, nanoseconds: 0 }
                         };
                         addDoc(txnCollection, newTxn).catch(e => console.error("Auto Gold SIP error:", e));
                     }
@@ -5805,16 +5805,17 @@ async function initDailyTxn() {
                 if (entryData.details) {
                     const d = entryData.details;
                     startCash = parseFloat(d.cash || 0);
-                    // Table 'O' column now represents active wallets/bank, excluding Pending.
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.jio || 0);
+                    const isNewLogic = normDate(date) >= normDate('2026-05-01');
+                    // Table 'O' column now represents active wallets/bank. For entries from 1-05-2026, Jio is excluded from Online Total.
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + (isNewLogic ? 0 : parseFloat(d.jio || 0));
                 }
-                
+
                 // Update daily summary badges
                 updateDailyBalances(date, txns);
 
                 // Calculate running balances: Sort chronologically (Oldest first)
                 txns.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                
+
                 let currentCash = startCash;
                 let currentOnline = startOnline;
 
@@ -5824,21 +5825,32 @@ async function initDailyTxn() {
 
                     const amt = parseFloat(t.amount || 0);
                     const chg = parseFloat(t.charges || 0);
-                    
-                    if (t.chargesType === 'Online') {
-                        currentOnline += chg;
-                    } else {
-                        currentCash += chg;
+                    const provider = (t.provider || "").trim().toLowerCase();
+                    const isNewLogic = normDate(date) >= normDate('2026-05-01');
+                    const isJio = provider.includes('jio');
+
+                    if (!['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
+                        if (t.chargesType === 'Online') {
+                            currentOnline += chg;
+                        } else {
+                            currentCash += chg;
+                        }
                     }
 
                     if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
-                        currentOnline += amt; // All providers add to total online in the running balance column
+                        if (!(isNewLogic && isJio)) {
+                            currentOnline += amt; // All providers add to total online in the running balance column
+                        }
                     } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                         currentCash += amt;
-                        currentOnline -= amt;
+                        if (!(isNewLogic && isJio)) {
+                            currentOnline -= amt;
+                        }
                     } else if (t.type === 'DISHTV_RECHARGE' || t.type === 'JIO_RECHARGE') {
-                        currentOnline -= amt;
+                        if (!(isNewLogic && t.type === 'JIO_RECHARGE')) {
+                            currentOnline -= amt;
+                        }
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
                     } else if (t.type === 'JIO_TOPUP') {
@@ -5848,7 +5860,11 @@ async function initDailyTxn() {
                         else currentCash -= chg;
                     } else if (['CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'].includes(t.type)) {
                         if (t.provider === 'Cash') currentCash += (amt + chg);
-                        else currentOnline += (amt + chg);
+                        else {
+                            if (!(isNewLogic && isJio)) {
+                                currentOnline += (amt + chg);
+                            }
+                        }
                     } else if (t.type === 'GOLD_SIP') {
                         currentOnline -= amt;
                     } else if (t.type === 'CREDIT_GIVEN') {
@@ -5865,6 +5881,8 @@ async function initDailyTxn() {
                     } else if (t.type === 'SETTLEMENT') {
                         if (t.provider === 'Cash') {
                             currentCash -= amt;
+                            currentOnline += amt;
+                        } else if (isNewLogic && isJio) {
                             currentOnline += amt;
                         }
                         // Settlement charges always deducted from Online (Wallet)
@@ -5890,9 +5908,9 @@ async function initDailyTxn() {
                         // Move from Pending to Bank/Wallet (increase active online)
                         currentOnline += amt;
                     }
-                    return { 
-                        ...t, 
-                        runningCash: currentCash, 
+                    return {
+                        ...t,
+                        runningCash: currentCash,
                         runningOnline: currentOnline,
                         cashDiff: currentCash - prevCash,
                         onlineDiff: currentOnline - prevOnline
@@ -5916,7 +5934,7 @@ async function initDailyTxn() {
                 // Types jo count/volume se exclude honge
                 const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE'];
                 const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
-                
+
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
                 const volumeTxns = txns.filter(t => includedVolumeTypes.includes(t.type));
 
@@ -6039,12 +6057,12 @@ async function initDailyTxn() {
                 txns.forEach((txn, index) => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-primary/5 transition-colors group';
-                    
+
                     const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
                     const isExcluded = excludedTypes.includes(txn.type);
                     // Serial: countable txns mein is txn ki position (latest = highest number)
                     const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
-                    
+
                     tr.innerHTML = `
                         <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
                         <td class="px-3 py-1.5">
@@ -6055,14 +6073,13 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
-                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                                    txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
-                                    txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
+                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                            txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                                txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
-                                    txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
-                                    'bg-primary/10 text-primary'
-                                }">${txn.type.replace('_', ' ')}</span>
+                                        txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
+                                            'bg-primary/10 text-primary'
+                        }">${txn.type.replace('_', ' ')}</span>
                                 ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
                             </div>
                         </td>
@@ -6160,7 +6177,7 @@ async function initDailyTxn() {
                     <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
                 `;
                 tableBody.appendChild(opRow);
-                
+
                 // Reverse for download to match table Sl No logic (Recent first)
                 currentTxnsForDownload = [...txns].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
@@ -6224,7 +6241,7 @@ async function initDailyTxn() {
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
             const rows = tableBody.querySelectorAll('tr');
-            
+
             let visibleRowsCount = 0;
 
             rows.forEach(row => {
@@ -6275,7 +6292,7 @@ async function initDailyTxn() {
             }
             try {
                 const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
-                
+
                 doc.setFontSize(18);
                 doc.text(`Daily Transaction Report - ${currentSelectedDate}`, 14, 15);
                 doc.setFontSize(10);
@@ -6317,9 +6334,9 @@ async function initDailyTxn() {
                         6: { halign: 'right', cellWidth: 25 },
                         7: { halign: 'right', cellWidth: 35, fontSize: 6 }
                     },
-                    styles: { 
-                        fontSize: 7, 
-                        cellPadding: 1.5, 
+                    styles: {
+                        fontSize: 7,
+                        cellPadding: 1.5,
                         overflow: 'linebreak',
                         font: 'helvetica'
                     }
@@ -6369,7 +6386,7 @@ async function initDailyTxn() {
 
 async function startApp() {
     // Disable scrolling to change numbers on input type="number"
-    document.addEventListener('wheel', function(e) {
+    document.addEventListener('wheel', function (e) {
         if (document.activeElement.type === 'number') {
             document.activeElement.blur();
         }
