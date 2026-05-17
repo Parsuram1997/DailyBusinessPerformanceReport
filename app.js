@@ -172,6 +172,7 @@ async function saveCredit(credit) {
         console.log("Saving credit with doc ID:", id, "Data:", credit);
         await setDoc(doc(db, "credits", id), credit);
         console.log("Credit save successful!");
+        await updateCreditLedgerTotalPending();
         return { message: "Credit saved" };
     } catch (e) {
         console.error("Firestore save error (credit): ", e);
@@ -188,6 +189,7 @@ async function updateCredits(credits) {
             batch.set(creditRef, credit);
         });
         await batch.commit();
+        await updateCreditLedgerTotalPending();
         return { message: "Credits updated" };
     } catch (e) {
         console.error("Error updating credits: ", e);
@@ -203,6 +205,30 @@ async function loadCustomers() {
     } catch (e) {
         console.error("Error loading customers: ", e);
         return [];
+    }
+}
+
+async function updateCreditLedgerTotalPending() {
+    try {
+        const customers = await loadCustomers();
+        const credits = await loadCredits();
+        let totalPending = 0;
+        customers.forEach(cust => {
+            const custCredits = credits.filter(cr => String(cr.customerId) === String(cust.id));
+            let custTotal = 0;
+            let custPaid = 0;
+            custCredits.forEach(cr => {
+                custTotal += parseFloat(cr.amount || 0);
+                custPaid += parseFloat(cr.paid || 0);
+            });
+            totalPending += (custTotal - custPaid);
+        });
+        localStorage.setItem('CREDIT_LEDGER_TOTAL_PENDING', totalPending);
+        console.log("[CreditLedgerSync] Updated total pending credit:", totalPending);
+        return totalPending;
+    } catch (e) {
+        console.error("Error updating credit ledger total pending:", e);
+        return parseFloat(localStorage.getItem('CREDIT_LEDGER_TOTAL_PENDING')) || 0;
     }
 }
 
@@ -223,6 +249,7 @@ async function saveCustomer(customer) {
         const docRef = doc(db, "customers", id);
         await setDoc(docRef, customer);
         console.log("Customer save successful!");
+        await updateCreditLedgerTotalPending();
         return { message: "Customer saved" };
     } catch (e) {
         console.error("Firestore save error (customer): ", e);
@@ -245,6 +272,7 @@ async function deleteEntry(id) {
 async function deleteCredit(id) {
     try {
         await deleteDoc(doc(db, "credits", id.toString()));
+        await updateCreditLedgerTotalPending();
         return { message: "Credit deleted" };
     } catch (e) {
         console.error("Error deleting credit: ", e);
@@ -263,6 +291,7 @@ async function deleteCustomer(id) {
         snapshots.forEach(s => batch.delete(s.ref));
 
         await batch.commit();
+        await updateCreditLedgerTotalPending();
         return { message: "Customer and credits deleted" };
     } catch (e) {
         console.error("Error deleting customer: ", e);
@@ -752,7 +781,7 @@ async function initAddEntry() {
     let syncListenerUnsubscribe = null;
 
     const clearAutoSync = () => {
-        const ids = ['jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal', 'expense', 'damages', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'settlement_charges', 'internet_expense', 'gold_sip'];
+        const ids = ['credit', 'jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal', 'expense', 'damages', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'settlement_charges', 'internet_expense', 'gold_sip'];
         ids.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
@@ -792,8 +821,10 @@ async function initAddEntry() {
 
             const systemData = await fetchSystemOnline(dateStr);
             const breakdown = systemData.breakdown;
+            const pendingCredit = await updateCreditLedgerTotalPending();
 
             const syncFields = {
+                'credit': pendingCredit,
                 'jio': breakdown.jio?.closing || 0,
                 'go2sms': breakdown.crgb_bc?.closing || 0,
                 'pending': breakdown.pending?.closing || 0,
@@ -1000,19 +1031,11 @@ async function initAddEntry() {
         }
 
         // --- Data Transfer Logic ---
-        // Apply any pending transfers from Credit Ledger, Damaged Currency, or Cash Calculator
-        const selectedCredit = localStorage.getItem('selected_credit_transfer');
+        // Apply any pending transfers from Damaged Currency or Cash Calculator
         const selectedDamages = localStorage.getItem('selected_damages_transfer');
         const selectedCash = localStorage.getItem('temp_calculator_cash');
 
-        if (selectedCredit || selectedDamages || selectedCash) {
-            if (selectedCredit) {
-                const creditInput = document.getElementById('credit');
-                if (creditInput) {
-                    creditInput.value = selectedCredit;
-                    creditInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
+        if (selectedDamages || selectedCash) {
             if (selectedDamages) {
                 const damagesInput = document.getElementById('damages');
                 if (damagesInput) {
@@ -2749,7 +2772,6 @@ async function initCreditLedger() {
     const summaryReceived = document.getElementById('summary-received');
     const summaryPending = document.getElementById('summary-pending');
     const searchInput = document.getElementById('customer-search');
-    const useTotalBtn = document.getElementById('use-total-btn');
 
     let currentView = 'ledger'; // 'ledger' or 'details'
     let activeCustomerId = null;
@@ -2773,7 +2795,6 @@ async function initCreditLedger() {
                 if (addCustomerBtn) addCustomerBtn.classList.remove('hidden');
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
-                if (useTotalBtn) useTotalBtn.classList.remove('hidden');
 
                 const tableContainer = document.getElementById('table-card-container');
                 if (tableContainer) tableContainer.className = "lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
@@ -2815,9 +2836,6 @@ async function initCreditLedger() {
                             showCustomerDetails(cust.id);
                         };
 
-                        const urlParamsObj = new URLSearchParams(window.location.search);
-                        const isSelectModeFlag = urlParamsObj.get('mode') === 'select';
-
                         tr.innerHTML = `
                             <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
                             <td class="px-6 py-2">
@@ -2834,18 +2852,12 @@ async function initCreditLedger() {
                             </td>
                             <td class="px-6 py-2 text-right">
                                 <div class="flex gap-2 justify-end">
-                                    ${isSelectModeFlag ? `
-                                        <button onclick="useCustomerBalance(${custBal})" class="bg-primary text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-primary/90">
-                                            Use Balance
-                                        </button>
-                                    ` : `
-                                        <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View Details">
-                                            <span class="material-symbols-outlined text-lg">visibility</span>
-                                        </button>
-                                        <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg" title="Delete Customer">
-                                            <span class="material-symbols-outlined text-lg">delete</span>
-                                        </button>
-                                    `}
+                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View Details">
+                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg" title="Delete Customer">
+                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                    </button>
                                 </div>
                             </td>
                         `;
@@ -2866,7 +2878,6 @@ async function initCreditLedger() {
                 if (addCustomerBtn) addCustomerBtn.classList.add('hidden');
                 if (ledgerHeader) ledgerHeader.classList.add('hidden');
                 if (historyHeader) historyHeader.classList.remove('hidden');
-                if (useTotalBtn) useTotalBtn.classList.add('hidden');
 
                 const tableContainer = document.getElementById('table-card-container');
                 if (tableContainer) tableContainer.className = "lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
@@ -2949,7 +2960,10 @@ async function initCreditLedger() {
 
             if (summaryTotal) summaryTotal.innerText = formatCurrency(displayTotal);
             if (summaryReceived) summaryReceived.innerText = formatCurrency(displayReceived);
-            if (summaryPending) summaryPending.innerText = formatCurrency(displayPending);
+            if (summaryPending) {
+                summaryPending.innerText = formatCurrency(displayPending);
+                localStorage.setItem('CREDIT_LEDGER_TOTAL_PENDING', displayPending);
+            }
 
             const pagInfo = document.getElementById('pagination-info');
             if (pagInfo) {
@@ -3191,34 +3205,6 @@ async function initCreditLedger() {
 
     renderView();
 }
-
-// Inter-page logic for selecting credit
-window.goToLedgerToSelect = () => {
-    const form = document.querySelector('form');
-    const datePicker = document.getElementById('entry-date-picker');
-    if (form) {
-        const formData = {};
-        new FormData(form).forEach((value, key) => formData[key] = value);
-        // Also save the date since date picker is outside the <form> tag
-        if (datePicker) formData['__entry_date__'] = datePicker.value;
-        sessionStorage.setItem('add_entry_form_data', JSON.stringify(formData));
-    }
-    window.location.href = 'credit-ledger-code.html?mode=select';
-};
-
-window.useCustomerBalance = (amount) => {
-    localStorage.setItem('selected_credit_transfer', amount);
-    window.location.href = 'add-entry-code.html';
-};
-
-window.useTotalPendingBalance = () => {
-    const pendingEl = document.getElementById('summary-pending');
-    if (pendingEl) {
-        // Extract only numbers from the currency string (e.g. ₹7,500 -> 7500)
-        const amount = parseFloat(pendingEl.innerText.replace(/[^0-9.-]/g, '')) || 0;
-        window.useCustomerBalance(amount);
-    }
-};
 
 window.goToCashCalculator = () => {
     const form = document.getElementById('add-entry-form');

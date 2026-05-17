@@ -334,10 +334,7 @@
                                         </label>
                 <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
-                <input id="credit" name="credit" class="w-full pl-8 pr-12 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
-                <button type="button" onclick="goToLedgerToSelect()" class="absolute right-3 top-1/2 -translate-y-1/2 text-primary hover:text-primary/70 transition-colors flex items-center justify-center p-1" title="Select from Credit Ledger">
-                <span class="material-symbols-outlined text-xl">link</span>
-                </button>
+                <input id="credit" name="credit" class="w-full pl-8 pr-4 py-2 md:py-3 rounded-lg text-sm md:text-base border border-primary/20 bg-white dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="0.00" type="number"/>
                 </div>
             </div>
             <!-- Pending Field -->
@@ -772,6 +769,60 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
-<script type="module" src="app.js"></script>
+<script>
+    (function() {
+        const isLocalFile = window.location.protocol === 'file:';
+        console.log('%c[PROTOCOL LOADER] Detected:', 'color: #7f13ec; font-weight: bold;', window.location.protocol);
+
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('%c[GLOBAL ERROR]', 'color: white; background: red; padding: 2px 5px;', msg, '\nAt:', url, 'line:', lineNo);
+            return false;
+        };
+
+        function loadScript(src, isModule = false) {
+            console.log('%c[LOADER] Starting:', 'color: #3b82f6;', src);
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                if (isModule) script.type = 'module';
+                script.src = src;
+                script.onload = () => {
+                    console.log('%c[LOADER] Success:', 'color: #10b981;', src);
+                    resolve();
+                };
+                script.onerror = (e) => {
+                    console.error('%c[LOADER] Failed:', 'color: #ef4444;', src, e);
+                    reject(e);
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        async function initApp() {
+            try {
+                const v = Date.now();
+                if (isLocalFile) {
+                    console.log('%c[LOADER] Using File Fallback (Compat SDK)', 'color: #f59e0b; font-weight: bold;');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js');
+                    await loadScript('firebase-config-v2.js?v=' + v);
+                    await loadScript('app-v2.js?v=' + v);
+                } else {
+                    console.log('%c[LOADER] Using Server Mode (Modular SDK)', 'color: #7f13ec; font-weight: bold;');
+                    await loadScript('app.js?v=' + v, true);
+                }
+                console.log('%c[LOADER] All scripts loaded successfully.', 'color: #10b981; font-weight: bold;');
+            } catch (err) {
+                console.error('%c[LOADER] Initialization Failed:', 'color: white; background: red; padding: 5px;', err);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    })();
+</script>
 </body></html>
 
