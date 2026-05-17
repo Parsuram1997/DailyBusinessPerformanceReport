@@ -223,68 +223,101 @@
 </div>
 </div>
 
-<!-- Ledger Table Card -->
-<div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
-    <div class="p-4 border-b border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <button onclick="showMainLedger()" id="back-to-ledger" class="hidden p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                <span class="material-symbols-outlined">arrow_back</span>
-            </button>
-            <h3 id="ledger-title" class="text-base font-bold">Ledger Details</h3>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <div class="relative flex-1 md:flex-none">
-                <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-                <input id="customer-search" class="w-full md:w-48 pl-8 pr-3 py-1.5 bg-background-light dark:bg-slate-800 border-none rounded-lg text-xs focus:ring-1 focus:ring-primary" placeholder="Search customer..."/>
+<!-- Ledger & Details Grid Container -->
+<div id="ledger-view-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Table Container -->
+    <div id="table-card-container" class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <button onclick="showMainLedger()" id="back-to-ledger" class="hidden p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h3 id="ledger-title" class="text-base font-bold">Ledger Details</h3>
             </div>
-            <button class="flex items-center gap-2 px-3 py-1.5 bg-background-light dark:bg-slate-800 rounded-lg text-xs font-bold hover:bg-primary/5 transition-colors">
-                <span class="material-symbols-outlined text-xs">filter_list</span>
-                Filter
-            </button>
-            <button class="flex items-center gap-2 px-3 py-1.5 bg-background-light dark:bg-slate-800 rounded-lg text-xs font-bold hover:bg-primary/5 transition-colors">
-                <span class="material-symbols-outlined text-xs">file_download</span>
-                Export
-            </button>
-            <button id="add-customer-btn" onclick="openAddCustomerModal()" class="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-                <span class="material-symbols-outlined text-xs">person_add</span>
-                Add Customer
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative flex-1 md:flex-none">
+                    <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                    <input id="customer-search" class="w-full md:w-48 pl-8 pr-3 py-1.5 bg-background-light dark:bg-slate-800 border-none rounded-lg text-xs focus:ring-1 focus:ring-primary" placeholder="Search customer..."/>
+                </div>
+                <button id="add-customer-btn" onclick="openAddCustomerModal()" class="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                    <span class="material-symbols-outlined text-xs">person_add</span>
+                    Add Customer
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left">
+                <thead id="ledger-header" class="bg-background-light/50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Customer Name</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance Due</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Paid</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Credit</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <thead id="history-header" class="hidden bg-background-light/50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Credit (+)</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Paid (-)</th>
+                        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Note</th>
+                    </tr>
+                </thead>
+                <tbody id="credit-table-body" class="divide-y divide-primary/5">
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 bg-background-light/30 dark:bg-slate-800/30 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <p id="pagination-info">Showing 0 entries</p>
+            <div id="pagination-controls" class="flex gap-1"></div>
         </div>
     </div>
 
-<div class="overflow-x-auto">
-<table class="w-full text-left">
-<thead id="ledger-header" class="bg-background-light/50 dark:bg-slate-800/50">
-    <tr>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Customer Name</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance Due</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Paid</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Total Credit</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-    </tr>
-</thead>
-<thead id="history-header" class="hidden bg-background-light/50 dark:bg-slate-800/50">
-    <tr>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-16">S.No</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Credit (+)</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Paid (-)</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Note</th>
-        <th class="px-6 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-    </tr>
-</thead>
-<tbody id="credit-table-body" class="divide-y divide-primary/5">
-</tbody>
-</tbody>
-</table>
-</div>
-<div class="p-4 bg-background-light/30 dark:bg-slate-800/30 flex items-center justify-between text-xs text-slate-500 font-medium">
-<p id="pagination-info">Showing 0 entries</p>
-<div id="pagination-controls" class="flex gap-1">
-</div>
-</div>
+    <!-- Customer Summary Sidebar Card -->
+    <div id="customer-summary-sidebar" class="hidden lg:col-span-1 bg-gradient-to-br from-white to-primary/5 dark:from-slate-900 dark:to-primary/10 rounded-2xl border border-primary/20 shadow-xl shadow-primary/5 p-6 flex flex-col space-y-6">
+        <div class="flex items-center gap-4 border-b border-primary/10 pb-4">
+            <div class="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-2xl shadow-inner">
+                <span id="summary-avatar">C</span>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <h4 id="summary-name" class="font-black text-lg text-slate-800 dark:text-white truncate">Customer Name</h4>
+                <span id="summary-phone" class="text-xs text-slate-500 font-medium">Customer Profile</span>
+            </div>
+        </div>
+        <div class="bg-primary/5 dark:bg-primary/10 p-5 rounded-2xl border border-primary/10 flex flex-col items-center justify-center space-y-1">
+            <span class="text-xs font-bold text-primary uppercase tracking-wider">Current Balance Due</span>
+            <span id="summary-balance" class="text-3xl font-black text-rose-600 dark:text-rose-400">₹0.00</span>
+            <span id="summary-status-badge" class="mt-2 px-3 py-1 rounded-full text-xs font-black uppercase">Pending</span>
+        </div>
+        <div class="space-y-3">
+            <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+                <span>Recovery Progress</span>
+                <span id="summary-progress-pct">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                <div id="summary-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 w-0"></div>
+            </div>
+            <div class="flex justify-between text-[11px] font-medium text-slate-500">
+                <span>Total Credit: <b id="summary-stat-total" class="font-bold text-slate-700 dark:text-slate-200">₹0</b></span>
+                <span>Total Paid: <b id="summary-stat-paid" class="font-bold text-slate-700 dark:text-slate-200">₹0</b></span>
+            </div>
+        </div>
+        <div class="border-t border-primary/10 pt-4 space-y-3 text-xs font-medium text-slate-600 dark:text-slate-400">
+            <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800/50">
+                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm text-primary">receipt_long</span> Total Transactions</span>
+                <span id="summary-count" class="font-black text-slate-800 dark:text-white">0</span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+                <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm text-primary">calendar_clock</span> Last Transaction</span>
+                <span id="summary-last-date" class="font-bold text-slate-800 dark:text-white">-</span>
+            </div>
+        </div>
+    </div>
 </div>
     <!-- Add Customer Modal -->
     <div id="add-customer-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -381,6 +414,64 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
-<script type="module" src="app.js"></script>
+    <script>
+        (function() {
+            const isLocalFile = window.location.protocol === 'file:';
+            console.log('%c[PROTOCOL LOADER] Detected:', 'color: #7f13ec; font-weight: bold;', window.location.protocol);
+
+            window.onerror = function(msg, url, lineNo, columnNo, error) {
+                console.error('%c[GLOBAL ERROR]', 'color: white; background: red; padding: 2px 5px;', msg, '\nAt:', url, 'line:', lineNo);
+                return false;
+            };
+
+            function loadScript(src, isModule = false) {
+                console.log('%c[LOADER] Starting:', 'color: #3b82f6;', src);
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    if (isModule) script.type = 'module';
+                    script.src = src;
+                    script.onload = () => {
+                        console.log('%c[LOADER] Success:', 'color: #10b981;', src);
+                        resolve();
+                    };
+                    script.onerror = (e) => {
+                        console.error('%c[LOADER] Failed:', 'color: #ef4444;', src, e);
+                        reject(e);
+                    };
+                    document.body.appendChild(script);
+                });
+            }
+
+            async function initApp() {
+                try {
+                    const v = Date.now();
+                    if (isLocalFile) {
+                        console.log('%c[LOADER] Using File Fallback (Compat SDK)', 'color: #f59e0b; font-weight: bold;');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js');
+                        await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js');
+                        await loadScript('firebase-config-v2.js?v=' + v);
+                        await loadScript('app-v2.js?v=' + v);
+                    } else {
+                        console.log('%c[LOADER] Using Server Mode (Modular SDK)', 'color: #7f13ec; font-weight: bold;');
+                        await loadScript('app.js?v=' + v, true);
+                    }
+                    console.log('%c[LOADER] All scripts loaded successfully.', 'color: #10b981; font-weight: bold;');
+                } catch (err) {
+                    console.error('%c[LOADER] Initialization Failed:', 'color: white; background: red; padding: 5px;', err);
+                    const tableBody = document.getElementById('credit-table-body');
+                    if (tableBody) {
+                        tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold">CRITICAL ERROR: Failed to load database scripts.<br><span class="text-[10px] font-normal">Please check your internet connection or try running a local server.</span></td></tr>`;
+                    }
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        })();
+    </script>
 </body></html>
 

@@ -2775,8 +2775,13 @@ async function initCreditLedger() {
                 if (historyHeader) historyHeader.classList.add('hidden');
                 if (useTotalBtn) useTotalBtn.classList.remove('hidden');
 
+                const tableContainer = document.getElementById('table-card-container');
+                if (tableContainer) tableContainer.className = "lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
+                const summarySidebar = document.getElementById('customer-summary-sidebar');
+                if (summarySidebar) summarySidebar.classList.add('hidden');
+
                 const queryStr = searchInput ? searchInput.value.toLowerCase() : '';
-                const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(queryStr));
+                const filteredCustomers = customers.filter(c => (c.name || '').toLowerCase().includes(queryStr));
 
                 if (filteredCustomers.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No customers found. Add one above!</td></tr>`;
@@ -2800,7 +2805,8 @@ async function initCreditLedger() {
                             (status === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' :
                                 'bg-red-100 text-red-600 dark:bg-red-900/30');
 
-                        const initial = cust.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                        const custNameStr = cust.name || 'Unknown';
+                        const initial = custNameStr.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
 
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
@@ -2817,7 +2823,7 @@ async function initCreditLedger() {
                             <td class="px-6 py-2">
                                 <div class="flex items-center gap-3">
                                     <div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">${initial}</div>
-                                    <span class="text-sm font-bold group-hover:text-primary transition-colors">${cust.name}</span>
+                                    <span class="text-sm font-bold group-hover:text-primary transition-colors">${custNameStr}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-2 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
@@ -2853,7 +2859,8 @@ async function initCreditLedger() {
                     return;
                 }
 
-                if (ledgerTitle) ledgerTitle.innerText = cust.name;
+                const custName = cust.name || 'Unknown';
+                if (ledgerTitle) ledgerTitle.innerText = custName;
                 if (backBtn) backBtn.classList.remove('hidden');
                 if (addTransactionSection) addTransactionSection.classList.add('hidden');
                 if (addCustomerBtn) addCustomerBtn.classList.add('hidden');
@@ -2861,6 +2868,10 @@ async function initCreditLedger() {
                 if (historyHeader) historyHeader.classList.remove('hidden');
                 if (useTotalBtn) useTotalBtn.classList.add('hidden');
 
+                const tableContainer = document.getElementById('table-card-container');
+                if (tableContainer) tableContainer.className = "lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
+                const summarySidebar = document.getElementById('customer-summary-sidebar');
+                if (summarySidebar) summarySidebar.classList.remove('hidden');
 
                 const custCredits = credits.filter(cr => String(cr.customerId) === String(activeCustomerId));
                 custCredits.sort((a, b) => {
@@ -2870,8 +2881,49 @@ async function initCreditLedger() {
                     return (b.id || 0) - (a.id || 0);
                 });
 
+                let custTotalCredit = 0;
+                let custTotalPaid = 0;
+                custCredits.forEach(cr => {
+                    custTotalCredit += (cr.amount || 0);
+                    custTotalPaid += (cr.paid || 0);
+                });
+                const custBalanceDue = custTotalCredit - custTotalPaid;
+                const statusStr = custBalanceDue <= 0 && custTotalCredit > 0 ? 'PAID' : (custTotalPaid > 0 ? 'PARTIAL' : 'PENDING');
+                const statusBadgeClass = statusStr === 'PAID' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : (statusStr === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30');
+
+                const initialStr = custName.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
+                const summaryAvatar = document.getElementById('summary-avatar');
+                const summaryName = document.getElementById('summary-name');
+                const summaryPhone = document.getElementById('summary-phone');
+                const summaryBalance = document.getElementById('summary-balance');
+                const summaryStatusBadge = document.getElementById('summary-status-badge');
+                const summaryProgressPct = document.getElementById('summary-progress-pct');
+                const summaryProgressBar = document.getElementById('summary-progress-bar');
+                const summaryStatTotal = document.getElementById('summary-stat-total');
+                const summaryStatPaid = document.getElementById('summary-stat-paid');
+                const summaryCount = document.getElementById('summary-count');
+                const summaryLastDate = document.getElementById('summary-last-date');
+
+                if (summaryAvatar) summaryAvatar.innerText = initialStr;
+                if (summaryName) summaryName.innerText = custName;
+                if (summaryPhone) summaryPhone.innerText = "Customer Profile";
+                if (summaryBalance) summaryBalance.innerText = formatCurrency(custBalanceDue);
+                if (summaryStatusBadge) {
+                    summaryStatusBadge.innerText = statusStr;
+                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase ${statusBadgeClass}`;
+                }
+                const progressPctVal = custTotalCredit > 0 ? Math.min(100, Math.round((custTotalPaid / custTotalCredit) * 100)) : 0;
+                if (summaryProgressPct) summaryProgressPct.innerText = `${progressPctVal}%`;
+                if (summaryProgressBar) summaryProgressBar.style.width = `${progressPctVal}%`;
+                if (summaryStatTotal) summaryStatTotal.innerText = formatCurrency(custTotalCredit);
+                if (summaryStatPaid) summaryStatPaid.innerText = formatCurrency(custTotalPaid);
+                if (summaryCount) summaryCount.innerText = custCredits.length;
+                if (summaryLastDate) {
+                    summaryLastDate.innerText = custCredits.length > 0 ? formatStandardDate(custCredits[0].date) : '-';
+                }
+
                 if (custCredits.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
                 } else {
                     custCredits.forEach((cr, index) => {
                         const creditAmt = cr.amount || 0;
@@ -2881,18 +2933,13 @@ async function initCreditLedger() {
                         displayReceived += paidAmt;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors";
+                        tr.className = "hover:bg-primary/5 transition-colors py-1.5";
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
-                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
-                            <td class="px-6 py-2 text-xs text-slate-500 italic">${cr.note || ''}</td>
-                            <td class="px-6 py-2 text-right">
-                                <button onclick="deleteLedgerCredit('${cr.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete Transaction">
-                                    <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
-                            </td>
+                            <td class="px-6 py-2.5 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
+                            <td class="px-6 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
+                            <td class="px-6 py-2.5 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
+                            <td class="px-6 py-2.5 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
+                            <td class="px-6 py-2.5 text-xs text-slate-500 italic">${cr.note || ''}</td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -4713,7 +4760,8 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
 
         const amountVal = newTxn.type === 'CREDIT_GIVEN' ? Number(newTxn.amount || 0) : 0;
         const paidVal = newTxn.type === 'CREDIT_RECEIVED' ? Number(newTxn.amount || 0) : 0;
-        const noteStr = newTxn.note ? newTxn.note.trim() + (newTxn.address ? ` (${newTxn.address})` : '') : 'Synced from Daily Txn';
+        const remarkStr = newTxn.remark ? newTxn.remark.trim() : '';
+        const noteStr = remarkStr ? remarkStr : (newTxn.address ? `(${newTxn.address})` : 'Synced from Daily Txn');
 
         if (linkedCredit) {
             linkedCredit.amount = amountVal;
@@ -4831,6 +4879,7 @@ async function initDailyTxn() {
     const remainingContainer = document.getElementById('remaining-field-container');
     const txnType = document.getElementById('txn-type');
     const txnNote = document.getElementById('txn-note');
+    const txnRemark = document.getElementById('txn-remark');
     const txnExpenseType = document.getElementById('txn-expense-type');
     const txnAddress = document.getElementById('txn-address');
     const txnCharges = document.getElementById('txn-charges');
@@ -4842,6 +4891,7 @@ async function initDailyTxn() {
     const providerContainer = document.getElementById('provider-field-container');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
+    const remarkFieldContainer = document.getElementById('remark-field-container');
     const addressFieldContainer = document.getElementById('address-field-container');
     const txnBank = document.getElementById('txn-bank');
     const bankContainer = document.getElementById('bank-field-container');
@@ -4924,12 +4974,14 @@ async function initDailyTxn() {
         txnType.value = 'AEPS';
         txnProvider.value = '';
         if (txnExpenseType) txnExpenseType.value = '';
+        if (txnRemark) txnRemark.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
         if (txnChargesType) txnChargesType.value = 'Cash';
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
         if (bankContainer) bankContainer.classList.add('hidden');
+        if (remarkFieldContainer) remarkFieldContainer.classList.add('hidden');
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
@@ -4997,6 +5049,14 @@ async function initDailyTxn() {
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
+            if (remarkFieldContainer) {
+                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+                    remarkFieldContainer.classList.remove('hidden');
+                } else {
+                    remarkFieldContainer.classList.add('hidden');
+                    if (txnRemark) txnRemark.value = '';
+                }
+            }
             if (addressFieldContainer) addressFieldContainer.classList.add('hidden');
 
             // Charges Field Visibility
@@ -5023,6 +5083,10 @@ async function initDailyTxn() {
         } else {
             if (amountFieldContainer) amountFieldContainer.classList.remove('hidden');
             if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
+            if (remarkFieldContainer) {
+                remarkFieldContainer.classList.add('hidden');
+                if (txnRemark) txnRemark.value = '';
+            }
             if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
             if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
             if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
@@ -5315,6 +5379,7 @@ async function initDailyTxn() {
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
+                remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
@@ -6191,6 +6256,7 @@ async function initDailyTxn() {
                             txnAmount.value = txn.amount;
                             txnCharges.value = txn.charges;
                             txnNote.value = txn.note;
+                            if (txnRemark) txnRemark.value = txn.remark || '';
                             if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
                             txnAddress.value = txn.address;
                             txnConditional.value = txn.extraDetails || '';
