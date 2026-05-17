@@ -241,7 +241,7 @@ async function saveCustomer(customer) {
         const id = String(customer.id || Date.now());
         console.log("Saving customer with doc ID:", id, "Data:", customer);
         const docRef = doc(db, "customers", id);
-        await setDoc(docRef, customer);
+        await setDoc(docRef, customer, { merge: true });
         console.log("Customer save successful!");
         await updateCreditLedgerTotalPending();
         return { message: "Customer saved" };
@@ -553,6 +553,46 @@ async function initAddEntry() {
     const submitIcon = document.getElementById('submit-icon');
     const submitText = document.getElementById('submit-text');
 
+    const lockAutoSyncedFields = (isExisting = false) => {
+        const autoSyncIds = [
+            'go2sms', 'credit', 'pending', 'deposit', 'damages', 'jio', 'expense', 'capital', 'withdrawal',
+            'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 
+            'business_development', 'settlement_charges', 'internet_expense', 'gold_sip', 'expense_notes'
+        ];
+        autoSyncIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.readOnly = true;
+                input.classList.add('bg-primary/5', 'dark:bg-primary/10', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30', 'select-none');
+                input.setAttribute('title', 'Auto synced field. Manual editing disabled.');
+                input.style.paddingRight = '56px';
+
+                const button = input.parentElement.querySelector('button');
+                if (button && id !== 'expense') button.style.display = 'none'; // Keep expense split button visible for viewing
+                let rightPos = (button && id === 'expense') ? 'right-12' : 'right-3';
+                input.style.paddingRight = (button && id === 'expense') ? '96px' : '56px';
+
+                let indicator = input.parentElement.querySelector('.sync-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
+                    indicator.innerHTML = `
+                        <span class="text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
+                        <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
+                    `;
+                    input.parentElement.appendChild(indicator);
+                } else {
+                    indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
+                }
+                const icon = indicator.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    if (isExisting) icon.classList.remove('animate-spin-slow');
+                    else icon.classList.add('animate-spin-slow');
+                }
+            }
+        });
+    };
+
     async function checkExisting() {
         if (!datePicker) return;
         const entries = await loadEntries();
@@ -577,14 +617,6 @@ async function initAddEntry() {
             if (submitText) submitText.innerText = "Update Entry";
             if (submitIcon) submitIcon.innerText = "edit_note";
 
-            const creditInput = document.getElementById('credit');
-            if (creditInput) {
-                creditInput.readOnly = false;
-                creditInput.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
-                const indicator = creditInput.parentElement?.querySelector('.sync-indicator');
-                if (indicator) indicator.remove();
-            }
-
             const details = existing.details || {};
             Array.from(form.querySelectorAll('input[type="number"]')).forEach(input => {
                 const fieldName = (input.id || input.name || "").toLowerCase();
@@ -593,7 +625,7 @@ async function initAddEntry() {
                 input.value = val;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.value = details[id] !== undefined ? details[id] : '';
@@ -605,6 +637,8 @@ async function initAddEntry() {
                 notesEl.value = details['expense_notes'] || '';
                 notesEl.dispatchEvent(new Event('input', { bubbles: true }));
             }
+
+            lockAutoSyncedFields(true /* isExisting */);
         } else {
             if (formTitle) formTitle.innerText = "New Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
@@ -617,20 +651,9 @@ async function initAddEntry() {
             const creditInput = document.getElementById('credit');
             if (creditInput) {
                 creditInput.value = pendingCredit;
-                creditInput.readOnly = true;
-                creditInput.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
-                let indicator = creditInput.parentElement?.querySelector('.sync-indicator');
-                if (!indicator) {
-                    indicator = document.createElement('div');
-                    indicator.className = `sync-indicator absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-60 pointer-events-none`;
-                    indicator.innerHTML = `
-                        <span class="text-[8px] font-black text-primary uppercase tracking-tighter">Sync</span>
-                        <span class="material-symbols-outlined text-[14px] text-primary animate-spin-slow">sync</span>
-                    `;
-                    creditInput.parentElement?.appendChild(indicator);
-                }
                 creditInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
+            lockAutoSyncedFields(false /* isExisting */);
 
             // No data for this date — check if there is a local draft
             const draftStr = localStorage.getItem('add_entry_draft');
@@ -645,7 +668,7 @@ async function initAddEntry() {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el && draft.data[id] !== undefined) {
                             el.value = draft.data[id];
@@ -664,7 +687,7 @@ async function initAddEntry() {
                         input.value = '';
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
                     });
@@ -677,7 +700,7 @@ async function initAddEntry() {
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                 });
-                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
                 });
@@ -778,7 +801,7 @@ async function initAddEntry() {
                     draft.data[fieldName] = parseFloat(input.value);
                 }
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.value !== '') {
                     draft.data[id] = parseFloat(el.value);
@@ -795,7 +818,7 @@ async function initAddEntry() {
                 saveDraft();
             }
         });
-        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.addEventListener('input', saveDraft);
         });
@@ -978,6 +1001,8 @@ async function initAddEntry() {
     const ex_r = document.getElementById('shop_rent_expense');
     const ex_b = document.getElementById('business_development');
     const ex_i = document.getElementById('internet_expense');
+    const ex_st = document.getElementById('settlement_charges');
+    const ex_g = document.getElementById('gold_sip');
 
     const updateExpenseSplitTotal = () => {
         if(!ex_p) return 0;
@@ -986,7 +1011,9 @@ async function initAddEntry() {
                       (parseFloat(ex_e.value) || 0) + 
                       (parseFloat(ex_r.value) || 0) + 
                       (parseFloat(ex_b.value) || 0) + 
-                      (parseFloat(ex_i.value) || 0);
+                      (parseFloat(ex_i.value) || 0) +
+                      (parseFloat(ex_st?.value) || 0) +
+                      (parseFloat(ex_g?.value) || 0);
         if(expenseSplitTotalDisplay) expenseSplitTotalDisplay.textContent = formatCurrency(total);
         return total;
     };
@@ -1013,19 +1040,12 @@ async function initAddEntry() {
         if(closeExpenseBtn) closeExpenseBtn.addEventListener('click', closeExpenseModal);
         if(expenseBackdrop) expenseBackdrop.addEventListener('click', closeExpenseModal);
 
-        [ex_p, ex_s, ex_e, ex_r, ex_b, ex_i].forEach(inp => {
+        [ex_p, ex_s, ex_e, ex_r, ex_b, ex_i, ex_st, ex_g].forEach(inp => {
             if(inp) inp.addEventListener('input', updateExpenseSplitTotal);
         });
 
         if(useExpenseBtn) {
-            useExpenseBtn.addEventListener('click', () => {
-                const total = updateExpenseSplitTotal();
-                if(expenseInput) {
-                    expenseInput.value = total || '';
-                    expenseInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                closeExpenseModal();
-            });
+            useExpenseBtn.addEventListener('click', closeExpenseModal);
         }
     }
 
@@ -1070,7 +1090,7 @@ async function initAddEntry() {
             let withdrawal = 0;
             const details = {};
 
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && parseFloat(el.value) > 0) {
                     details[id] = parseFloat(el.value);
@@ -1170,7 +1190,7 @@ async function initAddEntry() {
             form.reset();
             
             // Clear modal inputs which are outside the form
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) { 
                     el.value = ''; 
@@ -2383,6 +2403,39 @@ async function initCreditLedger() {
             let displayReceived = 0;
             let displayPending = 0;
 
+            const nowMs = Date.now();
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const thirtyDaysAgoMs = nowMs - thirtyDaysMs;
+            const sixtyDaysAgoMs = nowMs - (2 * thirtyDaysMs);
+
+            let currPeriodCredit = 0;
+            let prevPeriodCredit = 0;
+            let currPeriodReceived = 0;
+            let prevPeriodReceived = 0;
+            let totalCreditUpToThirtyDaysAgo = 0;
+            let totalPaidUpToThirtyDaysAgo = 0;
+
+            credits.forEach(cr => {
+                const crDateMs = new Date(cr.date).getTime();
+                const amt = parseFloat(cr.amount || 0);
+                const pd = parseFloat(cr.paid || 0);
+
+                if (!isNaN(crDateMs)) {
+                    if (crDateMs >= thirtyDaysAgoMs) {
+                        currPeriodCredit += amt;
+                        currPeriodReceived += pd;
+                    } else if (crDateMs >= sixtyDaysAgoMs && crDateMs < thirtyDaysAgoMs) {
+                        prevPeriodCredit += amt;
+                        prevPeriodReceived += pd;
+                    }
+
+                    if (crDateMs < thirtyDaysAgoMs) {
+                        totalCreditUpToThirtyDaysAgo += amt;
+                        totalPaidUpToThirtyDaysAgo += pd;
+                    }
+                }
+            });
+
             tableBody.innerHTML = '';
 
             if (currentView === 'ledger') {
@@ -2410,15 +2463,15 @@ async function initCreditLedger() {
                 const filteredCustomers = customers.filter(c => (c.name || '').toLowerCase().includes(queryStr));
 
                 if (filteredCustomers.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No customers found. Add one above!</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-slate-500 font-medium">No customers found. Add one above!</td></tr>`;
                 } else {
                     filteredCustomers.forEach((cust, index) => {
                         const custCredits = credits.filter(cr => String(cr.customerId) === String(cust.id));
                         let custTotal = 0;
                         let custPaid = 0;
                         custCredits.forEach(cr => {
-                            custTotal += (cr.amount || 0);
-                            custPaid += (cr.paid || 0);
+                            custTotal += parseFloat(cr.amount || 0);
+                            custPaid += parseFloat(cr.paid || 0);
                         });
                         const custBal = custTotal - custPaid;
 
@@ -2427,41 +2480,46 @@ async function initCreditLedger() {
                         displayPending += custBal;
 
                         const status = custBal <= 0 && custTotal > 0 ? 'PAID' : (custPaid > 0 ? 'PARTIAL' : 'PENDING');
-                        const statusClass = status === 'PAID' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
-                            (status === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' :
-                                'bg-red-100 text-red-600 dark:bg-red-900/30');
+                        const statusClass = status === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                            (status === 'PARTIAL' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20' :
+                                'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20');
 
                         const custNameStr = cust.name || 'Unknown';
                         const initial = custNameStr.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
+                        const phoneDisplay = cust.phone ? `<span class="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">${safeEscape(cust.phone)}</span>` : `<span class="text-sm font-medium italic text-slate-400">Not Added</span>`;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer group border-b border-slate-100 dark:border-slate-800/50";
                         tr.onclick = (e) => {
                             if (e.target.closest('button')) return;
                             showCustomerDetails(cust.id);
                         };
 
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
-                            <td class="px-6 py-2">
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-slate-500 w-14">${index + 1}</td>
+                            <td class="px-4 py-2.5 align-middle">
                                 <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">${initial}</div>
-                                    <span class="text-sm font-bold group-hover:text-primary transition-colors">${custNameStr}</span>
+                                    <div class="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-inner shrink-0">${initial}</div>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${safeEscape(custNameStr)}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-2 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
-                            <td class="px-6 py-2 text-sm text-right">${formatCurrency(custPaid)}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
-                            <td class="px-6 py-2 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${status}</span>
+                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">${phoneDisplay}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right whitespace-nowrap ${custBal > 0 ? 'text-orange-600 dark:text-orange-400 font-black' : 'text-emerald-600 dark:text-emerald-400'}">${formatCurrency(custBal)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-nowrap">${formatCurrency(custPaid)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-black text-slate-800 dark:text-white text-right whitespace-nowrap">${formatCurrency(custTotal)}</td>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${statusClass}">${status}</span>
                             </td>
-                            <td class="px-6 py-2 text-right action-col ${actionColClass}">
-                                <div class="flex gap-2 justify-end">
-                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View Details">
-                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                            <td class="px-4 py-2.5 align-middle text-right action-col ${actionColClass}">
+                                <div class="flex gap-1 justify-end whitespace-nowrap items-center">
+                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg" title="Delete Customer">
-                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                    <button onclick="event.stopPropagation(); openEditCustomerModal('${cust.id}', '${safeEscape(custNameStr)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}', ${custBal})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
+                                        <span class="material-symbols-outlined text-base">delete</span>
                                     </button>
                                 </div>
                             </td>
@@ -2500,12 +2558,12 @@ async function initCreditLedger() {
                 let custTotalCredit = 0;
                 let custTotalPaid = 0;
                 custCredits.forEach(cr => {
-                    custTotalCredit += (cr.amount || 0);
-                    custTotalPaid += (cr.paid || 0);
+                    custTotalCredit += parseFloat(cr.amount || 0);
+                    custTotalPaid += parseFloat(cr.paid || 0);
                 });
                 const custBalanceDue = custTotalCredit - custTotalPaid;
                 const statusStr = custBalanceDue <= 0 && custTotalCredit > 0 ? 'PAID' : (custTotalPaid > 0 ? 'PARTIAL' : 'PENDING');
-                const statusBadgeClass = statusStr === 'PAID' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : (statusStr === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30');
+                const statusBadgeClass = statusStr === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : (statusStr === 'PARTIAL' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20');
 
                 const initialStr = custName.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
                 const summaryAvatar = document.getElementById('summary-avatar');
@@ -2522,11 +2580,11 @@ async function initCreditLedger() {
 
                 if (summaryAvatar) summaryAvatar.innerText = initialStr;
                 if (summaryName) summaryName.innerText = custName;
-                if (summaryPhone) summaryPhone.innerText = "Customer Profile";
+                if (summaryPhone) summaryPhone.innerText = cust.phone ? "+91 " + cust.phone : "No Contact Added";
                 if (summaryBalance) summaryBalance.innerText = formatCurrency(custBalanceDue);
                 if (summaryStatusBadge) {
                     summaryStatusBadge.innerText = statusStr;
-                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase ${statusBadgeClass}`;
+                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase shadow-sm ${statusBadgeClass}`;
                 }
                 const progressPctVal = custTotalCredit > 0 ? Math.min(100, Math.round((custTotalPaid / custTotalCredit) * 100)) : 0;
                 if (summaryProgressPct) summaryProgressPct.innerText = `${progressPctVal}%`;
@@ -2539,23 +2597,28 @@ async function initCreditLedger() {
                 }
 
                 if (custCredits.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500 font-medium">No transactions yet for this customer.</td></tr>`;
                 } else {
                     custCredits.forEach((cr, index) => {
-                        const creditAmt = cr.amount || 0;
-                        const paidAmt = cr.paid || 0;
+                        const creditAmt = parseFloat(cr.amount || 0);
+                        const paidAmt = parseFloat(cr.paid || 0);
 
                         displayTotal += creditAmt;
                         displayReceived += paidAmt;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors py-1.5";
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors py-1.5 border-b border-slate-100 dark:border-slate-800/50";
                         tr.innerHTML = `
-                            <td class="px-6 py-2.5 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
-                            <td class="px-6 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
-                            <td class="px-6 py-2.5 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
-                            <td class="px-6 py-2.5 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
-                            <td class="px-6 py-2.5 text-xs text-slate-500 italic">${cr.note || ''}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-slate-500 w-14">${index + 1}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-orange-600 dark:text-orange-400 whitespace-nowrap">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm text-slate-600 dark:text-slate-300 font-medium italic">${safeEscape(cr.note || '')}</td>
+                            <td class="px-4 py-2.5 align-middle text-right action-col whitespace-nowrap">
+                                <button onclick="event.stopPropagation(); deleteLedgerCredit('${cr.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Transaction">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            </td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -2569,6 +2632,35 @@ async function initCreditLedger() {
                 summaryPending.innerText = formatCurrency(displayPending);
                 localStorage.setItem('CREDIT_LEDGER_TOTAL_PENDING', displayPending);
             }
+
+            const currPendingVal = displayTotal - displayReceived;
+            const prevPendingVal = totalCreditUpToThirtyDaysAgo - totalPaidUpToThirtyDaysAgo;
+
+            const updateTrendEl = (elId, currVal, prevVal) => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                if (prevVal <= 0) {
+                    el.style.display = 'none';
+                    el.innerHTML = '';
+                } else {
+                    el.style.display = 'flex';
+                    const pct = ((currVal - prevVal) / prevVal) * 100;
+                    if (pct > 0) {
+                        el.className = 'text-emerald-500 font-bold text-xs flex items-center bg-emerald-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '<span class="material-symbols-outlined text-xs mr-0.5 font-bold">arrow_upward</span>+' + pct.toFixed(1) + '%';
+                    } else if (pct < 0) {
+                        el.className = 'text-rose-500 font-bold text-xs flex items-center bg-rose-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '<span class="material-symbols-outlined text-xs mr-0.5 font-bold">arrow_downward</span>' + pct.toFixed(1) + '%';
+                    } else {
+                        el.className = 'text-slate-500 font-bold text-xs flex items-center bg-slate-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '0%';
+                    }
+                }
+            };
+
+            updateTrendEl('trend-total-credit', currPeriodCredit, prevPeriodCredit);
+            updateTrendEl('trend-received', currPeriodReceived, prevPeriodReceived);
+            updateTrendEl('trend-pending', currPendingVal, prevPendingVal);
 
             const pagInfo = document.getElementById('pagination-info');
             if (pagInfo) {
@@ -2604,11 +2696,9 @@ async function initCreditLedger() {
             <span style="color:#22c55e;font-size:22px;line-height:1" class="material-symbols-outlined">check_circle</span>
             <span>${message}</span>
         `;
-        // Slide in
         requestAnimationFrame(() => {
             requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
         });
-        // Slide out after 2.5s
         clearTimeout(toast._hideTimer);
         toast._hideTimer = setTimeout(() => {
             toast.style.transform = 'translateX(120%)';
@@ -2658,21 +2748,84 @@ async function initCreditLedger() {
         if (addCustomerForm) addCustomerForm.reset();
     };
 
+    window.openEditCustomerModal = (id, name, phone) => {
+        const modal = document.getElementById('edit-customer-modal');
+        const idInput = document.getElementById('edit-customer-id');
+        const nameInput = document.getElementById('edit-customer-name');
+        const phoneInput = document.getElementById('edit-customer-phone');
+        const errorEl = document.getElementById('edit-phone-error');
+
+        if (modal) modal.classList.remove('hidden');
+        if (idInput) idInput.value = id;
+        if (nameInput) nameInput.value = name;
+        if (phoneInput) phoneInput.value = phone || '';
+        if (errorEl) errorEl.classList.add('hidden');
+    };
+
+    window.closeEditCustomerModal = () => {
+        const modal = document.getElementById('edit-customer-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    const editCustomerForm = document.getElementById('edit-customer-form');
+    if (editCustomerForm) {
+        editCustomerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-customer-id')?.value;
+            const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
+            const errorEl = document.getElementById('edit-phone-error');
+
+            if (!/^\d{10}$/.test(phone)) {
+                if (errorEl) errorEl.classList.remove('hidden');
+                return;
+            }
+            if (errorEl) errorEl.classList.add('hidden');
+
+            try {
+                const customers = await loadCustomers();
+                const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
+                if (existingCust) {
+                    existingCust.phone = phone;
+                    const res = await saveCustomer(existingCust);
+                    if (res) {
+                        closeEditCustomerModal();
+                        showSuccessToast('Contact number saved successfully! ✅');
+                        await renderView();
+                    }
+                } else {
+                    showErrorToast('Customer record not found.');
+                }
+            } catch (err) {
+                console.error("Save contact error:", err);
+                showErrorToast('Failed to save contact number.');
+            }
+        });
+    }
+
     // Handlers
     addCustomerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const input = document.getElementById('new-customer-name');
+        const phoneInput = document.getElementById('new-customer-phone');
         const rawName = input?.value || '';
+        const rawPhone = phoneInput?.value?.trim() || '';
         const normalizedName = rawName.replace(/\s+/g, ' ').trim();
+
+        if (rawPhone && !/^\d{10}$/.test(rawPhone)) {
+            document.getElementById('add-phone-error')?.classList.remove('hidden');
+            return;
+        }
+        document.getElementById('add-phone-error')?.classList.add('hidden');
+
         if (normalizedName) {
             try {
                 const existingCustomers = await loadCustomers();
-                const isDuplicate = existingCustomers.some(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === normalizedName.toLowerCase());
+                const isDuplicate = existingCustomers.some(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === normalizedName.toLowerCase() && String(c.id) !== String(activeCustomerId));
                 if (isDuplicate) {
                     showErrorToast('Customer already exists in Credit Ledger.');
                     return;
                 }
-                const res = await saveCustomer({ id: Date.now(), name: normalizedName });
+                const res = await saveCustomer({ id: Date.now(), name: normalizedName, phone: rawPhone });
                 if (res) {
                     if (typeof closeAddCustomerModal === 'function') closeAddCustomerModal();
                     else addCustomerForm.reset();
@@ -2749,7 +2902,44 @@ async function initCreditLedger() {
     let deleteId = null;
     let deleteType = null; // 'customer' or 'transaction'
 
-    window.deleteLedgerCustomer = (id) => {
+    function showDeleteBlockedModal() {
+        let modal = document.getElementById('delete-blocked-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'delete-blocked-modal';
+            modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp">
+                    <div class="p-6 bg-rose-50 dark:bg-rose-950/40 border-l-4 border-rose-500 flex items-start gap-4">
+                        <div class="size-10 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                            <span class="material-symbols-outlined text-2xl font-bold">warning</span>
+                        </div>
+                        <div class="space-y-1.5 flex-1">
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug font-inter">Action Blocked</h3>
+                            <p class="text-sm text-rose-700 dark:text-rose-300 font-medium leading-relaxed font-inter">
+                                Customer delete nahi kiya ja sakta.<br>
+                                Pehle Daily TXN page me credit received entry karke due balance clear karein.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex justify-end border-t border-slate-100 dark:border-slate-800">
+                        <button onclick="document.getElementById('delete-blocked-modal').classList.add('hidden')" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-sm font-bold rounded-xl transition-all shadow-sm">
+                            Understood
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    window.deleteLedgerCustomer = (id, balanceDue = 0) => {
+        if (balanceDue > 0.01) {
+            showDeleteBlockedModal();
+            return;
+        }
         deleteId = id;
         deleteType = 'customer';
         if (deleteModalTitle) deleteModalTitle.innerText = "Delete Customer?";
@@ -3669,9 +3859,9 @@ async function initBankWithdrawals() {
                 if (withdrawalsHeader) withdrawalsHeader.classList.add('hidden');
 
                 if (accounts.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No bank accounts added yet.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 font-medium">No bank accounts added yet.</td></tr>`;
                 } else {
-                    accounts.forEach(acc => {
+                    accounts.forEach((acc, index) => {
                         const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(acc.id));
                         let fyTotal = 0;
                         accWithdrawals.forEach(w => {
@@ -3683,31 +3873,103 @@ async function initBankWithdrawals() {
 
                         const limit = 10000000; // 1 Crore
                         const pecent = (fyTotal / limit) * 100;
-                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600');
+                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600 border-rose-200' : (pecent >= 80 ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200');
                         const statusText = pecent >= 100 ? 'OVER LIMIT' : (pecent >= 80 ? 'WARNING' : 'SAFE');
-                        
+
+                        // Parse Account Name
+                        let holder = acc.name;
+                        let bank = "-";
+                        let accNo = "-";
+                        let type = "-";
+                        let branch = "-";
+
+                        if (acc.name.includes('|')) {
+                            const parts = acc.name.split('|');
+                            holder = parts[0] || "-";
+                            bank = parts[1] || "-";
+                            accNo = parts[2] || "-";
+                            type = parts[3] || "-";
+                            branch = parts[4] || "-";
+                        } else {
+                            const nameParts = acc.name.toUpperCase().split(/\s+/);
+                            const banks = ["SBI", "HDFC", "ICICI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDFC", "KOTAK", "CRGB"];
+                            const types = ["CURRENT", "SAVING", "FD", "RD", "LOAN", "CC"];
+
+                            let foundBankIdx = -1;
+                            let foundTypeIdx = -1;
+
+                            nameParts.forEach((part, i) => {
+                                if (banks.includes(part)) foundBankIdx = i;
+                                if (types.includes(part)) foundTypeIdx = i;
+                            });
+
+                            if (foundBankIdx !== -1) {
+                                bank = nameParts[foundBankIdx];
+                                holder = nameParts.slice(0, foundBankIdx).join(" ");
+                            }
+
+                            if (foundTypeIdx !== -1) {
+                                type = nameParts[foundTypeIdx];
+                                if (foundBankIdx === -1) {
+                                    holder = nameParts.slice(0, foundTypeIdx).join(" ");
+                                } else if (foundTypeIdx > foundBankIdx) {
+                                    const middle = nameParts.slice(foundBankIdx + 1, foundTypeIdx).join(" ");
+                                    if (middle && !middle.includes("A/C")) accNo = middle;
+                                }
+                            }
+
+                            const acMatch = acc.name.match(/A\/c\s*(\d+)/i) || acc.name.match(/(\d{4,})/);
+                            if (acMatch) {
+                                accNo = acMatch[1];
+                                holder = holder.replace(acMatch[0], "").trim();
+                            }
+                            if (!holder) holder = acc.name;
+                        }
+
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
+                        tr.className = "hover:bg-primary/5 transition-all cursor-pointer group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-left-2 duration-300";
+                        tr.style.animationDelay = `${index * 50}ms`;
                         tr.onclick = (e) => {
-                            if(e.target.closest('button')) return;
+                            if (e.target.closest('button')) return;
                             showAccountDetails(acc.id);
                         };
                         tr.innerHTML = `
-                            <td class="px-6 py-2 font-bold group-hover:text-primary transition-colors">${acc.name}</td>
-                            <td class="px-6 py-2 font-bold text-slate-700 text-right">${formatCurrency(fyTotal)}</td>
-                            <td class="px-6 py-2 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
+                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
+                                ${index + 1}
                             </td>
-                            <td class="px-6 py-2 text-right flex justify-end gap-1">
-                                <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View">
-                                    <span class="material-symbols-outlined text-lg">visibility</span>
-                                </button>
-                                <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
-                                    <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
-                                    <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                            <td class="px-4 py-2.5 align-middle">
+                                <div class="flex flex-col leading-tight">
+                                    <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
+                                    <span class="text-xs text-slate-400 font-bold uppercase lg:hidden">${bank} • ${type}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
+                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-center hidden lg:table-cell">
+                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
+                                <span class="text-xs font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg border border-primary/20 tracking-wider">${type}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <span class="text-sm font-black text-slate-800 dark:text-white">${formatCurrency(fyTotal)}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
+                                    <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Account">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Account">
+                                        <span class="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                </div>
                             </td>
                         `;
                         tableBody.appendChild(tr);
@@ -3717,7 +3979,7 @@ async function initBankWithdrawals() {
                 const acc = accounts.find(a => String(a.id) === String(activeAccountId));
                 if (!acc) { showAccountsList(); return; }
 
-                accountViewHeader.querySelector('h3').innerText = "Account: " + acc.name;
+                if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Account: " + (acc.name.includes('|') ? acc.name.split('|')[0] : acc.name);
                 if (backBtn) backBtn.classList.remove('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.remove('hidden');
                 if (addAccountForm) addAccountForm.classList.add('hidden');
@@ -3735,36 +3997,48 @@ async function initBankWithdrawals() {
                 let fyTotal = 0;
                 
                 if (accWithdrawals.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No withdrawals recorded yet.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">No withdrawals recorded yet.</td></tr>`;
                 } else {
-                    accWithdrawals.forEach(w => {
+                    accWithdrawals.forEach((w, index) => {
                         const amount = parseFloat(w.amount) || 0;
                         const wDate = new Date(w.date);
                         if(wDate >= fy.start && wDate <= fy.end) {
                             fyTotal += amount;
                         }
 
-                        let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">${w.method}</span>`;
-                        if(w.method === 'ATM') methodHtml = `<span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-bold">ATM</span>`;
-                        if(w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs font-bold">ATM QR Code</span>`;
-                        if(w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-xs font-bold">ATM Inside Branch</span>`;
-                        if(w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold">Cheque</span>`;
-                        if(w.method.includes('Yono')) methodHtml = `<span class="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-xs font-bold">Yono Cash</span>`;
+                        let methodHtml = `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700">${w.method}</span>`;
+                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/30">ATM</span>`;
+                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/30">ATM QR</span>`;
+                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-900/30">In-Branch ATM</span>`;
+                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-purple-100 dark:border-purple-900/30">Cheque</span>`;
+                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-pink-100 dark:border-pink-900/30">Yono Cash</span>`;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors";
+                        tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
+                        tr.style.animationDelay = `${index * 50}ms`;
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-medium text-slate-500 whitespace-nowrap">${wDate.toLocaleDateString('en-GB')}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right text-rose-600">${formatCurrency(amount)}</td>
-                            <td class="px-6 py-2">${methodHtml}</td>
-                            <td class="px-6 py-2 text-xs text-slate-500 italic">${w.note || ""}</td>
-                            <td class="px-6 py-2 text-right flex justify-end gap-1">
-                                <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg" title="Edit">
-                                    <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg" title="Delete">
-                                    <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
+                                ${index + 1}
+                            </td>
+                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(amount)}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">${methodHtml}</td>
+                            <td class="px-4 py-2.5 align-middle">
+                                <span class="text-sm text-slate-600 dark:text-slate-300 font-medium italic">${w.note || "-"}</span>
+                            </td>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
+                                    <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Record">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Record">
+                                        <span class="material-symbols-outlined text-base">delete</span>
+                                    </button>
+                                </div>
                             </td>
                         `;
                         tableBody.appendChild(tr);
@@ -4169,6 +4443,13 @@ async function initDailyTxn() {
     const addressFieldContainer = document.getElementById('address-field-container');
     const txnBank = document.getElementById('txn-bank');
     const bankContainer = document.getElementById('bank-field-container');
+    const chargesFieldContainer = document.getElementById('charges-field-container');
+    const chargesModeContainer = document.getElementById('charges-mode-container');
+    const txnQuantity = document.getElementById('txn-quantity');
+    const quantityFieldContainer = document.getElementById('quantity-field-container');
+    const quantityLabel = document.getElementById('quantity-label');
+    const txnLaminationSize = document.getElementById('txn-lamination-size');
+    const laminationSizeContainer = document.getElementById('lamination-size-container');
     const txnDateText = document.getElementById('current-date-text');
     const txnCountBadge = document.getElementById('txn-count-badge');
     const txnViewDate = document.getElementById('txn-view-date');
@@ -4290,7 +4571,7 @@ async function initDailyTxn() {
         if (!txnType || !conditionalContainer) return;
         
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
-        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'SETTLEMENT'];
+        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
         const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
@@ -4324,8 +4605,16 @@ async function initDailyTxn() {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
                     const input = noteFieldContainer.querySelector('input');
-                    if (label) label.innerText = txnType.value === 'DAILY_EXPENSE' ? 'DESCRIPTION' : 'CUSTOMER NAME';
-                    if (input) input.placeholder = txnType.value === 'DAILY_EXPENSE' ? 'Enter description...' : 'Enter Name...';
+                    if (txnType.value === 'DAILY_EXPENSE') {
+                        if (label) label.innerText = 'Expense Type';
+                        if (input) input.placeholder = 'Enter description...';
+                    } else if (txnType.value === 'OTHER_INCOME') {
+                        if (label) label.innerText = 'Income Type';
+                        if (input) input.placeholder = 'e.g. Commission, Bonus...';
+                    } else {
+                        if (label) label.innerText = 'Customer Name';
+                        if (input) input.placeholder = 'Enter Name...';
+                    }
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
@@ -4346,12 +4635,16 @@ async function initDailyTxn() {
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
                     }
-                } else if (['JIO_TOPUP', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'SETTLEMENT'].includes(txnType.value)) {
+                } else if (['JIO_TOPUP', 'ROINET_COMMISSION', 'SETTLEMENT'].includes(txnType.value)) {
                     chargesFieldContainer.classList.remove('hidden');
                     if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
                 } else {
                     chargesFieldContainer.classList.remove('hidden');
-                    if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
+                    if (chargesModeContainer) {
+                        chargesModeContainer.classList.remove('hidden');
+                        const label = chargesModeContainer.querySelector('label');
+                        if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value) ? 'CUST PAID IN' : 'CHARGES MODE');
+                    }
                 }
             }
             
@@ -4362,14 +4655,46 @@ async function initDailyTxn() {
             txnConditional.value = '';
         } else {
             if (amountFieldContainer) amountFieldContainer.classList.remove('hidden');
-            if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
+            if (noteFieldContainer) {
+                noteFieldContainer.classList.remove('hidden');
+                const label = noteFieldContainer.querySelector('label');
+                if (txnType.value === 'ONLINE_WORK') {
+                    if (label) label.innerText = 'Work Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'e.g. Pan Card, Voter ID...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                } else if (txnType.value === 'ELECTRICITY_BILL') {
+                    if (label) label.innerText = 'Customer Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'Enter Consumer No/Name...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                } else {
+                    if (label) label.innerText = 'Customer Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'Enter Name...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                }
+            }
             if (remarkFieldContainer) {
                 remarkFieldContainer.classList.add('hidden');
                 if (txnRemark) txnRemark.value = '';
             }
-            if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
+            if (addressFieldContainer) {
+                if (['ONLINE_WORK', 'ELECTRICITY_BILL'].includes(txnType.value)) addressFieldContainer.classList.add('hidden');
+                else addressFieldContainer.classList.remove('hidden');
+            }
             if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
-            if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
+            if (chargesModeContainer) {
+                chargesModeContainer.classList.remove('hidden');
+                const label = chargesModeContainer.querySelector('label');
+                if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+            }
             
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
@@ -4384,32 +4709,62 @@ async function initDailyTxn() {
             }
         }
 
+        if (quantityFieldContainer && quantityLabel && txnQuantity) {
+            if (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) {
+                quantityFieldContainer.classList.remove('hidden');
+                if (txnType.value === 'PASSPORT') {
+                    quantityLabel.innerText = 'PIECES / QUANTITY';
+                    txnQuantity.placeholder = 'No. of pieces...';
+                } else if (txnType.value === 'LAMINATION') {
+                    quantityLabel.innerText = 'QUANTITY';
+                    txnQuantity.placeholder = 'Quantity...';
+                } else {
+                    quantityLabel.innerText = 'PAGES / QUANTITY';
+                    txnQuantity.placeholder = 'No. of pages...';
+                }
+            } else {
+                quantityFieldContainer.classList.add('hidden');
+                txnQuantity.value = '';
+            }
+        }
+
+        if (laminationSizeContainer && txnLaminationSize) {
+            if (txnType.value === 'LAMINATION') {
+                laminationSizeContainer.classList.remove('hidden');
+            } else {
+                laminationSizeContainer.classList.add('hidden');
+                txnLaminationSize.value = 'ID Card';
+            }
+        }
+
         // Set Default Charges Mode based on Type
         if (['JIO_TOPUP', 'ROINET_COMMISSION'].includes(txnType.value)) {
             if (txnChargesType) txnChargesType.value = 'Online';
-        } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
-            // Sync with Pay Mode for recharges
-            if (txnProvider && txnChargesType) {
-                txnChargesType.value = txnProvider.value || 'Cash';
-            }
         } else if (!editingTxnId && txnChargesType) {
             // Default to Cash for others if creating new
             txnChargesType.value = 'Cash';
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
+        const providerFirstOpt = txnProvider ? txnProvider.querySelector('option[value=""]') : null;
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
+            if (isCredit || ['DAMAGED_RECOVERY', 'ONLINE_WORK'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
-                if (amountLabel) amountLabel.innerText = 'Amount';
+                if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...');
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : 'Amount';
+            } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) {
+                if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ELECTRICITY_BILL' ? 'Bill Amount' : 'Recharge Amount';
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = 'Txn Amount';
             }
         } else {
@@ -4434,7 +4789,9 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) {
+                    opt.style.display = ['Online', 'Airtel', 'Roinet', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
+                } else if (isCredit || ['JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
                     opt.style.display = ''; // Show all for other types
@@ -4469,6 +4826,19 @@ async function initDailyTxn() {
             } else {
                 txnNote.removeAttribute('list');
             }
+        }
+
+        // Reset order for all form containers
+        [providerContainer, bankContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer].forEach(c => {
+            if (c) c.style.order = '0';
+        });
+
+        if (txnType.value === 'ONLINE_WORK') {
+            if (noteFieldContainer) noteFieldContainer.style.order = '1';
+            if (amountFieldContainer) amountFieldContainer.style.order = '2';
+            if (providerContainer) providerContainer.style.order = '3';
+            if (chargesFieldContainer) chargesFieldContainer.style.order = '4';
+            if (chargesModeContainer) chargesModeContainer.style.order = '5';
         }
     };
 
@@ -4633,11 +5003,13 @@ async function initDailyTxn() {
                 type: txnType.value,
                 amount: amountVal,
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
+                pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
+                laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
                 note: capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
@@ -4728,11 +5100,16 @@ async function initDailyTxn() {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) balances.roinet -= amt;
                     else if (provider.includes('crgb')) balances.crgb -= amt;
                     else if (provider.includes('jio')) balances.jio -= amt;
-                } else if (t.type === 'DISHTV_RECHARGE') {
-                    balances.roinet -= amt; 
-                    balances.online -= amt; // Total digital decreases by recharge amount
-                    if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt; // Added back to digital if paid digitally
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(t.type)) {
+                    balances.online -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        if (provider.includes('airtel')) roinetBreakdown.airtel -= amt;
+                        else if (provider.includes('spicemoney')) roinetBreakdown.spicemoney -= amt;
+                        else roinetBreakdown.roinet -= amt;
+                    }
+                    if (t.chargesType === 'Online') balances.online += amt;
+                    else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
                     balances.online -= amt; // Total digital decreases by recharge amount
@@ -5026,10 +5403,12 @@ async function initDailyTxn() {
                         if (!(isNewLogic && isJio)) {
                             currentOnline -= amt;
                         }
-                    } else if (t.type === 'DISHTV_RECHARGE' || t.type === 'JIO_RECHARGE') {
-                        if (!(isNewLogic && t.type === 'JIO_RECHARGE')) {
-                            currentOnline -= amt;
-                        }
+                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(t.type)) {
+                        currentOnline -= amt;
+                        if (t.chargesType === 'Online') currentOnline += amt;
+                        else currentCash += amt;
+                    } else if (t.type === 'JIO_RECHARGE') {
+                        if (!isNewLogic) currentOnline -= amt;
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
                     } else if (t.type === 'JIO_TOPUP') {
@@ -5163,6 +5542,17 @@ async function initDailyTxn() {
         updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
         updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
         updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
+        updateBadge(document.getElementById('gold-sip-count-badge'), 'GOLD_SIP', 'GOLD SIP');
+        updateBadge(document.getElementById('roinet-count-badge'), 'ROINET_COMMISSION', 'ROINET');
+        updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
+        updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
+        updateBadge(document.getElementById('jio-recharge-count-badge'), 'JIO_RECHARGE', 'JIO RCHG');
+        updateBadge(document.getElementById('electricity-count-badge'), 'ELECTRICITY_BILL', 'ELEC BILL');
+        updateBadge(document.getElementById('admin-deposit-count-badge'), 'FREE_DEPOSIT', 'FREE DEP');
+        updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'FREE_WITHDRAWAL', 'FREE WDRL');
+        updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
+        updateBadge(document.getElementById('credit-received-count-badge'), 'CREDIT_RECEIVED', 'CR RECD');
+        updateBadge(document.getElementById('pending-count-badge'), 'PENDING_ADD', 'PEND ADD');
 
         // Now filter the table data
         const txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : allTxnsForDate.filter(t => t.type === currentTxnFilter);
@@ -5201,7 +5591,8 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || '-'}</span>
+                        <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : '-')}</span>
+                        ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
                         ${txn.bankName ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-blue-600">account_balance</span>
@@ -5283,6 +5674,8 @@ async function initDailyTxn() {
                     txnType.value = txn.type;
                     txnAmount.value = txn.amount;
                     txnCharges.value = txn.charges;
+                    if (txnQuantity) txnQuantity.value = txn.pages || '';
+                    if (txnLaminationSize && txn.laminationSize) txnLaminationSize.value = txn.laminationSize;
                     txnNote.value = txn.note;
                     if (txnRemark) txnRemark.value = txn.remark || '';
                     txnAddress.value = txn.address;

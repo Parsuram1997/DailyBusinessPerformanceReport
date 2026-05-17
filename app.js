@@ -248,7 +248,7 @@ async function saveCustomer(customer) {
         const id = String(customer.id || Date.now());
         console.log("Saving customer with doc ID:", id, "Data:", customer);
         const docRef = doc(db, "customers", id);
-        await setDoc(docRef, customer);
+        await setDoc(docRef, customer, { merge: true });
         console.log("Customer save successful!");
         await updateCreditLedgerTotalPending();
         return { message: "Customer saved" };
@@ -642,9 +642,10 @@ async function initAddEntry() {
                     else if (provider.includes('crgb')) deltas.crgb_bc -= amt;
                     else if (provider.includes('jio')) deltas.jio -= amt;
                     else deltas.online -= amt;
-                } else if (t.type === 'DISHTV_RECHARGE') {
-                    deltas.roinet -= amt;
-                    if (provider !== 'cash') deltas.online += amt;
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= amt;
+                    else deltas.online -= amt;
+                    if (t.chargesType === 'Online') deltas.online += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     deltas.jio -= amt;
                     deltas.online -= amt;
@@ -781,18 +782,42 @@ async function initAddEntry() {
 
     let syncListenerUnsubscribe = null;
 
-    const clearAutoSync = () => {
-        const ids = ['credit', 'jio', 'go2sms', 'pending', 'deposit', 'capital', 'withdrawal', 'expense', 'damages', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'settlement_charges', 'internet_expense', 'gold_sip'];
-        ids.forEach(id => {
+    const lockAutoSyncedFields = (isExisting = false) => {
+        const autoSyncIds = [
+            'go2sms', 'credit', 'pending', 'deposit', 'damages', 'jio', 'expense', 'capital', 'withdrawal',
+            'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 
+            'business_development', 'settlement_charges', 'internet_expense', 'gold_sip', 'expense_notes'
+        ];
+        autoSyncIds.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
-                input.readOnly = false;
-                input.classList.remove('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30', 'pr-14');
-                input.style.paddingRight = ''; // Reset custom padding
+                input.readOnly = true;
+                input.classList.add('bg-primary/5', 'dark:bg-primary/10', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30', 'select-none');
+                input.setAttribute('title', 'Auto synced field. Manual editing disabled.');
+                input.style.paddingRight = '56px';
+
                 const button = input.parentElement.querySelector('button');
-                if (button) button.style.display = ''; // Restore button
-                const indicator = input.parentElement.querySelector('.sync-indicator');
-                if (indicator) indicator.remove();
+                if (button && id !== 'expense') button.style.display = 'none'; // Keep expense split button visible for viewing
+                let rightPos = (button && id === 'expense') ? 'right-12' : 'right-3';
+                input.style.paddingRight = (button && id === 'expense') ? '96px' : '56px';
+
+                let indicator = input.parentElement.querySelector('.sync-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
+                    indicator.innerHTML = `
+                        <span class="text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
+                        <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
+                    `;
+                    input.parentElement.appendChild(indicator);
+                } else {
+                    indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
+                }
+                const icon = indicator.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    if (isExisting) icon.classList.remove('animate-spin-slow');
+                    else icon.classList.add('animate-spin-slow');
+                }
             }
         });
     };
@@ -803,23 +828,17 @@ async function initAddEntry() {
             syncListenerUnsubscribe = null;
         }
 
-        if (!dateStr || existingEntryId) {
-            clearAutoSync();
+        if (!dateStr) {
             return;
         }
+
+        lockAutoSyncedFields(existingEntryId !== null);
 
         const txnRef = collection(db, "daily_transactions");
         const dateQueriesTxn = getPossibleDateFormats(dateStr);
         const q = query(txnRef, where("date", "in", dateQueriesTxn));
 
         syncListenerUnsubscribe = onSnapshot(q, async (snapshot) => {
-            // Guard: If we are no longer in "New Entry" mode for this date, stop
-            if (existingEntryId) {
-                if (syncListenerUnsubscribe) syncListenerUnsubscribe();
-                clearAutoSync();
-                return;
-            }
-
             const systemData = await fetchSystemOnline(dateStr);
             const breakdown = systemData.breakdown;
             const pendingCredit = await updateCreditLedgerTotalPending();
@@ -834,7 +853,6 @@ async function initAddEntry() {
                 'withdrawal': breakdown.withdrawal?.closing || 0,
                 'expense': breakdown.expense?.closing || 0,
                 'damages': breakdown.damaged?.closing || 0,
-                // All expense categories should be locked when auto-sync is on
                 'personal_expense': 0,
                 'salary_expense': 0,
                 'electricity_expense': 0,
@@ -845,7 +863,6 @@ async function initAddEntry() {
                 'gold_sip': 0
             };
 
-            // Sync detailed expense categories
             if (breakdown.expenseDetails) {
                 Object.keys(breakdown.expenseDetails).forEach(key => {
                     syncFields[key] = breakdown.expenseDetails[key];
@@ -855,28 +872,25 @@ async function initAddEntry() {
             Object.keys(syncFields).forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
-                    input.value = syncFields[id];
-                    input.readOnly = true;
-                    // Apply visual style for auto-sync and fix padding overlap
-                    input.classList.add('bg-slate-50', 'dark:bg-slate-800/50', 'border-primary/20', 'cursor-not-allowed', 'ring-1', 'ring-primary/30');
-                    input.style.paddingRight = '56px'; // Prevent text from being hidden behind the sync button
-
-                    let indicator = input.parentElement.querySelector('.sync-indicator');
-                    if (!indicator) {
-                        indicator = document.createElement('div');
-                        const button = input.parentElement.querySelector('button');
-                        if (button) button.style.display = 'none'; // Hide manual button during auto-sync
-                        indicator.className = `sync-indicator absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-60 pointer-events-none`;
-                        indicator.innerHTML = `
-                            <span class="text-[8px] font-black text-primary uppercase tracking-tighter">Sync</span>
-                            <span class="material-symbols-outlined text-[14px] text-primary animate-spin-slow">sync</span>
-                        `;
-                        input.parentElement.appendChild(indicator);
+                    if (existingEntryId) {
+                        input.value = Math.max(parseFloat(syncFields[id]) || 0, parseFloat(input.value) || 0);
+                    } else {
+                        input.value = syncFields[id];
                     }
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
 
-            // Refresh summary and totals
+            lockAutoSyncedFields(existingEntryId !== null);
+
+            if (typeof updateExpenseSplitTotal === 'function') {
+                const modalTotal = updateExpenseSplitTotal();
+                const expInput = document.getElementById('expense');
+                if (expInput) {
+                    expInput.value = Math.max(parseFloat(expInput.value) || 0, modalTotal);
+                    expInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
             if (typeof updateRealTimeTotal === 'function') updateRealTimeTotal();
         });
     };
@@ -906,7 +920,6 @@ async function initAddEntry() {
 
         if (existing) {
             existingEntryId = existing.firebaseId || existing.id || null;
-            clearAutoSync(); // Stop sync for existing entries
             if (formTitle) formTitle.innerText = "Edit Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Modifying the record for " + datePicker.value;
             if (submitText) submitText.innerText = "Update Entry";
@@ -920,7 +933,7 @@ async function initAddEntry() {
                 input.value = val;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.value = details[id] !== undefined ? details[id] : '';
@@ -932,6 +945,9 @@ async function initAddEntry() {
                 notesEl.value = details['expense_notes'] || '';
                 notesEl.dispatchEvent(new Event('input', { bubbles: true }));
             }
+
+            lockAutoSyncedFields(true /* isExisting */);
+            setupRealTimeSync(datePicker.value);
         } else {
             if (formTitle) formTitle.innerText = "New Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
@@ -955,7 +971,7 @@ async function initAddEntry() {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el && draft.data[id] !== undefined) {
                             el.value = draft.data[id];
@@ -974,7 +990,7 @@ async function initAddEntry() {
                         input.value = '';
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                     });
-                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+                    ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
                             el.value = (id === 'gold_sip') ? '206' : '';
@@ -990,7 +1006,7 @@ async function initAddEntry() {
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                 });
-                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+                ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
                         el.value = (id === 'gold_sip') ? '206' : '';
@@ -1094,7 +1110,7 @@ async function initAddEntry() {
                     draft.data[fieldName] = parseFloat(input.value);
                 }
             });
-            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+            ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.value !== '') {
                     draft.data[id] = parseFloat(el.value);
@@ -1111,7 +1127,7 @@ async function initAddEntry() {
                 saveDraft();
             }
         });
-        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'gold_sip'].forEach(id => {
+        ['online_p1', 'online_p2', 'online_p3', 'roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'personal_expense', 'salary_expense', 'electricity_expense', 'shop_rent_expense', 'business_development', 'internet_expense', 'settlement_charges', 'gold_sip'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', saveDraft);
         });
@@ -1339,14 +1355,7 @@ async function initAddEntry() {
         });
 
         if (useExpenseBtn) {
-            useExpenseBtn.addEventListener('click', () => {
-                const total = updateExpenseSplitTotal();
-                if (expenseInput) {
-                    expenseInput.value = total || '';
-                    expenseInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                closeExpenseModal();
-            });
+            useExpenseBtn.addEventListener('click', closeExpenseModal);
         }
     }
 
@@ -2127,7 +2136,9 @@ async function initCalculator() {
                     cashVal -= amt;
                 } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
-                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (t.chargesType !== 'Online') cashVal += amt;
+                } else if (t.type === 'JIO_RECHARGE') {
                     if (t.provider !== 'Online') cashVal += amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
                     if (t.provider === 'Cash') cashVal -= amt;
@@ -2216,21 +2227,23 @@ async function initCalculator() {
         tableBody.innerHTML = '';
         denominations.forEach(denom => {
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-primary/5 transition-colors group';
+            tr.className = 'hover:bg-primary/[0.04] dark:hover:bg-primary/10 transition-all duration-300 group';
             tr.innerHTML = `
-                <td class="px-3 lg:px-6 py-2.5 lg:py-4">
-                    <div class="flex items-center gap-2 lg:gap-3">
-                        <div class="size-6 lg:size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] lg:text-xs">₹</div>
-                        <span class="text-xs lg:text-sm font-bold text-slate-700 dark:text-slate-300">${denom}</span>
+                <td class="px-3 sm:px-4 py-1.5 sm:py-2">
+                    <div class="flex items-center gap-2.5 sm:gap-3">
+                        <div class="size-7 sm:size-8 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-xs sm:text-sm border border-primary/20 shadow-inner group-hover:scale-105 transition-transform flex-shrink-0">₹</div>
+                        <span class="text-sm sm:text-base font-black tracking-tight text-slate-800 dark:text-slate-100">${denom}</span>
                     </div>
                 </td>
-                <td class="px-3 lg:px-6 py-2.5 lg:py-4">
-                    <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
-                        class="w-16 lg:w-24 mx-auto block bg-slate-50 dark:bg-background-dark/40 border border-primary/10 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg text-center focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-xs lg:text-sm" 
-                        placeholder="0" min="0">
+                <td class="px-3 sm:px-4 py-1.5 sm:py-2">
+                    <div class="relative max-w-[120px] mx-auto">
+                        <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
+                            class="w-full bg-slate-50 dark:bg-slate-900/90 border border-primary/20 px-3 py-1 sm:py-1.5 rounded-xl text-center focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all font-black text-sm sm:text-base text-slate-800 dark:text-slate-100 shadow-inner" 
+                            placeholder="0" min="0">
+                    </div>
                 </td>
-                <td class="px-3 lg:px-6 py-2.5 lg:py-4 text-right">
-                    <span class="subtotal font-mono font-bold text-slate-400 group-hover:text-primary transition-colors text-xs lg:text-sm">₹0</span>
+                <td class="px-3 sm:px-4 py-1.5 sm:py-2 text-right">
+                    <span class="subtotal font-mono font-black text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors text-sm sm:text-base tracking-tight select-all">₹0</span>
                 </td>
             `;
             tableBody.appendChild(tr);
@@ -2755,6 +2768,10 @@ async function initTransactions() {
 }
 
 // Logic for Credit Ledger Page
+function safeEscape(str) {
+    return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function initCreditLedger() {
     const addCustomerForm = document.getElementById('add-customer-form');
     if (!addCustomerForm) return;
@@ -2787,6 +2804,39 @@ async function initCreditLedger() {
             let displayReceived = 0;
             let displayPending = 0;
 
+            const nowMs = Date.now();
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const thirtyDaysAgoMs = nowMs - thirtyDaysMs;
+            const sixtyDaysAgoMs = nowMs - (2 * thirtyDaysMs);
+
+            let currPeriodCredit = 0;
+            let prevPeriodCredit = 0;
+            let currPeriodReceived = 0;
+            let prevPeriodReceived = 0;
+            let totalCreditUpToThirtyDaysAgo = 0;
+            let totalPaidUpToThirtyDaysAgo = 0;
+
+            credits.forEach(cr => {
+                const crDateMs = new Date(cr.date).getTime();
+                const amt = parseFloat(cr.amount || 0);
+                const pd = parseFloat(cr.paid || 0);
+
+                if (!isNaN(crDateMs)) {
+                    if (crDateMs >= thirtyDaysAgoMs) {
+                        currPeriodCredit += amt;
+                        currPeriodReceived += pd;
+                    } else if (crDateMs >= sixtyDaysAgoMs && crDateMs < thirtyDaysAgoMs) {
+                        prevPeriodCredit += amt;
+                        prevPeriodReceived += pd;
+                    }
+
+                    if (crDateMs < thirtyDaysAgoMs) {
+                        totalCreditUpToThirtyDaysAgo += amt;
+                        totalPaidUpToThirtyDaysAgo += pd;
+                    }
+                }
+            });
+
             tableBody.innerHTML = '';
 
             if (currentView === 'ledger') {
@@ -2814,15 +2864,15 @@ async function initCreditLedger() {
                 const filteredCustomers = customers.filter(c => (c.name || '').toLowerCase().includes(queryStr));
 
                 if (filteredCustomers.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No customers found. Add one above!</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-slate-500 font-medium">No customers found. Add one above!</td></tr>`;
                 } else {
                     filteredCustomers.forEach((cust, index) => {
                         const custCredits = credits.filter(cr => String(cr.customerId) === String(cust.id));
                         let custTotal = 0;
                         let custPaid = 0;
                         custCredits.forEach(cr => {
-                            custTotal += (cr.amount || 0);
-                            custPaid += (cr.paid || 0);
+                            custTotal += parseFloat(cr.amount || 0);
+                            custPaid += parseFloat(cr.paid || 0);
                         });
                         const custBal = custTotal - custPaid;
 
@@ -2831,41 +2881,46 @@ async function initCreditLedger() {
                         displayPending += custBal;
 
                         const status = custBal <= 0 && custTotal > 0 ? 'PAID' : (custPaid > 0 ? 'PARTIAL' : 'PENDING');
-                        const statusClass = status === 'PAID' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
-                            (status === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' :
-                                'bg-red-100 text-red-600 dark:bg-red-900/30');
+                        const statusClass = status === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                            (status === 'PARTIAL' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20' :
+                                'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20');
 
                         const custNameStr = cust.name || 'Unknown';
                         const initial = custNameStr.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
+                        const phoneDisplay = cust.phone ? `<span class="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">${safeEscape(cust.phone)}</span>` : `<span class="text-sm font-medium italic text-slate-400">Not Added</span>`;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer group";
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer group border-b border-slate-100 dark:border-slate-800/50";
                         tr.onclick = (e) => {
                             if (e.target.closest('button')) return;
                             showCustomerDetails(cust.id);
                         };
 
                         tr.innerHTML = `
-                            <td class="px-6 py-2 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
-                            <td class="px-6 py-2">
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-slate-500 w-14">${index + 1}</td>
+                            <td class="px-4 py-2.5 align-middle">
                                 <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">${initial}</div>
-                                    <span class="text-sm font-bold group-hover:text-primary transition-colors">${custNameStr}</span>
+                                    <div class="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-inner shrink-0">${initial}</div>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${safeEscape(custNameStr)}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-2 text-sm ${custBal > 0 ? 'text-orange-600' : 'text-green-600'} font-bold text-right">${formatCurrency(custBal)}</td>
-                            <td class="px-6 py-2 text-sm text-right">${formatCurrency(custPaid)}</td>
-                            <td class="px-6 py-2 text-sm font-bold text-right">${formatCurrency(custTotal)}</td>
-                            <td class="px-6 py-2 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${status}</span>
+                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">${phoneDisplay}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right whitespace-nowrap ${custBal > 0 ? 'text-orange-600 dark:text-orange-400 font-black' : 'text-emerald-600 dark:text-emerald-400'}">${formatCurrency(custBal)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-nowrap">${formatCurrency(custPaid)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-black text-slate-800 dark:text-white text-right whitespace-nowrap">${formatCurrency(custTotal)}</td>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${statusClass}">${status}</span>
                             </td>
-                            <td class="px-6 py-2 text-right action-col ${actionColClass}">
-                                <div class="flex gap-2 justify-end">
-                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View Details">
-                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                            <td class="px-4 py-2.5 align-middle text-right action-col ${actionColClass}">
+                                <div class="flex gap-1 justify-end whitespace-nowrap items-center">
+                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}')" class="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg" title="Delete Customer">
-                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                    <button onclick="event.stopPropagation(); openEditCustomerModal('${cust.id}', '${safeEscape(custNameStr)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}', ${custBal})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
+                                        <span class="material-symbols-outlined text-base">delete</span>
                                     </button>
                                 </div>
                             </td>
@@ -2904,12 +2959,12 @@ async function initCreditLedger() {
                 let custTotalCredit = 0;
                 let custTotalPaid = 0;
                 custCredits.forEach(cr => {
-                    custTotalCredit += (cr.amount || 0);
-                    custTotalPaid += (cr.paid || 0);
+                    custTotalCredit += parseFloat(cr.amount || 0);
+                    custTotalPaid += parseFloat(cr.paid || 0);
                 });
                 const custBalanceDue = custTotalCredit - custTotalPaid;
                 const statusStr = custBalanceDue <= 0 && custTotalCredit > 0 ? 'PAID' : (custTotalPaid > 0 ? 'PARTIAL' : 'PENDING');
-                const statusBadgeClass = statusStr === 'PAID' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : (statusStr === 'PARTIAL' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30');
+                const statusBadgeClass = statusStr === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : (statusStr === 'PARTIAL' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20');
 
                 const initialStr = custName.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
                 const summaryAvatar = document.getElementById('summary-avatar');
@@ -2926,11 +2981,11 @@ async function initCreditLedger() {
 
                 if (summaryAvatar) summaryAvatar.innerText = initialStr;
                 if (summaryName) summaryName.innerText = custName;
-                if (summaryPhone) summaryPhone.innerText = "Customer Profile";
+                if (summaryPhone) summaryPhone.innerText = cust.phone ? "+91 " + cust.phone : "No Contact Added";
                 if (summaryBalance) summaryBalance.innerText = formatCurrency(custBalanceDue);
                 if (summaryStatusBadge) {
                     summaryStatusBadge.innerText = statusStr;
-                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase ${statusBadgeClass}`;
+                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase shadow-sm ${statusBadgeClass}`;
                 }
                 const progressPctVal = custTotalCredit > 0 ? Math.min(100, Math.round((custTotalPaid / custTotalCredit) * 100)) : 0;
                 if (summaryProgressPct) summaryProgressPct.innerText = `${progressPctVal}%`;
@@ -2943,23 +2998,28 @@ async function initCreditLedger() {
                 }
 
                 if (custCredits.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No transactions yet for this customer.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500 font-medium">No transactions yet for this customer.</td></tr>`;
                 } else {
                     custCredits.forEach((cr, index) => {
-                        const creditAmt = cr.amount || 0;
-                        const paidAmt = cr.paid || 0;
+                        const creditAmt = parseFloat(cr.amount || 0);
+                        const paidAmt = parseFloat(cr.paid || 0);
 
                         displayTotal += creditAmt;
                         displayReceived += paidAmt;
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-colors py-1.5";
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors py-1.5 border-b border-slate-100 dark:border-slate-800/50";
                         tr.innerHTML = `
-                            <td class="px-6 py-2.5 text-xs font-bold text-slate-500 w-16">${index + 1}</td>
-                            <td class="px-6 py-2.5 text-xs font-medium text-slate-500 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
-                            <td class="px-6 py-2.5 text-sm font-bold text-right text-orange-600">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
-                            <td class="px-6 py-2.5 text-sm font-bold text-right text-green-600">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
-                            <td class="px-6 py-2.5 text-xs text-slate-500 italic">${cr.note || ''}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-slate-500 w-14">${index + 1}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-orange-600 dark:text-orange-400 whitespace-nowrap">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm text-slate-600 dark:text-slate-300 font-medium italic">${safeEscape(cr.note || '')}</td>
+                            <td class="px-4 py-2.5 align-middle text-right action-col whitespace-nowrap">
+                                <button onclick="event.stopPropagation(); deleteLedgerCredit('${cr.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Transaction">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            </td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -2973,6 +3033,35 @@ async function initCreditLedger() {
                 summaryPending.innerText = formatCurrency(displayPending);
                 localStorage.setItem('CREDIT_LEDGER_TOTAL_PENDING', displayPending);
             }
+
+            const currPendingVal = displayTotal - displayReceived;
+            const prevPendingVal = totalCreditUpToThirtyDaysAgo - totalPaidUpToThirtyDaysAgo;
+
+            const updateTrendEl = (elId, currVal, prevVal) => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                if (prevVal <= 0) {
+                    el.style.display = 'none';
+                    el.innerHTML = '';
+                } else {
+                    el.style.display = 'flex';
+                    const pct = ((currVal - prevVal) / prevVal) * 100;
+                    if (pct > 0) {
+                        el.className = 'text-emerald-500 font-bold text-xs flex items-center bg-emerald-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '<span class="material-symbols-outlined text-xs mr-0.5 font-bold">arrow_upward</span>+' + pct.toFixed(1) + '%';
+                    } else if (pct < 0) {
+                        el.className = 'text-rose-500 font-bold text-xs flex items-center bg-rose-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '<span class="material-symbols-outlined text-xs mr-0.5 font-bold">arrow_downward</span>' + pct.toFixed(1) + '%';
+                    } else {
+                        el.className = 'text-slate-500 font-bold text-xs flex items-center bg-slate-500/10 px-2.5 py-0.5 rounded-full shadow-sm tracking-wide';
+                        el.innerHTML = '0%';
+                    }
+                }
+            };
+
+            updateTrendEl('trend-total-credit', currPeriodCredit, prevPeriodCredit);
+            updateTrendEl('trend-received', currPeriodReceived, prevPeriodReceived);
+            updateTrendEl('trend-pending', currPendingVal, prevPendingVal);
 
             const pagInfo = document.getElementById('pagination-info');
             if (pagInfo) {
@@ -3008,11 +3097,9 @@ async function initCreditLedger() {
             <span style="color:#22c55e;font-size:22px;line-height:1" class="material-symbols-outlined">check_circle</span>
             <span>${message}</span>
         `;
-        // Slide in
         requestAnimationFrame(() => {
             requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
         });
-        // Slide out after 2.5s
         clearTimeout(toast._hideTimer);
         toast._hideTimer = setTimeout(() => {
             toast.style.transform = 'translateX(120%)';
@@ -3062,21 +3149,84 @@ async function initCreditLedger() {
         if (addCustomerForm) addCustomerForm.reset();
     };
 
+    window.openEditCustomerModal = (id, name, phone) => {
+        const modal = document.getElementById('edit-customer-modal');
+        const idInput = document.getElementById('edit-customer-id');
+        const nameInput = document.getElementById('edit-customer-name');
+        const phoneInput = document.getElementById('edit-customer-phone');
+        const errorEl = document.getElementById('edit-phone-error');
+
+        if (modal) modal.classList.remove('hidden');
+        if (idInput) idInput.value = id;
+        if (nameInput) nameInput.value = name;
+        if (phoneInput) phoneInput.value = phone || '';
+        if (errorEl) errorEl.classList.add('hidden');
+    };
+
+    window.closeEditCustomerModal = () => {
+        const modal = document.getElementById('edit-customer-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    const editCustomerForm = document.getElementById('edit-customer-form');
+    if (editCustomerForm) {
+        editCustomerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-customer-id')?.value;
+            const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
+            const errorEl = document.getElementById('edit-phone-error');
+
+            if (!/^\d{10}$/.test(phone)) {
+                if (errorEl) errorEl.classList.remove('hidden');
+                return;
+            }
+            if (errorEl) errorEl.classList.add('hidden');
+
+            try {
+                const customers = await loadCustomers();
+                const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
+                if (existingCust) {
+                    existingCust.phone = phone;
+                    const res = await saveCustomer(existingCust);
+                    if (res) {
+                        closeEditCustomerModal();
+                        showSuccessToast('Contact number saved successfully! ✅');
+                        await renderView();
+                    }
+                } else {
+                    showErrorToast('Customer record not found.');
+                }
+            } catch (err) {
+                console.error("Save contact error:", err);
+                showErrorToast('Failed to save contact number.');
+            }
+        });
+    }
+
     // Handlers
     addCustomerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const input = document.getElementById('new-customer-name');
+        const phoneInput = document.getElementById('new-customer-phone');
         const rawName = input?.value || '';
+        const rawPhone = phoneInput?.value?.trim() || '';
         const normalizedName = rawName.replace(/\s+/g, ' ').trim();
+
+        if (rawPhone && !/^\d{10}$/.test(rawPhone)) {
+            document.getElementById('add-phone-error')?.classList.remove('hidden');
+            return;
+        }
+        document.getElementById('add-phone-error')?.classList.add('hidden');
+
         if (normalizedName) {
             try {
                 const existingCustomers = await loadCustomers();
-                const isDuplicate = existingCustomers.some(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === normalizedName.toLowerCase());
+                const isDuplicate = existingCustomers.some(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === normalizedName.toLowerCase() && String(c.id) !== String(activeCustomerId));
                 if (isDuplicate) {
                     showErrorToast('Customer already exists in Credit Ledger.');
                     return;
                 }
-                const res = await saveCustomer({ id: Date.now(), name: normalizedName });
+                const res = await saveCustomer({ id: Date.now(), name: normalizedName, phone: rawPhone });
                 if (res) {
                     if (typeof closeAddCustomerModal === 'function') closeAddCustomerModal();
                     else addCustomerForm.reset();
@@ -3153,7 +3303,44 @@ async function initCreditLedger() {
     let deleteId = null;
     let deleteType = null; // 'customer' or 'transaction'
 
-    window.deleteLedgerCustomer = (id) => {
+    function showDeleteBlockedModal() {
+        let modal = document.getElementById('delete-blocked-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'delete-blocked-modal';
+            modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp">
+                    <div class="p-6 bg-rose-50 dark:bg-rose-950/40 border-l-4 border-rose-500 flex items-start gap-4">
+                        <div class="size-10 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                            <span class="material-symbols-outlined text-2xl font-bold">warning</span>
+                        </div>
+                        <div class="space-y-1.5 flex-1">
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug font-inter">Action Blocked</h3>
+                            <p class="text-sm text-rose-700 dark:text-rose-300 font-medium leading-relaxed font-inter">
+                                Customer delete nahi kiya ja sakta.<br>
+                                Pehle Daily TXN page me credit received entry karke due balance clear karein.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex justify-end border-t border-slate-100 dark:border-slate-800">
+                        <button onclick="document.getElementById('delete-blocked-modal').classList.add('hidden')" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-sm font-bold rounded-xl transition-all shadow-sm">
+                            Understood
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    window.deleteLedgerCustomer = (id, balanceDue = 0) => {
+        if (balanceDue > 0.01) {
+            showDeleteBlockedModal();
+            return;
+        }
         deleteId = id;
         deleteType = 'customer';
         if (deleteModalTitle) deleteModalTitle.innerText = "Delete Customer?";
@@ -3825,6 +4012,8 @@ async function initReports() {
         updateTxnCard('roinet', txnStats['ROINET_COMMISSION'] || {});
         updateTxnCard('jio_topup', txnStats['JIO_TOPUP'] || {});
         updateTxnCard('dishtv', txnStats['DISHTV_RECHARGE'] || {});
+        updateTxnCard('electricity', txnStats['ELECTRICITY_BILL'] || {});
+        updateTxnCard('pan_card', txnStats['PAN_CARD'] || {});
         updateTxnCard('jio_recharge', txnStats['JIO_RECHARGE'] || {});
         updateTxnCard('admin_deposit', txnStats['FREE_DEPOSIT'] || {});
         updateTxnCard('admin_withdrawal', txnStats['FREE_WITHDRAWAL'] || {});
@@ -3997,7 +4186,11 @@ async function initReports() {
                 } else if (['DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) {
                     sysCash += amt;
                     sysOnline -= amt;
-                } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    sysOnline -= amt;
+                    if (t.chargesType === 'Online') sysOnline += amt;
+                    else sysCash += amt;
+                } else if (t.type === 'JIO_RECHARGE') {
                     sysOnline -= amt;
                     if (t.provider === 'Online') sysOnline += amt;
                     else sysCash += amt;
@@ -4267,42 +4460,39 @@ async function initBankWithdrawals() {
                             showAccountDetails(acc.id);
                         };
                         tr.innerHTML = `
-                            <td class="px-4 py-2 text-center">
-                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">${index + 1}</span>
+                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
+                                ${index + 1}
                             </td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2.5 align-middle">
                                 <div class="flex flex-col leading-tight">
-                                    <span class="text-[13px] font-black text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
-                                    <span class="text-[10px] text-slate-400 font-bold uppercase lg:hidden">${bank} • ${type}</span>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
+                                    <span class="text-xs text-slate-400 font-bold uppercase lg:hidden">${bank} • ${type}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-2 text-center hidden md:table-cell">
-                                <span class="text-[9px] font-black px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-600 dark:text-slate-400">${bank}</span>
+                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
+                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span>
                             </td>
-                            <td class="px-4 py-2 text-center hidden lg:table-cell">
-                                <span class="text-[11px] font-mono font-bold text-slate-500">${accNo}</span>
+                            <td class="px-4 py-2.5 align-middle text-center hidden lg:table-cell">
+                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span>
                             </td>
-                            <td class="px-4 py-2 text-center hidden md:table-cell">
-                                <span class="text-[9px] font-black px-1.5 py-0.5 bg-primary/5 text-primary rounded-md border border-primary/10">${type}</span>
+                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
+                                <span class="text-xs font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg border border-primary/20 tracking-wider">${type}</span>
                             </td>
-                            <td class="px-4 py-2 text-right">
-                                <span class="text-[13px] font-black text-slate-700 dark:text-slate-200">${formatCurrency(fyTotal)}</span>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <span class="text-sm font-black text-slate-800 dark:text-white">${formatCurrency(fyTotal)}</span>
                             </td>
-                            <td class="px-4 py-2 text-center">
-                                <div class="flex flex-col items-center gap-0.5">
-                                    <span class="px-1.5 py-0.5 rounded-full text-[8px] font-black border ${statusClass}">${statusText}</span>
-                                    <span class="text-[8px] font-bold text-slate-400">${pecent.toFixed(1)}%</span>
-                                </div>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
                             </td>
-                            <td class="px-4 py-2 text-right">
-                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                    <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-all" title="View Details">
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
+                                    <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
                                         <span class="material-symbols-outlined text-base">visibility</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Edit Account">
+                                    <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Account">
                                         <span class="material-symbols-outlined text-base">edit</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete Account">
+                                    <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Account">
                                         <span class="material-symbols-outlined text-base">delete</span>
                                     </button>
                                 </div>
@@ -4341,36 +4531,36 @@ async function initBankWithdrawals() {
                             fyTotal += amount;
                         }
 
-                        let methodHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-slate-200">${w.method}</span>`;
-                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-blue-100">ATM</span>`;
-                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-indigo-100">ATM QR</span>`;
-                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-amber-100">In-Branch ATM</span>`;
-                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-purple-100">Cheque</span>`;
-                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 text-pink-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-pink-100">Yono Cash</span>`;
+                        let methodHtml = `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700">${w.method}</span>`;
+                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/30">ATM</span>`;
+                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/30">ATM QR</span>`;
+                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-900/30">In-Branch ATM</span>`;
+                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-purple-100 dark:border-purple-900/30">Cheque</span>`;
+                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-pink-100 dark:border-pink-900/30">Yono Cash</span>`;
 
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
                         tr.style.animationDelay = `${index * 50}ms`;
                         tr.innerHTML = `
-                            <td class="px-4 py-2 text-center">
-                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">${index + 1}</span>
+                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
+                                ${index + 1}
                             </td>
-                            <td class="px-4 py-2">
-                                <span class="text-[13px] font-bold text-slate-600 dark:text-slate-300">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                             </td>
-                            <td class="px-4 py-2 text-right">
-                                <span class="text-[13px] font-black text-rose-600">${formatCurrency(amount)}</span>
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(amount)}</span>
                             </td>
-                            <td class="px-4 py-2 text-center">${methodHtml}</td>
-                            <td class="px-4 py-2">
-                                <span class="text-[10px] text-slate-500 font-medium italic">${w.note || "-"}</span>
+                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">${methodHtml}</td>
+                            <td class="px-4 py-2.5 align-middle">
+                                <span class="text-sm text-slate-600 dark:text-slate-300 font-medium italic">${w.note || "-"}</span>
                             </td>
-                            <td class="px-4 py-2 text-right">
-                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                    <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Edit Record">
+                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
+                                    <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Record">
                                         <span class="material-symbols-outlined text-base">edit</span>
                                     </button>
-                                    <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete Record">
+                                    <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Record">
                                         <span class="material-symbols-outlined text-base">delete</span>
                                     </button>
                                 </div>
@@ -4892,6 +5082,11 @@ async function initDailyTxn() {
     const bankContainer = document.getElementById('bank-field-container');
     const chargesFieldContainer = document.getElementById('charges-field-container');
     const chargesModeContainer = document.getElementById('charges-mode-container');
+    const txnQuantity = document.getElementById('txn-quantity');
+    const quantityFieldContainer = document.getElementById('quantity-field-container');
+    const quantityLabel = document.getElementById('quantity-label');
+    const txnLaminationSize = document.getElementById('txn-lamination-size');
+    const laminationSizeContainer = document.getElementById('lamination-size-container');
     const txnDateText = document.getElementById('current-date-text');
     const txnCountBadge = document.getElementById('txn-count-badge');
     const txnViewDate = document.getElementById('txn-view-date');
@@ -4993,7 +5188,7 @@ async function initDailyTxn() {
         if (!txnType || !conditionalContainer) return;
 
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
-        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'SETTLEMENT'];
+        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
         const noteAndAmountTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
@@ -5030,11 +5225,18 @@ async function initDailyTxn() {
                     const label = noteFieldContainer.querySelector('label');
 
                     if (txnType.value === 'DAILY_EXPENSE') {
-                        if (label) label.innerText = 'EXPENSE TYPE';
+                        if (label) label.innerText = 'Expense Type';
                         if (txnNote) txnNote.classList.add('hidden');
                         if (txnExpenseType) txnExpenseType.classList.remove('hidden');
+                    } else if (txnType.value === 'OTHER_INCOME') {
+                        if (label) label.innerText = 'Income Type';
+                        if (txnNote) {
+                            txnNote.classList.remove('hidden');
+                            txnNote.placeholder = 'e.g. Commission, Bonus...';
+                        }
+                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
                     } else {
-                        if (label) label.innerText = isPending ? 'ACCOUNT NAME' : 'CUSTOMER NAME';
+                        if (label) label.innerText = isPending ? 'Account Name' : 'Customer Name';
                         if (txnNote) {
                             txnNote.classList.remove('hidden');
                             txnNote.placeholder = isPending ? 'Enter account name...' : 'Enter Name...';
@@ -5061,12 +5263,16 @@ async function initDailyTxn() {
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
                     }
-                } else if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'SETTLEMENT'].includes(txnType.value)) {
+                } else if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'SETTLEMENT'].includes(txnType.value)) {
                     chargesFieldContainer.classList.remove('hidden');
                     if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
                 } else {
                     chargesFieldContainer.classList.remove('hidden');
-                    if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
+                    if (chargesModeContainer) {
+                        chargesModeContainer.classList.remove('hidden');
+                        const label = chargesModeContainer.querySelector('label');
+                        if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value) ? 'CUST PAID IN' : 'CHARGES MODE');
+                    }
                 }
             }
 
@@ -5077,14 +5283,51 @@ async function initDailyTxn() {
             txnConditional.value = '';
         } else {
             if (amountFieldContainer) amountFieldContainer.classList.remove('hidden');
-            if (noteFieldContainer) noteFieldContainer.classList.remove('hidden');
+            if (txnType.value === 'PAN_CARD') {
+                if (!editingTxnId && (!txnAmount.value || parseFloat(txnAmount.value) === 0 || txnAmount.value === '107')) {
+                    txnAmount.value = '107';
+                }
+            }
+            if (noteFieldContainer) {
+                noteFieldContainer.classList.remove('hidden');
+                const label = noteFieldContainer.querySelector('label');
+                if (txnType.value === 'ONLINE_WORK') {
+                    if (label) label.innerText = 'Work Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'e.g. Pan Card, Voter ID...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                } else if (txnType.value === 'ELECTRICITY_BILL') {
+                    if (label) label.innerText = 'Customer Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'Enter Consumer No/Name...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                } else {
+                    if (label) label.innerText = 'Customer Name';
+                    if (txnNote) {
+                        txnNote.classList.remove('hidden');
+                        txnNote.placeholder = 'Enter Name...';
+                    }
+                    if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                }
+            }
             if (remarkFieldContainer) {
                 remarkFieldContainer.classList.add('hidden');
                 if (txnRemark) txnRemark.value = '';
             }
-            if (addressFieldContainer) addressFieldContainer.classList.remove('hidden');
+            if (addressFieldContainer) {
+                if (['ONLINE_WORK', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) addressFieldContainer.classList.add('hidden');
+                else addressFieldContainer.classList.remove('hidden');
+            }
             if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
-            if (chargesModeContainer) chargesModeContainer.classList.remove('hidden');
+            if (chargesModeContainer) {
+                chargesModeContainer.classList.remove('hidden');
+                const label = chargesModeContainer.querySelector('label');
+                if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+            }
 
             if (txnType.value === 'AEPS') {
                 conditionalContainer.classList.remove('hidden');
@@ -5099,32 +5342,62 @@ async function initDailyTxn() {
             }
         }
 
+        if (quantityFieldContainer && quantityLabel && txnQuantity) {
+            if (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) {
+                quantityFieldContainer.classList.remove('hidden');
+                if (txnType.value === 'PASSPORT') {
+                    quantityLabel.innerText = 'PIECES / QUANTITY';
+                    txnQuantity.placeholder = 'No. of pieces...';
+                } else if (txnType.value === 'LAMINATION') {
+                    quantityLabel.innerText = 'QUANTITY';
+                    txnQuantity.placeholder = 'Quantity...';
+                } else {
+                    quantityLabel.innerText = 'PAGES / QUANTITY';
+                    txnQuantity.placeholder = 'No. of pages...';
+                }
+            } else {
+                quantityFieldContainer.classList.add('hidden');
+                txnQuantity.value = '';
+            }
+        }
+
+        if (laminationSizeContainer && txnLaminationSize) {
+            if (txnType.value === 'LAMINATION') {
+                laminationSizeContainer.classList.remove('hidden');
+            } else {
+                laminationSizeContainer.classList.add('hidden');
+                txnLaminationSize.value = 'ID Card';
+            }
+        }
+
         // Set Default Charges Mode based on Type
         if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) {
             if (txnChargesType) txnChargesType.value = 'Online';
-        } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE'].includes(txnType.value)) {
-            // Sync with Pay Mode for recharges
-            if (txnProvider && txnChargesType) {
-                txnChargesType.value = txnProvider.value || 'Cash';
-            }
         } else if (!editingTxnId && txnChargesType) {
             // Default to Cash for others if creating new
             txnChargesType.value = 'Cash';
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
         const remainingTypes = ['AEPS', 'MATM'];
 
         const providerLabel = document.querySelector('#provider-field-container label');
+        const providerFirstOpt = txnProvider ? txnProvider.querySelector('option[value=""]') : null;
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
+            if (isCredit || ['DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'ONLINE_WORK'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value) ? 'Amount Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode'));
-                if (amountLabel) amountLabel.innerText = 'Amount';
+                if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value) ? 'Select Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...'));
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : 'Amount';
+            } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
+                if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ELECTRICITY_BILL' ? 'Bill Amount' : (txnType.value === 'PAN_CARD' ? 'Pan Fee' : 'Recharge Amount');
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = 'Txn Amount';
             }
         } else {
@@ -5150,7 +5423,9 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (isCredit || ['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
+                    opt.style.display = ['Online', 'Airtel', 'Roinet', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
+                } else if (isCredit || ['JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
                     opt.style.display = ''; // Show all for other types
@@ -5186,6 +5461,19 @@ async function initDailyTxn() {
             } else {
                 txnNote.removeAttribute('list');
             }
+        }
+
+        // Reset order for all form containers
+        [providerContainer, bankContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer].forEach(c => {
+            if (c) c.style.order = '0';
+        });
+
+        if (txnType.value === 'ONLINE_WORK') {
+            if (noteFieldContainer) noteFieldContainer.style.order = '1';
+            if (amountFieldContainer) amountFieldContainer.style.order = '2';
+            if (providerContainer) providerContainer.style.order = '3';
+            if (chargesFieldContainer) chargesFieldContainer.style.order = '4';
+            if (chargesModeContainer) chargesModeContainer.style.order = '5';
         }
     };
 
@@ -5373,11 +5661,13 @@ async function initDailyTxn() {
                 amount: amountVal,
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
+                pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
+                laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
                 note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
                 bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
@@ -5561,12 +5851,25 @@ async function initDailyTxn() {
                     else if (provider.includes('crgb')) balances.crgb -= amt;
                     else if (provider.includes('jio')) balances.jio -= amt;
                     else balances.online -= amt;
-                } else if (t.type === 'DISHTV_RECHARGE') {
-                    balances.roinet -= amt;
-                    lastRoinetChanges.roinet = -amt;
-                    lastRoinetChanges.total = -amt;
-                    if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        if (provider.includes('airtel')) {
+                            roinetBreakdown.airtel -= amt;
+                            lastRoinetChanges.airtel = -amt;
+                        } else if (provider.includes('spicemoney')) {
+                            roinetBreakdown.spicemoney -= amt;
+                            lastRoinetChanges.spicemoney = -amt;
+                        } else {
+                            roinetBreakdown.roinet -= amt;
+                            lastRoinetChanges.roinet = -amt;
+                        }
+                        lastRoinetChanges.total = -amt;
+                    } else {
+                        balances.online -= amt;
+                    }
+                    if (t.chargesType === 'Online') balances.online += amt;
+                    else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
                     balances.online -= amt;
@@ -5907,10 +6210,12 @@ async function initDailyTxn() {
                         if (!(isNewLogic && isJio)) {
                             currentOnline -= amt;
                         }
-                    } else if (t.type === 'DISHTV_RECHARGE' || t.type === 'JIO_RECHARGE') {
-                        if (!(isNewLogic && t.type === 'JIO_RECHARGE')) {
-                            currentOnline -= amt;
-                        }
+                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                        currentOnline -= amt;
+                        if (t.chargesType === 'Online') currentOnline += amt;
+                        else currentCash += amt;
+                    } else if (t.type === 'JIO_RECHARGE') {
+                        if (!isNewLogic) currentOnline -= amt;
                         if (t.provider === 'Online') currentOnline += amt;
                         else currentCash += amt;
                     } else if (t.type === 'JIO_TOPUP') {
@@ -6056,6 +6361,8 @@ async function initDailyTxn() {
                 updateCard('jio-topup', 'JIO_TOPUP');
                 updateCard('dishtv', 'DISHTV_RECHARGE');
                 updateCard('jio-recharge', 'JIO_RECHARGE');
+                updateCard('electricity', 'ELECTRICITY_BILL');
+                updateCard('pan_card', 'PAN_CARD');
                 updateCard('admin-deposit', 'FREE_DEPOSIT');
                 updateCard('admin-withdrawal', 'FREE_WITHDRAWAL');
                 updateCard('credit-given', 'CREDIT_GIVEN');
@@ -6067,6 +6374,8 @@ async function initDailyTxn() {
                 updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
                 updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
                 updateBadge(document.getElementById('jio-recharge-count-badge'), 'JIO_RECHARGE', 'JIO RCHG');
+                updateBadge(document.getElementById('electricity-count-badge'), 'ELECTRICITY_BILL', 'ELEC BILL');
+                updateBadge(document.getElementById('pan-card-count-badge'), 'PAN_CARD', 'PAN CARD');
                 updateBadge(document.getElementById('admin-deposit-count-badge'), 'FREE_DEPOSIT', 'FREE DEP');
                 updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'FREE_WITHDRAWAL', 'FREE WDRL');
                 updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
@@ -6163,7 +6472,8 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col gap-1.5">
-                                ${txn.note ? `<span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note}</span>` : `<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">No Details</span>`}
+                                ${txn.note ? `<span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note}</span>` : `<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">${txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'}</span>`}
+                                ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
                                 ${txn.address || txn.extraDetails ? `
                                     <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
                                         ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
@@ -6250,6 +6560,8 @@ async function initDailyTxn() {
                             txnType.value = txn.type;
                             txnAmount.value = txn.amount;
                             txnCharges.value = txn.charges;
+                            if (txnQuantity) txnQuantity.value = txn.pages || '';
+                            if (txnLaminationSize && txn.laminationSize) txnLaminationSize.value = txn.laminationSize;
                             txnNote.value = txn.note;
                             if (txnRemark) txnRemark.value = txn.remark || '';
                             if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;

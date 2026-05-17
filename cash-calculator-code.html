@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -18,9 +16,9 @@
                         "background-dark": "#191022",
                     },
                     fontFamily: {
-                        "display": ["Inter"]
+                        "display": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "1.75rem", "3xl": "2rem", "full": "9999px"},
                 },
             },
         }
@@ -28,6 +26,7 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     
         /* Sidebar Hover Expansion Styles */
         #sidebar { 
@@ -110,25 +109,24 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
     </style>
     <script src="auth.js"></script>
     <link rel="icon" type="image/png" href="favicon.png"/>
+    <title>Cash Calculator - BizPerform</title>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen antialiased">
 <div class="flex h-screen overflow-hidden">
 <!-- Sidebar -->
-<aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300">
+<aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300 shadow-xl shadow-primary/5">
 <div class="px-4 py-4 flex justify-end toggle-container">
     <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
         <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
     </button>
 </div>
 <div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
-    
-                <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src="favicon.png" class="w-full h-full object-cover">
-                </div>
+    <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
+        <img src="favicon.png" class="w-full h-full object-cover">
+    </div>
     <div class="sidebar-text overflow-hidden whitespace-nowrap">
         <h1 class="text-sm font-bold leading-none">BizPerform</h1>
         <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
@@ -143,6 +141,14 @@
 <span class="material-symbols-outlined">add_circle</span>
 <span class="text-sm nav-text">Add Entry</span>
 </a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html" data-page="daily-txn.html">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="text-sm nav-text">Daily Txn</span>
+</a>
+<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="cash-calculator-code.html" data-page="cash-calculator-code.html">
+<span class="material-symbols-outlined">calculate</span>
+<span class="text-sm nav-text">Cash Calc</span>
+</a>
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
 <span class="material-symbols-outlined">receipt_long</span>
 <span class="text-sm nav-text">Table</span>
@@ -155,17 +161,14 @@
 <span class="material-symbols-outlined">menu_book</span>
 <span class="text-sm nav-text">Credit Ledger</span>
 </a>
-
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
 <span class="material-symbols-outlined">account_balance</span>
 <span class="text-sm nav-text">Bank Withdrawals</span>
 </a>
-
 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
 <span class="material-symbols-outlined">settings</span>
 <span class="text-sm nav-text">Settings</span>
 </a>
-
 <a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
 <span class="material-symbols-outlined">logout</span>
 <span class="text-sm nav-text font-semibold">Logout</span>
@@ -186,91 +189,99 @@
     </div>
 </div>
 </aside>
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col overflow-y-auto pb-24 lg:pb-0">
-            <!-- Header -->
-            <header class="p-4 lg:p-8 pb-0">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-primary/10 pb-4 lg:pb-8">
-                    <div>
-                        <h2 class="text-xl lg:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2 lg:gap-3">
-                            <span class="material-symbols-outlined text-primary text-2xl lg:text-4xl">calculate</span>
-                            Cash Calculator
-                        </h2>
-                        <p class="text-[10px] lg:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Count physical notes and calculate totals.</p>
-                    </div>
-                    <button id="btn-reset" class="text-[10px] lg:text-xs font-bold text-slate-400 hover:text-primary uppercase tracking-widest flex items-center gap-1.5 transition-colors w-fit">
-                        <span class="material-symbols-outlined text-sm">refresh</span> Reset
-                    </button>
+
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-y-auto min-w-0 pb-28 lg:pb-4 px-4 sm:px-6 lg:px-8 pt-3 lg:pt-4 space-y-3">
+    <!-- Header Card -->
+    <header>
+        <div class="flex items-center justify-between bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-primary/15 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-700 flex items-center justify-center text-white shadow-md shadow-primary/30 flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl font-bold">calculate</span>
                 </div>
-            </header>
-
-            <!-- Calculator Body -->
-            <div class="p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-                <!-- Denominations Table -->
-                <div class="lg:col-span-2 space-y-4 lg:space-y-6">
-                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-primary/10">
-                                <tr>
-                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500">Note</th>
-                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 text-center">Count</th>
-                                    <th class="px-3 lg:px-6 py-2.5 lg:py-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Value (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cash-denomination-rows" class="divide-y divide-primary/5">
-                                <!-- Generated via app.js initCalculator -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
- 
-                <!-- Summary Card -->
-                <div class="space-y-4 lg:space-y-6">
-                    <div class="bg-primary p-6 lg:p-8 rounded-2xl lg:rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
-                        <div class="relative z-10 flex flex-col h-full justify-between">
-                            <div class="flex items-center justify-between lg:block">
-                                <div>
-                                    <p class="text-primary-100/80 text-[10px] lg:text-sm font-medium mb-0.5 lg:mb-1">Total Value</p>
-                                    <h3 id="cash-total-val-display" class="text-2xl lg:text-4xl font-black tracking-tight">₹0</h3>
-                                </div>
-                                <div class="mt-0 lg:mt-2 flex items-center gap-1.5 lg:gap-2 text-primary-100/60 text-[10px]">
-                                    <span class="material-symbols-outlined text-xs">analytics</span>
-                                    <span id="cash-total-notes-count">0 notes</span>
-                                </div>
-                            </div>
-
-                            <!-- System Comparison -->
-                            <div class="mt-4 pt-4 border-t border-white/20 space-y-2">
-                                <div class="flex justify-between items-center text-[10px] lg:text-xs">
-                                    <span class="text-primary-100/70">Daily Txn Cash:</span>
-                                    <span id="system-cash-val" class="font-bold">₹0</span>
-                                </div>
-                                <div class="flex justify-between items-center text-[10px] lg:text-xs">
-                                    <span class="text-primary-100/70">Difference:</span>
-                                    <span id="cash-diff-val" class="font-bold italic">₹0</span>
-                                </div>
-                            </div>
-
-                            <button id="btn-use-cash" class="mt-4 lg:mt-8 w-full bg-white text-primary hover:bg-primary-50 font-bold py-3 lg:py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm lg:text-base">
-                                <span class="material-symbols-outlined text-lg lg:text-xl">check_circle</span>
-                                Use as Cash
-                            </button>
-                        </div>
-                        <!-- Background decoration -->
-                        <div class="absolute -right-10 -bottom-10 size-40 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-900 p-4 lg:p-6 rounded-xl lg:rounded-2xl border border-primary/10 border-dashed flex flex-col gap-2 lg:gap-4">
-                        <div class="flex items-center gap-2 lg:gap-3 text-slate-500">
-                            <span class="material-symbols-outlined text-primary text-lg lg:text-xl">info</span>
-                            <span class="text-[10px] lg:text-xs font-bold uppercase tracking-wider">Instructions</span>
-                        </div>
-                        <p class="text-[11px] lg:text-sm text-slate-600 dark:text-slate-400">Enter note counts. Total calculates automatically and can be sent to "Add Entry".</p>
-                    </div>
+                <div>
+                    <h2 class="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1">Cash Calculator</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium leading-none">Count physical notes and verify totals instantly</p>
                 </div>
             </div>
-        </main>
-</div>
+            
+            <!-- Hidden Date Picker Container so app.js doesn't inject a visible one -->
+            <div id="calc-date-picker-container" class="hidden">
+                <input id="calc-date-picker" type="date">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 items-start">
+        <!-- Notes Table Grid (Left 8 columns) -->
+        <div class="lg:col-span-7 xl:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-primary/15 shadow-sm overflow-hidden p-2 sm:p-4">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-primary/5 dark:bg-slate-800/80 text-primary border-b border-primary/10">
+                    <tr>
+                        <th class="px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Note Denomination</th>
+                        <th class="px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Count</th>
+                        <th class="px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-right">Calculated Value</th>
+                    </tr>
+                </thead>
+                <tbody id="cash-denomination-rows" class="divide-y divide-primary/10">
+                    <!-- Dynamic rows injected here by app.js -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary & Actions Card (Right 4/5 columns) -->
+        <div class="lg:col-span-5 xl:col-span-4 space-y-3">
+            <!-- Premium Summary Card -->
+            <div class="bg-gradient-to-br from-primary via-[#6509c2] to-[#3a0572] p-4 sm:p-5 rounded-2xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
+                <!-- Background decoration -->
+                <div class="absolute -right-12 -bottom-12 size-48 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
+                <div class="absolute -left-12 -top-12 size-48 bg-purple-500/20 rounded-full blur-2xl"></div>
+
+                <div class="relative z-10 flex flex-col h-full justify-between gap-4">
+                    <div>
+                        <div class="flex items-center justify-between pb-2.5 border-b border-white/15">
+                            <span class="text-white/80 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 font-display">
+                                <span class="material-symbols-outlined text-sm">account_balance_wallet</span> Physical Cash Total
+                            </span>
+                            <span id="cash-total-notes-count" class="bg-white/15 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-sm border border-white/20 shadow-inner">0 notes</span>
+                        </div>
+                        <h3 id="cash-total-val-display" class="text-3xl sm:text-4xl font-black tracking-tight mt-2.5 font-mono drop-shadow-md select-all">₹0</h3>
+                    </div>
+
+                    <!-- System Comparison Inner Glass Card -->
+                    <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 shadow-inner space-y-2">
+                        <div class="flex justify-between items-center text-xs font-medium text-white/80">
+                            <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-xs">point_of_sale</span> Daily Txn Cash:</span>
+                            <span id="system-cash-val" class="font-mono font-bold text-white text-sm">₹0</span>
+                        </div>
+                        <div class="h-px bg-white/15 w-full"></div>
+                        <div class="flex justify-between items-center text-xs font-bold">
+                            <span class="text-white/90 uppercase tracking-wider text-[10px]">Difference:</span>
+                            <span id="cash-diff-val" class="font-mono text-sm tracking-tight px-2 py-0.5 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10">₹0</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-use-cash" class="w-full bg-white text-primary hover:bg-slate-100 font-black py-3 rounded-xl shadow-lg shadow-black/20 hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 text-sm group active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">check_circle</span>
+                        <span>Use as Cash Amount</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Guide Card -->
+            <div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-primary/15 shadow-sm flex items-start gap-3">
+                <div class="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5 border border-primary/20">
+                    <span class="material-symbols-outlined text-lg font-bold">lightbulb</span>
+                </div>
+                <div>
+                    <h6 class="text-xs font-bold text-primary uppercase tracking-wider mb-0.5 leading-none">Quick Guide</h6>
+                    <p class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">Enter note counts. Total calculates instantly. Click <span class="font-bold text-slate-800 dark:text-slate-200">"Use as Cash Amount"</span> to pre-fill and return to entry form.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 </div>
 
 <!-- Bottom Navigation (Mobile) -->
@@ -282,6 +293,14 @@
     <a href="add-entry-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">add_circle</span>
         <span class="text-[10px] font-bold">Add Entry</span>
+    </a>
+    <a href="daily-txn.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">point_of_sale</span>
+        <span class="text-[10px] font-bold">Daily Txn</span>
+    </a>
+    <a href="cash-calculator-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl bg-primary/10 text-primary shrink-0 min-w-[75px]">
+        <span class="material-symbols-outlined text-xl">calculate</span>
+        <span class="text-[10px] font-bold">Cash Calc</span>
     </a>
     <a href="transactions-code.html" class="flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 min-w-[75px]">
         <span class="material-symbols-outlined text-xl">receipt_long</span>

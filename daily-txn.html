@@ -197,39 +197,41 @@
                         </div>
                     </div>
 
-                    <form id="daily-txn-form" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                    <form id="daily-txn-form" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
                         <div class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
                             <select id="txn-type" required class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="AEPS">AEPS</option>
                                 <option value="MATM">MATM</option>
-                                <option value="DEPOSIT">DEPOSIT</option>
-                                <option value="WITHDRAWAL">WITHDRAWAL</option>
-                                <option value="DAILY_EXPENSE">DAILY EXPENSE</option>
-                                <option value="OTHER_INCOME">OTHER INCOME</option>
-                                <option value="PHOTOCOPY">PHOTOCOPY</option>
-                                <option value="PRINTOUT">PRINTOUT</option>
-                                <option value="ONLINE_WORK">ONLINE WORK</option>
-                                <option value="PASSPORT">PASSPORT</option>
-                                <option value="LAMINATION">LAMINATION</option>
-                                <option value="GOLD_SIP">GOLD SIP</option>
-                                <option value="CSP_COMMISSION">CSP COMMISSION</option>
-                                <option value="JIO_TOPUP">JIO TOPUP</option>
-                                <option value="DISHTV_RECHARGE">DISHTV RECHARGE</option>
-                                <option value="JIO_RECHARGE">JIO RECHARGE</option>
-                                <option value="FREE_DEPOSIT">FREE DEPOSIT</option>
-                                <option value="FREE_WITHDRAWAL">FREE WITHDRAWAL</option>
-                                <option value="DAMAGED_CURRENCY">DAMAGED CURRENCY</option>
-                                <option value="DAMAGED_RECOVERY">DAMAGED RECOVERY (Convert to Cash)</option>
-                                <option value="CUST_MONEY_IN">CUST MONEY IN (AMANAT)</option>
-                                <option value="CUST_MONEY_OUT">CUST MONEY OUT</option>
-                                <option value="CREDIT_GIVEN">CREDIT GIVEN</option>
-                                <option value="CREDIT_RECEIVED">CREDIT RECEIVED</option>
-                                <option value="SETTLEMENT">SETTLEMENT (ID to Bank)</option>
-                                <option value="PENDING_ADD">PENDING ADD</option>
-                                <option value="PENDING_REMOVE">PENDING REMOVE</option>
-                                <option value="ADD_CAPITAL">ADD CAPITAL</option>
-                                <option value="SHARE_WITHDRAWN">SHARE WITHDRAWN</option>
+                                <option value="DEPOSIT">Deposit</option>
+                                <option value="WITHDRAWAL">Withdrawal</option>
+                                <option value="DAILY_EXPENSE">Daily Expense</option>
+                                <option value="OTHER_INCOME">Other Income</option>
+                                <option value="PHOTOCOPY">Photocopy</option>
+                                <option value="PRINTOUT">Printout</option>
+                                <option value="ONLINE_WORK">Online Work</option>
+                                <option value="PASSPORT">Passport</option>
+                                <option value="LAMINATION">Lamination</option>
+                                <option value="GOLD_SIP">Gold SIP</option>
+                                <option value="CSP_COMMISSION">CSP Commission</option>
+                                <option value="JIO_TOPUP">Jio Topup</option>
+                                <option value="DISHTV_RECHARGE">DishTV Recharge</option>
+                                <option value="JIO_RECHARGE">Jio Recharge</option>
+                                <option value="ELECTRICITY_BILL">Electricity Bill</option>
+                                <option value="PAN_CARD">Pan Card</option>
+                                <option value="FREE_DEPOSIT">Free Deposit</option>
+                                <option value="FREE_WITHDRAWAL">Free Withdrawal</option>
+                                <option value="DAMAGED_CURRENCY">Damaged Currency</option>
+                                <option value="DAMAGED_RECOVERY">Damaged Recovery</option>
+                                <option value="CUST_MONEY_IN">Cust Money In</option>
+                                <option value="CUST_MONEY_OUT">Cust Money Out</option>
+                                <option value="CREDIT_GIVEN">Credit Given</option>
+                                <option value="CREDIT_RECEIVED">Credit Received</option>
+                                <option value="SETTLEMENT">Settlement</option>
+                                <option value="PENDING_ADD">Pending Add</option>
+                                <option value="PENDING_REMOVE">Pending Remove</option>
+                                <option value="ADD_CAPITAL">Add Capital</option>
+                                <option value="SHARE_WITHDRAWN">Share Withdrawn</option>
                             </select>
                         </div>
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
@@ -309,6 +311,17 @@
                             <label id="conditional-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Aadhar (Last 4 Digits)</label>
                             <input id="txn-conditional" type="text" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
+                        <div id="lamination-size-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lamination Size</label>
+                            <select id="txn-lamination-size" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="ID Card">ID Card</option>
+                                <option value="A4 Card">A4 Card</option>
+                            </select>
+                        </div>
+                        <div id="quantity-field-container" class="flex flex-col gap-2 hidden">
+                            <label id="quantity-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Pages / Quantity</label>
+                            <input id="txn-quantity" type="number" min="1" placeholder="Enter quantity..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                        </div>
                         <div id="charges-field-container" class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges</label>
                             <div class="relative">
@@ -323,9 +336,9 @@
                                 <option value="Online">Online</option>
                             </select>
                         </div>
-                        <div class="flex flex-col justify-end">
-                            <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-black py-2 rounded-lg text-sm shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                                <span class="material-symbols-outlined group-hover:scale-110 transition-transform">add_circle</span>
+                        <div class="col-span-full order-last flex flex-col sm:flex-row justify-end pt-1">
+                            <button type="submit" class="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-lg shadow-primary/20 hover:shadow-xl transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
+                                <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
                                 Save Transaction
                             </button>
                         </div>
@@ -632,6 +645,8 @@
                     <span id="jio-topup-count-badge"       class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="dishtv-count-badge"          class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-red-100 text-red-600 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="jio-recharge-count-badge"    class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-700/10 border border-sky-200 dark:border-sky-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="electricity-count-badge"     class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-700/10 border border-amber-200 dark:border-amber-700/20 shadow-sm flex items-center justify-center text-center"></span>
+                    <span id="pan-card-count-badge"        class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="admin-deposit-count-badge"   class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="admin-withdrawal-count-badge" class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20 shadow-sm flex items-center justify-center text-center"></span>
                     <span id="credit-given-count-badge"    class="flex-grow flex-shrink-0 basis-[30%] sm:basis-[22%] md:basis-[15%] lg:basis-[9%] px-1 py-2 rounded-xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20 shadow-sm flex items-center justify-center text-center"></span>
