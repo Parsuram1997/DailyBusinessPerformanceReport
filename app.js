@@ -104,6 +104,7 @@ function initGlobalSettings() {
             checkAndSet('dtxn_showDelete', data.dtxn_showDelete);
             checkAndSet('dtxn_showCharges', data.dtxn_showCharges);
             checkAndSet('security_pin_enabled', data.security_pin_enabled);
+            checkAndSet('CREDIT_LEDGER_SHOW_ACTIONS', data.CREDIT_LEDGER_SHOW_ACTIONS);
 
             if (changed) {
                 window.dispatchEvent(new Event('appSettingsUpdated'));
@@ -2796,6 +2797,14 @@ async function initCreditLedger() {
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
 
+                const showActions = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+                const actionTh = document.getElementById('ledger-action-th');
+                if (actionTh) {
+                    if (showActions) actionTh.classList.remove('hidden');
+                    else actionTh.classList.add('hidden');
+                }
+                const actionColClass = showActions ? '' : 'hidden';
+
                 const tableContainer = document.getElementById('table-card-container');
                 if (tableContainer) tableContainer.className = "lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
                 const summarySidebar = document.getElementById('customer-summary-sidebar');
@@ -2850,7 +2859,7 @@ async function initCreditLedger() {
                             <td class="px-6 py-2 text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass}">${status}</span>
                             </td>
-                            <td class="px-6 py-2 text-right">
+                            <td class="px-6 py-2 text-right action-col ${actionColClass}">
                                 <div class="flex gap-2 justify-end">
                                     <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-lg" title="View Details">
                                         <span class="material-symbols-outlined text-lg">visibility</span>

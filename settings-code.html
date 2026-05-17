@@ -211,189 +211,212 @@
 </section>
 
 
-<!-- Daily Txn Display Settings (PIN Protected) -->
-<div id="dtxn-settings-container" class="relative bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6 overflow-hidden">
-    <!-- Lock Overlay -->
-    <div id="dtxn-lock-overlay" class="absolute inset-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 transition-all duration-500">
-        <div class="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-lg shadow-primary/5 animate-bounce">
-            <span class="material-symbols-outlined text-3xl">lock</span>
+<!-- Bulk Data Import (CSV) (Moved to Top) -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-8">
+    <div>
+        <div class="flex flex-col md:flex-row gap-6 items-start">
+            <div class="flex-1">
+                <h4 class="text-lg font-bold mb-2">Bulk Historical Import (CSV)</h4>
+                <p class="text-sm text-slate-500 mb-4">Have years of data in Excel? Export your file to **CSV** format and upload it here. Your dashboard will instantly update with all-time historical totals.</p>
+                <div class="inline-flex items-center gap-2 p-2 px-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+                    <span class="material-symbols-outlined text-sm">info</span>
+                    <span>Ensure your CSV follows our template headers exactly.</span>
+                </div>
+            </div>
+            <div class="w-full md:w-72 space-y-3">
+                <button id="btn-download-template" class="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary text-sm font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">download</span> Download CSV Template
+                </button>
+                <input type="file" id="file-bulk-csv" accept=".csv" class="hidden">
+                <button id="btn-bulk-import-trigger" class="w-full bg-primary hover:bg-primary/90 text-white text-sm font-black py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3">
+                    <span class="material-symbols-outlined">publish</span> Upload Historical CSV
+                </button>
+            </div>
         </div>
-        <div class="text-center">
-            <h4 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Advanced Access Required</h4>
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enter PIN to access advanced controls & sensitive actions</p>
-        </div>
-        <button id="btn-unlock-dtxn" class="px-8 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm">key</span> UNLOCK NOW
-        </button>
     </div>
+</div>
 
-    <div class="flex items-center gap-3 mb-2">
-        <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <span class="material-symbols-outlined">settings_suggest</span>
+<!-- Locked Compact Access Card -->
+<div id="compact-lock-card" class="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 border border-primary/20 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+    <div class="flex flex-col sm:flex-row items-center gap-4">
+        <div class="size-12 rounded-2xl bg-primary/20 dark:bg-primary/30 text-primary flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform shrink-0">
+            <span class="material-symbols-outlined text-2xl animate-pulse">lock</span>
         </div>
         <div>
-            <h4 class="text-lg font-bold">Advanced Settings & Controls</h4>
-            <p class="text-sm text-slate-500">Manage security, page displays, and sensitive data actions.</p>
+            <h4 class="text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2 justify-center sm:justify-start">
+                Advanced Settings & Controls
+            </h4>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">
+                Protected section • Security controls, UI customization & database wipe
+            </p>
         </div>
     </div>
+    <button id="btn-unlock-dtxn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wider shrink-0 group-hover:bg-primary">
+        <span class="material-symbols-outlined text-sm">key</span> Unlock Section
+    </button>
+</div>
 
-    <!-- Toggle: Page PIN Protection (Moved inside) -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-amber-100 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-amber-600">security</span>
-            <div>
-                <p class="font-bold text-sm">Page PIN Protection</p>
-                <p class="text-xs text-slate-500">Enable/disable PIN lock for Add Entry, Daily Transactions and Settings pages.</p>
+<!-- Advanced Settings Expandable Content (PIN Protected) -->
+<div id="advanced-settings-container" class="max-h-0 opacity-0 overflow-hidden transition-all duration-700 ease-in-out">
+    <div id="dtxn-settings-container" class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6">
+        <div class="flex items-center justify-between border-b border-primary/10 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined font-bold text-xl">settings_suggest</span>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold">Advanced Settings & Controls</h4>
+                    <p class="text-xs text-slate-500">Manage security, page displays, and sensitive data actions.</p>
+                </div>
             </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-pin-protection" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-        </label>
-    </div>
-
-    <div class="pt-4 border-t border-primary/5">
-        <p class="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-4">Display Controls</p>
-    </div>
-
-    <!-- Toggle: Summary Area -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/5">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-primary">analytics</span>
-            <div>
-                <p class="font-bold text-sm">Volume Badges Area</p>
-                <p class="text-xs text-slate-500">Show/hide the Transaction Volume section (AEPS, MATM, Recharge counts).</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-        </label>
-    </div>
-
-    <!-- Toggle: Balances Grid Area -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-violet-100 bg-violet-50 dark:bg-violet-500/5 dark:border-violet-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-violet-600">dashboard</span>
-            <div>
-                <p class="font-bold text-sm">Balance Summary Grid</p>
-                <p class="text-xs text-slate-500">Show/hide the Cash, Online, Roinet, Jio etc. balance grid cards.</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-balances-grid" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-        </label>
-    </div>
-
-    <!-- Toggle: Balance Column -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-indigo-600">account_balance_wallet</span>
-            <div>
-                <p class="font-bold text-sm">Balance (C/O) Column</p>
-                <p class="text-xs text-slate-500">Show/hide the running balance carry-over column in the transactions table.</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-balance-col" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-        </label>
-    </div>
-
-    <!-- Toggle: Balance +/- Diff -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-teal-100 bg-teal-50 dark:bg-teal-500/5 dark:border-teal-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-teal-600">difference</span>
-            <div>
-                <p class="font-bold text-sm">Balance +/- Diff</p>
-                <p class="text-xs text-slate-500">Show how much was added or subtracted (+/-) in the balance column for each transaction.</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-balance-diff" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
-        </label>
-    </div>
-
-    <!-- Toggle: Delete Button -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-rose-600">delete</span>
-            <div>
-                <p class="font-bold text-sm">Table Delete Button</p>
-                <p class="text-xs text-slate-500">Show/hide the delete action button in the transactions table.</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-delete-btn" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
-        </label>
-    </div>
-
-    <!-- Toggle: Charges Column -->
-    <div class="flex items-center justify-between p-4 rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-500/5 dark:border-emerald-500/20">
-        <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-emerald-600">payments</span>
-            <div>
-                <p class="font-bold text-sm">Charges Column</p>
-                <p class="text-xs text-slate-500">Show/hide the charges column in the transactions table.</p>
-            </div>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-charges-col" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-        </label>
-    </div>
-
-    <!-- Danger Zone (Moved inside) -->
-    <div class="pt-6 mt-2 border-t border-rose-100 dark:border-rose-900/30">
-        <div class="flex items-center gap-2 mb-4">
-            <span class="material-symbols-outlined text-rose-600 text-lg">warning</span>
-            <h4 class="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Danger Zone</h4>
-        </div>
-        
-        <div class="flex flex-col md:flex-row gap-4 items-center justify-between border border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl p-5">
-            <div>
-                <h5 class="font-bold text-rose-700 dark:text-rose-300 text-sm">Wipe All Data</h5>
-                <p class="text-xs text-rose-600/70 dark:text-rose-400/70 mt-1">Permanently delete all business records from the database.</p>
-            </div>
-            <button id="btn-clear" class="whitespace-nowrap bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-rose-600/20 transition-all focus:ring-4 focus:ring-rose-500/30">
-                Wipe Database Data
+            <button id="btn-lock-again" class="px-3 py-1.5 text-xs text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1 font-bold">
+                <span class="material-symbols-outlined text-sm font-bold">lock</span> Lock Section
             </button>
         </div>
-    </div>
-</div>
 
-<!-- Data Management Box -->
-<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-8">
-        <!-- Bulk Data Import (CSV) -->
-        <div>
-            <div class="flex flex-col md:flex-row gap-6 items-start">
-                <div class="flex-1">
-                    <h4 class="text-lg font-bold mb-2">Bulk Historical Import (CSV)</h4>
-                    <p class="text-sm text-slate-500 mb-4">Have years of data in Excel? Export your file to **CSV** format and upload it here. Your dashboard will instantly update with all-time historical totals.</p>
-                    <div class="inline-flex items-center gap-2 p-2 px-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-                        <span class="material-symbols-outlined text-sm">info</span>
-                        <span>Ensure your CSV follows our template headers exactly.</span>
-                    </div>
+        <!-- Toggle: Page PIN Protection -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-amber-100 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-amber-600">security</span>
+                <div>
+                    <p class="font-bold text-sm">Page PIN Protection</p>
+                    <p class="text-xs text-slate-500">Enable/disable PIN lock for Add Entry, Daily Transactions and Settings pages.</p>
                 </div>
-                <div class="w-full md:w-72 space-y-3">
-                    <button id="btn-download-template" class="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary text-sm font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined">download</span> Download CSV Template
-                    </button>
-                    <input type="file" id="file-bulk-csv" accept=".csv" class="hidden">
-                    <button id="btn-bulk-import-trigger" class="w-full bg-primary hover:bg-primary/90 text-white text-sm font-black py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3">
-                        <span class="material-symbols-outlined">publish</span> Upload Historical CSV
-                    </button>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-pin-protection" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+            </label>
+        </div>
+
+        <div class="pt-4 border-t border-primary/5">
+            <p class="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-4">Display Controls</p>
+        </div>
+
+        <!-- Toggle: Summary Area -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/5">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">analytics</span>
+                <div>
+                    <p class="font-bold text-sm">Volume Badges Area</p>
+                    <p class="text-xs text-slate-500">Show/hide the Transaction Volume section (AEPS, MATM, Recharge counts).</p>
                 </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Balances Grid Area -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-violet-100 bg-violet-50 dark:bg-violet-500/5 dark:border-violet-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-violet-600">dashboard</span>
+                <div>
+                    <p class="font-bold text-sm">Balance Summary Grid</p>
+                    <p class="text-xs text-slate-500">Show/hide the Cash, Online, Roinet, Jio etc. balance grid cards.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-balances-grid" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Balance Column -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-indigo-600">account_balance_wallet</span>
+                <div>
+                    <p class="font-bold text-sm">Balance (C/O) Column</p>
+                    <p class="text-xs text-slate-500">Show/hide the running balance carry-over column in the transactions table.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-balance-col" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Balance +/- Diff -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-teal-100 bg-teal-50 dark:bg-teal-500/5 dark:border-teal-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-teal-600">difference</span>
+                <div>
+                    <p class="font-bold text-sm">Balance +/- Diff</p>
+                    <p class="text-xs text-slate-500">Show how much was added or subtracted (+/-) in the balance column for each transaction.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-balance-diff" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Delete Button -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-rose-600">delete</span>
+                <div>
+                    <p class="font-bold text-sm">Table Delete Button</p>
+                    <p class="text-xs text-slate-500">Show/hide the delete action button in the transactions table.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-delete-btn" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Charges Column -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-500/5 dark:border-emerald-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-emerald-600">payments</span>
+                <div>
+                    <p class="font-bold text-sm">Charges Column</p>
+                    <p class="text-xs text-slate-500">Show/hide the charges column in the transactions table.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-charges-col" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Credit Ledger Actions Column -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-sky-100 bg-sky-50 dark:bg-sky-500/5 dark:border-sky-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-sky-600">toggle_on</span>
+                <div>
+                    <p class="font-bold text-sm">Credit Ledger Action Buttons</p>
+                    <p class="text-xs text-slate-500">Show/hide the View Details and Delete action buttons on the Credit Ledger page.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-credit-actions" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+            </label>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="pt-6 mt-2 border-t border-rose-100 dark:border-rose-900/30">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-rose-600 text-lg">warning</span>
+                <h4 class="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Danger Zone</h4>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between border border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl p-5">
+                <div>
+                    <h5 class="font-bold text-rose-700 dark:text-rose-300 text-sm">Wipe All Data</h5>
+                    <p class="text-xs text-rose-600/70 dark:text-rose-400/70 mt-1">Permanently delete all business records from the database.</p>
+                </div>
+                <button id="btn-clear" class="whitespace-nowrap bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-rose-600/20 transition-all focus:ring-4 focus:ring-rose-500/30">
+                    Wipe Database Data
+                </button>
             </div>
         </div>
     </div>
-
-    </div>
 </div>
-
 </div>
 </main>
 </div>
@@ -517,9 +540,12 @@ const balanceDiffToggle = document.getElementById('toggle-balance-diff');
 const deleteToggle = document.getElementById('toggle-delete-btn');
 const chargesToggle = document.getElementById('toggle-charges-col');
 const pinToggle = document.getElementById('toggle-pin-protection');
+const creditActionsToggle = document.getElementById('toggle-credit-actions');
 
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
-const lockOverlay = document.getElementById('dtxn-lock-overlay');
+const compactLockCard = document.getElementById('compact-lock-card');
+const advancedContainer = document.getElementById('advanced-settings-container');
+const btnLockAgain = document.getElementById('btn-lock-again');
 const pinModal = document.getElementById('settings-pin-modal');
 const pinInput = document.getElementById('settings-pin-input');
 const submitPinBtn = document.getElementById('btn-submit-pin');
@@ -528,7 +554,13 @@ const cancelPinBtn = document.getElementById('btn-cancel-pin');
 const CORRECT_PIN = "252006";
 
 // Unlock Logic
-unlockBtn.addEventListener('click', () => {
+compactLockCard.addEventListener('click', () => {
+    pinModal.classList.remove('hidden');
+    pinInput.value = '';
+    pinInput.focus();
+});
+unlockBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     pinModal.classList.remove('hidden');
     pinInput.value = '';
     pinInput.focus();
@@ -538,7 +570,9 @@ cancelPinBtn.addEventListener('click', () => pinModal.classList.add('hidden'));
 
 submitPinBtn.addEventListener('click', () => {
     if (pinInput.value === CORRECT_PIN) {
-        lockOverlay.classList.add('hidden');
+        compactLockCard.classList.add('hidden');
+        advancedContainer.classList.remove('max-h-0', 'opacity-0', 'overflow-hidden');
+        advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
         pinModal.classList.add('hidden');
     } else {
         alert('❌ Incorrect PIN! Access Denied.');
@@ -547,15 +581,22 @@ submitPinBtn.addEventListener('click', () => {
     }
 });
 
+btnLockAgain.addEventListener('click', () => {
+    advancedContainer.classList.remove('max-h-[3000px]', 'opacity-100');
+    advancedContainer.classList.add('max-h-0', 'opacity-0', 'overflow-hidden');
+    compactLockCard.classList.remove('hidden');
+});
+
 function applySettingsToUI() {
     summaryToggle.checked = localStorage.getItem('dtxn_showSummary') !== 'false';
     balancesGridToggle.checked = localStorage.getItem('dtxn_showBalancesGrid') !== 'false';
     balanceToggle.checked = localStorage.getItem('dtxn_showBalance') !== 'false';
-    balanceDiffToggle.checked = localStorage.getItem('dtxn_showBalanceDiff') === 'true'; // Default off maybe? Or default on? Let's default true: !== 'false'
-    if (localStorage.getItem('dtxn_showBalanceDiff') === null) balanceDiffToggle.checked = true; // Default true if not set
+    balanceDiffToggle.checked = localStorage.getItem('dtxn_showBalanceDiff') === 'true';
+    if (localStorage.getItem('dtxn_showBalanceDiff') === null) balanceDiffToggle.checked = true;
     deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
     chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
     pinToggle.checked = localStorage.getItem('security_pin_enabled') !== 'false';
+    creditActionsToggle.checked = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
 }
 
 // Initial load
@@ -575,12 +616,12 @@ function saveGlobalSettings() {
         dtxn_showBalanceDiff: balanceDiffToggle.checked,
         dtxn_showDelete: deleteToggle.checked,
         dtxn_showCharges: chargesToggle.checked,
-        security_pin_enabled: pinToggle.checked
+        security_pin_enabled: pinToggle.checked,
+        CREDIT_LEDGER_SHOW_ACTIONS: creditActionsToggle.checked
     };
     if (window.saveAppSettings) {
         window.saveAppSettings(settings);
     } else {
-        // Fallback to local storage if app.js is not loaded yet
         localStorage.setItem('dtxn_showSummary', settings.dtxn_showSummary);
         localStorage.setItem('dtxn_showBalancesGrid', settings.dtxn_showBalancesGrid);
         localStorage.setItem('dtxn_showBalance', settings.dtxn_showBalance);
@@ -588,6 +629,7 @@ function saveGlobalSettings() {
         localStorage.setItem('dtxn_showDelete', settings.dtxn_showDelete);
         localStorage.setItem('dtxn_showCharges', settings.dtxn_showCharges);
         localStorage.setItem('security_pin_enabled', settings.security_pin_enabled);
+        localStorage.setItem('CREDIT_LEDGER_SHOW_ACTIONS', settings.CREDIT_LEDGER_SHOW_ACTIONS);
     }
 }
 
@@ -599,6 +641,7 @@ balanceDiffToggle.addEventListener('change', saveGlobalSettings);
 deleteToggle.addEventListener('change', saveGlobalSettings);
 chargesToggle.addEventListener('change', saveGlobalSettings);
 pinToggle.addEventListener('change', saveGlobalSettings);
+creditActionsToggle.addEventListener('change', saveGlobalSettings);
 </script>
 </body>
 </html>
