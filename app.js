@@ -371,10 +371,15 @@ async function loadBankAccounts() {
     if (!db) return [];
     try {
         const querySnapshot = await getDocs(collection(db, "bank_accounts"));
-        return querySnapshot.docs.map(doc => {
+        const list = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { ...data, id: data.id || doc.id, firebaseId: doc.id };
         });
+        if (!window.cachedBankAccountsMap) window.cachedBankAccountsMap = new Map();
+        list.forEach(acc => {
+            if (acc.id) window.cachedBankAccountsMap.set(String(acc.id), acc);
+        });
+        return list;
     } catch (e) {
         console.error("Error loading bank accounts: ", e);
         return [];
@@ -393,6 +398,192 @@ async function saveBankAccount(account) {
         return null;
     }
 }
+async function populateBankAccountsDropdown(selectedVal = '') {
+    const selectEl = document.getElementById('txn-bank-select');
+    const customDropdown = document.getElementById('custom-bank-dropdown');
+    const customSearch = document.getElementById('custom-bank-search');
+    if (!selectEl) return;
+    try {
+        const accounts = await loadBankAccounts();
+        selectEl.innerHTML = '<option value="">Select Account...</option>';
+        if (customDropdown) customDropdown.innerHTML = '';
+
+        const allItemsData = [];
+
+        accounts.forEach(acc => {
+            let fullDisplayText = acc.name || '';
+            let holder = '';
+            let bank = '';
+            let number = '';
+            let type = 'CURRENT';
+
+            if (acc.name && acc.name.includes('|')) {
+                const parts = acc.name.split('|');
+                holder = parts[0] || '';
+                bank = parts[1] || '';
+                number = parts[2] || '';
+                type = parts[3] || 'CURRENT';
+                fullDisplayText = `${holder.toUpperCase()} — ${type.toUpperCase()} — ${number}`;
+            } else if (acc.name && acc.name.includes(' — ')) {
+                const parts = acc.name.split(' — ');
+                holder = parts[0] || '';
+                type = parts[1] || 'CURRENT';
+                number = parts[2] || '';
+                bank = 'BANK';
+                fullDisplayText = acc.name;
+            } else {
+                holder = acc.name ? acc.name.toUpperCase() : '';
+                bank = 'BANK';
+                fullDisplayText = holder;
+            }
+
+            const last4 = number.length >= 4 ? number.slice(-4) : number;
+            const singleLineDisplay = `${holder.toUpperCase()} • ${type.toUpperCase()}${last4 ? ` • ${last4}` : ''}`;
+
+            const option = document.createElement('option');
+            option.value = fullDisplayText;
+            option.setAttribute('data-account-id', acc.id || '');
+            option.textContent = fullDisplayText;
+            selectEl.appendChild(option);
+
+            allItemsData.push({
+                id: acc.id || '',
+                fullValue: fullDisplayText,
+                singleLine: singleLineDisplay,
+                holder: holder.toUpperCase(),
+                bank: bank.toUpperCase(),
+                type: type.toUpperCase(),
+                last4: last4,
+                number: number
+            });
+        });
+
+        if (!customDropdown || !customSearch) {
+            if (selectedVal) selectEl.value = selectedVal;
+            return;
+        }
+
+        const renderDropdownItems = (filterText = '') => {
+            customDropdown.innerHTML = '';
+            const filtered = allItemsData.filter(item => {
+                const query = filterText.toLowerCase();
+                return item.holder.toLowerCase().includes(query) ||
+                       item.bank.toLowerCase().includes(query) ||
+                       item.type.toLowerCase().includes(query) ||
+                       item.number.toLowerCase().includes(query);
+            });
+
+            if (filtered.length === 0) {
+                customDropdown.innerHTML = '<div class="px-3.5 py-3 text-xs text-slate-400 text-center font-medium">No matching accounts found</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'px-3.5 py-2.5 hover:bg-primary/10 cursor-pointer transition-colors flex flex-col gap-0.5 group/item';
+                div.innerHTML = `
+                    <div class="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight group-hover/item:text-primary transition-colors">${item.holder}</div>
+                    <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase">
+                        <span class="text-blue-600 dark:text-blue-400 font-bold">${item.bank}</span>
+                        <span>•</span>
+                        <span class="text-slate-500 dark:text-slate-300 font-bold">${item.type}</span>
+                        ${item.last4 ? `<span>•</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
+                    </div>
+                `;
+
+                div.onmousedown = (e) => {
+                    e.preventDefault(); // Prevent input blur
+                    selectEl.value = item.fullValue;
+                    const opts = Array.from(selectEl.options);
+                    const matchedIdx = opts.findIndex(o => o.value === item.fullValue);
+                    if (matchedIdx >= 0) selectEl.selectedIndex = matchedIdx;
+                    
+                    customSearch.value = item.singleLine;
+                    customDropdown.classList.add('hidden');
+                    document.getElementById('custom-bank-arrow')?.classList.remove('rotate-180');
+                };
+
+                customDropdown.appendChild(div);
+            });
+        };
+
+        renderDropdownItems();
+
+        window.updateCustomBankSelectDisplay = (valToMatch) => {
+            if (!valToMatch) {
+                customSearch.value = '';
+                return;
+            }
+            const matched = allItemsData.find(i => i.fullValue === valToMatch || i.singleLine === valToMatch);
+            if (matched) {
+                customSearch.value = matched.singleLine;
+                selectEl.value = matched.fullValue;
+            } else {
+                customSearch.value = valToMatch;
+                selectEl.value = valToMatch;
+            }
+        };
+
+        const box = document.getElementById('custom-bank-selected-box');
+        const arrow = document.getElementById('custom-bank-arrow');
+
+        const openDropdown = () => {
+            renderDropdownItems(customSearch.value);
+            customDropdown.classList.remove('hidden');
+            arrow?.classList.add('rotate-180');
+        };
+
+        const closeDropdown = () => {
+            customDropdown.classList.add('hidden');
+            arrow?.classList.remove('rotate-180');
+            if (selectEl.value) {
+                const matched = allItemsData.find(i => i.fullValue === selectEl.value);
+                if (matched) customSearch.value = matched.singleLine;
+            } else {
+                customSearch.value = '';
+            }
+        };
+
+        if (box) {
+            box.onclick = (e) => {
+                if (e.target === customSearch) return;
+                if (customDropdown.classList.contains('hidden')) {
+                    customSearch.focus();
+                    openDropdown();
+                } else {
+                    closeDropdown();
+                }
+            };
+        }
+
+        if (customSearch) {
+            customSearch.onfocus = () => {
+                customSearch.select();
+                openDropdown();
+            };
+
+            customSearch.oninput = (e) => {
+                renderDropdownItems(e.target.value);
+                if (customDropdown.classList.contains('hidden')) {
+                    customDropdown.classList.remove('hidden');
+                    arrow?.classList.add('rotate-180');
+                }
+            };
+
+            customSearch.onblur = () => {
+                setTimeout(closeDropdown, 150);
+            };
+        }
+
+        if (selectedVal) {
+            selectEl.value = selectedVal;
+            window.updateCustomBankSelectDisplay(selectedVal);
+        }
+    } catch (e) {
+        console.error('Error populating bank accounts:', e);
+    }
+}
+window.populateBankAccountsDropdown = populateBankAccountsDropdown;
 async function loadBankWithdrawals() {
     if (!db) return [];
     try {
@@ -4538,6 +4729,8 @@ async function initBankWithdrawals() {
                         if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-purple-100 dark:border-purple-900/30">Cheque</span>`;
                         if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-pink-100 dark:border-pink-900/30">Yono Cash</span>`;
 
+                        let autoBadge = w.dailyTxnId ? `<span class="ml-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1 border border-indigo-200 dark:border-indigo-800 align-middle"><span class="material-symbols-outlined text-[10px]">auto_awesome</span> Auto Entry</span>` : '';
+
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
                         tr.style.animationDelay = `${index * 50}ms`;
@@ -4553,7 +4746,7 @@ async function initBankWithdrawals() {
                             </td>
                             <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">${methodHtml}</td>
                             <td class="px-4 py-2.5 align-middle">
-                                <span class="text-sm text-slate-600 dark:text-slate-300 font-medium italic">${w.note || "-"}</span>
+                                <span class="text-sm text-slate-600 dark:text-slate-300 font-medium italic">${w.note || "-"}</span>${autoBadge}
                             </td>
                             <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
                                 <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
@@ -4606,6 +4799,7 @@ async function initBankWithdrawals() {
                 await saveBankAccount({ id: uniqueId, name: combinedName });
                 closeAccountModal();
                 await renderView();
+                if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
             }
         });
     }
@@ -4690,6 +4884,15 @@ async function initBankWithdrawals() {
         const wList = await loadBankWithdrawals();
         const w = wList.find(x => String(x.id) === String(id));
         if (w) {
+            if (w.dailyTxnId) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Auto-Generated Entry',
+                    text: 'This withdrawal record was automatically generated from Daily Transactions. Please edit or delete the original transaction on the Daily Transactions page to update this record.',
+                    confirmButtonColor: '#7c3aed'
+                });
+                return;
+            }
             document.getElementById('withdrawal-date').value = w.date;
             document.getElementById('withdrawal-amount').value = w.amount;
             document.getElementById('withdrawal-method').value = w.method;
@@ -4711,7 +4914,18 @@ async function initBankWithdrawals() {
     }
     window.editBankWithdrawalRecord = editBankWithdrawalRecord;
 
-    function deleteBankWithdrawalRecord(id) {
+    async function deleteBankWithdrawalRecord(id) {
+        const wList = await loadBankWithdrawals();
+        const w = wList.find(x => String(x.id) === String(id));
+        if (w && w.dailyTxnId) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Auto-Generated Entry',
+                text: 'This withdrawal record was automatically generated from Daily Transactions. Please delete the original transaction on the Daily Transactions page to remove this record.',
+                confirmButtonColor: '#7c3aed'
+            });
+            return;
+        }
         deleteTargetId = id;
         deleteTargetType = 'withdrawal';
         const titleEl = document.getElementById('delete-modal-title');
@@ -4753,6 +4967,7 @@ async function initBankWithdrawals() {
 
                 if (deleteModal) deleteModal.classList.add('hidden');
                 await renderView();
+                if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
             } catch (err) {
                 console.error("Delete error:", err);
                 alert("Failed to delete record.");
@@ -4976,6 +5191,70 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     }
 }
 
+async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
+    try {
+        const existingWithdrawals = await loadBankWithdrawals();
+        let linkedWithdrawal = existingWithdrawals.find(w => String(w.dailyTxnId) === String(dailyTxnId));
+
+        if (isDelete) {
+            if (linkedWithdrawal) {
+                await deleteBankWithdrawal(linkedWithdrawal.id || linkedWithdrawal.firebaseId);
+                console.log('[BankWithdrawalSync] Successfully deleted linked withdrawal entry:', linkedWithdrawal.id);
+            }
+            return;
+        }
+
+        if (!newTxn || newTxn.type !== 'CASH_WITHDRAWAL') {
+            if (linkedWithdrawal) {
+                await deleteBankWithdrawal(linkedWithdrawal.id || linkedWithdrawal.firebaseId);
+                console.log('[BankWithdrawalSync] Deleted linked withdrawal entry because txn type changed or cleared:', linkedWithdrawal.id);
+            }
+            return;
+        }
+
+        let accountId = newTxn.accountId;
+        if (!accountId && newTxn.bankName) {
+            const accounts = await loadBankAccounts();
+            const matched = accounts.find(a => a.name === newTxn.bankName);
+            if (matched) accountId = matched.id;
+        }
+
+        if (!accountId) {
+            console.warn('[BankWithdrawalSync] No accountId found for Cash Withdrawal transaction. Skipping sync.');
+            return;
+        }
+
+        const amountVal = Number(newTxn.amount || 0);
+        const remarkStr = newTxn.remark ? newTxn.remark.trim() : '';
+        const noteStr = remarkStr ? remarkStr : (newTxn.note ? newTxn.note.trim() : 'Generated from Daily Transactions');
+
+        if (linkedWithdrawal) {
+            linkedWithdrawal.accountId = accountId;
+            linkedWithdrawal.amount = amountVal;
+            linkedWithdrawal.date = newTxn.date;
+            linkedWithdrawal.note = noteStr;
+            linkedWithdrawal.method = linkedWithdrawal.method || "Cash Withdrawal";
+            await saveBankWithdrawal(linkedWithdrawal);
+            console.log('[BankWithdrawalSync] Successfully updated linked withdrawal entry:', linkedWithdrawal.id);
+        } else {
+            const newW = {
+                id: Date.now().toString() + Math.floor(Math.random() * 1000),
+                accountId: accountId,
+                date: newTxn.date,
+                amount: amountVal,
+                method: "Cash Withdrawal",
+                note: noteStr,
+                dailyTxnId: dailyTxnId,
+                autoCreated: true
+            };
+            await saveBankWithdrawal(newW);
+            console.log('[BankWithdrawalSync] Successfully created new linked withdrawal entry ID:', newW.id);
+        }
+    } catch (err) {
+        console.error('[BankWithdrawalSync] Error during sync:', err);
+    }
+}
+
 // Logic for Daily Transactions
 async function initDailyTxn() {
     console.log('Initializing DailyTxn module...');
@@ -5119,9 +5398,18 @@ async function initDailyTxn() {
     let currentAvailableSpiceMoney = 0; // Tracks live Spice Money for validation
 
     // Initialize date picker
+    let previousViewDateVal = currentSelectedDate;
     if (txnViewDate) {
         txnViewDate.value = currentSelectedDate;
         txnViewDate.addEventListener('change', (e) => {
+            if (!window._isConfirmedDateSwitch && window.hasUnsavedData && window.hasUnsavedData()) {
+                if (!confirm("You have unsaved transaction data. Continue changing date?")) {
+                    e.target.value = previousViewDateVal;
+                    return;
+                }
+            }
+            window._isConfirmedDateSwitch = false;
+            previousViewDateVal = e.target.value;
             loadTransactions(e.target.value);
         });
     }
@@ -5147,8 +5435,10 @@ async function initDailyTxn() {
                     const targetTxnDoc = snap.docs.find(d => d.id === deletingTxnId);
                     if (targetTxnDoc) {
                         await syncCreditFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
+                        await syncBankWithdrawalFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
                     } else {
                         await syncCreditFromDailyTxn(null, deletingTxnId, true);
+                        await syncBankWithdrawalFromDailyTxn(null, deletingTxnId, true);
                     }
                 } catch (e) { console.error(e); }
                 await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
@@ -5167,6 +5457,15 @@ async function initDailyTxn() {
         if (txnRemark) txnRemark.value = '';
         txnRemaining.value = '';
         txnBank.value = '';
+        const txnBankSelect = document.getElementById('txn-bank-select');
+        if (txnBankSelect) {
+            txnBankSelect.value = '';
+            txnBankSelect.required = false;
+        }
+        const customSearch = document.getElementById('custom-bank-search');
+        if (customSearch) customSearch.value = '';
+        const customContainer = document.getElementById('custom-bank-select-container');
+        if (customContainer) customContainer.classList.add('hidden');
         if (txnChargesType) txnChargesType.value = 'Cash';
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
@@ -5193,6 +5492,7 @@ async function initDailyTxn() {
         const noteAndAmountTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
+        const isCashMovement = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
         const isSimplified = simplifiedTypes.includes(txnType.value);
         const isAmountOnly = amountOnlyTypes.includes(txnType.value);
@@ -5203,9 +5503,9 @@ async function initDailyTxn() {
 
         // Disable/Enable fields
         txnAmount.disabled = isChargesOnly;
-        txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery;
-        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending;
-        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending;
+        txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery || isCashMovement;
+        txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement;
 
         // Reset Labels
         if (chargesModeContainer) {
@@ -5213,14 +5513,14 @@ async function initDailyTxn() {
             if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : 'CHARGES MODE';
         }
 
-        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) {
+        if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement) {
             conditionalContainer.classList.add('hidden');
             if (amountFieldContainer) {
-                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) amountFieldContainer.classList.remove('hidden');
+                if (isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement) amountFieldContainer.classList.remove('hidden');
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
-                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery) {
+                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery && !isCashMovement) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
 
@@ -5247,7 +5547,7 @@ async function initDailyTxn() {
                 else noteFieldContainer.classList.add('hidden');
             }
             if (remarkFieldContainer) {
-                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
                     remarkFieldContainer.classList.remove('hidden');
                 } else {
                     remarkFieldContainer.classList.add('hidden');
@@ -5258,7 +5558,7 @@ async function initDailyTxn() {
 
             // Charges Field Visibility
             if (chargesFieldContainer) {
-                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) {
+                if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement) {
                     chargesFieldContainer.classList.add('hidden');
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
@@ -5277,7 +5577,7 @@ async function initDailyTxn() {
             }
 
             if (isChargesOnly) txnAmount.value = '';
-            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending) txnCharges.value = '';
+            if (isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement) txnCharges.value = '';
             if (!isNoteAndAmount && !isCredit && txnType.value !== 'OTHER_INCOME' && !isDamagedRecovery && !isPending) txnNote.value = '';
             txnAddress.value = '';
             txnConditional.value = '';
@@ -5387,11 +5687,11 @@ async function initDailyTxn() {
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit || ['DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'ONLINE_WORK'].includes(txnType.value)) {
+            if (isCredit || ['DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value) ? 'Amount Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode'));
                 if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (['ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value) ? 'Select Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...'));
-                if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : 'Amount';
-            } else if (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : (txnType.value === 'JIO_RECHARGE' ? 'Recharge Amount' : 'Amount');
+            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
                 if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = txnType.value === 'ELECTRICITY_BILL' ? 'Bill Amount' : (txnType.value === 'PAN_CARD' ? 'Pan Fee' : 'Recharge Amount');
@@ -5447,11 +5747,43 @@ async function initDailyTxn() {
         }
 
         // Bank Name Visibility
-        if (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) {
+        if (['AEPS', 'MATM', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
             bankContainer.classList.remove('hidden');
+            const bankLabel = bankContainer.querySelector('label');
+            const isCashMove = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);
+            if (bankLabel) bankLabel.innerText = isCashMove ? 'Bank Account' : 'Bank Name';
+            
+            const txnBankSelect = document.getElementById('txn-bank-select');
+            const customContainer = document.getElementById('custom-bank-select-container');
+            if (isCashMove) {
+                if (txnBank) {
+                    txnBank.classList.add('hidden');
+                    txnBank.required = false;
+                }
+                if (customContainer) customContainer.classList.remove('hidden');
+            } else {
+                if (customContainer) customContainer.classList.add('hidden');
+                if (txnBankSelect) {
+                    txnBankSelect.value = '';
+                }
+                const customSearch = document.getElementById('custom-bank-search');
+                if (customSearch) customSearch.value = '';
+                if (txnBank) {
+                    txnBank.classList.remove('hidden');
+                    txnBank.placeholder = 'Enter or select bank...';
+                }
+            }
         } else {
             bankContainer.classList.add('hidden');
-            txnBank.value = '';
+            if (txnBank) txnBank.value = '';
+            const txnBankSelect = document.getElementById('txn-bank-select');
+            if (txnBankSelect) {
+                txnBankSelect.value = '';
+            }
+            const customSearch = document.getElementById('custom-bank-search');
+            if (customSearch) customSearch.value = '';
+            const customContainer = document.getElementById('custom-bank-select-container');
+            if (customContainer) customContainer.classList.add('hidden');
         }
 
         if (txnNote) {
@@ -5475,15 +5807,65 @@ async function initDailyTxn() {
             if (chargesFieldContainer) chargesFieldContainer.style.order = '4';
             if (chargesModeContainer) chargesModeContainer.style.order = '5';
         }
+
+        const previewEl = document.getElementById('cash-movement-preview');
+        if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
+            const amtVal = parseFloat(txnAmount ? txnAmount.value : 0) || 0;
+            if (previewEl) {
+                previewEl.classList.remove('hidden');
+                if (txnType.value === 'CASH_WITHDRAWAL') {
+                    previewEl.className = "col-span-full px-4 py-3 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-sm bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20";
+                    previewEl.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-black text-lg">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-black uppercase text-emerald-800 dark:text-emerald-400">Cash Withdrawal</h4>
+                                <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Withdrawing online funds to physical shop cash</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-xs font-black text-rose-600 dark:text-rose-400">Online: -₹${amtVal.toLocaleString('en-IN')}</span>
+                            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">Cash: +₹${amtVal.toLocaleString('en-IN')}</span>
+                        </div>
+                    `;
+                } else {
+                    previewEl.className = "col-span-full px-4 py-3 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-sm bg-blue-50/50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20";
+                    previewEl.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 flex items-center justify-center font-black text-lg">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-black uppercase text-blue-800 dark:text-blue-400">Cash Deposit</h4>
+                                <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Depositing physical shop cash into bank account</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-xs font-black text-rose-600 dark:text-rose-400">Cash: -₹${amtVal.toLocaleString('en-IN')}</span>
+                            <span class="text-xs font-black text-blue-600 dark:text-blue-400">Online: +₹${amtVal.toLocaleString('en-IN')}</span>
+                        </div>
+                    `;
+                }
+            }
+        } else {
+            if (previewEl) previewEl.classList.add('hidden');
+        }
     };
 
     if (txnType) {
         txnType.addEventListener('change', updateConditionalField);
+        if (txnAmount) txnAmount.addEventListener('input', updateConditionalField);
     }
     if (txnProvider) {
         txnProvider.addEventListener('change', updateConditionalField);
     }
     updateConditionalField();
+    if (txnType) {
+        txnType.focus();
+        setTimeout(() => txnType.focus(), 50);
+    }
 
     // Attach Submit Listener EARLY
     form.onsubmit = async (e) => {
@@ -5563,6 +5945,65 @@ async function initDailyTxn() {
                         submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
                     }
                     return;
+                }
+            }
+
+            // Validation & Checks for Cash Movements
+            if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
+                const txnBankSelect = document.getElementById('txn-bank-select');
+                const selectedBankVal = txnBankSelect ? txnBankSelect.value.trim() : (txnBank ? txnBank.value.trim() : '');
+                if (!selectedBankVal) {
+                    alert('Please select a bank account from the dropdown.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+                if (txnType.value === 'CASH_WITHDRAWAL' && amountVal > currentAvailableOnline) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Online Balance',
+                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online to withdraw. Please check your account balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+                if (txnType.value === 'CASH_DEPOSIT' && amountVal > currentAvailableCash) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Cash Balance',
+                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash to deposit. Please check your shop cash balance.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+                if (amountVal > 50000) {
+                    const actionText = txnType.value === 'CASH_WITHDRAWAL' ? 'withdraw' : 'deposit';
+                    const confirm = await Swal.fire({
+                        icon: 'warning',
+                        title: 'Large Cash Movement',
+                        text: `Are you sure you want to ${actionText} ₹ ${amountVal.toLocaleString('en-IN')}?`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Yes, proceed'
+                    });
+                    if (!confirm.isConfirmed) {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                        }
+                        return;
+                    }
                 }
             }
 
@@ -5670,7 +6111,8 @@ async function initDailyTxn() {
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
-                bankName: (['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : '',
+                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
+                accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
@@ -5682,10 +6124,12 @@ async function initDailyTxn() {
                 await updateDoc(doc(db, 'daily_transactions', editingTxnId), newTxn);
                 console.log('Update Success!');
                 await syncCreditFromDailyTxn(newTxn, editingTxnId, false);
+                await syncBankWithdrawalFromDailyTxn(newTxn, editingTxnId, false);
             } else {
                 const docRef = await addDoc(txnCollection, newTxn);
                 console.log('Add Success! ID:', docRef.id);
                 await syncCreditFromDailyTxn(newTxn, docRef.id, false);
+                await syncBankWithdrawalFromDailyTxn(newTxn, docRef.id, false);
             }
 
             resetFormState();
@@ -5934,6 +6378,12 @@ async function initDailyTxn() {
                         else if (provider.includes('crgb')) balances.crgb += amt;
                         else if (provider.includes('jio')) balances.jio += amt;
                     }
+                } else if (t.type === 'CASH_WITHDRAWAL') {
+                    balances.online -= amt;
+                    balances.cash += amt;
+                } else if (t.type === 'CASH_DEPOSIT') {
+                    balances.cash -= amt;
+                    balances.online += amt;
                 } else if (t.type === 'OTHER_INCOME') {
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
@@ -6243,6 +6693,15 @@ async function initDailyTxn() {
                         else currentOnline -= amt;
                     } else if (t.type === 'DAMAGED_CURRENCY') {
                         currentCash -= amt;
+                    } else if (t.type === 'DAMAGED_RECOVERY') {
+                        if (t.provider === 'Cash') currentCash += amt;
+                        else currentOnline += amt;
+                    } else if (t.type === 'CASH_WITHDRAWAL') {
+                        currentOnline -= amt;
+                        currentCash += amt;
+                    } else if (t.type === 'CASH_DEPOSIT') {
+                        currentCash -= amt;
+                        currentOnline += amt;
                     } else if (t.type === 'SETTLEMENT') {
                         if (t.provider === 'Cash') {
                             currentCash -= amt;
@@ -6297,7 +6756,7 @@ async function initDailyTxn() {
                 }, {});
 
                 // Types jo count/volume se exclude honge
-                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE'];
+                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
                 const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
 
                 const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
@@ -6336,6 +6795,8 @@ async function initDailyTxn() {
                 updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
                 updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
                 updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
+                updateBadge(document.getElementById('cash-withdrawal-count-badge'), 'CASH_WITHDRAWAL', 'CASH WDRL');
+                updateBadge(document.getElementById('cash-deposit-count-badge'), 'CASH_DEPOSIT', 'CASH DEP');
 
                 // Update type-wise detail cards
                 const updateCard = (cardId, type) => {
@@ -6411,7 +6872,17 @@ async function initDailyTxn() {
                         'FINO BANK': 'FINO',
                         'INDIAN BANK': 'INDIAN',
                         'JILLA SAKAHARI BANK': 'JSB',
-                        'CHHATTISGARH GRAMIN BANK': 'CRGB'
+                        'CHHATTISGARH GRAMIN BANK': 'CRGB',
+                        'PUNJAB NATIONAL BANK': 'PNB',
+                        'HDFC BANK': 'HDFC',
+                        'ICICI BANK': 'ICICI',
+                        'AXIS BANK': 'AXIS',
+                        'CANARA BANK': 'CANARA',
+                        'BANK OF INDIA': 'BOI',
+                        'CENTRAL BANK OF INDIA': 'CBI',
+                        'IDBI BANK': 'IDBI',
+                        'KOTAK MAHINDRA BANK': 'KOTAK',
+                        'PAYTM PAYMENTS BANK': 'PAYTM'
                     };
                     return map[n] || name;
                 };
@@ -6423,14 +6894,69 @@ async function initDailyTxn() {
 
                 const showBalanceDiff = localStorage.getItem('dtxn_showBalanceDiff') !== 'false';
 
+                const parseBankUrn = (txn) => {
+                    if (!txn.bankName) return { accName: '', accNumber: '', bankDisplay: '', typeDisplay: '' };
+                    let holder = '';
+                    let bank = '';
+                    let type = '';
+                    let number = '';
+
+                    if (txn.accountId && window.cachedBankAccountsMap && window.cachedBankAccountsMap.has(String(txn.accountId))) {
+                        const acc = window.cachedBankAccountsMap.get(String(txn.accountId));
+                        if (acc && acc.name && acc.name.includes('|')) {
+                            const p = acc.name.split('|');
+                            holder = p[0] || '';
+                            bank = p[1] || '';
+                            number = p[2] || '';
+                            type = p[3] || 'CURRENT';
+                        }
+                    }
+                    if (!bank && window.cachedBankAccountsMap) {
+                        for (const acc of window.cachedBankAccountsMap.values()) {
+                            if (acc.name && acc.name.includes('|')) {
+                                const p = acc.name.split('|');
+                                const h = p[0] || '';
+                                const t = p[3] || 'CURRENT';
+                                const n = p[2] || '';
+                                const matchStr = `${h.toUpperCase()} — ${t.toUpperCase()} — ${n}`;
+                                if (matchStr === txn.bankName) {
+                                    holder = h;
+                                    bank = p[1] || '';
+                                    number = n;
+                                    type = t;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (!bank && txn.bankName.includes(' — ')) {
+                        const parts = txn.bankName.split(' — ');
+                        if (parts.length >= 3) {
+                            holder = parts[0];
+                            type = parts[1];
+                            number = parts[2];
+                            bank = 'BANK';
+                        } else if (parts.length === 2) {
+                            holder = parts[0];
+                            type = parts[1];
+                            bank = 'BANK';
+                        }
+                    }
+                    if (!bank) {
+                        bank = txn.bankName;
+                    }
+                    return { accName: holder, accNumber: number, bankDisplay: bank, typeDisplay: type };
+                };
+
                 txns.forEach((txn, index) => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-primary/5 transition-colors group';
 
                     const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
                     const isExcluded = excludedTypes.includes(txn.type);
-                    // Serial: countable txns mein is txn ki position (latest = highest number)
                     const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
+
+                    const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
 
                     tr.innerHTML = `
                         <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
@@ -6442,25 +6968,33 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="flex flex-col items-start gap-1">
-                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
                             txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                                 txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                                     txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
+                                        txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
+                                            txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
                                         txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
                                             'bg-primary/10 text-primary'
-                        }">${txn.type.replace('_', ' ')}</span>
+                        }">${
+                            txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
+                            (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
+                        }</span>
                                 ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
                             </div>
                         </td>
                          <td class="px-3 py-1.5">
-                            <div class="flex flex-col gap-1.5">
-                                ${txn.bankName ? `
+                            <div class="flex flex-col gap-1.5 max-w-[200px]">
+                                ${bankDisplay ? `
                                     <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
-                                        <span class="material-symbols-outlined text-[14px] text-blue-600">account_balance</span>
-                                        <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">${getShortBankName(txn.bankName)}</span>
+                                        <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
+                                        <div class="flex flex-col leading-tight">
+                                            <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
+                                            ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
+                                        </div>
                                     </div>
                                 ` : ''}
-                                ${(!txn.bankName) ? `
+                                ${(!bankDisplay) ? `
                                     ${txn.provider ? `
                                         <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                             <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
@@ -6471,11 +7005,16 @@ async function initDailyTxn() {
                             </div>
                         </td>
                         <td class="px-3 py-1.5">
-                            <div class="flex flex-col gap-1.5">
-                                ${txn.note ? `<span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note}</span>` : `<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">${txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'}</span>`}
+                            <div class="flex flex-col gap-0.5 max-w-[220px]">
+                                ${accName ? `
+                                    <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
+                                    ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
+                                ` : `
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                                `}
                                 ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
                                 ${txn.address || txn.extraDetails ? `
-                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
+                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
                                         ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
                                         ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
                                     </div>
@@ -6494,7 +7033,7 @@ async function initDailyTxn() {
                         </td>
                         <td class="px-3 py-1.5 text-right charges-col-cell">
                             <div class="flex flex-col items-end">
-                                ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                                ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                                     <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                                 ` : `
                                     <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -6570,6 +7109,11 @@ async function initDailyTxn() {
                             txnProvider.value = txn.provider || '';
                             txnRemaining.value = txn.remainingAmount || '';
                             txnBank.value = txn.bankName || '';
+                            const txnBankSelect = document.getElementById('txn-bank-select');
+                            if (txnBankSelect) txnBankSelect.value = txn.bankName || '';
+                            if (typeof window.updateCustomBankSelectDisplay === 'function') {
+                                window.updateCustomBankSelectDisplay(txn.bankName || '');
+                            }
 
                             if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
                             updateConditionalField();
@@ -6754,6 +7298,7 @@ async function initDailyTxn() {
     }
 
     // Initial load
+    if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
     loadTransactions(currentSelectedDate);
 }
 
