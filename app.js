@@ -4446,19 +4446,19 @@ async function initReports() {
 
 // --- Logic for Bank Withdrawals ---
 async function initBankWithdrawals() {
-    console.log("[DEBUG] initBankWithdrawals starting...");
+    console.log("[DEBUG] initBankWithdrawals starting for redesigned analytics dashboard...");
     const tableBody = document.getElementById('bank-data-body');
     if (!tableBody) {
         console.log("[DEBUG] tableBody not found, exiting initBankWithdrawals.");
         return;
     }
-    console.log("[DEBUG] tableBody found, proceeding with init...");
 
     const accountForm = document.getElementById('account-form');
     const withdrawalForm = document.getElementById('withdrawal-form');
     const accountViewHeader = document.getElementById('account-view-header');
     const addWithdrawalSection = document.getElementById('add-withdrawal-section');
     const backBtn = document.getElementById('back-to-accounts');
+    const addAccountBtn = document.getElementById('add-job-account-btn');
     const accountsHeader = document.getElementById('accounts-header');
     const withdrawalsHeader = document.getElementById('withdrawals-header');
 
@@ -4473,6 +4473,8 @@ async function initBankWithdrawals() {
     let deleteTargetId = null;
     let deleteTargetType = null; // 'account' or 'withdrawal'
 
+    window.currentTimeFilter = window.currentTimeFilter || 'ALL';
+
     // Account Modal Elements
     const accountModal = document.getElementById('account-modal');
     const modalTitle = document.getElementById('account-modal-title');
@@ -4481,11 +4483,12 @@ async function initBankWithdrawals() {
         if (accountModal) {
             accountModal.classList.remove('hidden');
             if (id) {
-                modalTitle.innerText = "Edit Account";
+                if (modalTitle) modalTitle.innerText = "Edit Account";
             } else {
-                modalTitle.innerText = "Add Account";
-                accountForm.reset();
-                document.getElementById('edit-account-id').value = '';
+                if (modalTitle) modalTitle.innerText = "Add Account";
+                if (accountForm) accountForm.reset();
+                const editIdEl = document.getElementById('edit-account-id');
+                if (editIdEl) editIdEl.value = '';
             }
         }
     }
@@ -4501,22 +4504,21 @@ async function initBankWithdrawals() {
     const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
     const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
 
-    // Helper to calculate current FY range
     function getCurrentFYDates() {
         const today = new Date();
         const year = today.getFullYear();
         let startYear, endYear;
 
-        if (today.getMonth() >= 3) { // April (3) to Dec (11)
+        if (today.getMonth() >= 3) { // April to Dec
             startYear = year;
             endYear = year + 1;
-        } else { // Jan (0) to March (2)
+        } else { // Jan to March
             startYear = year - 1;
             endYear = year;
         }
 
-        const start = new Date(startYear, 3, 1); // April 1st
-        const end = new Date(endYear, 2, 31, 23, 59, 59); // March 31st
+        const start = new Date(startYear, 3, 1);
+        const end = new Date(endYear, 2, 31, 23, 59, 59);
         return { start, end, label: `FY ${startYear}-${endYear}` };
     }
 
@@ -4524,10 +4526,116 @@ async function initBankWithdrawals() {
         return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
     };
 
+    function updateAnalyticsPanel(withdrawalsList, totalLimit, currentFYTotal) {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        // 1. Remaining Limit
+        const remaining = Math.max(0, totalLimit - currentFYTotal);
+        const remDisplay = document.getElementById('remaining-limit-display');
+        if (remDisplay) remDisplay.innerText = formatCurrency(remaining);
+
+        // 2. This Month's Withdrawals
+        const monthlyTotal = withdrawalsList.reduce((sum, w) => {
+            const d = new Date(w.date);
+            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                return sum + (parseFloat(w.amount) || 0);
+            }
+            return sum;
+        }, 0);
+        const monthDisplay = document.getElementById('monthly-total-display');
+        if (monthDisplay) monthDisplay.innerText = formatCurrency(monthlyTotal);
+
+        // 3. Last Withdrawal
+        let latestW = null;
+        let latestTime = 0;
+        withdrawalsList.forEach(w => {
+            const t = new Date(w.date).getTime();
+            if (t > latestTime) {
+                latestTime = t;
+                latestW = w;
+            }
+        });
+        const lastAmountEl = document.getElementById('last-withdrawal-amount');
+        const lastDateEl = document.getElementById('last-withdrawal-date');
+        if (latestW) {
+            if (lastAmountEl) lastAmountEl.innerText = formatCurrency(parseFloat(latestW.amount) || 0);
+            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` • ${latestW.method}` : '');
+        } else {
+            if (lastAmountEl) lastAmountEl.innerText = "-";
+            if (lastDateEl) lastDateEl.innerText = "No entries found";
+        }
+
+        // 4. Most Used Method & Distribution
+        const methodCounts = {};
+        const methodAmounts = {};
+        let totalAmountAll = 0;
+
+        withdrawalsList.forEach(w => {
+            const m = w.method || 'Other';
+            const amt = parseFloat(w.amount) || 0;
+            methodCounts[m] = (methodCounts[m] || 0) + 1;
+            methodAmounts[m] = (methodAmounts[m] || 0) + amt;
+            totalAmountAll += amt;
+        });
+
+        let topMethod = "-";
+        let maxCount = 0;
+        Object.entries(methodCounts).forEach(([m, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                topMethod = m;
+            }
+        });
+        const mostUsedEl = document.getElementById('most-used-method-display');
+        if (mostUsedEl) mostUsedEl.innerText = topMethod === '-' ? '-' : `${topMethod} (${maxCount} times)`;
+
+        // Distribution Bars
+        const breakdownContainer = document.getElementById('method-breakdown-container');
+        if (breakdownContainer) {
+            if (Object.keys(methodAmounts).length === 0) {
+                breakdownContainer.innerHTML = `<p class="text-purple-200/50 text-center py-2 text-[11px]">No method data available</p>`;
+            } else {
+                const colors = {
+                    'ATM': 'from-blue-400 to-blue-600',
+                    'ATM QR Code': 'from-indigo-400 to-indigo-600',
+                    'ATM Inside Branch': 'from-amber-400 to-amber-600',
+                    'Cheque': 'from-purple-400 to-purple-600',
+                    'Yono': 'from-pink-400 to-pink-600',
+                    'Other': 'from-emerald-400 to-emerald-600'
+                };
+                
+                let html = '';
+                Object.entries(methodAmounts).sort((a,b) => b[1] - a[1]).forEach(([m, amt]) => {
+                    const pct = totalAmountAll > 0 ? (amt / totalAmountAll) * 100 : 0;
+                    let color = colors['Other'];
+                    if (m === 'ATM') color = colors['ATM'];
+                    else if (m === 'ATM QR Code') color = colors['ATM QR Code'];
+                    else if (m === 'ATM Inside Branch') color = colors['ATM Inside Branch'];
+                    else if (m.includes('Cheque')) color = colors['Cheque'];
+                    else if (m.includes('Yono')) color = colors['Yono'];
+
+                    html += `
+                        <div class="space-y-1 group/bar">
+                            <div class="flex justify-between text-[11px] font-extrabold tracking-wider">
+                                <span class="text-purple-100 group-hover/bar:text-white transition-colors">${m}</span>
+                                <span class="text-purple-200 font-mono">${formatCurrency(amt)} (${pct.toFixed(0)}%)</span>
+                            </div>
+                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/5">
+                                <div class="h-full bg-gradient-to-r ${color} rounded-full transition-all duration-1000 shadow-sm" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                breakdownContainer.innerHTML = html;
+            }
+        }
+    }
+
     async function renderView() {
         console.log("[DEBUG] renderView starting, currentView:", currentView);
         try {
-            console.log("[DEBUG] Loading bank accounts and withdrawals...");
             const accounts = await loadBankAccounts();
             const withdrawalsList = await loadBankWithdrawals();
             console.log(`[DEBUG] Loaded ${accounts.length} accounts and ${withdrawalsList.length} withdrawals.`);
@@ -4535,10 +4643,9 @@ async function initBankWithdrawals() {
             tableBody.innerHTML = '';
 
             const fy = getCurrentFYDates();
-            console.log("[DEBUG] Current FY:", fy.label);
             if (fyDatesDisplay) fyDatesDisplay.innerText = fy.label;
 
-            const limitDisplay = fyDatesDisplay ? fyDatesDisplay.nextElementSibling : null;
+            const limitDisplay = document.getElementById('limit-display');
 
             if (currentView === 'accounts') {
                 let grandFyTotal = 0;
@@ -4555,29 +4662,45 @@ async function initBankWithdrawals() {
 
                 if (fyTotalDisplay) {
                     fyTotalDisplay.innerText = formatCurrency(grandFyTotal);
-                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL YEAR WITHDRAWALS (ALL ACCOUNTS)";
+                    const prevEl = fyTotalDisplay.previousElementSibling;
+                    if (prevEl && prevEl.querySelector('#fy-label-title')) {
+                        prevEl.querySelector('#fy-label-title').innerText = "TOTAL YEAR WITHDRAWALS (ALL ACCOUNTS)";
+                    }
                 }
                 if (fyPercentage) {
                     fyPercentage.innerText = `${grandPercent.toFixed(1)}% Used`;
-                    fyPercentage.className = `text-lg font-bold px-3 py-1 rounded-lg ${grandPercent >= 100 ? 'bg-rose-100 text-rose-600' : (grandPercent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')}`;
+                    fyPercentage.className = `px-2.5 py-1 rounded-lg text-[11px] font-black border ${grandPercent >= 100 ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : (grandPercent >= 80 ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30')}`;
                 }
                 if (fyProgressBar) {
                     fyProgressBar.style.width = `${Math.min(grandPercent, 100)}%`;
-                    fyProgressBar.className = `h-full transition-all duration-700 ${grandPercent >= 100 ? 'bg-rose-500' : (grandPercent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
+                    fyProgressBar.className = `h-full rounded-full transition-all duration-1000 ${grandPercent >= 100 ? 'bg-gradient-to-r from-rose-400 to-rose-600 shadow-rose-500/50' : (grandPercent >= 80 ? 'bg-gradient-to-r from-orange-400 to-orange-600 shadow-orange-500/50' : 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-emerald-500/50')}`;
                 }
                 if (limitDisplay) limitDisplay.innerText = `Combined Limit: ${formatCurrency(grandLimit)} (Sec 194N)`;
-                if (fyDatesDisplay) fyDatesDisplay.innerText = `${fy.label}`;
 
-                if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Bank Accounts";
+                updateAnalyticsPanel(withdrawalsList, grandLimit, grandFyTotal);
+
+                const tableTitle = document.getElementById('table-title-label');
+                const tableSub = document.getElementById('table-subtitle-label');
+                if (tableTitle) tableTitle.innerText = "Bank Accounts Overview";
+                if (tableSub) tableSub.innerText = "Select an account below to explore its detailed cash withdrawal history";
+
                 if (backBtn) backBtn.classList.add('hidden');
+                if (addAccountBtn) addAccountBtn.classList.remove('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.add('hidden');
                 if (accountsHeader) accountsHeader.classList.remove('hidden');
                 if (withdrawalsHeader) withdrawalsHeader.classList.add('hidden');
 
-                if (accounts.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 font-medium">No bank accounts added yet.</td></tr>`;
+                let filteredAccounts = accounts;
+                const searchInput = document.getElementById('search-filter');
+                if (searchInput && searchInput.value) {
+                    const q = searchInput.value.toLowerCase().trim();
+                    filteredAccounts = filteredAccounts.filter(acc => (acc.name || '').toLowerCase().includes(q));
+                }
+
+                if (filteredAccounts.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-400 font-bold">No matching bank accounts found.</td></tr>`;
                 } else {
-                    accounts.forEach((acc, index) => {
+                    filteredAccounts.forEach((acc, index) => {
                         const accWithdrawals = withdrawalsList.filter(w => String(w.accountId) === String(acc.id));
                         let fyTotal = 0;
                         accWithdrawals.forEach(w => {
@@ -4587,17 +4710,15 @@ async function initBankWithdrawals() {
                             }
                         });
 
-                        const limit = 10000000; // 1 Crore
+                        const limit = 10000000;
                         const pecent = (fyTotal / limit) * 100;
-                        const statusClass = pecent >= 100 ? 'bg-rose-100 text-rose-600 border-rose-200' : (pecent >= 80 ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200');
+                        const statusClass = pecent >= 100 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800' : (pecent >= 80 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800');
                         const statusText = pecent >= 100 ? 'OVER LIMIT' : (pecent >= 80 ? 'WARNING' : 'SAFE');
 
-                        // Parse Account Name
                         let holder = acc.name;
                         let bank = "-";
                         let accNo = "-";
                         let type = "-";
-                        let branch = "-";
 
                         if (acc.name.includes('|')) {
                             const parts = acc.name.split('|');
@@ -4605,9 +4726,7 @@ async function initBankWithdrawals() {
                             bank = parts[1] || "-";
                             accNo = parts[2] || "-";
                             type = parts[3] || "-";
-                            branch = parts[4] || "-";
                         } else {
-                            // Intelligent Parsing Fallback
                             const nameParts = acc.name.toUpperCase().split(/\s+/);
                             const banks = ["SBI", "HDFC", "ICICI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDFC", "KOTAK", "CRGB"];
                             const types = ["CURRENT", "SAVING", "FD", "RD", "LOAN", "CC"];
@@ -4624,7 +4743,6 @@ async function initBankWithdrawals() {
                                 bank = nameParts[foundBankIdx];
                                 holder = nameParts.slice(0, foundBankIdx).join(" ");
                             }
-
                             if (foundTypeIdx !== -1) {
                                 type = nameParts[foundTypeIdx];
                                 if (foundBankIdx === -1) {
@@ -4634,7 +4752,6 @@ async function initBankWithdrawals() {
                                     if (middle && !middle.includes("A/C")) accNo = middle;
                                 }
                             }
-
                             const acMatch = acc.name.match(/A\/c\s*(\d+)/i) || acc.name.match(/(\d{4,})/);
                             if (acMatch) {
                                 accNo = acMatch[1];
@@ -4644,50 +4761,22 @@ async function initBankWithdrawals() {
                         }
 
                         const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-all cursor-pointer group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-left-2 duration-300";
-                        tr.style.animationDelay = `${index * 50}ms`;
-                        tr.onclick = (e) => {
-                            if (e.target.closest('button')) return;
-                            showAccountDetails(acc.id);
-                        };
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-all cursor-pointer group border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-left-2 duration-300 font-semibold";
+                        tr.style.animationDelay = `${index * 30}ms`;
+                        tr.onclick = () => { showAccountDetails(acc.id); };
                         tr.innerHTML = `
-                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
-                                ${index + 1}
-                            </td>
-                            <td class="px-4 py-2.5 align-middle">
+                            <td class="px-5 py-4 align-middle text-center text-sm font-bold text-slate-400 w-14">${index + 1}</td>
+                            <td class="px-5 py-4 align-middle">
                                 <div class="flex flex-col leading-tight">
-                                    <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
-                                    <span class="text-xs text-slate-400 font-bold uppercase lg:hidden">${bank} • ${type}</span>
+                                    <span class="text-sm font-extrabold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
+                                    <span class="text-xs text-slate-400 font-bold uppercase lg:hidden mt-0.5">${bank} • ${type} • A/c ${accNo}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
-                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-center hidden lg:table-cell">
-                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-center hidden md:table-cell">
-                                <span class="text-xs font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg border border-primary/20 tracking-wider">${type}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
-                                <span class="text-sm font-black text-slate-800 dark:text-white">${formatCurrency(fyTotal)}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
-                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
-                                    <button onclick="event.stopPropagation(); showAccountDetails('${acc.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
-                                        <span class="material-symbols-outlined text-base">visibility</span>
-                                    </button>
-                                    <button onclick="event.stopPropagation(); editBankAccountRecord('${acc.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Account">
-                                        <span class="material-symbols-outlined text-base">edit</span>
-                                    </button>
-                                    <button onclick="event.stopPropagation(); deleteBankAccountRecord('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Account">
-                                        <span class="material-symbols-outlined text-base">delete</span>
-                                    </button>
-                                </div>
-                            </td>
+                            <td class="px-5 py-4 align-middle text-center hidden md:table-cell"><span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span></td>
+                            <td class="px-5 py-4 align-middle text-center hidden lg:table-cell"><span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span></td>
+                            <td class="px-5 py-4 align-middle text-center hidden md:table-cell"><span class="text-xs font-black px-3 py-1 bg-primary/10 text-primary dark:text-purple-300 rounded-xl border border-primary/20 tracking-wider uppercase">${type}</span></td>
+                            <td class="px-5 py-4 align-middle text-right whitespace-nowrap"><span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(fyTotal)}</span></td>
+                            <td class="px-5 py-4 align-middle text-center whitespace-nowrap"><span class="px-3 py-1 rounded-full text-xs font-extrabold border ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span></td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -4696,8 +4785,23 @@ async function initBankWithdrawals() {
                 const acc = accounts.find(a => String(a.id) === String(activeAccountId));
                 if (!acc) { showAccountsList(); return; }
 
-                if (accountViewHeader) accountViewHeader.querySelector('h3').innerText = "Account: " + (acc.name.includes('|') ? acc.name.split('|')[0] : acc.name);
+                let holder = acc.name;
+                let bank = "Bank";
+                let accNo = "";
+                if (acc.name.includes('|')) {
+                    const parts = acc.name.split('|');
+                    holder = parts[0];
+                    bank = parts[1] || "Bank";
+                    accNo = parts[2] ? ` • A/c ${parts[2]}` : "";
+                }
+
+                const tableTitle = document.getElementById('table-title-label');
+                const tableSub = document.getElementById('table-subtitle-label');
+                if (tableTitle) tableTitle.innerText = `Account: ${holder}`;
+                if (tableSub) tableSub.innerText = `Showing withdrawal history and limits for ${bank}${accNo}`;
+
                 if (backBtn) backBtn.classList.remove('hidden');
+                if (addAccountBtn) addAccountBtn.classList.add('hidden');
                 if (addWithdrawalSection) addWithdrawalSection.classList.remove('hidden');
                 if (accountsHeader) accountsHeader.classList.add('hidden');
                 if (withdrawalsHeader) withdrawalsHeader.classList.remove('hidden');
@@ -4711,74 +4815,109 @@ async function initBankWithdrawals() {
                 });
 
                 let fyTotal = 0;
-
-                if (accWithdrawals.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">No withdrawals recorded yet.</td></tr>`;
-                } else {
-                    accWithdrawals.forEach((w, index) => {
-                        const amount = parseFloat(w.amount) || 0;
-                        const wDate = new Date(w.date);
-                        if (wDate >= fy.start && wDate <= fy.end) {
-                            fyTotal += amount;
-                        }
-
-                        let methodHtml = `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700">${w.method}</span>`;
-                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-100 dark:border-blue-900/30">ATM</span>`;
-                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/30">ATM QR</span>`;
-                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-900/30">In-Branch ATM</span>`;
-                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-purple-100 dark:border-purple-900/30">Cheque</span>`;
-                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-pink-100 dark:border-pink-900/30">Yono Cash</span>`;
-
-                        let autoBadge = w.dailyTxnId ? `<span class="ml-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1 border border-indigo-200 dark:border-indigo-800 align-middle"><span class="material-symbols-outlined text-[10px]">auto_awesome</span> Auto Entry</span>` : '';
-
-                        const tr = document.createElement('tr');
-                        tr.className = "hover:bg-primary/5 transition-all group border-b border-slate-50 dark:border-slate-800/50 animate-in fade-in slide-in-from-right-2 duration-300";
-                        tr.style.animationDelay = `${index * 50}ms`;
-                        tr.innerHTML = `
-                            <td class="px-4 py-2.5 align-middle text-center text-sm font-bold text-slate-500 w-14">
-                                ${index + 1}
-                            </td>
-                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
-                                <span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(amount)}</span>
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-center whitespace-nowrap">${methodHtml}</td>
-                            <td class="px-4 py-2.5 align-middle">
-                                <span class="text-sm text-slate-600 dark:text-slate-300 font-medium italic">${w.note || "-"}</span>${autoBadge}
-                            </td>
-                            <td class="px-4 py-2.5 align-middle text-right whitespace-nowrap">
-                                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all items-center">
-                                    <button onclick="editBankWithdrawalRecord('${w.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Record">
-                                        <span class="material-symbols-outlined text-base">edit</span>
-                                    </button>
-                                    <button onclick="deleteBankWithdrawalRecord('${w.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Record">
-                                        <span class="material-symbols-outlined text-base">delete</span>
-                                    </button>
-                                </div>
-                            </td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                }
+                accWithdrawals.forEach(w => {
+                    const amount = parseFloat(w.amount) || 0;
+                    const wDate = new Date(w.date);
+                    if (wDate >= fy.start && wDate <= fy.end) {
+                        fyTotal += amount;
+                    }
+                });
 
                 const limit = 10000000;
                 const pecent = (fyTotal / limit) * 100;
                 if (fyTotalDisplay) {
                     fyTotalDisplay.innerText = formatCurrency(fyTotal);
-                    fyTotalDisplay.previousElementSibling.innerText = "TOTAL FY WITHDRAWALS (" + (acc.name.includes('|') ? acc.name.split('|')[0].toUpperCase() : acc.name.toUpperCase()) + ")";
+                    const prevEl = fyTotalDisplay.previousElementSibling;
+                    if (prevEl && prevEl.querySelector('#fy-label-title')) {
+                        prevEl.querySelector('#fy-label-title').innerText = `TOTAL FY WITHDRAWALS (${holder.toUpperCase()})`;
+                    }
                 }
                 if (fyPercentage) {
                     fyPercentage.innerText = `${pecent.toFixed(1)}% Used`;
-                    fyPercentage.className = `text-lg font-bold px-3 py-1 rounded-lg ${pecent >= 100 ? 'bg-rose-100 text-rose-600' : (pecent >= 80 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')}`;
+                    fyPercentage.className = `px-2.5 py-1 rounded-lg text-[11px] font-black border ${pecent >= 100 ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : (pecent >= 80 ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30')}`;
                 }
                 if (fyProgressBar) {
                     fyProgressBar.style.width = `${Math.min(pecent, 100)}%`;
-                    fyProgressBar.className = `h-full transition-all duration-700 ${pecent >= 100 ? 'bg-rose-500' : (pecent >= 80 ? 'bg-orange-500' : 'bg-emerald-500')}`;
+                    fyProgressBar.className = `h-full rounded-full transition-all duration-1000 ${pecent >= 100 ? 'bg-gradient-to-r from-rose-400 to-rose-600 shadow-rose-500/50' : (pecent >= 80 ? 'bg-gradient-to-r from-orange-400 to-orange-600 shadow-orange-500/50' : 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-emerald-500/50')}`;
+                }
+                if (limitDisplay) limitDisplay.innerText = `Limit: ₹1.00 Cr (Sec 194N)`;
+
+                updateAnalyticsPanel(accWithdrawals, limit, fyTotal);
+
+                // Apply Filters
+                let filteredWithdrawals = accWithdrawals;
+
+                const now = new Date();
+                if (window.currentTimeFilter === 'TODAY') {
+                    const todayStr = now.toISOString().split('T')[0];
+                    filteredWithdrawals = filteredWithdrawals.filter(w => w.date === todayStr);
+                } else if (window.currentTimeFilter === 'MONTH') {
+                    const curMonth = now.getMonth();
+                    const curYear = now.getFullYear();
+                    filteredWithdrawals = filteredWithdrawals.filter(w => {
+                        const d = new Date(w.date);
+                        return d.getMonth() === curMonth && d.getFullYear() === curYear;
+                    });
+                } else if (window.currentTimeFilter === 'FY') {
+                    filteredWithdrawals = filteredWithdrawals.filter(w => {
+                        const d = new Date(w.date);
+                        return d >= fy.start && d <= fy.end;
+                    });
+                }
+
+                const methodSel = document.getElementById('method-filter');
+                if (methodSel && methodSel.value && methodSel.value !== 'ALL') {
+                    const selMethod = methodSel.value;
+                    if (selMethod === 'Cheque') {
+                        filteredWithdrawals = filteredWithdrawals.filter(w => (w.method || '').includes('Cheque'));
+                    } else if (selMethod === 'Yono') {
+                        filteredWithdrawals = filteredWithdrawals.filter(w => (w.method || '').includes('Yono'));
+                    } else {
+                        filteredWithdrawals = filteredWithdrawals.filter(w => (w.method || '') === selMethod);
+                    }
+                }
+
+                const searchInput = document.getElementById('search-filter');
+                if (searchInput && searchInput.value) {
+                    const q = searchInput.value.toLowerCase().trim();
+                    filteredWithdrawals = filteredWithdrawals.filter(w => {
+                        return (w.method || '').toLowerCase().includes(q) ||
+                               (w.note || '').toLowerCase().includes(q) ||
+                               String(w.amount || '').includes(q) ||
+                               (w.date || '').includes(q);
+                    });
+                }
+
+                if (filteredWithdrawals.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 font-bold">No matching withdrawal records found.</td></tr>`;
+                } else {
+                    filteredWithdrawals.forEach((w, index) => {
+                        const amount = parseFloat(w.amount) || 0;
+                        const wDate = new Date(w.date);
+
+                        let methodHtml = `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl text-xs font-black border border-slate-200 dark:border-slate-700">${w.method}</span>`;
+                        if (w.method === 'ATM') methodHtml = `<span class="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-xl text-xs font-black border border-blue-500/20 shadow-sm">ATM</span>`;
+                        if (w.method === 'ATM QR Code') methodHtml = `<span class="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-xl text-xs font-black border border-indigo-500/20 shadow-sm">ATM QR</span>`;
+                        if (w.method === 'ATM Inside Branch') methodHtml = `<span class="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-xl text-xs font-black border border-amber-500/20 shadow-sm">In-Branch ATM</span>`;
+                        if (w.method.includes('Cheque')) methodHtml = `<span class="bg-purple-500/10 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-xl text-xs font-black border border-purple-500/20 shadow-sm">Cheque</span>`;
+                        if (w.method.includes('Yono')) methodHtml = `<span class="bg-pink-500/10 text-pink-600 dark:text-pink-400 px-3 py-1 rounded-xl text-xs font-black border border-pink-500/20 shadow-sm">Yono Cash</span>`;
+
+                        let autoBadge = w.dailyTxnId ? `<span class="ml-2 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 border border-emerald-500/30 align-middle"><span class="material-symbols-outlined text-[12px]">auto_awesome</span> Auto Entry</span>` : '';
+
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-all group border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-right-2 duration-300 font-semibold";
+                        tr.style.animationDelay = `${index * 30}ms`;
+                        tr.innerHTML = `
+                            <td class="px-5 py-4 align-middle text-center text-sm font-bold text-slate-400 w-14">${index + 1}</td>
+                            <td class="px-5 py-4 align-middle whitespace-nowrap"><span class="text-sm font-bold text-slate-800 dark:text-slate-200">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></td>
+                            <td class="px-5 py-4 align-middle text-right whitespace-nowrap"><span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(amount)}</span></td>
+                            <td class="px-5 py-4 align-middle text-center whitespace-nowrap">${methodHtml}</td>
+                            <td class="px-5 py-4 align-middle"><span class="text-sm text-slate-700 dark:text-slate-300 font-semibold">${w.note || "-"}</span>${autoBadge}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
                 }
             }
-
         } catch (e) { console.error("render error:", e); }
     }
 
@@ -4804,33 +4943,6 @@ async function initBankWithdrawals() {
         });
     }
 
-    if (withdrawalForm) {
-        const dInput = document.getElementById('withdrawal-date');
-        if (dInput) dInput.valueAsDate = new Date();
-
-        withdrawalForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const editIdInput = document.getElementById('edit-withdrawal-id');
-            const isEditing = editIdInput && editIdInput.value;
-
-            const withdrawal = {
-                id: isEditing ? editIdInput.value : Date.now(),
-                accountId: activeAccountId,
-                date: document.getElementById('withdrawal-date').value,
-                amount: parseFloat(document.getElementById('withdrawal-amount').value),
-                method: document.getElementById('withdrawal-method').value,
-                note: document.getElementById('withdrawal-note').value
-            };
-            await saveBankWithdrawal(withdrawal);
-            withdrawalForm.reset();
-            document.getElementById('withdrawal-date').valueAsDate = new Date();
-            if (editIdInput) editIdInput.value = '';
-            const submitBtn = withdrawalForm.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">save</span> Check & Save';
-            await renderView();
-        });
-    }
-
     async function showAccountDetails(id) {
         currentView = 'withdrawals';
         activeAccountId = id;
@@ -4845,148 +4957,50 @@ async function initBankWithdrawals() {
     }
     window.showAccountsList = showAccountsList;
 
-    async function editBankAccountRecord(id) {
-        const accs = await loadBankAccounts();
-        const acc = accs.find(x => String(x.id) === String(id));
-        if (acc) {
-            document.getElementById('edit-account-id').value = acc.id;
-            if (acc.name.includes('|')) {
-                const parts = acc.name.split('|');
-                document.getElementById('modal-acc-holder').value = parts[0] || '';
-                document.getElementById('modal-acc-bank').value = parts[1] || '';
-                document.getElementById('modal-acc-number').value = parts[2] || '';
-                document.getElementById('modal-acc-type').value = parts[3] || 'CURRENT';
-                document.getElementById('modal-acc-branch').value = parts[4] || '';
-            } else {
-                document.getElementById('modal-acc-holder').value = acc.name;
-                document.getElementById('modal-acc-bank').value = '';
-                document.getElementById('modal-acc-number').value = '';
-                document.getElementById('modal-acc-type').value = 'CURRENT';
-                document.getElementById('modal-acc-branch').value = '';
-            }
-            openAccountModal(acc.id);
+    window.applyWithdrawalsFilter = async () => {
+        await renderView();
+    };
+
+    window.setTimeFilter = async (tf) => {
+        window.currentTimeFilter = tf;
+        document.querySelectorAll('.time-chip').forEach(c => c.classList.remove('active'));
+        if (event && event.target) {
+            event.target.classList.add('active');
         }
-    }
-    window.editBankAccountRecord = editBankAccountRecord;
+        await renderView();
+    };
 
-    function deleteBankAccountRecord(id) {
-        deleteTargetId = id;
-        deleteTargetType = 'account';
-        const titleEl = document.getElementById('delete-modal-title');
-        const descEl = document.getElementById('delete-modal-description');
-        if (titleEl) titleEl.innerText = "Delete Bank Account?";
-        if (descEl) descEl.innerText = "Are you sure you want to delete this bank account? All associated withdrawal history will be permanently removed. This action cannot be undone.";
-        if (deleteModal) deleteModal.classList.remove('hidden');
-    }
-    window.deleteBankAccountRecord = deleteBankAccountRecord;
-
-    async function editBankWithdrawalRecord(id) {
-        const wList = await loadBankWithdrawals();
-        const w = wList.find(x => String(x.id) === String(id));
-        if (w) {
-            if (w.dailyTxnId) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Auto-Generated Entry',
-                    text: 'This withdrawal record was automatically generated from Daily Transactions. Please edit or delete the original transaction on the Daily Transactions page to update this record.',
-                    confirmButtonColor: '#7c3aed'
-                });
-                return;
-            }
-            document.getElementById('withdrawal-date').value = w.date;
-            document.getElementById('withdrawal-amount').value = w.amount;
-            document.getElementById('withdrawal-method').value = w.method;
-            document.getElementById('withdrawal-note').value = w.note || '';
-
-            let editIdInput = document.getElementById('edit-withdrawal-id');
-            if (!editIdInput) {
-                editIdInput = document.createElement('input');
-                editIdInput.type = 'hidden';
-                editIdInput.id = 'edit-withdrawal-id';
-                withdrawalForm.appendChild(editIdInput);
-            }
-            editIdInput.value = w.id;
-
-            const submitBtn = withdrawalForm.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.innerHTML = '<span class="material-symbols-outlined text-sm">update</span> Update Withdrawal';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.exportWithdrawalsCSV = async () => {
+        const withdrawals = await loadBankWithdrawals();
+        const accounts = await loadBankAccounts();
+        
+        let toExport = withdrawals;
+        if (currentView === 'withdrawals' && activeAccountId) {
+            toExport = withdrawals.filter(w => String(w.accountId) === String(activeAccountId));
         }
-    }
-    window.editBankWithdrawalRecord = editBankWithdrawalRecord;
-
-    async function deleteBankWithdrawalRecord(id) {
-        const wList = await loadBankWithdrawals();
-        const w = wList.find(x => String(x.id) === String(id));
-        if (w && w.dailyTxnId) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Auto-Generated Entry',
-                text: 'This withdrawal record was automatically generated from Daily Transactions. Please delete the original transaction on the Daily Transactions page to remove this record.',
-                confirmButtonColor: '#7c3aed'
-            });
+        
+        if (toExport.length === 0) {
+            alert("No withdrawal data available to export.");
             return;
         }
-        deleteTargetId = id;
-        deleteTargetType = 'withdrawal';
-        const titleEl = document.getElementById('delete-modal-title');
-        const descEl = document.getElementById('delete-modal-description');
-        if (titleEl) titleEl.innerText = "Delete Withdrawal Record?";
-        if (descEl) descEl.innerText = "Are you sure you want to delete this withdrawal record? This action cannot be undone.";
-        if (deleteModal) deleteModal.classList.remove('hidden');
-    }
-    window.deleteBankWithdrawalRecord = deleteBankWithdrawalRecord;
-
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.onclick = async () => {
-            if (!deleteTargetId) return;
-
-            confirmDeleteBtn.disabled = true;
-            const originalText = confirmDeleteBtn.innerHTML;
-            confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
-
-            try {
-                if (deleteTargetType === 'account') {
-                    // Delete the account
-                    await deleteDoc(doc(db, "bank_accounts", deleteTargetId.toString()));
-
-                    // Cascading delete: Delete all withdrawals for this account
-                    const allWithdrawals = await loadBankWithdrawals();
-                    const toDelete = allWithdrawals.filter(w => String(w.accountId) === String(deleteTargetId));
-                    console.log(`[Cascading Delete] Removing ${toDelete.length} withdrawals for account ${deleteTargetId}`);
-
-                    for (const w of toDelete) {
-                        try {
-                            await deleteDoc(doc(db, "bank_withdrawals", String(w.id || w.firebaseId)));
-                        } catch (e) {
-                            console.error(`Failed to delete withdrawal ${w.id}:`, e);
-                        }
-                    }
-                } else {
-                    await deleteBankWithdrawal(deleteTargetId);
-                }
-
-                if (deleteModal) deleteModal.classList.add('hidden');
-                await renderView();
-                if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
-            } catch (err) {
-                console.error("Delete error:", err);
-                alert("Failed to delete record.");
-            } finally {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.innerHTML = originalText;
-                deleteTargetId = null;
-                deleteTargetType = null;
-            }
-        };
-    }
-
-    if (cancelDeleteBtn) {
-        cancelDeleteBtn.onclick = () => {
-            if (deleteModal) deleteModal.classList.add('hidden');
-            deleteTargetId = null;
-            deleteTargetType = null;
-        };
-    }
+        
+        let csv = "ID,Account,Date,Amount,Method,Note,AutoSynced\n";
+        toExport.forEach(w => {
+            const acc = accounts.find(a => String(a.id) === String(w.accountId));
+            let accName = acc ? acc.name : "Unknown";
+            if (accName.includes('|')) accName = accName.split('|')[0];
+            csv += `"${w.id}","${accName}","${w.date}","${w.amount}","${w.method}","${(w.note || '').replace(/"/g, '""')}","${w.dailyTxnId ? 'YES' : 'NO'}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Withdrawals_Export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     await renderView();
 }
@@ -5255,6 +5269,43 @@ async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = fal
     }
 }
 
+const MASTER_TXN_TYPES = [
+    { type: 'ALL', label: 'All Transactions', icon: 'account_balance_wallet', bg: 'bg-primary/10', text: 'text-primary', borderLeft: 'bg-primary' },
+    { type: 'AEPS', label: 'AEPS', icon: 'fingerprint', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'MATM', label: 'Micro ATM', icon: 'credit_card', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'DEPOSIT', label: 'Money Transfer', icon: 'send', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'WITHDRAWAL', label: 'Online Wdrl', icon: 'account_balance', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'CASH_WITHDRAWAL', label: 'Cash Wdrl (Bank)', icon: 'move_down', bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', borderLeft: 'bg-teal-500' },
+    { type: 'CASH_DEPOSIT', label: 'Cash Dep (Bank)', icon: 'move_up', bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', borderLeft: 'bg-teal-500' },
+    { type: 'PHOTOCOPY', label: 'Photocopy', icon: 'file_copy', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'PRINTOUT', label: 'Printout', icon: 'print', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'ONLINE_WORK', label: 'Online Work', icon: 'language', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'PASSPORT', label: 'Passport Photo', icon: 'photo_camera', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'LAMINATION', label: 'Lamination', icon: 'layers', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'PAN_CARD', label: 'PAN Card', icon: 'id_card', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'JIO_TOPUP', label: 'Jio Topup', icon: 'cell_tower', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
+    { type: 'JIO_RECHARGE', label: 'Jio Recharge', icon: 'phone_iphone', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
+    { type: 'DISHTV_RECHARGE', label: 'Dish TV', icon: 'tv', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
+    { type: 'ELECTRICITY_BILL', label: 'Electricity Bill', icon: 'bolt', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
+    { type: 'GOLD_SIP', label: 'Gold SIP', icon: 'savings', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
+    { type: 'CSP_COMMISSION', label: 'CSP Comm', icon: 'account_balance', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
+    { type: 'ROINET_COMMISSION', label: 'Roinet Comm', icon: 'receipt_long', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
+    { type: 'DAILY_EXPENSE', label: 'Daily Expense', icon: 'receipt', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
+    { type: 'OTHER_INCOME', label: 'Other Income', icon: 'add_circle', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'FREE_DEPOSIT', label: 'Free Deposit', icon: 'input', bg: 'bg-slate-50 dark:bg-slate-500/10', text: 'text-slate-700 dark:text-slate-400', borderLeft: 'bg-slate-500' },
+    { type: 'FREE_WITHDRAWAL', label: 'Free Wdrl', icon: 'output', bg: 'bg-slate-50 dark:bg-slate-500/10', text: 'text-slate-700 dark:text-slate-400', borderLeft: 'bg-slate-500' },
+    { type: 'CREDIT_GIVEN', label: 'Credit Given', icon: 'person_remove', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', text: 'text-fuchsia-700 dark:text-fuchsia-400', borderLeft: 'bg-fuchsia-500' },
+    { type: 'CREDIT_RECEIVED', label: 'Credit Recd', icon: 'person_add', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', text: 'text-fuchsia-700 dark:text-fuchsia-400', borderLeft: 'bg-fuchsia-500' },
+    { type: 'CUST_MONEY_IN', label: 'Cust Money In', icon: 'wallet', bg: 'bg-lime-50 dark:bg-lime-500/10', text: 'text-lime-700 dark:text-lime-400', borderLeft: 'bg-lime-500' },
+    { type: 'CUST_MONEY_OUT', label: 'Cust Money Out', icon: 'account_balance_wallet', bg: 'bg-lime-50 dark:bg-lime-500/10', text: 'text-lime-700 dark:text-lime-400', borderLeft: 'bg-lime-500' },
+    { type: 'PENDING', label: 'Pending Net', icon: 'pending', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
+    { type: 'SETTLEMENT', label: 'Settlement', icon: 'published_with_changes', bg: 'bg-zinc-50 dark:bg-zinc-500/10', text: 'text-zinc-700 dark:text-zinc-400', borderLeft: 'bg-zinc-500' },
+    { type: 'DAMAGED_CURRENCY', label: 'Damaged Curr', icon: 'money_off', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
+    { type: 'DAMAGED_RECOVERY', label: 'Damaged Recov', icon: 'attach_money', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'ADD_CAPITAL', label: 'Add Capital', icon: 'account_balance', bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', borderLeft: 'bg-cyan-500' },
+    { type: 'SHARE_WITHDRAWN', label: 'Share Wdrl', icon: 'exit_to_app', bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', borderLeft: 'bg-cyan-500' }
+];
+
 // Logic for Daily Transactions
 async function initDailyTxn() {
     console.log('Initializing DailyTxn module...');
@@ -5369,17 +5420,7 @@ async function initDailyTxn() {
     const txnLaminationSize = document.getElementById('txn-lamination-size');
     const laminationSizeContainer = document.getElementById('lamination-size-container');
     const txnDateText = document.getElementById('current-date-text');
-    const txnCountBadge = document.getElementById('txn-count-badge');
     const txnViewDate = document.getElementById('txn-view-date');
-    const aepsCountBadge = document.getElementById('aeps-count-badge');
-    const matmCountBadge = document.getElementById('matm-count-badge');
-    const depositCountBadge = document.getElementById('deposit-count-badge');
-    const withdrawalCountBadge = document.getElementById('withdrawal-count-badge');
-    const photocopyCountBadge = document.getElementById('photocopy-count-badge');
-    const printoutCountBadge = document.getElementById('printout-count-badge');
-    const onlineWorkCountBadge = document.getElementById('online-work-count-badge');
-    const passportCountBadge = document.getElementById('passport-count-badge');
-    const laminationCountBadge = document.getElementById('lamination-count-badge');
 
     const deleteModal = document.getElementById('delete-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
@@ -5391,6 +5432,9 @@ async function initDailyTxn() {
     let unsubscribe = null;
     let currentSelectedDate = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
     let allTxnsForDate = [];
+    let currentTxnFilter = 'ALL';
+    let currentStartCash = 0;
+    let currentStartOnline = 0;
     let currentAvailableCash = 0; // Tracks live cash for validation
     let currentAvailableOnline = 0; // Tracks live online for validation
     let currentAvailableJio = 0; // Tracks live Jio balance for validation
@@ -5819,51 +5863,6 @@ async function initDailyTxn() {
             if (chargesFieldContainer) chargesFieldContainer.style.order = '4';
             if (chargesModeContainer) chargesModeContainer.style.order = '5';
         }
-
-        const previewEl = document.getElementById('cash-movement-preview');
-        if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
-            const amtVal = parseFloat(txnAmount ? txnAmount.value : 0) || 0;
-            if (previewEl) {
-                previewEl.classList.remove('hidden');
-                if (txnType.value === 'CASH_WITHDRAWAL') {
-                    previewEl.className = "col-span-full px-4 py-3 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-sm bg-emerald-50/50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20";
-                    previewEl.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <span class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-black text-lg">
-                                <span class="material-symbols-outlined">arrow_downward</span>
-                            </span>
-                            <div>
-                                <h4 class="text-xs font-black uppercase text-emerald-800 dark:text-emerald-400">Cash Withdrawal</h4>
-                                <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Withdrawing online funds to physical shop cash</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-black text-rose-600 dark:text-rose-400">Online: -₹${amtVal.toLocaleString('en-IN')}</span>
-                            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">Cash: +₹${amtVal.toLocaleString('en-IN')}</span>
-                        </div>
-                    `;
-                } else {
-                    previewEl.className = "col-span-full px-4 py-3 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-sm bg-blue-50/50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20";
-                    previewEl.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <span class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 flex items-center justify-center font-black text-lg">
-                                <span class="material-symbols-outlined">arrow_upward</span>
-                            </span>
-                            <div>
-                                <h4 class="text-xs font-black uppercase text-blue-800 dark:text-blue-400">Cash Deposit</h4>
-                                <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Depositing physical shop cash into bank account</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-xs font-black text-rose-600 dark:text-rose-400">Cash: -₹${amtVal.toLocaleString('en-IN')}</span>
-                            <span class="text-xs font-black text-blue-600 dark:text-blue-400">Online: +₹${amtVal.toLocaleString('en-IN')}</span>
-                        </div>
-                    `;
-                }
-            }
-        } else {
-            if (previewEl) previewEl.classList.add('hidden');
-        }
     };
 
     if (txnType) {
@@ -5879,12 +5878,212 @@ async function initDailyTxn() {
         setTimeout(() => txnType.focus(), 50);
     }
 
+    function showValidationToast(msg) {
+        let container = document.getElementById('validation-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'validation-toast-container';
+            container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+            document.body.appendChild(container);
+        }
+        
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 bg-rose-600/95 dark:bg-rose-500/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out';
+        toast.innerHTML = `
+            <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                <span class="material-symbols-outlined text-xl font-bold">error</span>
+            </span>
+            <div class="flex flex-col leading-tight">
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/80">Validation Alert</span>
+                <span class="text-sm font-bold text-white mt-0.5">${msg}</span>
+            </div>
+        `;
+        container.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+        });
+        
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 350);
+        }, 4000);
+    }
+
+    function validateDailyTxnForm() {
+        form.querySelectorAll('.border-rose-500').forEach(el => {
+            el.classList.remove('border-rose-500', 'ring-2', 'ring-rose-500', 'animate-shake');
+        });
+
+        const valType = txnType ? txnType.value.trim() : '';
+        if (!valType) {
+            return { valid: false, element: txnType, message: 'Please select a Transaction Type' };
+        }
+
+        const isVisible = (el) => {
+            if (!el) return false;
+            const container = el.closest('div[id]');
+            if (container && container.classList.contains('hidden')) return false;
+            if (el.classList.contains('hidden') || el.style.display === 'none') return false;
+            return true;
+        };
+
+        if (isVisible(txnProvider)) {
+            if (!txnProvider.value.trim()) {
+                const labelText = txnProvider.closest('div').querySelector('label')?.innerText || 'Service Provider / Mode';
+                return { valid: false, element: txnProvider, message: `Please select ${labelText}` };
+            }
+        }
+
+        const bankContainer = document.getElementById('bank-field-container');
+        if (bankContainer && !bankContainer.classList.contains('hidden')) {
+            const customBankContainer = document.getElementById('custom-bank-select-container');
+            if (customBankContainer && !customBankContainer.classList.contains('hidden')) {
+                const txnBankSelect = document.getElementById('txn-bank-select');
+                if (!txnBankSelect || !txnBankSelect.value.trim()) {
+                    const selBox = document.getElementById('custom-bank-selected-box') || customBankContainer;
+                    return { valid: false, element: selBox, message: 'Please select a Bank Account' };
+                }
+            } else if (isVisible(txnBank)) {
+                if (!txnBank.value.trim()) {
+                    return { valid: false, element: txnBank, message: 'Please enter or select a Bank Name' };
+                }
+            }
+        }
+
+        const methodContainer = document.getElementById('method-field-container');
+        if (methodContainer && !methodContainer.classList.contains('hidden')) {
+            const txnMethod = document.getElementById('txn-method');
+            if (txnMethod && !txnMethod.value.trim()) {
+                return { valid: false, element: txnMethod, message: 'Please select a Withdrawal Method' };
+            }
+        }
+
+        if (isVisible(txnAmount)) {
+            if (txnAmount.value.trim() === '') {
+                const labelText = document.getElementById('amount-label')?.innerText || 'Amount';
+                return { valid: false, element: txnAmount, message: `Please enter ${labelText}` };
+            }
+            const amtVal = parseFloat(txnAmount.value);
+            if (isNaN(amtVal) || amtVal <= 0) {
+                const labelText = document.getElementById('amount-label')?.innerText || 'Amount';
+                return { valid: false, element: txnAmount, message: `Please enter a valid ${labelText} (> 0)` };
+            }
+        }
+
+        const remainingContainer = document.getElementById('remaining-field-container');
+        if (remainingContainer && !remainingContainer.classList.contains('hidden')) {
+            const txnRemaining = document.getElementById('txn-remaining');
+            if (txnRemaining && txnRemaining.value.trim() === '') {
+                return { valid: false, element: txnRemaining, message: 'Please enter Remaining Amount' };
+            }
+        }
+
+        const noteContainer = document.getElementById('note-field-container');
+        if (noteContainer && !noteContainer.classList.contains('hidden')) {
+            const txnExpenseType = document.getElementById('txn-expense-type');
+            if (isVisible(txnExpenseType)) {
+                if (!txnExpenseType.value.trim()) {
+                    return { valid: false, element: txnExpenseType, message: 'Please select Expense Type' };
+                }
+            } else if (isVisible(txnNote)) {
+                if (!txnNote.value.trim()) {
+                    const labelText = noteContainer.querySelector('label')?.innerText || 'Customer Name';
+                    return { valid: false, element: txnNote, message: `Please enter ${labelText}` };
+                }
+            }
+        }
+
+        const remarkContainer = document.getElementById('remark-field-container');
+        if (remarkContainer && !remarkContainer.classList.contains('hidden')) {
+            const txnRemark = document.getElementById('txn-remark');
+            if (txnRemark && !txnRemark.value.trim()) {
+                const labelText = remarkContainer.querySelector('label')?.innerText || 'Note / Remark';
+                return { valid: false, element: txnRemark, message: `Please enter ${labelText}` };
+            }
+        }
+
+        const addressContainer = document.getElementById('address-field-container');
+        if (addressContainer && !addressContainer.classList.contains('hidden')) {
+            const txnAddress = document.getElementById('txn-address');
+            if (txnAddress && !txnAddress.value.trim()) {
+                return { valid: false, element: txnAddress, message: 'Please enter Address / City / Village' };
+            }
+        }
+
+        const conditionalContainer = document.getElementById('conditional-field-container');
+        if (conditionalContainer && !conditionalContainer.classList.contains('hidden')) {
+            const txnConditional = document.getElementById('txn-conditional');
+            if (txnConditional && !txnConditional.value.trim()) {
+                const labelText = document.getElementById('conditional-label')?.innerText || 'Aadhar / Debit Card';
+                return { valid: false, element: txnConditional, message: `Please enter ${labelText}` };
+            }
+        }
+
+        const laminationContainer = document.getElementById('lamination-size-container');
+        if (laminationContainer && !laminationContainer.classList.contains('hidden')) {
+            const txnLaminationSize = document.getElementById('txn-lamination-size');
+            if (txnLaminationSize && !txnLaminationSize.value.trim()) {
+                return { valid: false, element: txnLaminationSize, message: 'Please select Lamination Size' };
+            }
+        }
+
+        const quantityContainer = document.getElementById('quantity-field-container');
+        if (quantityContainer && !quantityContainer.classList.contains('hidden')) {
+            const txnQuantity = document.getElementById('txn-quantity');
+            if (txnQuantity && !txnQuantity.value.trim()) {
+                const labelText = document.getElementById('quantity-label')?.innerText || 'Pages / Quantity';
+                return { valid: false, element: txnQuantity, message: `Please enter ${labelText}` };
+            }
+            const qtyVal = parseInt(txnQuantity.value);
+            if (isNaN(qtyVal) || qtyVal <= 0) {
+                const labelText = document.getElementById('quantity-label')?.innerText || 'Pages / Quantity';
+                return { valid: false, element: txnQuantity, message: `Please enter valid ${labelText} (> 0)` };
+            }
+        }
+
+        const chargesContainer = document.getElementById('charges-field-container');
+        if (chargesContainer && !chargesContainer.classList.contains('hidden')) {
+            const txnCharges = document.getElementById('txn-charges');
+            if (txnCharges && txnCharges.value.trim() === '') {
+                return { valid: false, element: txnCharges, message: 'Please enter Charges (e.g. 0)' };
+            }
+        }
+
+        const chargesModeContainer = document.getElementById('charges-mode-container');
+        if (chargesModeContainer && !chargesModeContainer.classList.contains('hidden')) {
+            const txnChargesType = document.getElementById('txn-charges-type');
+            if (txnChargesType && !txnChargesType.value.trim()) {
+                const labelText = chargesModeContainer.querySelector('label')?.innerText || 'Charges Mode';
+                return { valid: false, element: txnChargesType, message: `Please select ${labelText}` };
+            }
+        }
+
+        return { valid: true };
+    }
+
     // Attach Submit Listener EARLY
     form.onsubmit = async (e) => {
         e.preventDefault();
         console.log('Save Button Clicked - Starting process');
 
         const submitBtn = form.querySelector('button[type="submit"]');
+
+        const validation = validateDailyTxnForm();
+        if (!validation.valid) {
+            showValidationToast(validation.message);
+            if (validation.element) {
+                validation.element.classList.add('border-rose-500', 'ring-2', 'ring-rose-500', 'animate-shake');
+                validation.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                validation.element.focus();
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+            }
+            return;
+        }
+
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Saving...';
@@ -5896,15 +6095,6 @@ async function initDailyTxn() {
 
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
             const chargesVal = parseFloat(txnCharges.value || 0);
-
-            if (!isChargesOnly && isNaN(amountVal)) {
-                alert('Please enter a valid amount.');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
-                }
-                return;
-            }
 
             // Strict Customer Validation for Credit Transactions
             if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
@@ -6188,8 +6378,69 @@ async function initDailyTxn() {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
             }
+            setTimeout(() => { if (txnType) txnType.focus(); }, 10);
         }
     };
+
+    // Setup Custom Keyboard TAB Navigation & Focus Trap strictly for Daily Txn Form
+    function setupDailyTxnFocusTrap() {
+        if (!form) return;
+        
+        if (window._dailyTxnFocusTrapHandler) {
+            document.removeEventListener('keydown', window._dailyTxnFocusTrapHandler, true);
+        }
+
+        window._dailyTxnFocusTrapHandler = (e) => {
+            const currentForm = document.getElementById('daily-txn-form');
+            if (!currentForm) return;
+
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Completely prevent default browser TAB behavior
+
+                const focusableQuery = 'input:not([disabled]), select:not([disabled]), button:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+                const elements = Array.from(currentForm.querySelectorAll(focusableQuery))
+                    .filter(el => el.tabIndex >= 0 && el.offsetParent !== null && !el.closest('.hidden'));
+
+                if (elements.length === 0) return;
+
+                // Sort primarily by container's flex order if set, then tabindex
+                elements.sort((a, b) => {
+                    const containerA = a.closest('[style*="order"]');
+                    const containerB = b.closest('[style*="order"]');
+                    const orderA = containerA ? (parseInt(containerA.style.order) || 0) : 0;
+                    const orderB = containerB ? (parseInt(containerB.style.order) || 0) : 0;
+
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+
+                    const tA = a.tabIndex > 0 ? a.tabIndex : 999;
+                    const tB = b.tabIndex > 0 ? b.tabIndex : 999;
+                    return tA - tB;
+                });
+
+                const currentIndex = elements.indexOf(document.activeElement);
+
+                if (e.shiftKey) {
+                    if (currentIndex <= 0) {
+                        elements[elements.length - 1].focus();
+                    } else {
+                        elements[currentIndex - 1].focus();
+                    }
+                } else {
+                    if (currentIndex === -1 || currentIndex >= elements.length - 1) {
+                        elements[0].focus();
+                    } else {
+                        elements[currentIndex + 1].focus();
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('keydown', window._dailyTxnFocusTrapHandler, true);
+    }
+    setupDailyTxnFocusTrap();
+
 
     const updateDailyBalances = async (date, txns = []) => {
         const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
@@ -6554,6 +6805,423 @@ async function initDailyTxn() {
     };
 
 
+    const renderBadgesAndTable = () => {
+        const tableBody = document.getElementById('daily-txn-table-body');
+        const form = document.getElementById('daily-txn-form');
+        if (!tableBody) return;
+
+        const txns = [...allTxnsForDate];
+        txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        // Calculate type-wise stats (Always based on ALL txns for the date)
+        const stats = txns.reduce((acc, txn) => {
+            const type = txn.type;
+            if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
+            acc[type].count++;
+            acc[type].amount += parseFloat(txn.amount || 0);
+            acc[type].charges += parseFloat(txn.charges || 0);
+            return acc;
+        }, {});
+
+        // Types jo count/volume se exclude honge
+        const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
+        const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
+
+        const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
+        const volumeTxns = txns.filter(t => includedVolumeTypes.includes(t.type));
+
+        const totalDayAmount = volumeTxns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        const totalDayCharges = countableTxns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
+
+        const summaryArea = document.getElementById('summary-badges-area');
+        if (summaryArea) {
+            summaryArea.innerHTML = '';
+            MASTER_TXN_TYPES.forEach(config => {
+                let count = 0;
+                let amount = 0;
+                let fees = 0;
+
+                if (config.type === 'ALL') {
+                    count = countableTxns.length;
+                    amount = totalDayAmount;
+                    fees = totalDayCharges;
+                } else if (config.type === 'PENDING') {
+                    const sAdd = stats['PENDING_ADD'] || { count: 0, amount: 0, charges: 0 };
+                    const sRem = stats['PENDING_REMOVE'] || { count: 0, amount: 0, charges: 0 };
+                    count = sAdd.count + sRem.count;
+                    amount = sAdd.amount - sRem.amount;
+                    fees = sAdd.charges + sRem.charges;
+                } else {
+                    const s = stats[config.type] || { count: 0, amount: 0, charges: 0 };
+                    count = s.count;
+                    amount = s.amount;
+                    fees = s.charges;
+                }
+
+                const isActive = currentTxnFilter === config.type;
+                const card = document.createElement('div');
+                card.className = `flex items-center justify-between p-2.5 rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border ${isActive ? 'border-primary ring-2 ring-primary/40 shadow-md scale-[1.02]' : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm'} transition-all cursor-pointer group select-none relative overflow-hidden`;
+                card.onclick = () => {
+                    currentTxnFilter = config.type;
+                    renderBadgesAndTable();
+                };
+
+                card.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-1.5 ${config.borderLeft || 'bg-primary'}"></div>
+                    <div class="flex items-center gap-2 pl-2 w-full">
+                        <div class="size-8 rounded-xl ${config.bg} ${config.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-base">${config.icon}</span>
+                        </div>
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1 w-full">
+                                <span class="text-[11px] font-black uppercase text-slate-800 dark:text-slate-200 truncate leading-none">${config.label}</span>
+                                <span class="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 leading-none shrink-0">${count}</span>
+                            </div>
+                            <div class="flex items-baseline justify-between gap-1.5 mt-1">
+                                <span class="text-xs font-black ${isActive ? 'text-primary' : 'text-slate-900 dark:text-white'} truncate">${amount < 0 ? '-' : ''}₹${Math.abs(amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                <span class="text-[9px] font-bold ${config.type === 'ALL' ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'} italic shrink-0">F: ₹${fees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                summaryArea.appendChild(card);
+            });
+        }
+
+        // Update detail cards (if they exist in server DOM)
+        const updateCard = (cardId, type) => {
+            const s = stats[type] || { count: 0, amount: 0, charges: 0 };
+            const countEl = document.getElementById(`card-${cardId}-count`);
+            const amountEl = document.getElementById(`card-${cardId}-amount`);
+            const feesEl = document.getElementById(`card-${cardId}-fees`);
+            if (countEl) countEl.textContent = s.count;
+            if (amountEl) amountEl.textContent = '₹' + s.amount.toLocaleString('en-IN');
+            if (feesEl) feesEl.textContent = 'Fees: ₹' + s.charges.toLocaleString('en-IN');
+        };
+
+        updateCard('aeps', 'AEPS');
+        updateCard('matm', 'MATM');
+        updateCard('deposit', 'DEPOSIT');
+        updateCard('withdrawal', 'WITHDRAWAL');
+        updateCard('photocopy', 'PHOTOCOPY');
+        updateCard('printout', 'PRINTOUT');
+        updateCard('online-work', 'ONLINE_WORK');
+        updateCard('passport', 'PASSPORT');
+        updateCard('lamination', 'LAMINATION');
+        updateCard('roinet', 'ROINET_COMMISSION');
+        updateCard('jio-topup', 'JIO_TOPUP');
+        updateCard('dishtv', 'DISHTV_RECHARGE');
+        updateCard('jio-recharge', 'JIO_RECHARGE');
+        updateCard('electricity', 'ELECTRICITY_BILL');
+        updateCard('pan_card', 'PAN_CARD');
+        updateCard('admin-deposit', 'FREE_DEPOSIT');
+        updateCard('admin-withdrawal', 'FREE_WITHDRAWAL');
+        updateCard('credit-given', 'CREDIT_GIVEN');
+        updateCard('credit-received', 'CREDIT_RECEIVED');
+
+        // Now filter the table data
+        const txnsToRender = currentTxnFilter === 'ALL' ? txns : (currentTxnFilter === 'PENDING' ? txns.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : txns.filter(t => t.type === currentTxnFilter));
+
+        const getShortBankName = (name) => {
+            if (!name) return "";
+            const n = name.toUpperCase().trim();
+            const map = {
+                'CHHATTISGARH GRAMEEN BANK': 'CRGB',
+                'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+                'STATE BANK OF INDIA': 'SBI',
+                'INDIA POST PAYMENT BANK': 'IPPB',
+                'BANK OF BARODA': 'BOB',
+                'UCO BANK': 'UCO',
+                'UNION BANK': 'UBI',
+                'AIRTEL BANK': 'AIRTEL',
+                'FINO BANK': 'FINO',
+                'INDIAN BANK': 'INDIAN',
+                'JILLA SAKAHARI BANK': 'JSB',
+                'CHHATTISGARH GRAMIN BANK': 'CRGB',
+                'PUNJAB NATIONAL BANK': 'PNB',
+                'HDFC BANK': 'HDFC',
+                'ICICI BANK': 'ICICI',
+                'AXIS BANK': 'AXIS',
+                'CANARA BANK': 'CANARA',
+                'BANK OF INDIA': 'BOI',
+                'CENTRAL BANK OF INDIA': 'CBI',
+                'IDBI BANK': 'IDBI',
+                'KOTAK MAHINDRA BANK': 'KOTAK',
+                'PAYTM PAYMENTS BANK': 'PAYTM'
+            };
+            return map[n] || name;
+        };
+
+        // Serial number sirf countable txns ke liye — latest first order mein
+        const countableIds = txns
+            .filter(t => !excludedTypes.includes(t.type))
+            .map(t => t.id); // already sorted latest-first
+
+        const showBalanceDiff = localStorage.getItem('dtxn_showBalanceDiff') !== 'false';
+
+        const parseBankUrn = (txn) => {
+            if (!txn.bankName) return { accName: '', accNumber: '', bankDisplay: '', typeDisplay: '' };
+            let holder = '';
+            let bank = '';
+            let type = '';
+            let number = '';
+
+            if (txn.accountId && window.cachedBankAccountsMap && window.cachedBankAccountsMap.has(String(txn.accountId))) {
+                const acc = window.cachedBankAccountsMap.get(String(txn.accountId));
+                if (acc && acc.name && acc.name.includes('|')) {
+                    const p = acc.name.split('|');
+                    holder = p[0] || '';
+                    bank = p[1] || '';
+                    number = p[2] || '';
+                    type = p[3] || 'CURRENT';
+                }
+            }
+            if (!bank && window.cachedBankAccountsMap) {
+                for (const acc of window.cachedBankAccountsMap.values()) {
+                    if (acc.name && acc.name.includes('|')) {
+                        const p = acc.name.split('|');
+                        const h = p[0] || '';
+                        const t = p[3] || 'CURRENT';
+                        const n = p[2] || '';
+                        const matchStr = `${h.toUpperCase()} — ${t.toUpperCase()} — ${n}`;
+                        if (matchStr === txn.bankName) {
+                            holder = h;
+                            bank = p[1] || '';
+                            number = n;
+                            type = t;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!bank && txn.bankName.includes(' — ')) {
+                const parts = txn.bankName.split(' — ');
+                if (parts.length >= 3) {
+                    holder = parts[0];
+                    type = parts[1];
+                    number = parts[2];
+                    bank = 'BANK';
+                } else if (parts.length === 2) {
+                    holder = parts[0];
+                    type = parts[1];
+                    bank = 'BANK';
+                }
+            }
+            if (!bank) {
+                bank = txn.bankName;
+            }
+            return { accName: holder, accNumber: number, bankDisplay: bank, typeDisplay: type };
+        };
+
+        tableBody.innerHTML = '';
+
+        txnsToRender.forEach((txn, index) => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-primary/5 transition-colors group';
+
+            const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            const isExcluded = excludedTypes.includes(txn.type);
+            const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
+
+            const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
+
+            tr.innerHTML = `
+                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
+                <td class="px-3 py-1.5">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
+                    </div>
+                </td>
+                <td class="px-3 py-1.5">
+                    <div class="flex flex-col items-start gap-1">
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                        txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
+                            txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
+                                txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
+                                    txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
+                                txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
+                                    'bg-primary/10 text-primary'
+                }">${
+                    txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
+                    (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
+                }</span>
+                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
+                    </div>
+                </td>
+                 <td class="px-3 py-1.5">
+                    <div class="flex flex-col gap-1.5 max-w-[200px]">
+                        ${bankDisplay ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
+                                <div class="flex flex-col leading-tight">
+                                    <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
+                                    ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${(!bankDisplay) ? `
+                            ${txn.provider ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                    <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
+                                    <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                                </div>
+                            ` : '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>'}
+                        ` : ''}
+                    </div>
+                </td>
+                <td class="px-3 py-1.5">
+                    <div class="flex flex-col gap-0.5 max-w-[220px]">
+                        ${accName ? `
+                            <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
+                            ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
+                        ` : `
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                        `}
+                        ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
+                        ${txn.address || txn.extraDetails ? `
+                            <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
+                                ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
+                                ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </td>
+                <td class="px-3 py-1.5 text-right">
+                    <div class="flex flex-col items-end">
+                        ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                        ` : `
+                            <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        `}
+                        ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
+                    </div>
+                </td>
+                <td class="px-3 py-1.5 text-right charges-col-cell">
+                    <div class="flex flex-col items-end">
+                        ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                        ` : `
+                            <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span class="text-[8px] font-black uppercase tracking-widest ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'text-indigo-500' : (txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500')}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType || 'Cash')}</span>
+                        `}
+                    </div>
+                </td>
+                <td class="px-3 py-1.5 balance-col-cell">
+                    <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                        <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
+                            <span>C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
+                            ${showBalanceDiff && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                        </span>
+                        <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center">
+                            <span>O: ₹${txn.runningOnline.toLocaleString('en-IN')}</span>
+                            ${showBalanceDiff && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-3 py-1.5">
+                    <div class="flex justify-center gap-2">
+                        <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // Add Opening Balance Row at the bottom
+        const opRow = document.createElement('tr');
+        opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
+        opRow.innerHTML = `
+            <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
+            <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
+            <td class="px-3 py-2 text-right">
+                <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                    <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full flex justify-between items-center">
+                        <span>C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
+                    </span>
+                    <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full flex justify-between items-center">
+                        <span>O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
+                    </span>
+                </div>
+            </td>
+            <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+        `;
+        tableBody.appendChild(opRow);
+
+        currentTxnsForDownload = [...txnsToRender];
+
+        document.querySelectorAll('.edit-txn-btn').forEach(btn => {
+            btn.onclick = () => {
+                const txn = allTxnsForDate.find(t => t.id === btn.dataset.id);
+                if (txn) {
+                    const txnType = document.getElementById('txn-type');
+                    const txnAmount = document.getElementById('txn-amount');
+                    const txnCharges = document.getElementById('txn-charges');
+                    const txnQuantity = document.getElementById('txn-quantity');
+                    const txnLaminationSize = document.getElementById('txn-lamination-size');
+                    const txnNote = document.getElementById('txn-note');
+                    const txnRemark = document.getElementById('txn-remark');
+                    const txnExpenseType = document.getElementById('txn-expense-type');
+                    const txnAddress = document.getElementById('txn-address');
+                    const txnConditional = document.getElementById('txn-conditional');
+                    const txnProvider = document.getElementById('txn-provider');
+                    const txnRemaining = document.getElementById('txn-remaining');
+                    const txnBank = document.getElementById('txn-bank');
+                    const txnChargesType = document.getElementById('txn-charges-type');
+                    const txnMethod = document.getElementById('txn-method');
+
+                    editingTxnId = txn.id;
+                    editingTxnTimestamp = txn.timestamp || null;
+                    if (txnType) txnType.value = txn.type;
+                    if (typeof updateConditionalField === 'function') updateConditionalField();
+                    if (txnAmount) txnAmount.value = txn.amount;
+                    if (txnCharges) txnCharges.value = txn.charges;
+                    if (txnQuantity) txnQuantity.value = txn.pages || '';
+                    if (txnLaminationSize && txn.laminationSize) txnLaminationSize.value = txn.laminationSize;
+                    if (txnNote) txnNote.value = txn.note;
+                    if (txnRemark) txnRemark.value = txn.remark || '';
+                    if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
+                    if (txnAddress) txnAddress.value = txn.address;
+                    if (txnConditional) txnConditional.value = txn.extraDetails || '';
+                    if (txnProvider) txnProvider.value = txn.provider || '';
+                    if (txnRemaining) txnRemaining.value = txn.remainingAmount || '';
+                    if (txnBank) txnBank.value = txn.bankName || '';
+                    const txnBankSelect = document.getElementById('txn-bank-select');
+                    if (txnBankSelect) txnBankSelect.value = txn.bankName || '';
+                    if (typeof window.updateCustomBankSelectDisplay === 'function') {
+                        window.updateCustomBankSelectDisplay(txn.bankName || '');
+                    }
+
+                    if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
+                    if (txnMethod && txn.method) txnMethod.value = txn.method;
+                    if (typeof updateConditionalField === 'function') updateConditionalField();
+
+                    if (form) {
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.innerHTML = '<span class="material-symbols-outlined">edit</span> Update Transaction';
+                            submitBtn.classList.remove('bg-primary');
+                            submitBtn.classList.add('bg-amber-500');
+                        }
+                        form.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            };
+        });
+
+        document.querySelectorAll('.delete-txn-btn').forEach(btn => {
+            btn.onclick = () => {
+                if (typeof showDeleteModal === 'function') showDeleteModal(btn.dataset.id);
+            };
+        });
+    };
+
     // Setup Firestore Listener and Load initial data
     const loadTransactions = (date) => {
         try {
@@ -6789,399 +7457,11 @@ async function initDailyTxn() {
                     };
                 });
 
-                // Clear table and render Latest First
-                tableBody.innerHTML = '';
-                txns.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-                // Calculate type-wise stats
-                const stats = txns.reduce((acc, txn) => {
-                    const type = txn.type;
-                    if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
-                    acc[type].count++;
-                    acc[type].amount += parseFloat(txn.amount || 0);
-                    acc[type].charges += parseFloat(txn.charges || 0);
-                    return acc;
-                }, {});
-
-                // Types jo count/volume se exclude honge
-                const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
-                const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
-
-                const countableTxns = txns.filter(t => !excludedTypes.includes(t.type));
-                const volumeTxns = txns.filter(t => includedVolumeTypes.includes(t.type));
-
-                const totalDayAmount = volumeTxns.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-                const totalDayCharges = countableTxns.reduce((sum, t) => sum + parseFloat(t.charges || 0), 0);
-
-                if (txnCountBadge) txnCountBadge.innerHTML = `
-                    <div class="flex flex-col items-start leading-tight">
-                        <span class="text-[10px] opacity-60 uppercase font-black">All TXNS</span>
-                        <span class="text-sm font-black">${countableTxns.length} | ₹${totalDayAmount.toLocaleString('en-IN')}</span>
-                        <span class="text-[9px] text-amber-500 font-bold">Fees: ₹${totalDayCharges.toLocaleString('en-IN')}</span>
-                    </div>
-                `;
-
-                const updateBadge = (badge, type, label) => {
-                    if (!badge) return;
-                    const s = stats[type] || { count: 0, amount: 0, charges: 0 };
-                    badge.innerHTML = `
-                        <div class="flex flex-col items-start leading-tight">
-                            <span class="text-[10px] opacity-60 uppercase font-black">${label}</span>
-                            <span class="text-xs font-black">${s.count} | ₹${s.amount.toLocaleString('en-IN')}</span>
-                            <span class="text-[8px] opacity-80 font-bold italic">F: ₹${s.charges.toLocaleString('en-IN')}</span>
-                        </div>
-                    `;
-                };
-
-                updateBadge(aepsCountBadge, 'AEPS', 'AEPS');
-                updateBadge(matmCountBadge, 'MATM', 'MATM');
-                updateBadge(depositCountBadge, 'DEPOSIT', 'DEPOSIT');
-                updateBadge(withdrawalCountBadge, 'WITHDRAWAL', 'WITHDRAW');
-
-                updateBadge(photocopyCountBadge, 'PHOTOCOPY', 'PHOTOCOPY');
-                updateBadge(printoutCountBadge, 'PRINTOUT', 'PRINTOUT');
-                updateBadge(onlineWorkCountBadge, 'ONLINE_WORK', 'ONLINE WORK');
-                updateBadge(passportCountBadge, 'PASSPORT', 'PASSPORT');
-                updateBadge(laminationCountBadge, 'LAMINATION', 'LAMINATN');
-                updateBadge(document.getElementById('cash-withdrawal-count-badge'), 'CASH_WITHDRAWAL', 'CASH WDRL');
-                updateBadge(document.getElementById('cash-deposit-count-badge'), 'CASH_DEPOSIT', 'CASH DEP');
-
-                // Update type-wise detail cards
-                const updateCard = (cardId, type) => {
-                    const s = stats[type] || { count: 0, amount: 0, charges: 0 };
-                    const countEl = document.getElementById(`card-${cardId}-count`);
-                    const amountEl = document.getElementById(`card-${cardId}-amount`);
-                    const feesEl = document.getElementById(`card-${cardId}-fees`);
-                    if (countEl) countEl.textContent = s.count;
-                    if (amountEl) amountEl.textContent = '₹' + s.amount.toLocaleString('en-IN');
-                    if (feesEl) feesEl.textContent = 'Fees: ₹' + s.charges.toLocaleString('en-IN');
-                };
-
-                updateCard('aeps', 'AEPS');
-                updateCard('matm', 'MATM');
-                updateCard('deposit', 'DEPOSIT');
-                updateCard('withdrawal', 'WITHDRAWAL');
-                updateCard('photocopy', 'PHOTOCOPY');
-                updateCard('printout', 'PRINTOUT');
-                updateCard('online-work', 'ONLINE_WORK');
-                updateCard('passport', 'PASSPORT');
-                updateCard('lamination', 'LAMINATION');
-                updateCard('roinet', 'ROINET_COMMISSION');
-                updateCard('jio-topup', 'JIO_TOPUP');
-                updateCard('dishtv', 'DISHTV_RECHARGE');
-                updateCard('jio-recharge', 'JIO_RECHARGE');
-                updateCard('electricity', 'ELECTRICITY_BILL');
-                updateCard('pan_card', 'PAN_CARD');
-                updateCard('admin-deposit', 'FREE_DEPOSIT');
-                updateCard('admin-withdrawal', 'FREE_WITHDRAWAL');
-                updateCard('credit-given', 'CREDIT_GIVEN');
-                updateCard('credit-received', 'CREDIT_RECEIVED');
-
-                // Update 9 remaining type badges (same style as top row)
-                updateBadge(document.getElementById('gold-sip-count-badge'), 'GOLD_SIP', 'GOLD SIP');
-                updateBadge(document.getElementById('roinet-count-badge'), 'ROINET_COMMISSION', 'ROINET');
-                updateBadge(document.getElementById('jio-topup-count-badge'), 'JIO_TOPUP', 'JIO TOPUP');
-                updateBadge(document.getElementById('dishtv-count-badge'), 'DISHTV_RECHARGE', 'DISH TV');
-                updateBadge(document.getElementById('jio-recharge-count-badge'), 'JIO_RECHARGE', 'JIO RCHG');
-                updateBadge(document.getElementById('electricity-count-badge'), 'ELECTRICITY_BILL', 'ELEC BILL');
-                updateBadge(document.getElementById('pan-card-count-badge'), 'PAN_CARD', 'PAN CARD');
-                updateBadge(document.getElementById('admin-deposit-count-badge'), 'FREE_DEPOSIT', 'FREE DEP');
-                updateBadge(document.getElementById('admin-withdrawal-count-badge'), 'FREE_WITHDRAWAL', 'FREE WDRL');
-                updateBadge(document.getElementById('credit-given-count-badge'), 'CREDIT_GIVEN', 'CR GIVEN');
-                updateBadge(document.getElementById('credit-received-count-badge'), 'CREDIT_RECEIVED', 'CR RECD');
-                updateBadge(document.getElementById('pending-count-badge'), 'PENDING_ADD', 'PEND ADD');
-                // Note: PENDING_REMOVE usually doesn't need a separate badge but we can add one if needed.
-                // For now, let's just show PENDING_ADD as the main count or combine them.
-                const pendingRemoveBadge = document.getElementById('pending-count-badge');
-                if (pendingRemoveBadge) {
-                    const sAdd = stats['PENDING_ADD'] || { count: 0, amount: 0, charges: 0 };
-                    const sRem = stats['PENDING_REMOVE'] || { count: 0, amount: 0, charges: 0 };
-                    pendingRemoveBadge.innerHTML = `
-                        <div class="flex flex-col items-start leading-tight">
-                            <span class="text-[10px] opacity-60 uppercase font-black">PENDING</span>
-                            <span class="text-xs font-black">${sAdd.count + sRem.count} | ₹${(sAdd.amount - sRem.amount).toLocaleString('en-IN')}</span>
-                            <span class="text-[8px] opacity-80 font-bold italic">Net Change</span>
-                        </div>
-                    `;
-                }
-
-                const getShortBankName = (name) => {
-                    if (!name) return "";
-                    const n = name.toUpperCase().trim();
-                    const map = {
-                        'CHHATTISGARH GRAMEEN BANK': 'CRGB',
-                        'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
-                        'STATE BANK OF INDIA': 'SBI',
-                        'INDIA POST PAYMENT BANK': 'IPPB',
-                        'BANK OF BARODA': 'BOB',
-                        'UCO BANK': 'UCO',
-                        'UNION BANK': 'UBI',
-                        'AIRTEL BANK': 'AIRTEL',
-                        'FINO BANK': 'FINO',
-                        'INDIAN BANK': 'INDIAN',
-                        'JILLA SAKAHARI BANK': 'JSB',
-                        'CHHATTISGARH GRAMIN BANK': 'CRGB',
-                        'PUNJAB NATIONAL BANK': 'PNB',
-                        'HDFC BANK': 'HDFC',
-                        'ICICI BANK': 'ICICI',
-                        'AXIS BANK': 'AXIS',
-                        'CANARA BANK': 'CANARA',
-                        'BANK OF INDIA': 'BOI',
-                        'CENTRAL BANK OF INDIA': 'CBI',
-                        'IDBI BANK': 'IDBI',
-                        'KOTAK MAHINDRA BANK': 'KOTAK',
-                        'PAYTM PAYMENTS BANK': 'PAYTM'
-                    };
-                    return map[n] || name;
-                };
-
-                // Serial number sirf countable txns ke liye — latest first order mein
-                const countableIds = txns
-                    .filter(t => !excludedTypes.includes(t.type))
-                    .map(t => t.id); // already sorted latest-first
-
-                const showBalanceDiff = localStorage.getItem('dtxn_showBalanceDiff') !== 'false';
-
-                const parseBankUrn = (txn) => {
-                    if (!txn.bankName) return { accName: '', accNumber: '', bankDisplay: '', typeDisplay: '' };
-                    let holder = '';
-                    let bank = '';
-                    let type = '';
-                    let number = '';
-
-                    if (txn.accountId && window.cachedBankAccountsMap && window.cachedBankAccountsMap.has(String(txn.accountId))) {
-                        const acc = window.cachedBankAccountsMap.get(String(txn.accountId));
-                        if (acc && acc.name && acc.name.includes('|')) {
-                            const p = acc.name.split('|');
-                            holder = p[0] || '';
-                            bank = p[1] || '';
-                            number = p[2] || '';
-                            type = p[3] || 'CURRENT';
-                        }
-                    }
-                    if (!bank && window.cachedBankAccountsMap) {
-                        for (const acc of window.cachedBankAccountsMap.values()) {
-                            if (acc.name && acc.name.includes('|')) {
-                                const p = acc.name.split('|');
-                                const h = p[0] || '';
-                                const t = p[3] || 'CURRENT';
-                                const n = p[2] || '';
-                                const matchStr = `${h.toUpperCase()} — ${t.toUpperCase()} — ${n}`;
-                                if (matchStr === txn.bankName) {
-                                    holder = h;
-                                    bank = p[1] || '';
-                                    number = n;
-                                    type = t;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!bank && txn.bankName.includes(' — ')) {
-                        const parts = txn.bankName.split(' — ');
-                        if (parts.length >= 3) {
-                            holder = parts[0];
-                            type = parts[1];
-                            number = parts[2];
-                            bank = 'BANK';
-                        } else if (parts.length === 2) {
-                            holder = parts[0];
-                            type = parts[1];
-                            bank = 'BANK';
-                        }
-                    }
-                    if (!bank) {
-                        bank = txn.bankName;
-                    }
-                    return { accName: holder, accNumber: number, bankDisplay: bank, typeDisplay: type };
-                };
-
-                txns.forEach((txn, index) => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-primary/5 transition-colors group';
-
-                    const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-                    const isExcluded = excludedTypes.includes(txn.type);
-                    const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
-
-                    const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
-
-                    tr.innerHTML = `
-                        <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
-                        <td class="px-3 py-1.5">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
-                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5">
-                            <div class="flex flex-col items-start gap-1">
-                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                            txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
-                                txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
-                                    txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
-                                        txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
-                                            txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
-                                        txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
-                                            'bg-primary/10 text-primary'
-                        }">${
-                            txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
-                            (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
-                        }</span>
-                                ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
-                            </div>
-                        </td>
-                         <td class="px-3 py-1.5">
-                            <div class="flex flex-col gap-1.5 max-w-[200px]">
-                                ${bankDisplay ? `
-                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
-                                        <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
-                                        <div class="flex flex-col leading-tight">
-                                            <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
-                                            ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                ${(!bankDisplay) ? `
-                                    ${txn.provider ? `
-                                        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                            <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
-                                            <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
-                                        </div>
-                                    ` : '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>'}
-                                ` : ''}
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5">
-                            <div class="flex flex-col gap-0.5 max-w-[220px]">
-                                ${accName ? `
-                                    <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
-                                    ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
-                                ` : `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
-                                `}
-                                ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
-                                ${txn.address || txn.extraDetails ? `
-                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
-                                        ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
-                                        ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5 text-right">
-                            <div class="flex flex-col items-end">
-                                ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
-                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
-                                ` : `
-                                    <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                `}
-                                ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5 text-right charges-col-cell">
-                            <div class="flex flex-col items-end">
-                                ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
-                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
-                                ` : `
-                                    <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                    <span class="text-[8px] font-black uppercase tracking-widest ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'text-indigo-500' : (txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500')}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType || 'Cash')}</span>
-                                `}
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5 balance-col-cell">
-                            <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
-                                    <span>C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
-                                    ${showBalanceDiff && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
-                                </span>
-                                <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center">
-                                    <span>O: ₹${txn.runningOnline.toLocaleString('en-IN')}</span>
-                                    ${showBalanceDiff && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-3 py-1.5">
-                            <div class="flex justify-center gap-2">
-                                <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                                    <span class="material-symbols-outlined text-sm">edit</span>
-                                </button>
-                                <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-
-                // Add Opening Balance Row at the bottom
-                const opRow = document.createElement('tr');
-                opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
-                opRow.innerHTML = `
-                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${date}</span></td>
-                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
-                    <td class="px-3 py-2 text-right">
-                        <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                            <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full flex justify-between items-center">
-                                <span>C: ₹${startCash.toLocaleString('en-IN')}</span>
-                            </span>
-                            <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full flex justify-between items-center">
-                                <span>O: ₹${startOnline.toLocaleString('en-IN')}</span>
-                            </span>
-                        </div>
-                    </td>
-                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
-                `;
-                tableBody.appendChild(opRow);
-
-                // Reverse for download to match table Sl No logic (Recent first)
-                currentTxnsForDownload = [...txns].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-                document.querySelectorAll('.edit-txn-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const txn = txns.find(t => t.id === btn.dataset.id);
-                        if (txn) {
-                            editingTxnId = txn.id;
-                            editingTxnTimestamp = txn.timestamp || null;
-                            txnType.value = txn.type;
-                            updateConditionalField();
-                            txnAmount.value = txn.amount;
-                            txnCharges.value = txn.charges;
-                            if (txnQuantity) txnQuantity.value = txn.pages || '';
-                            if (txnLaminationSize && txn.laminationSize) txnLaminationSize.value = txn.laminationSize;
-                            txnNote.value = txn.note;
-                            if (txnRemark) txnRemark.value = txn.remark || '';
-                            if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
-                            txnAddress.value = txn.address;
-                            txnConditional.value = txn.extraDetails || '';
-                            txnProvider.value = txn.provider || '';
-                            txnRemaining.value = txn.remainingAmount || '';
-                            txnBank.value = txn.bankName || '';
-                            const txnBankSelect = document.getElementById('txn-bank-select');
-                            if (txnBankSelect) txnBankSelect.value = txn.bankName || '';
-                            if (typeof window.updateCustomBankSelectDisplay === 'function') {
-                                window.updateCustomBankSelectDisplay(txn.bankName || '');
-                            }
-
-                            if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
-                            if (txnMethod && txn.method) txnMethod.value = txn.method;
-                            updateConditionalField();
-
-                            const submitBtn = form.querySelector('button[type="submit"]');
-                            submitBtn.innerHTML = '<span class="material-symbols-outlined">edit</span> Update Transaction';
-                            submitBtn.classList.remove('bg-primary');
-                            submitBtn.classList.add('bg-amber-500');
-                            form.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    };
-                });
-
-                document.querySelectorAll('.delete-txn-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        showDeleteModal(btn.dataset.id);
-                    };
-                });
+                allTxnsForDate = txns;
+                currentSelectedDate = date;
+                currentStartCash = startCash;
+                currentStartOnline = startOnline;
+                renderBadgesAndTable();
             }, (error) => {
                 console.error('Daily Transactions Listener Error:', error);
                 if (tableBody) {
