@@ -5233,7 +5233,7 @@ async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = fal
             linkedWithdrawal.amount = amountVal;
             linkedWithdrawal.date = newTxn.date;
             linkedWithdrawal.note = noteStr;
-            linkedWithdrawal.method = linkedWithdrawal.method || "Cash Withdrawal";
+            linkedWithdrawal.method = newTxn.method || linkedWithdrawal.method || "ATM";
             await saveBankWithdrawal(linkedWithdrawal);
             console.log('[BankWithdrawalSync] Successfully updated linked withdrawal entry:', linkedWithdrawal.id);
         } else {
@@ -5242,7 +5242,7 @@ async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = fal
                 accountId: accountId,
                 date: newTxn.date,
                 amount: amountVal,
-                method: "Cash Withdrawal",
+                method: newTxn.method || "ATM",
                 note: noteStr,
                 dailyTxnId: dailyTxnId,
                 autoCreated: true
@@ -5359,6 +5359,8 @@ async function initDailyTxn() {
     const addressFieldContainer = document.getElementById('address-field-container');
     const txnBank = document.getElementById('txn-bank');
     const bankContainer = document.getElementById('bank-field-container');
+    const txnMethod = document.getElementById('txn-method');
+    const methodContainer = document.getElementById('method-field-container');
     const chargesFieldContainer = document.getElementById('charges-field-container');
     const chargesModeContainer = document.getElementById('charges-mode-container');
     const txnQuantity = document.getElementById('txn-quantity');
@@ -5471,6 +5473,8 @@ async function initDailyTxn() {
         if (amountLabel) amountLabel.innerText = 'Amount';
         if (remainingContainer) remainingContainer.classList.add('hidden');
         if (bankContainer) bankContainer.classList.add('hidden');
+        if (txnMethod) txnMethod.value = 'ATM';
+        if (methodContainer) methodContainer.classList.add('hidden');
         if (remarkFieldContainer) remarkFieldContainer.classList.add('hidden');
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -5787,6 +5791,13 @@ async function initDailyTxn() {
             if (customContainer) customContainer.classList.add('hidden');
         }
 
+        if (txnType.value === 'CASH_WITHDRAWAL') {
+            if (methodContainer) methodContainer.classList.remove('hidden');
+        } else {
+            if (methodContainer) methodContainer.classList.add('hidden');
+            if (txnMethod) txnMethod.value = 'ATM';
+        }
+
         if (txnNote) {
             if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
                 txnNote.setAttribute('list', 'customer-list');
@@ -5797,7 +5808,7 @@ async function initDailyTxn() {
         }
 
         // Reset order for all form containers
-        [providerContainer, bankContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer].forEach(c => {
+        [providerContainer, bankContainer, methodContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer].forEach(c => {
             if (c) c.style.order = '0';
         });
 
@@ -6135,6 +6146,7 @@ async function initDailyTxn() {
             const newTxn = {
                 type: txnType.value,
                 amount: amountVal,
+                method: txnType.value === 'CASH_WITHDRAWAL' ? (txnMethod ? txnMethod.value : 'ATM') : '',
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
@@ -7153,6 +7165,7 @@ async function initDailyTxn() {
                             }
 
                             if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
+                            if (txnMethod && txn.method) txnMethod.value = txn.method;
                             updateConditionalField();
 
                             const submitBtn = form.querySelector('button[type="submit"]');

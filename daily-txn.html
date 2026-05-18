@@ -300,6 +300,17 @@
                                 <option value="JSB">
                             </datalist>
                         </div>
+                        <div id="method-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Withdrawal Method</label>
+                            <select id="txn-method" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="ATM">ATM Withdrawal</option>
+                                <option value="Cheque">Self Cheque</option>
+                                <option value="ATM QR Code">ATM QR Code</option>
+                                <option value="ATM Inside Branch">ATM Inside Branch</option>
+                                <option value="Yono">Yono Cash</option>
+                                <option value="Other">Other Branch Cash</option>
+                            </select>
+                        </div>
                         <div id="amount-field-container" class="flex flex-col gap-2">
                             <label id="amount-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Amount</label>
                             <div class="relative">
