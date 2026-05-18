@@ -4748,6 +4748,7 @@ async function initDailyTxn() {
     const confirmDeleteBtn = document.getElementById('confirm-delete');
 
     let editingTxnId = null;
+    let editingTxnTimestamp = null;
     let deletingTxnId = null;
     let unsubscribe = null;
     let currentSelectedDate = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
@@ -4837,6 +4838,7 @@ async function initDailyTxn() {
 
     const resetFormState = () => {
         editingTxnId = null;
+        editingTxnTimestamp = null;
         form.reset();
         txnType.value = 'AEPS';
         txnProvider.value = '';
@@ -5276,6 +5278,8 @@ async function initDailyTxn() {
                 }
             }
 
+            const existingTxn = editingTxnId ? allTxnsForDate.find(t => t.id === editingTxnId) : null;
+
             // Validation & Checks for Cash Movements
             if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
                 const txnBankSelect = document.getElementById('txn-bank-select');
@@ -5288,11 +5292,20 @@ async function initDailyTxn() {
                     }
                     return;
                 }
-                if (txnType.value === 'CASH_WITHDRAWAL' && amountVal > currentAvailableOnline) {
+                let effOnline = currentAvailableOnline;
+                let effCash = currentAvailableCash;
+                if (existingTxn && existingTxn.type === 'CASH_WITHDRAWAL') {
+                    effOnline += parseFloat(existingTxn.amount || 0);
+                    effCash -= parseFloat(existingTxn.amount || 0);
+                } else if (existingTxn && existingTxn.type === 'CASH_DEPOSIT') {
+                    effCash += parseFloat(existingTxn.amount || 0);
+                    effOnline -= parseFloat(existingTxn.amount || 0);
+                }
+                if (txnType.value === 'CASH_WITHDRAWAL' && amountVal > effOnline) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Online Balance',
-                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online to withdraw. Please check your account balances.`,
+                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online to withdraw. Please check your account balances.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5301,11 +5314,11 @@ async function initDailyTxn() {
                     }
                     return;
                 }
-                if (txnType.value === 'CASH_DEPOSIT' && amountVal > currentAvailableCash) {
+                if (txnType.value === 'CASH_DEPOSIT' && amountVal > effCash) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Cash Balance',
-                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash to deposit. Please check your shop cash balance.`,
+                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash to deposit. Please check your shop cash balance.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5337,11 +5350,15 @@ async function initDailyTxn() {
 
             // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
             if (['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(txnType.value)) {
-                if (amountVal > currentAvailableCash) {
+                let effCash = currentAvailableCash;
+                if (existingTxn && ['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(existingTxn.type)) {
+                    effCash += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effCash) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Cash',
-                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
+                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5354,11 +5371,37 @@ async function initDailyTxn() {
 
             // Online Sufficiency Check for DEPOSIT
             if (txnType.value === 'DEPOSIT') {
-                if (amountVal > currentAvailableOnline) {
+                let effOnline = currentAvailableOnline;
+                if (existingTxn && existingTxn.type === 'DEPOSIT') {
+                    effOnline += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effOnline) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Online Balance',
-                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+            }
+
+            // Sufficiency Check for SHARE_WITHDRAWN
+            if (txnType.value === 'SHARE_WITHDRAWN') {
+                let available = txnProvider.value === 'Online' ? currentAvailableOnline : currentAvailableCash;
+                if (existingTxn && existingTxn.type === 'SHARE_WITHDRAWN' && existingTxn.provider === txnProvider.value) {
+                    available += parseFloat(existingTxn.amount || 0);
+                }
+                const mode = txnProvider.value || 'Cash';
+                if (amountVal > available) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: `Insufficient ${mode} Balance`,
+                        text: `You only have ₹ ${available.toLocaleString('en-IN')} available in ${mode.toLowerCase()}.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5371,11 +5414,15 @@ async function initDailyTxn() {
 
             // Jio Sufficiency Check for JIO_RECHARGE
             if (txnType.value === 'JIO_RECHARGE') {
-                if (amountVal > currentAvailableJio) {
+                let effJio = currentAvailableJio;
+                if (existingTxn && existingTxn.type === 'JIO_RECHARGE') {
+                    effJio += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effJio) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Jio Balance',
-                        text: `You only have ₹ ${currentAvailableJio.toLocaleString('en-IN')} available in Jio. Please add funds to Jio balance first.`,
+                        text: `You only have ₹ ${effJio.toLocaleString('en-IN')} available in Jio. Please add funds to Jio balance first.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5389,11 +5436,15 @@ async function initDailyTxn() {
 
             // Damaged Currency Sufficiency Check for DAMAGED_RECOVERY
             if (txnType.value === 'DAMAGED_RECOVERY') {
-                if (amountVal > currentAvailableDamaged) {
+                let effDamaged = currentAvailableDamaged;
+                if (existingTxn && existingTxn.type === 'DAMAGED_RECOVERY') {
+                    effDamaged += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effDamaged) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Damaged Balance',
-                        text: `You only have ₹ ${currentAvailableDamaged.toLocaleString('en-IN')} available in damaged currency. You cannot recover more than what you have.`,
+                        text: `You only have ₹ ${effDamaged.toLocaleString('en-IN')} available in damaged currency. You cannot recover more than what you have.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5418,6 +5469,11 @@ async function initDailyTxn() {
                     // Fallback to general Online if provider not specifically tracked
                     available = currentAvailableOnline;
                     providerName = provider || 'Selected Provider';
+                }
+
+                if (existingTxn && existingTxn.type === 'SETTLEMENT' && existingTxn.provider === provider) {
+                    available += parseFloat(existingTxn.amount || 0);
+                    available += parseFloat(existingTxn.charges || 0);
                 }
 
                 if (amountVal > available) {
@@ -5450,13 +5506,13 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
                 date: currentSelectedDate,
-                timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+                timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
 
             console.log('Attempting to ' + (editingTxnId ? 'update' : 'add') + ' doc in Firestore:', newTxn);
@@ -6245,7 +6301,9 @@ async function initDailyTxn() {
                 const txn = allTxnsForDate.find(t => t.id === btn.dataset.id);
                 if (txn) {
                     editingTxnId = txn.id;
+                    editingTxnTimestamp = txn.timestamp || null;
                     txnType.value = txn.type;
+                    updateConditionalField();
                     txnAmount.value = txn.amount;
                     txnCharges.value = txn.charges;
                     if (txnQuantity) txnQuantity.value = txn.pages || '';

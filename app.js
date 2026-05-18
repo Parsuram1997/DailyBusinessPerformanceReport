@@ -5388,6 +5388,7 @@ async function initDailyTxn() {
     let deletingTxnId = null;
     let unsubscribe = null;
     let currentSelectedDate = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+    let allTxnsForDate = [];
     let currentAvailableCash = 0; // Tracks live cash for validation
     let currentAvailableOnline = 0; // Tracks live online for validation
     let currentAvailableJio = 0; // Tracks live Jio balance for validation
@@ -5914,13 +5915,19 @@ async function initDailyTxn() {
                 }
             }
 
+            const existingTxn = editingTxnId ? allTxnsForDate.find(t => t.id === editingTxnId) : null;
+
             // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
             if (['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(txnType.value)) {
-                if (amountVal > currentAvailableCash) {
+                let effCash = currentAvailableCash;
+                if (existingTxn && ['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(existingTxn.type)) {
+                    effCash += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effCash) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Cash',
-                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
+                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5933,11 +5940,15 @@ async function initDailyTxn() {
 
             // Online Sufficiency Check for DEPOSIT
             if (txnType.value === 'DEPOSIT') {
-                if (amountVal > currentAvailableOnline) {
+                let effOnline = currentAvailableOnline;
+                if (existingTxn && existingTxn.type === 'DEPOSIT') {
+                    effOnline += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effOnline) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Online Balance',
-                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5960,11 +5971,20 @@ async function initDailyTxn() {
                     }
                     return;
                 }
-                if (txnType.value === 'CASH_WITHDRAWAL' && amountVal > currentAvailableOnline) {
+                let effOnline = currentAvailableOnline;
+                let effCash = currentAvailableCash;
+                if (existingTxn && existingTxn.type === 'CASH_WITHDRAWAL') {
+                    effOnline += parseFloat(existingTxn.amount || 0);
+                    effCash -= parseFloat(existingTxn.amount || 0);
+                } else if (existingTxn && existingTxn.type === 'CASH_DEPOSIT') {
+                    effCash += parseFloat(existingTxn.amount || 0);
+                    effOnline -= parseFloat(existingTxn.amount || 0);
+                }
+                if (txnType.value === 'CASH_WITHDRAWAL' && amountVal > effOnline) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Online Balance',
-                        text: `You only have ₹ ${currentAvailableOnline.toLocaleString('en-IN')} available online to withdraw. Please check your account balances.`,
+                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online to withdraw. Please check your account balances.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -5973,11 +5993,11 @@ async function initDailyTxn() {
                     }
                     return;
                 }
-                if (txnType.value === 'CASH_DEPOSIT' && amountVal > currentAvailableCash) {
+                if (txnType.value === 'CASH_DEPOSIT' && amountVal > effCash) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Cash Balance',
-                        text: `You only have ₹ ${currentAvailableCash.toLocaleString('en-IN')} available in cash to deposit. Please check your shop cash balance.`,
+                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash to deposit. Please check your shop cash balance.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -6009,7 +6029,10 @@ async function initDailyTxn() {
 
             // Sufficiency Check for SHARE_WITHDRAWN
             if (txnType.value === 'SHARE_WITHDRAWN') {
-                const available = txnProvider.value === 'Online' ? currentAvailableOnline : currentAvailableCash;
+                let available = txnProvider.value === 'Online' ? currentAvailableOnline : currentAvailableCash;
+                if (existingTxn && existingTxn.type === 'SHARE_WITHDRAWN' && existingTxn.provider === txnProvider.value) {
+                    available += parseFloat(existingTxn.amount || 0);
+                }
                 const mode = txnProvider.value || 'Cash';
                 if (amountVal > available) {
                     Swal.fire({
@@ -6028,11 +6051,15 @@ async function initDailyTxn() {
 
             // Jio Sufficiency Check for JIO_RECHARGE
             if (txnType.value === 'JIO_RECHARGE') {
-                if (amountVal > currentAvailableJio) {
+                let effJio = currentAvailableJio;
+                if (existingTxn && existingTxn.type === 'JIO_RECHARGE') {
+                    effJio += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effJio) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Jio Balance',
-                        text: `You only have ₹ ${currentAvailableJio.toLocaleString('en-IN')} available in Jio. Please add funds to Jio balance first.`,
+                        text: `You only have ₹ ${effJio.toLocaleString('en-IN')} available in Jio. Please add funds to Jio balance first.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -6043,14 +6070,17 @@ async function initDailyTxn() {
                 }
             }
 
-
             // Damaged Currency Sufficiency Check for DAMAGED_RECOVERY
             if (txnType.value === 'DAMAGED_RECOVERY') {
-                if (amountVal > currentAvailableDamaged) {
+                let effDamaged = currentAvailableDamaged;
+                if (existingTxn && existingTxn.type === 'DAMAGED_RECOVERY') {
+                    effDamaged += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effDamaged) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Insufficient Damaged Balance',
-                        text: `You only have ₹ ${currentAvailableDamaged.toLocaleString('en-IN')} available in damaged currency. You cannot recover more than what you have.`,
+                        text: `You only have ₹ ${effDamaged.toLocaleString('en-IN')} available in damaged currency. You cannot recover more than what you have.`,
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -6074,6 +6104,11 @@ async function initDailyTxn() {
                 else {
                     available = currentAvailableOnline;
                     providerName = provider || 'Selected Provider';
+                }
+
+                if (existingTxn && existingTxn.type === 'SETTLEMENT' && existingTxn.provider === provider) {
+                    available += parseFloat(existingTxn.amount || 0);
+                    available += parseFloat(existingTxn.charges || 0);
                 }
 
                 if (amountVal > available) {
@@ -6547,6 +6582,7 @@ async function initDailyTxn() {
                 if (!tableBody) return;
 
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allTxnsForDate = txns;
 
                 // AUTO GOLD SIP LOGIC
                 const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
@@ -7097,6 +7133,7 @@ async function initDailyTxn() {
                             editingTxnId = txn.id;
                             editingTxnTimestamp = txn.timestamp || null;
                             txnType.value = txn.type;
+                            updateConditionalField();
                             txnAmount.value = txn.amount;
                             txnCharges.value = txn.charges;
                             if (txnQuantity) txnQuantity.value = txn.pages || '';
