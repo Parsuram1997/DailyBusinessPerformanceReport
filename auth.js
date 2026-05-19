@@ -99,10 +99,37 @@ function handleLogout(event) {
 
     document.getElementById('logout-cancel').addEventListener('click', closeModal);
     document.getElementById('logout-confirm').addEventListener('click', () => {
-        sessionStorage.removeItem('isLoggedIn');
-        sessionStorage.removeItem('userRole');
-        sessionStorage.removeItem('username');
-        window.location.replace('index.html');
+        // Show smooth logout animation
+        const modal = document.getElementById('logout-confirm-modal');
+        if (modal) modal.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'logout-overlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 9999999;
+            background: linear-gradient(135deg, #7f13ec, #4f0890);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            animation: fadeInOverlay 0.3s ease forwards;
+        `;
+        overlay.innerHTML = `
+            <style>
+                @keyframes fadeInOverlay { from { opacity:0; } to { opacity:1; } }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes pulseText { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+            </style>
+            <div style="width:64px;height:64px;border:4px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:24px;"></div>
+            <h2 style="color:#fff;font-size:20px;font-weight:800;letter-spacing:0.5px;margin:0 0 8px;font-family:Inter,sans-serif;">Signing Out...</h2>
+            <p style="color:rgba(255,255,255,0.65);font-size:13px;font-family:Inter,sans-serif;animation:pulseText 1.5s ease infinite;margin:0;">Please wait a moment</p>
+        `;
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('username');
+            window.location.replace('index.html');
+        }, 1200);
     });
 }
 
