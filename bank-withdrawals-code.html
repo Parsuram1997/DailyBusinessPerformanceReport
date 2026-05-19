@@ -179,14 +179,22 @@
 </aside>
 
 <!-- Main Content Area -->
-<main class="flex-1 flex flex-col overflow-y-auto w-full pb-24 lg:pb-0 px-4 sm:px-8 pt-6 max-w-[1700px] mx-auto">
+<main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
 
-    <!-- Hidden containers required to prevent JS null errors -->
-    <div id="add-withdrawal-section" class="hidden"></div>
-    <form id="withdrawal-form" class="hidden"></form>
+    <div class="p-8 max-w-[1700px] mx-auto w-full space-y-8">
+        
+        <!-- Page Title -->
+        <section class="flex flex-col gap-1">
+            <h3 class="text-2xl font-bold tracking-tight">Bank Withdrawals</h3>
+            <p class="text-slate-500 text-sm">Manage your bank accounts and track cash withdrawal history.</p>
+        </section>
 
-    <!-- Main Content Layout (Grid) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-12">
+        <!-- Hidden containers required to prevent JS null errors -->
+        <div id="add-withdrawal-section" class="hidden"></div>
+        <form id="withdrawal-form" class="hidden"></form>
+
+        <!-- Main Content Layout (Grid) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-12">
 
         <!-- Right Side Sticky Summary & Analytics Panel -->
         <div class="lg:col-span-4 xl:col-span-3 lg:order-last space-y-5 lg:sticky lg:top-6">
@@ -338,23 +346,23 @@
                         <!-- Accounts Header -->
                         <thead id="accounts-header" class="sticky top-0 z-10 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-md border-b border-primary/10">
                             <tr>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center w-14">S.No</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest">Account Holder</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center">Bank</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center">A/c Number</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center">Type</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-right">Total Withdrawn</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center">Status</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center w-14">S.No</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Account Holder</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Bank</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">A/c Number</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Type</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right">Total Withdrawn</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Status</th>
                             </tr>
                         </thead>
                         <!-- Withdrawals Header -->
                         <thead id="withdrawals-header" class="hidden sticky top-0 z-10 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-md border-b border-primary/10">
                             <tr>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center w-14">S.No</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest">Date</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-right">Amount (₹)</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest text-center">Method</th>
-                                <th class="px-5 py-3.5 text-[10px] font-black text-primary uppercase tracking-widest">Note & Details</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center w-14">S.No</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Date</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right">Amount (₹)</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Method</th>
+                                <th class="px-5 py-3.5 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Note & Details</th>
                             </tr>
                         </thead>
                         <tbody id="bank-data-body" class="divide-y divide-slate-100 dark:divide-slate-800/70 text-sm font-semibold">
@@ -364,6 +372,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </main>
 </div>

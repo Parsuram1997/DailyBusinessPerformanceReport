@@ -275,18 +275,47 @@
         </div>
 
         <!-- Toggle: Page PIN Protection -->
-        <div class="flex items-center justify-between p-4 rounded-xl border border-amber-100 bg-amber-50 dark:bg-amber-500/5 dark:border-amber-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-amber-600">security</span>
-                <div>
-                    <p class="font-bold text-sm">Page PIN Protection</p>
-                    <p class="text-xs text-slate-500">Enable/disable PIN lock for Add Entry, Daily Transactions and Settings pages.</p>
-                </div>
+        <div class="space-y-4 p-4 rounded-xl border border-amber-100 bg-amber-50/50 dark:bg-amber-500/5 dark:border-amber-500/20">
+            <div class="flex items-center gap-2 mb-2 pb-2 border-b border-amber-100 dark:border-amber-500/10">
+                <span class="material-symbols-outlined text-amber-600 text-lg font-bold">security</span>
+                <span class="text-xs font-black uppercase text-amber-800 dark:text-amber-400 tracking-wider">PIN Lock Security Controls</span>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-pin-protection" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-            </label>
+
+            <!-- Toggle: Add Entry Protection -->
+            <div class="flex items-center justify-between py-1">
+                <div class="flex flex-col">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white">Add Entry Page Protection</span>
+                    <span class="text-[11px] text-slate-500">Lock the page where new daily logs are entered.</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-pin-add-entry" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+            </div>
+
+            <!-- Toggle: Daily Txn Protection -->
+            <div class="flex items-center justify-between py-1 border-t border-slate-100 dark:border-white/5">
+                <div class="flex flex-col">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white">Daily Transactions Page Protection</span>
+                    <span class="text-[11px] text-slate-500">Lock the live transactions ledger and entry lists.</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-pin-daily-txn" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+            </div>
+
+            <!-- Toggle: Settings Page Protection -->
+            <div class="flex items-center justify-between py-1 border-t border-slate-100 dark:border-white/5">
+                <div class="flex flex-col">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white">Settings Page Protection</span>
+                    <span class="text-[11px] text-slate-500">Lock the configuration, displays and administrative controls.</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-pin-settings" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+            </div>
         </div>
 
         <div class="pt-4 border-t border-primary/5">
@@ -395,6 +424,36 @@
             <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="toggle-credit-actions" class="sr-only peer">
                 <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Open Daily Txn in New Tab -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-blue-600">open_in_new</span>
+                <div>
+                    <p class="font-bold text-sm">Open Daily Txn in New Tab</p>
+                    <p class="text-xs text-slate-500">When enabled, Daily Transactions page will open in a new window/tab.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-dtxn-new-tab" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+
+        <!-- Toggle: Hide Daily Txn on Login Page -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20 mt-4">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-indigo-600">visibility_off</span>
+                <div>
+                    <p class="font-bold text-sm">Hide Daily Txn on Login</p>
+                    <p class="text-xs text-slate-500">Hide the Daily Txn shortcut button from the public login page.</p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-hide-public-dtxn" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
             </label>
         </div>
 
@@ -520,7 +579,15 @@
             <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Enter Access PIN</h3>
             <p class="text-slate-500 dark:text-slate-400 text-xs font-medium mb-8 uppercase tracking-widest">Section Protection Enabled</p>
             
-            <input type="password" id="settings-pin-input" maxlength="6" placeholder="******" class="w-full px-4 py-4 text-center text-2xl font-black tracking-[1rem] border border-primary/20 rounded-xl bg-slate-50 dark:bg-white/5 outline-none focus:ring-2 focus:ring-primary transition-all mb-6">
+            <div class="flex gap-2 justify-center mb-6" id="settings-pin-container">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+                <input type="password" class="settings-pin-digit w-12 h-14 text-center text-2xl font-black border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white outline-none focus:border-primary transition-all" maxlength="1" inputmode="numeric">
+            </div>
+            <input type="hidden" id="settings-pin-input" value="">
 
             <div class="flex gap-3">
                 <button id="btn-cancel-pin" class="flex-1 px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors">Cancel</button>
@@ -539,8 +606,12 @@ const balanceToggle = document.getElementById('toggle-balance-col');
 const balanceDiffToggle = document.getElementById('toggle-balance-diff');
 const deleteToggle = document.getElementById('toggle-delete-btn');
 const chargesToggle = document.getElementById('toggle-charges-col');
-const pinToggle = document.getElementById('toggle-pin-protection');
+const pinAddEntryToggle = document.getElementById('toggle-pin-add-entry');
+const pinDailyTxnToggle = document.getElementById('toggle-pin-daily-txn');
+const pinSettingsToggle = document.getElementById('toggle-pin-settings');
 const creditActionsToggle = document.getElementById('toggle-credit-actions');
+const dtxnNewTabToggle = document.getElementById('toggle-dtxn-new-tab');
+const hidePublicDtxnToggle = document.getElementById('toggle-hide-public-dtxn');
 
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
 const compactLockCard = document.getElementById('compact-lock-card');
@@ -553,17 +624,58 @@ const cancelPinBtn = document.getElementById('btn-cancel-pin');
 
 const CORRECT_PIN = "252006";
 
+const pinDigits = document.querySelectorAll('.settings-pin-digit');
+
+function updateHiddenPin() {
+    pinInput.value = Array.from(pinDigits).map(i => i.value).join('');
+}
+
+function resetSettingsPin() {
+    pinDigits.forEach(i => {
+        i.value = '';
+        i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+    });
+    updateHiddenPin();
+    setTimeout(() => pinDigits[0].focus(), 100);
+}
+
+pinDigits.forEach((input, index) => {
+    input.addEventListener('input', () => {
+        if (input.value && index < 5) pinDigits[index + 1].focus();
+        updateHiddenPin();
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+            pinDigits[index - 1].focus();
+            pinDigits[index - 1].value = '';
+            updateHiddenPin();
+        }
+        if (e.key === 'Enter') submitPinBtn.click();
+    });
+
+    input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+        for (let i = 0; i < pastedData.length; i++) {
+            pinDigits[i].value = pastedData[i];
+        }
+        if (pastedData.length > 0) {
+            pinDigits[Math.min(pastedData.length, 5)].focus();
+        }
+        updateHiddenPin();
+    });
+});
+
 // Unlock Logic
 compactLockCard.addEventListener('click', () => {
     pinModal.classList.remove('hidden');
-    pinInput.value = '';
-    pinInput.focus();
+    resetSettingsPin();
 });
 unlockBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     pinModal.classList.remove('hidden');
-    pinInput.value = '';
-    pinInput.focus();
+    resetSettingsPin();
 });
 
 cancelPinBtn.addEventListener('click', () => pinModal.classList.add('hidden'));
@@ -575,9 +687,17 @@ submitPinBtn.addEventListener('click', () => {
         advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
         pinModal.classList.add('hidden');
     } else {
-        alert('❌ Incorrect PIN! Access Denied.');
-        pinInput.value = '';
-        pinInput.focus();
+        pinDigits.forEach(i => {
+            i.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+            i.value = '';
+        });
+        updateHiddenPin();
+        pinDigits[0].focus();
+        setTimeout(() => {
+            pinDigits.forEach(i => {
+                i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+            });
+        }, 1000);
     }
 });
 
@@ -595,8 +715,12 @@ function applySettingsToUI() {
     if (localStorage.getItem('dtxn_showBalanceDiff') === null) balanceDiffToggle.checked = true;
     deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
     chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
-    pinToggle.checked = localStorage.getItem('security_pin_enabled') !== 'false';
+    pinAddEntryToggle.checked = localStorage.getItem('security_pin_enabled_add_entry') !== 'false';
+    pinDailyTxnToggle.checked = localStorage.getItem('security_pin_enabled_daily_txn') !== 'false';
+    pinSettingsToggle.checked = localStorage.getItem('security_pin_enabled_settings') !== 'false';
     creditActionsToggle.checked = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+    dtxnNewTabToggle.checked = localStorage.getItem('dtxn_openInNewTab') === 'true';
+    if (hidePublicDtxnToggle) hidePublicDtxnToggle.checked = localStorage.getItem('HIDE_PUBLIC_DAILY_TXN') === 'true';
 }
 
 // Initial load
@@ -616,8 +740,12 @@ function saveGlobalSettings() {
         dtxn_showBalanceDiff: balanceDiffToggle.checked,
         dtxn_showDelete: deleteToggle.checked,
         dtxn_showCharges: chargesToggle.checked,
-        security_pin_enabled: pinToggle.checked,
-        CREDIT_LEDGER_SHOW_ACTIONS: creditActionsToggle.checked
+        security_pin_enabled_add_entry: pinAddEntryToggle.checked,
+        security_pin_enabled_daily_txn: pinDailyTxnToggle.checked,
+        security_pin_enabled_settings: pinSettingsToggle.checked,
+        CREDIT_LEDGER_SHOW_ACTIONS: creditActionsToggle.checked,
+        dtxn_openInNewTab: dtxnNewTabToggle.checked,
+        HIDE_PUBLIC_DAILY_TXN: hidePublicDtxnToggle ? hidePublicDtxnToggle.checked : false
     };
     if (window.saveAppSettings) {
         window.saveAppSettings(settings);
@@ -628,8 +756,12 @@ function saveGlobalSettings() {
         localStorage.setItem('dtxn_showBalanceDiff', settings.dtxn_showBalanceDiff);
         localStorage.setItem('dtxn_showDelete', settings.dtxn_showDelete);
         localStorage.setItem('dtxn_showCharges', settings.dtxn_showCharges);
-        localStorage.setItem('security_pin_enabled', settings.security_pin_enabled);
+        localStorage.setItem('security_pin_enabled_add_entry', settings.security_pin_enabled_add_entry);
+        localStorage.setItem('security_pin_enabled_daily_txn', settings.security_pin_enabled_daily_txn);
+        localStorage.setItem('security_pin_enabled_settings', settings.security_pin_enabled_settings);
         localStorage.setItem('CREDIT_LEDGER_SHOW_ACTIONS', settings.CREDIT_LEDGER_SHOW_ACTIONS);
+        localStorage.setItem('dtxn_openInNewTab', settings.dtxn_openInNewTab);
+        localStorage.setItem('HIDE_PUBLIC_DAILY_TXN', settings.HIDE_PUBLIC_DAILY_TXN);
     }
 }
 
@@ -640,8 +772,18 @@ balanceToggle.addEventListener('change', saveGlobalSettings);
 balanceDiffToggle.addEventListener('change', saveGlobalSettings);
 deleteToggle.addEventListener('change', saveGlobalSettings);
 chargesToggle.addEventListener('change', saveGlobalSettings);
-pinToggle.addEventListener('change', saveGlobalSettings);
+pinAddEntryToggle.addEventListener('change', saveGlobalSettings);
+pinDailyTxnToggle.addEventListener('change', saveGlobalSettings);
+pinSettingsToggle.addEventListener('change', saveGlobalSettings);
 creditActionsToggle.addEventListener('change', saveGlobalSettings);
+dtxnNewTabToggle.addEventListener('change', saveGlobalSettings);
+if (hidePublicDtxnToggle) {
+    hidePublicDtxnToggle.addEventListener('change', () => {
+        // Always write directly to localStorage so login page picks it up instantly
+        localStorage.setItem('HIDE_PUBLIC_DAILY_TXN', hidePublicDtxnToggle.checked);
+        saveGlobalSettings();
+    });
+}
 </script>
 </body>
 </html>

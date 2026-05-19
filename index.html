@@ -69,10 +69,15 @@
             <p class="text-white/80 text-lg max-w-md leading-relaxed mb-10">BizPerform helps you track, manage, and accurately project your daily backend reports and operational assets.</p>
             
             <div class="flex flex-wrap gap-4">
-                <a href="daily-txn.html" class="inline-flex items-center gap-3 bg-white text-primary px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-black/10 hover:bg-opacity-90 transition-all active:scale-95 group">
+                <a href="daily-txn.html" id="public-daily-txn-link" class="inline-flex items-center gap-3 bg-white text-primary px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-black/10 hover:bg-opacity-90 transition-all active:scale-95 group">
                     <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">point_of_sale</span>
                     Daily Txn
                 </a>
+                <script>
+                    if (localStorage.getItem('HIDE_PUBLIC_DAILY_TXN') === 'true') {
+                        document.getElementById('public-daily-txn-link').style.display = 'none';
+                    }
+                </script>
                 <a href="img-to-pdf.html" class="inline-flex items-center gap-3 bg-white text-primary px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-black/10 hover:bg-opacity-90 transition-all active:scale-95 group">
                     <span class="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">picture_as_pdf</span>
                     Img to PDF Tool

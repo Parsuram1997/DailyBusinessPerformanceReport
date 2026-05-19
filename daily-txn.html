@@ -417,6 +417,10 @@
                                 class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl outline-none text-sm font-bold transition-all shadow-sm">
                         </div>
                         <div class="flex items-center gap-1.5">
+                            <button id="toggle-checking-mode-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs" title="Toggle Checking Mode">
+                                <span class="material-symbols-outlined text-sm">fact_check</span>
+                                <span class="hidden sm:inline">Checking Mode</span>
+                            </button>
                             <button id="download-pdf-btn" class="size-10 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20" title="Download PDF">
                                 <span class="material-symbols-outlined">picture_as_pdf</span>
                             </button>
@@ -666,12 +670,50 @@
                 </div>
 
 
+                <!-- Checking Mode Controls -->
+                <div id="checking-mode-controls" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20 shadow-lg shadow-emerald-500/5 p-3 mb-4 flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 divide-x divide-slate-200 dark:divide-slate-700">
+                        <div class="flex items-center gap-2 px-2">
+                            <span class="material-symbols-outlined text-emerald-500">fact_check</span>
+                            <span class="text-sm font-black text-slate-800 dark:text-white">Checking Mode</span>
+                        </div>
+                        <div class="flex items-center gap-3 pl-4">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-500 uppercase">Checked</span>
+                                <span id="checking-checked-count" class="text-sm font-black text-emerald-600">0</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-500 uppercase">Pending</span>
+                                <span id="checking-pending-count" class="text-sm font-black text-amber-500">0</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-500 uppercase">Total</span>
+                                <span id="checking-total-count" class="text-sm font-black text-slate-700 dark:text-slate-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select id="checking-filter" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+                            <option value="all">Show All</option>
+                            <option value="checked">Checked Only</option>
+                            <option value="pending">Pending Only</option>
+                        </select>
+                        <button id="checking-mark-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">done_all</span> Mark All
+                        </button>
+                        <button id="checking-uncheck-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 font-bold text-xs hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">remove_done</span> Uncheck
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Txn Table -->
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50/50 dark:bg-white/5 border-b border-primary/10">
                                 <tr>
+                                    <th id="checking-col-header" class="hidden px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-12">Chk</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sl No.</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Time</th>
                                     <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</th>
