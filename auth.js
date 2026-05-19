@@ -1,27 +1,64 @@
 // auth.js
+
+// ─── Users & Roles ───────────────────────────────────────────
+const USERS = [
+    { username: 'DNONLINECENTER', password: 'Tongpal@123', role: 'user' },
+    { username: 'Mybusiness',     password: 'Mamta@123',   role: 'admin' }
+];
+
 (function() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    const isIndexPage = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
-    const isPublicTool = window.location.pathname.endsWith('img-to-pdf.html') || window.location.pathname.endsWith('passport-tool.html') || window.location.pathname.endsWith('image-compressor.html') || window.location.pathname.endsWith('daily-txn.html');
+    const role       = sessionStorage.getItem('userRole') || 'user';
+    const isIndexPage   = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
+    const isPublicTool  = window.location.pathname.endsWith('img-to-pdf.html') ||
+                          window.location.pathname.endsWith('passport-tool.html') ||
+                          window.location.pathname.endsWith('image-compressor.html') ||
+                          window.location.pathname.endsWith('daily-txn.html');
+    const isSettingsPage = window.location.pathname.endsWith('settings-code.html');
 
+    // Not logged in → redirect to login (except public tools)
     if (!isLoggedIn && !isIndexPage && !isPublicTool) {
         window.location.replace('index.html');
-    } else if (isLoggedIn && isIndexPage) {
+        return;
+    }
+
+    // Already logged in → skip login page
+    if (isLoggedIn && isIndexPage) {
         window.location.replace('dashboard-code.html');
+        return;
+    }
+
+    // Settings page → only admin allowed
+    if (isLoggedIn && isSettingsPage && role !== 'admin') {
+        window.location.replace('dashboard-code.html');
+        return;
+    }
+
+    // Hide settings nav links for non-admin users after DOM loads
+    if (isLoggedIn && role !== 'admin') {
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('a[href="settings-code.html"]').forEach(el => {
+                el.style.display = 'none';
+            });
+        });
     }
 })();
 
 function handleLogin(event) {
     if (event) event.preventDefault();
-    const u = document.getElementById('username').value;
+    const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    
+
     // Clear previous error
     const err = document.getElementById('login-error');
     if (err) err.classList.add('hidden');
 
-    if (u === 'DNONLINECENTER' && p === 'Tongpal@123') {
+    const matched = USERS.find(user => user.username === u && user.password === p);
+
+    if (matched) {
         sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('userRole', matched.role);
+        sessionStorage.setItem('username', matched.username);
         window.location.href = 'dashboard-code.html';
     } else {
         if (err) {
@@ -63,6 +100,8 @@ function handleLogout(event) {
     document.getElementById('logout-cancel').addEventListener('click', closeModal);
     document.getElementById('logout-confirm').addEventListener('click', () => {
         sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userRole');
+        sessionStorage.removeItem('username');
         window.location.replace('index.html');
     });
 }
@@ -80,3 +119,5 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', handleLogin);
     }
 });
+
+
