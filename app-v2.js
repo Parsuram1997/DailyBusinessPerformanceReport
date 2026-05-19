@@ -2805,11 +2805,6 @@ async function initCreditLedger() {
                             <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-orange-600 dark:text-orange-400 whitespace-nowrap">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
                             <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
                             <td class="px-4 py-2.5 align-middle text-sm text-slate-600 dark:text-slate-300 font-medium italic">${safeEscape(cr.note || '')}</td>
-                            <td class="px-4 py-2.5 align-middle text-right action-col whitespace-nowrap">
-                                <button onclick="event.stopPropagation(); deleteLedgerCredit('${cr.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Transaction">
-                                    <span class="material-symbols-outlined text-base">delete</span>
-                                </button>
-                            </td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -3149,30 +3144,62 @@ async function initCreditLedger() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
             if (deleteId && deleteType) {
-                confirmDeleteBtn.disabled = true;
-                const originalText = confirmDeleteBtn.innerHTML;
-                confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
-                
-                try {
-                    if (deleteType === 'customer') {
-                        await deleteCustomer(deleteId);
-                        showSuccessToast('Customer deleted successfully. 🗑️');
-                    } else {
-                        await deleteCredit(deleteId);
-                        showSuccessToast('Transaction deleted successfully. ✅');
-                    }
+                const performDelete = async () => {
+                    confirmDeleteBtn.disabled = true;
+                    if (cancelDeleteBtn) cancelDeleteBtn.disabled = true;
+                    const originalText = confirmDeleteBtn.innerHTML;
+                    confirmDeleteBtn.innerHTML = '<div class="flex items-center justify-center gap-2"><span class="material-symbols-outlined animate-spin text-lg">sync</span><span>Deleting...</span></div>';
                     
-                    if (deleteModal) deleteModal.classList.add('hidden');
-                    await renderView();
-                } catch (err) {
-                    console.error("Delete error:", err);
-                    showErrorToast('Failed to delete item.');
-                } finally {
-                    confirmDeleteBtn.disabled = false;
-                    confirmDeleteBtn.innerHTML = 'Yes, Delete';
-                    deleteId = null;
-                    deleteType = null;
-                }
+                    try {
+                        if (deleteType === 'customer') {
+                            await deleteCustomer(deleteId);
+                            showSuccessToast('Customer deleted successfully. 🗑️');
+                        } else {
+                            await deleteCredit(deleteId);
+                            showSuccessToast('Transaction deleted successfully. ✅');
+                        }
+                        
+                        if (deleteModal) deleteModal.classList.add('hidden');
+                        await renderView();
+                    } catch (err) {
+                        console.error("Delete error:", err);
+                        const errorModal = document.createElement('div');
+                        errorModal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
+                        errorModal.innerHTML = `
+                            <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp p-8 text-center">
+                                <div class="size-16 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-6">
+                                    <span class="material-symbols-outlined text-4xl">error</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Deletion Failed</h3>
+                                <p class="text-sm text-slate-500 font-medium mb-8">An error occurred while trying to delete.</p>
+                                <div class="flex items-center gap-3">
+                                    <button class="cancel-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                                    <button class="retry-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all">Retry</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(errorModal);
+                        errorModal.querySelector('.cancel-err-btn').onclick = () => {
+                            errorModal.remove();
+                            if (deleteModal) deleteModal.classList.add('hidden');
+                            deleteId = null;
+                            deleteType = null;
+                        };
+                        errorModal.querySelector('.retry-err-btn').onclick = () => {
+                            errorModal.remove();
+                            performDelete();
+                        };
+                    } finally {
+                        confirmDeleteBtn.disabled = false;
+                        if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
+                        confirmDeleteBtn.innerHTML = originalText;
+                        if (deleteModal && deleteModal.classList.contains('hidden')) {
+                            deleteId = null;
+                            deleteType = null;
+                        }
+                    }
+                };
+                performDelete();
             }
         };
     }
@@ -4552,44 +4579,101 @@ async function initBankWithdrawals() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
             if (!deleteTargetId) return;
+            const performDelete = async () => {
+                confirmDeleteBtn.disabled = true;
+                if (cancelDeleteBtn) cancelDeleteBtn.disabled = true;
+                const originalText = confirmDeleteBtn.innerHTML;
+                confirmDeleteBtn.innerHTML = '<div class="flex items-center justify-center gap-2"><span class="material-symbols-outlined animate-spin text-lg">sync</span><span>Deleting...</span></div>';
 
-            confirmDeleteBtn.disabled = true;
-            const originalText = confirmDeleteBtn.innerHTML;
-            confirmDeleteBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm mr-2">sync</span> Deleting...';
+                try {
+                    if (deleteTargetType === 'account') {
+                        // Delete the account
+                        await deleteDoc(doc(db, "bank_accounts", deleteTargetId.toString()));
 
-            try {
-                if (deleteTargetType === 'account') {
-                    // Delete the account
-                    await deleteDoc(doc(db, "bank_accounts", deleteTargetId.toString()));
+                        // Cascading delete: Delete all withdrawals for this account
+                        const allWithdrawals = await loadBankWithdrawals();
+                        const toDelete = allWithdrawals.filter(w => String(w.accountId) === String(deleteTargetId));
+                        console.log(`[Cascading Delete] Removing ${toDelete.length} withdrawals for account ${deleteTargetId}`);
 
-                    // Cascading delete: Delete all withdrawals for this account
-                    const allWithdrawals = await loadBankWithdrawals();
-                    const toDelete = allWithdrawals.filter(w => String(w.accountId) === String(deleteTargetId));
-                    console.log(`[Cascading Delete] Removing ${toDelete.length} withdrawals for account ${deleteTargetId}`);
-
-                    for (const w of toDelete) {
-                        try {
-                            await deleteDoc(doc(db, "bank_withdrawals", String(w.id || w.firebaseId)));
-                        } catch (e) {
-                            console.error(`Failed to delete withdrawal ${w.id}:`, e);
+                        for (const w of toDelete) {
+                            try {
+                                await deleteDoc(doc(db, "bank_withdrawals", String(w.id || w.firebaseId)));
+                            } catch (e) {
+                                console.error(`Failed to delete withdrawal ${w.id}:`, e);
+                            }
                         }
+                    } else {
+                        await deleteBankWithdrawal(deleteTargetId);
                     }
-                } else {
-                    await deleteBankWithdrawal(deleteTargetId);
-                }
 
-                if (deleteModal) deleteModal.classList.add('hidden');
-                await renderView();
-                if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
-            } catch (err) {
-                console.error("Delete error:", err);
-                alert("Failed to delete record.");
-            } finally {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.innerHTML = originalText;
-                deleteTargetId = null;
-                deleteTargetType = null;
-            }
+                    if (deleteModal) deleteModal.classList.add('hidden');
+                    await renderView();
+                    if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
+                    
+                    let container = document.getElementById('txn-toast-container');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'txn-toast-container';
+                        container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+                        document.body.appendChild(container);
+                    }
+                    const toast = document.createElement('div');
+                    toast.className = 'pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 bg-emerald-600/95 dark:bg-emerald-500/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out';
+                    toast.innerHTML = `
+                        <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                            <span class="material-symbols-outlined text-xl font-bold">check_circle</span>
+                        </span>
+                        <div class="flex flex-col leading-tight">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-white/80">SUCCESS</span>
+                            <span class="text-sm font-bold text-white mt-0.5">Record deleted successfully</span>
+                        </div>
+                    `;
+                    container.appendChild(toast);
+                    requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+                    setTimeout(() => {
+                        toast.classList.add('translate-x-full', 'opacity-0');
+                        setTimeout(() => toast.remove(), 350);
+                    }, 4000);
+
+                } catch (err) {
+                    console.error("Delete error:", err);
+                    const errorModal = document.createElement('div');
+                    errorModal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
+                    errorModal.innerHTML = `
+                        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp p-8 text-center">
+                            <div class="size-16 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-6">
+                                <span class="material-symbols-outlined text-4xl">error</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Deletion Failed</h3>
+                            <p class="text-sm text-slate-500 font-medium mb-8">An error occurred while trying to delete.</p>
+                            <div class="flex items-center gap-3">
+                                <button class="cancel-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                                <button class="retry-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all">Retry</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(errorModal);
+                    errorModal.querySelector('.cancel-err-btn').onclick = () => {
+                        errorModal.remove();
+                        if (deleteModal) deleteModal.classList.add('hidden');
+                        deleteTargetId = null;
+                        deleteTargetType = null;
+                    };
+                    errorModal.querySelector('.retry-err-btn').onclick = () => {
+                        errorModal.remove();
+                        performDelete();
+                    };
+                } finally {
+                    confirmDeleteBtn.disabled = false;
+                    if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerHTML = originalText;
+                    if (deleteModal && deleteModal.classList.contains('hidden')) {
+                        deleteTargetId = null;
+                        deleteTargetType = null;
+                    }
+                }
+            };
+            performDelete();
         };
     }
 
@@ -4751,7 +4835,8 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
             const customers = await loadCustomers();
             const customer = customers.find(c => c.name && c.name.trim().toLowerCase() === targetName);
             if (customer) {
-                linkedCredit = existingCredits.find(cr => (cr.description === 'Synced from Daily Txn' || cr.note === newTxn.note.trim() || cr.note?.startsWith(newTxn.note.trim())) && cr.date === newTxn.date && String(cr.customerId) === String(customer.id));
+                // Ensure we do not hijack an existing credit entry that is already linked to another daily transaction
+                linkedCredit = existingCredits.find(cr => !cr.dailyTxnId && (cr.description === 'Synced from Daily Txn' || cr.note === newTxn.note.trim() || cr.note?.startsWith(newTxn.note.trim())) && cr.date === newTxn.date && String(cr.customerId) === String(customer.id));
             }
         }
 
@@ -5040,7 +5125,13 @@ async function initDailyTxn() {
     if (cancelDeleteBtn) cancelDeleteBtn.onclick = hideDeleteModal;
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
-            if (deletingTxnId) {
+            if (!deletingTxnId) return;
+            const performDelete = async () => {
+                confirmDeleteBtn.disabled = true;
+                if (cancelDeleteBtn) cancelDeleteBtn.disabled = true;
+                const originalText = confirmDeleteBtn.innerHTML;
+                confirmDeleteBtn.innerHTML = '<div class="flex items-center justify-center gap-2"><span class="material-symbols-outlined animate-spin text-lg">sync</span><span>Deleting...</span></div>';
+                
                 try {
                     const snap = await getDocs(collection(db, 'daily_transactions'));
                     const targetTxnDoc = snap.docs.find(d => d.id === deletingTxnId);
@@ -5051,10 +5142,67 @@ async function initDailyTxn() {
                         await syncCreditFromDailyTxn(null, deletingTxnId, true);
                         await syncBankWithdrawalFromDailyTxn(null, deletingTxnId, true);
                     }
-                } catch(e) { console.error(e); }
-                await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
-                hideDeleteModal();
-            }
+                    await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
+                    hideDeleteModal();
+                    
+                    let container = document.getElementById('txn-toast-container');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'txn-toast-container';
+                        container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+                        document.body.appendChild(container);
+                    }
+                    const toast = document.createElement('div');
+                    toast.className = 'pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 bg-emerald-600/95 dark:bg-emerald-500/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out';
+                    toast.innerHTML = `
+                        <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                            <span class="material-symbols-outlined text-xl font-bold">check_circle</span>
+                        </span>
+                        <div class="flex flex-col leading-tight">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-white/80">SUCCESS</span>
+                            <span class="text-sm font-bold text-white mt-0.5">Transaction deleted successfully</span>
+                        </div>
+                    `;
+                    container.appendChild(toast);
+                    requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+                    setTimeout(() => {
+                        toast.classList.add('translate-x-full', 'opacity-0');
+                        setTimeout(() => toast.remove(), 350);
+                    }, 4000);
+
+                } catch(e) {
+                    console.error(e);
+                    const errorModal = document.createElement('div');
+                    errorModal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
+                    errorModal.innerHTML = `
+                        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp p-8 text-center">
+                            <div class="size-16 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-6">
+                                <span class="material-symbols-outlined text-4xl">error</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Deletion Failed</h3>
+                            <p class="text-sm text-slate-500 font-medium mb-8">An error occurred while trying to delete the transaction.</p>
+                            <div class="flex items-center gap-3">
+                                <button class="cancel-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                                <button class="retry-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all">Retry</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(errorModal);
+                    errorModal.querySelector('.cancel-err-btn').onclick = () => {
+                        errorModal.remove();
+                        hideDeleteModal();
+                    };
+                    errorModal.querySelector('.retry-err-btn').onclick = () => {
+                        errorModal.remove();
+                        performDelete();
+                    };
+                } finally {
+                    confirmDeleteBtn.disabled = false;
+                    if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerHTML = originalText;
+                }
+            };
+            performDelete();
         };
     }
 
@@ -5274,7 +5422,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY'];
         const remainingTypes = ['AEPS', 'MATM'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -5282,7 +5430,11 @@ async function initDailyTxn() {
 
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
-            if (isCredit || ['DAMAGED_RECOVERY', 'ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value)) {
+            if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                if (providerLabel) providerLabel.innerText = 'Reason';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Reason...';
+                if (amountLabel) amountLabel.innerText = 'Amount';
+            } else if (isCredit || ['DAMAGED_RECOVERY', 'ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
                 if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...');
                 if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : (txnType.value === 'JIO_RECHARGE' ? 'Recharge Amount' : 'Amount');
@@ -5313,7 +5465,11 @@ async function initDailyTxn() {
             Array.from(txnProvider.options).forEach(opt => {
                 if (!opt.value) return; // Skip placeholder
                 
-                if (isAepsMatm) {
+                if (txnType.value === 'FREE_DEPOSIT') {
+                    opt.style.display = ['aeps and deposit', 'matm and deposit', 'Other reason'].includes(opt.value) ? '' : 'none';
+                } else if (txnType.value === 'FREE_WITHDRAWAL') {
+                    opt.style.display = ['transfer and matm', 'transfer and aeps', 'service and withdrawl', 'Other reason'].includes(opt.value) ? '' : 'none';
+                } else if (isAepsMatm) {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
@@ -5876,7 +6032,7 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -5884,6 +6040,81 @@ async function initDailyTxn() {
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
+
+            // --- Summary Confirmation Popup for specific types ---
+            if (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(newTxn.type)) {
+                const formatAmt = (amt) => '₹ ' + parseFloat(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                const formattedAmount = formatAmt(newTxn.amount);
+                const remainingAmt = parseFloat(newTxn.remainingAmount || 0);
+                const remainingColor = remainingAmt >= 500 ? 'text-emerald-600' : 'text-rose-600';
+
+                const result = await Swal.fire({
+                    title: '<span class="text-xl font-black text-slate-800">Confirm Transaction</span>',
+                    html: `
+                        <div class="flex flex-col gap-3 text-left mt-4">
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <span class="text-sm font-semibold text-slate-500">Transaction Type</span>
+                                <span class="text-sm font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${newTxn.type}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <span class="text-sm font-semibold text-slate-500">Customer Name</span>
+                                <span class="text-sm font-bold text-slate-800">${newTxn.note || 'N/A'}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <span class="text-sm font-semibold text-slate-500">Aadhaar/Account</span>
+                                <span class="text-sm font-mono font-bold text-slate-700">${newTxn.extraDetails || 'N/A'}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <span class="text-sm font-semibold text-slate-500">Bank/Provider</span>
+                                <span class="text-sm font-bold text-slate-800">${newTxn.bankName || newTxn.provider || 'N/A'}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <span class="text-sm font-semibold text-slate-500">Charges</span>
+                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500' : 'text-slate-800'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div class="flex flex-col gap-2 mt-2">
+                                <div class="flex justify-between items-center bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                    <span class="text-sm font-bold text-slate-600">Transaction Amount</span>
+                                    <span class="text-2xl font-black text-primary">${formattedAmount}</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                    <span class="text-sm font-bold text-slate-600">Remaining Balance</span>
+                                    <span class="text-lg font-black ${remainingColor}">${formatAmt(remainingAmt)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: '<span class="material-symbols-outlined align-middle text-[18px] mr-1">check_circle</span> Confirm & Save',
+                    cancelButtonText: '<span class="material-symbols-outlined align-middle text-[18px] mr-1">edit</span> Cancel / Edit',
+                    confirmButtonColor: '#7c3aed',
+                    cancelButtonColor: '#64748b',
+                    reverseButtons: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    customClass: {
+                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100',
+                        title: 'pt-2',
+                        confirmButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
+                        cancelButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
+                        actions: 'gap-3 mt-6'
+                    }
+                });
+
+                if (!result.isConfirmed) {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return; // Abort save
+                }
+                
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Saving...';
+                }
+            }
+            // --- End Summary Confirmation Popup ---
 
             console.log('Attempting to ' + (editingTxnId ? 'update' : 'add') + ' doc in Firestore:', newTxn);
             const txnCollection = collection(db, 'daily_transactions');
@@ -6664,9 +6895,14 @@ async function initDailyTxn() {
                         ${accName ? `
                             <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
                             ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
-                        ` : `
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
-                        `}
+                        ` : (
+                            (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txn.type)) ? `
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || 'No Name'}</span>
+                                ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
+                            ` : `
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                            `
+                        )}
                         ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
                         ${txn.address || txn.extraDetails ? `
                             <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
