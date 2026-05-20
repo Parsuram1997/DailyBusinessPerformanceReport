@@ -275,187 +275,275 @@
         </div>
 
         <!-- Toggle: Page PIN Protection -->
-        <div class="space-y-4 p-4 rounded-xl border border-amber-100 bg-amber-50/50 dark:bg-amber-500/5 dark:border-amber-500/20">
-            <div class="flex items-center gap-2 mb-2 pb-2 border-b border-amber-100 dark:border-amber-500/10">
+        <div class="space-y-1 p-4 rounded-xl border border-amber-100 bg-amber-50/50 dark:bg-amber-500/5 dark:border-amber-500/20">
+            <div class="flex items-center gap-2 mb-3 pb-2 border-b border-amber-100 dark:border-amber-500/10">
                 <span class="material-symbols-outlined text-amber-600 text-lg font-bold">security</span>
                 <span class="text-xs font-black uppercase text-amber-800 dark:text-amber-400 tracking-wider">PIN Lock Security Controls</span>
             </div>
 
-            <!-- Toggle: Add Entry Protection -->
-            <div class="flex items-center justify-between py-1">
-                <div class="flex flex-col">
+            <!-- Header labels -->
+            <div class="flex items-center justify-end gap-3 mb-2 pr-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-purple-600 w-10 text-center">Admin</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 w-10 text-center">User</span>
+            </div>
+
+            <!-- Add Entry Protection -->
+            <div class="flex items-center justify-between py-2 border-t border-amber-100/50 dark:border-white/5">
+                <div class="flex flex-col flex-1 min-w-0 mr-4">
                     <span class="font-bold text-sm text-slate-900 dark:text-white">Add Entry Page Protection</span>
                     <span class="text-[11px] text-slate-500">Lock the page where new daily logs are entered.</span>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="toggle-pin-add-entry" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                </label>
+                <div class="flex items-center gap-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-pin-add-entry" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="user-toggle-pin-add-entry" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
             </div>
 
-            <!-- Toggle: Daily Txn Protection -->
-            <div class="flex items-center justify-between py-1 border-t border-slate-100 dark:border-white/5">
-                <div class="flex flex-col">
+            <!-- Daily Txn Protection -->
+            <div class="flex items-center justify-between py-2 border-t border-amber-100/50 dark:border-white/5">
+                <div class="flex flex-col flex-1 min-w-0 mr-4">
                     <span class="font-bold text-sm text-slate-900 dark:text-white">Daily Transactions Page Protection</span>
                     <span class="text-[11px] text-slate-500">Lock the live transactions ledger and entry lists.</span>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="toggle-pin-daily-txn" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                </label>
+                <div class="flex items-center gap-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-pin-daily-txn" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="user-toggle-pin-daily-txn" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
             </div>
 
-            <!-- Toggle: Settings Page Protection -->
-            <div class="flex items-center justify-between py-1 border-t border-slate-100 dark:border-white/5">
-                <div class="flex flex-col">
+            <!-- Settings Page Protection -->
+            <div class="flex items-center justify-between py-2 border-t border-amber-100/50 dark:border-white/5">
+                <div class="flex flex-col flex-1 min-w-0 mr-4">
                     <span class="font-bold text-sm text-slate-900 dark:text-white">Settings Page Protection</span>
                     <span class="text-[11px] text-slate-500">Lock the configuration, displays and administrative controls.</span>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="toggle-pin-settings" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-                </label>
+                <div class="flex items-center gap-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-pin-settings" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                    <label class="relative inline-flex items-center cursor-pointer" title="User cannot access Settings (admin only)">
+                        <input type="checkbox" id="user-toggle-pin-settings" class="sr-only peer" disabled>
+                        <div class="w-10 h-5 bg-slate-100 dark:bg-slate-800 rounded-full opacity-40 cursor-not-allowed"></div>
+                    </label>
+                </div>
             </div>
         </div>
 
         <div class="pt-4 border-t border-primary/5">
-            <p class="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-4">Display Controls</p>
+            <p class="text-[10px] font-bold text-primary/40 uppercase tracking-widest mb-1">Display Controls</p>
+            <!-- Admin/User column header -->
+            <div class="flex items-center justify-end gap-3 mt-3 mb-2 pr-1">
+                <span class="text-[10px] font-black uppercase tracking-widest text-purple-600 w-10 text-center">Admin</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 w-10 text-center">User</span>
+            </div>
         </div>
 
-        <!-- Toggle: Summary Area -->
+        <!-- Helper macro: each display toggle row now has admin + user toggle -->
+
+        <!-- Volume Badges Area -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 dark:bg-primary/5">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary">analytics</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-primary shrink-0">analytics</span>
                 <div>
                     <p class="font-bold text-sm">Volume Badges Area</p>
                     <p class="text-xs text-slate-500">Show/hide the Transaction Volume section (AEPS, MATM, Recharge counts).</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-summary-area" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-summary-area" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Balances Grid Area -->
+        <!-- Balance Summary Grid -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-violet-100 bg-violet-50 dark:bg-violet-500/5 dark:border-violet-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-violet-600">dashboard</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-violet-600 shrink-0">dashboard</span>
                 <div>
                     <p class="font-bold text-sm">Balance Summary Grid</p>
                     <p class="text-xs text-slate-500">Show/hide the Cash, Online, Roinet, Jio etc. balance grid cards.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-balances-grid" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-balances-grid" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-balances-grid" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Balance Column -->
+        <!-- Balance C/O Column -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-indigo-600">account_balance_wallet</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-indigo-600 shrink-0">account_balance_wallet</span>
                 <div>
                     <p class="font-bold text-sm">Balance (C/O) Column</p>
                     <p class="text-xs text-slate-500">Show/hide the running balance carry-over column in the transactions table.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-balance-col" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-balance-col" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-balance-col" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Balance +/- Diff -->
+        <!-- Balance +/- Diff -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-teal-100 bg-teal-50 dark:bg-teal-500/5 dark:border-teal-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-teal-600">difference</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-teal-600 shrink-0">difference</span>
                 <div>
                     <p class="font-bold text-sm">Balance +/- Diff</p>
                     <p class="text-xs text-slate-500">Show how much was added or subtracted (+/-) in the balance column for each transaction.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-balance-diff" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-balance-diff" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-balance-diff" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Delete Button -->
+        <!-- Table Delete Button -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-rose-600">delete</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-rose-600 shrink-0">delete</span>
                 <div>
                     <p class="font-bold text-sm">Table Delete Button</p>
                     <p class="text-xs text-slate-500">Show/hide the delete action button in the transactions table.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-delete-btn" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-delete-btn" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-delete-btn" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Charges Column -->
+        <!-- Charges Column -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-emerald-100 bg-emerald-50 dark:bg-emerald-500/5 dark:border-emerald-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-emerald-600">payments</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-emerald-600 shrink-0">payments</span>
                 <div>
                     <p class="font-bold text-sm">Charges Column</p>
                     <p class="text-xs text-slate-500">Show/hide the charges column in the transactions table.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-charges-col" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-charges-col" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-charges-col" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Credit Ledger Actions Column -->
+        <!-- Credit Ledger Action Buttons -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-sky-100 bg-sky-50 dark:bg-sky-500/5 dark:border-sky-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-sky-600">toggle_on</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-sky-600 shrink-0">toggle_on</span>
                 <div>
                     <p class="font-bold text-sm">Credit Ledger Action Buttons</p>
                     <p class="text-xs text-slate-500">Show/hide the View Details and Delete action buttons on the Credit Ledger page.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-credit-actions" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-credit-actions" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-credit-actions" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Open Daily Txn in New Tab -->
+        <!-- Open Daily Txn in New Tab -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-blue-600">open_in_new</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-blue-600 shrink-0">open_in_new</span>
                 <div>
                     <p class="font-bold text-sm">Open Daily Txn in New Tab</p>
                     <p class="text-xs text-slate-500">When enabled, Daily Transactions page will open in a new window/tab.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-dtxn-new-tab" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-dtxn-new-tab" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-dtxn-new-tab" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
         </div>
 
-        <!-- Toggle: Hide Daily Txn on Login Page -->
-        <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20 mt-4">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-indigo-600">visibility_off</span>
+        <!-- Hide Daily Txn on Login -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-indigo-600 shrink-0">visibility_off</span>
                 <div>
                     <p class="font-bold text-sm">Hide Daily Txn on Login</p>
                     <p class="text-xs text-slate-500">Hide the Daily Txn shortcut button from the public login page.</p>
                 </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggle-hide-public-dtxn" class="sr-only peer">
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-hide-public-dtxn" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer" title="This is a global setting">
+                    <input type="checkbox" id="user-toggle-hide-public-dtxn" class="sr-only peer" disabled>
+                    <div class="w-10 h-5 bg-slate-100 dark:bg-slate-800 rounded-full opacity-40 cursor-not-allowed"></div>
+                </label>
+            </div>
         </div>
+
+
+
 
         <!-- Danger Zone -->
         <div class="pt-6 mt-2 border-t border-rose-100 dark:border-rose-900/30">
@@ -784,7 +872,54 @@ if (hidePublicDtxnToggle) {
         saveGlobalSettings();
     });
 }
-</script>
+
+// ─── USER ACCESS TOGGLES ─────────────────────────────────────
+// Keys: user_<setting>  → controls what the non-admin (DNONLINECENTER) sees
+const USER_TOGGLE_MAP = [
+    { id: 'user-toggle-pin-add-entry',   key: 'user_pin_add_entry' },
+    { id: 'user-toggle-pin-daily-txn',   key: 'user_pin_daily_txn' },
+    { id: 'user-toggle-summary-area',    key: 'user_dtxn_showSummary' },
+    { id: 'user-toggle-balances-grid',   key: 'user_dtxn_showBalancesGrid' },
+    { id: 'user-toggle-balance-col',     key: 'user_dtxn_showBalance' },
+    { id: 'user-toggle-balance-diff',    key: 'user_dtxn_showBalanceDiff' },
+    { id: 'user-toggle-delete-btn',      key: 'user_dtxn_showDelete' },
+    { id: 'user-toggle-charges-col',     key: 'user_dtxn_showCharges' },
+    { id: 'user-toggle-credit-actions',  key: 'user_CREDIT_LEDGER_SHOW_ACTIONS' },
+    { id: 'user-toggle-dtxn-new-tab',    key: 'user_dtxn_openInNewTab' },
+];
+
+function applyUserTogglesToUI() {
+    USER_TOGGLE_MAP.forEach(({ id, key }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const val = localStorage.getItem(key);
+        // Default: user gets same as admin (true) if not set
+        el.checked = val === null ? true : val === 'true';
+    });
+}
+
+function saveUserToggle(key, value) {
+    localStorage.setItem(key, value);
+    // Also push to Firestore under user_settings sub-key
+    if (window.saveAppSettings) {
+        window.saveAppSettings({ [key]: value });
+    }
+}
+
+USER_TOGGLE_MAP.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => saveUserToggle(key, el.checked));
+});
+
+// Load user toggles on page ready
+applyUserTogglesToUI();
+
+// Also re-apply if Firestore syncs
+window.addEventListener('appSettingsUpdated', () => {
+    applyUserTogglesToUI();
+});
+
 </body>
 </html>
 

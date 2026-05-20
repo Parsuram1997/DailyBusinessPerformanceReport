@@ -874,9 +874,10 @@
     <script>
     // Apply Daily Txn Display Preferences from Settings
     (function() {
-        const showSummary = localStorage.getItem('dtxn_showSummary') !== 'false';
-        const showBalancesGrid = localStorage.getItem('dtxn_showBalancesGrid') !== 'false';
-        const showBalance = localStorage.getItem('dtxn_showBalance') !== 'false';
+        const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+        const showSummary = getSetting('dtxn_showSummary', true);
+        const showBalancesGrid = getSetting('dtxn_showBalancesGrid', true);
+        const showBalance = getSetting('dtxn_showBalance', true);
 
         // Volume Badges area
         const summaryArea = document.getElementById('summary-badges-area');
@@ -901,7 +902,7 @@
         }
 
         // Charges Column
-        const showCharges = localStorage.getItem('dtxn_showCharges') !== 'false';
+        const showCharges = getSetting('dtxn_showCharges', true);
         const chargesHeader = document.getElementById('charges-col-header');
         if (!showCharges) {
             if (chargesHeader) chargesHeader.style.display = 'none';
@@ -911,7 +912,7 @@
         }
 
         // Table Delete Button
-        const showDelete = localStorage.getItem('dtxn_showDelete') !== 'false';
+        const showDelete = getSetting('dtxn_showDelete', true);
         if (!showDelete) {
             const style = document.createElement('style');
             style.textContent = '.delete-txn-btn { display: none !important; }';

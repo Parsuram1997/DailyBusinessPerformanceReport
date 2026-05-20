@@ -147,4 +147,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Role-based global settings helper
+window.getAppSetting = function(key, defaultValue = true) {
+    const role = sessionStorage.getItem('userRole') || 'user';
+    let effectiveKey = key;
+    if (role === 'user') {
+        if (key === 'security_pin_enabled_add_entry') {
+            effectiveKey = 'user_pin_add_entry';
+        } else if (key === 'security_pin_enabled_daily_txn') {
+            effectiveKey = 'user_pin_daily_txn';
+        } else {
+            effectiveKey = 'user_' + key;
+        }
+    }
+    const val = localStorage.getItem(effectiveKey);
+    if (val === null) {
+        if (role === 'user') {
+            const globalVal = localStorage.getItem(key);
+            if (globalVal !== null) {
+                return globalVal !== 'false';
+            }
+        }
+        return defaultValue;
+    }
+    return val !== 'false';
+};
+
 

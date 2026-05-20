@@ -2637,7 +2637,8 @@ async function initCreditLedger() {
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
 
-                const showActions = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+                const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+                const showActions = getSetting('CREDIT_LEDGER_SHOW_ACTIONS', true);
                 const actionTh = document.getElementById('ledger-action-th');
                 if (actionTh) {
                     if (showActions) actionTh.classList.remove('hidden');
@@ -6745,7 +6746,8 @@ async function initDailyTxn() {
         // Now filter the table data
         const txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : (currentTxnFilter === 'PENDING' ? allTxnsForDate.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : allTxnsForDate.filter(t => t.type === currentTxnFilter));
         
-        const showBalanceDiff = localStorage.getItem('dtxn_showBalanceDiff') !== 'false';
+        const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+        const showBalanceDiff = getSetting('dtxn_showBalanceDiff', true);
 
         const countableIds = countableTxns.map(t => t.id);
 

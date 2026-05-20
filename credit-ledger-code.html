@@ -529,7 +529,8 @@
 
             document.addEventListener('DOMContentLoaded', () => {
                 const checkbox = document.getElementById('toggle-actions-checkbox');
-                const showActions = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+                const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+                const showActions = getSetting('CREDIT_LEDGER_SHOW_ACTIONS', true);
                 if (checkbox) checkbox.checked = showActions;
             });
 

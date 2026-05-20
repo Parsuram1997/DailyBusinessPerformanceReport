@@ -124,6 +124,17 @@ function initGlobalSettings() {
             checkAndSet('CREDIT_LEDGER_SHOW_ACTIONS', data.CREDIT_LEDGER_SHOW_ACTIONS);
             checkAndSet('dtxn_openInNewTab', data.dtxn_openInNewTab);
             checkAndSet('HIDE_PUBLIC_DAILY_TXN', data.HIDE_PUBLIC_DAILY_TXN);
+            // User-specific access controls
+            checkAndSet('user_pin_add_entry', data.user_pin_add_entry);
+            checkAndSet('user_pin_daily_txn', data.user_pin_daily_txn);
+            checkAndSet('user_dtxn_showSummary', data.user_dtxn_showSummary);
+            checkAndSet('user_dtxn_showBalancesGrid', data.user_dtxn_showBalancesGrid);
+            checkAndSet('user_dtxn_showBalance', data.user_dtxn_showBalance);
+            checkAndSet('user_dtxn_showBalanceDiff', data.user_dtxn_showBalanceDiff);
+            checkAndSet('user_dtxn_showDelete', data.user_dtxn_showDelete);
+            checkAndSet('user_dtxn_showCharges', data.user_dtxn_showCharges);
+            checkAndSet('user_CREDIT_LEDGER_SHOW_ACTIONS', data.user_CREDIT_LEDGER_SHOW_ACTIONS);
+            checkAndSet('user_dtxn_openInNewTab', data.user_dtxn_openInNewTab);
 
             if (changed) {
                 window.dispatchEvent(new Event('appSettingsUpdated'));
@@ -3081,7 +3092,8 @@ async function initCreditLedger() {
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
 
-                const showActions = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+                const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+                const showActions = getSetting('CREDIT_LEDGER_SHOW_ACTIONS', true);
                 const actionTh = document.getElementById('ledger-action-th');
                 if (actionTh) {
                     if (showActions) actionTh.classList.remove('hidden');
@@ -5294,7 +5306,8 @@ function protectPrivilegedLinks() {
 
     document.querySelectorAll(selectors).forEach(link => {
         link.addEventListener('click', (e) => {
-            const dtxnOpenInNewTab = localStorage.getItem('dtxn_openInNewTab') === 'true';
+            const getSetting = window.getAppSetting || ((k, d) => d);
+            const dtxnOpenInNewTab = getSetting('dtxn_openInNewTab', false);
 
             const targetHref = link.getAttribute('href') || link.getAttribute('data-page');
             let routeName = 'Add Entry';
@@ -5307,7 +5320,7 @@ function protectPrivilegedLinks() {
                 pinEnabledKey = 'security_pin_enabled_daily_txn';
             }
 
-            const pinEnabled = localStorage.getItem(pinEnabledKey) !== 'false';
+            const pinEnabled = getSetting(pinEnabledKey, true);
 
             if (pinEnabled) {
                 e.preventDefault();
@@ -5562,7 +5575,8 @@ async function initDailyTxn() {
         if (backBtnBottom) backBtnBottom.classList.remove('hidden');
 
         // Force PIN check if not unlocked this session
-        const pinEnabled = localStorage.getItem('security_pin_enabled_daily_txn') !== 'false';
+        const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+        const pinEnabled = getSetting('security_pin_enabled_daily_txn', true);
         if (!isUnlocked && pinEnabled) {
             // Hide main content until unlocked
             const mainContent = document.querySelector('main');
@@ -7326,7 +7340,8 @@ async function initDailyTxn() {
             .filter(t => !excludedTypes.includes(t.type))
             .map(t => t.id); // already sorted latest-first
 
-        const showBalanceDiff = localStorage.getItem('dtxn_showBalanceDiff') !== 'false';
+        const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+        const showBalanceDiff = getSetting('dtxn_showBalanceDiff', true);
 
         const parseBankUrn = (txn) => {
             if (!txn.bankName) return { accName: '', accNumber: '', bankDisplay: '', typeDisplay: '' };
@@ -7386,6 +7401,7 @@ async function initDailyTxn() {
 
         txnsToRender.forEach((txn, index) => {
             const tr = document.createElement('tr');
+            tr.dataset.id = txn.id;
             tr.className = `hover:bg-primary/5 transition-colors group ${window.isCheckingMode && txn.checked ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-l-2 border-emerald-500' : ''}`;
 
             const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
@@ -8091,17 +8107,18 @@ async function initDailyTxn() {
     const downloadExcelBtn = document.getElementById('download-excel-btn');
 
     const getExportData = () => {
-        const tableBody = document.getElementById('daily-txn-body');
+        const tableBody = document.getElementById('daily-txn-table-body');
         const rows = tableBody ? Array.from(tableBody.querySelectorAll('tr.group')) : [];
-        const visibleRows = rows.map(r => r.style.display !== 'none');
         
-        // Ensure mapping is exact. If mismatch, fallback to all.
-        const filteredTxns = (visibleRows.length === currentTxnsForDownload.length) 
-            ? currentTxnsForDownload.filter((_, i) => visibleRows[i])
-            : currentTxnsForDownload;
+        const visibleIds = new Set(
+            rows.filter(r => r.style.display !== 'none' && r.dataset.id)
+                .map(r => String(r.dataset.id))
+        );
+        
+        const filteredTxns = currentTxnsForDownload.filter(t => visibleIds.has(String(t.id)));
 
-        const isChargesHidden = document.getElementById('charges-col-header')?.style.display === 'none';
-        const isBalanceHidden = document.getElementById('balance-col-header')?.style.display === 'none';
+        const isChargesHidden = window.getAppSetting ? !window.getAppSetting('dtxn_showCharges', true) : (document.getElementById('charges-col-header')?.style.display === 'none');
+        const isBalanceHidden = window.getAppSetting ? !window.getAppSetting('dtxn_showBalance', true) : (document.getElementById('balance-col-header')?.style.display === 'none');
 
         return { filteredTxns, isChargesHidden, isBalanceHidden };
     };
