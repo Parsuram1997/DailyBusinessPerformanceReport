@@ -251,7 +251,7 @@
             </p>
         </div>
     </div>
-    <button id="btn-unlock-dtxn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wider shrink-0 group-hover:bg-primary">
+    <button type="button" id="btn-unlock-dtxn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wider shrink-0 group-hover:bg-primary">
         <span class="material-symbols-outlined text-sm">key</span> Unlock Section
     </button>
 </div>
@@ -756,38 +756,58 @@ pinDigits.forEach((input, index) => {
 });
 
 // Unlock Logic
-compactLockCard.addEventListener('click', () => {
-    pinModal.classList.remove('hidden');
-    resetSettingsPin();
-});
-unlockBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    pinModal.classList.remove('hidden');
-    resetSettingsPin();
-});
-
-cancelPinBtn.addEventListener('click', () => pinModal.classList.add('hidden'));
-
-submitPinBtn.addEventListener('click', () => {
-    if (pinInput.value === CORRECT_PIN) {
-        compactLockCard.classList.add('hidden');
-        advancedContainer.classList.remove('max-h-0', 'opacity-0', 'overflow-hidden');
-        advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
-        pinModal.classList.add('hidden');
-    } else {
-        pinDigits.forEach(i => {
-            i.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
-            i.value = '';
+try {
+    if (compactLockCard) {
+        compactLockCard.addEventListener('click', (e) => {
+            if (pinModal) pinModal.classList.remove('hidden');
+            resetSettingsPin();
         });
-        updateHiddenPin();
-        pinDigits[0].focus();
-        setTimeout(() => {
-            pinDigits.forEach(i => {
-                i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
-            });
-        }, 1000);
     }
-});
+    
+    if (unlockBtn) {
+        unlockBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (pinModal) pinModal.classList.remove('hidden');
+            resetSettingsPin();
+        });
+    }
+
+    if (cancelPinBtn) {
+        cancelPinBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (pinModal) pinModal.classList.add('hidden');
+        });
+    }
+
+    if (submitPinBtn) {
+        submitPinBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (pinInput && pinInput.value === CORRECT_PIN) {
+                if (compactLockCard) compactLockCard.classList.add('hidden');
+                if (advancedContainer) {
+                    advancedContainer.classList.remove('max-h-0', 'opacity-0', 'overflow-hidden');
+                    advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
+                }
+                if (pinModal) pinModal.classList.add('hidden');
+            } else {
+                pinDigits.forEach(i => {
+                    i.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+                    i.value = '';
+                });
+                updateHiddenPin();
+                if (pinDigits.length > 0) pinDigits[0].focus();
+                setTimeout(() => {
+                    pinDigits.forEach(i => {
+                        i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+                    });
+                }, 1000);
+            }
+        });
+    }
+} catch (error) {
+    console.error("Error in unlock logic:", error);
+}
 
 btnLockAgain.addEventListener('click', () => {
     advancedContainer.classList.remove('max-h-[3000px]', 'opacity-100');
@@ -919,7 +939,7 @@ applyUserTogglesToUI();
 window.addEventListener('appSettingsUpdated', () => {
     applyUserTogglesToUI();
 });
-
+</script>
 </body>
 </html>
 
