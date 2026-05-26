@@ -1243,6 +1243,67 @@
 
     <!-- Modal Functions -->
     <script>
+        
+        function showCustDepositBreakdown() {
+            const modal = document.getElementById('cust-deposit-breakdown-modal');
+            const tableBody = document.getElementById('cust-deposit-breakdown-table-body');
+            const totalEl = document.getElementById('bd-cust-deposit-total');
+            if (!modal || !tableBody) return;
+
+            const breakdown = window._custDepositBreakdown || {};
+            const customers = Object.keys(breakdown).sort();
+            
+            let html = '';
+            let totalIn = 0;
+            let totalOut = 0;
+            let totalBal = 0;
+
+            if (customers.length === 0) {
+                html = `<tr><td colspan="4" class="px-3 py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">No customer deposits recorded today</td></tr>`;
+            } else {
+                customers.forEach(cat => {
+                    const data = breakdown[cat];
+                    const inAmt = data.in || 0;
+                    const outAmt = data.out || 0;
+                    const balAmt = inAmt - outAmt;
+                    totalIn += inAmt;
+                    totalOut += outAmt;
+                    totalBal += balAmt;
+                    
+                    html += `
+                        <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                            <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10">
+                                <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase truncate" title="${cat}">${cat.length > 15 ? cat.substring(0, 15) + '...' : cat}</p>
+                            </td>
+                            <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <p class="text-[11px] font-black text-emerald-600 dark:text-emerald-400">₹ ${inAmt.toLocaleString('en-IN')}</p>
+                            </td>
+                            <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <p class="text-[11px] font-black text-rose-600 dark:text-rose-400">₹ ${outAmt.toLocaleString('en-IN')}</p>
+                            </td>
+                            <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <p class="text-xs font-black ${balAmt >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}">₹ ${balAmt.toLocaleString('en-IN')}</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            tableBody.innerHTML = html;
+            totalEl.innerHTML = `<span class="text-[10px] text-slate-500 mr-2">In: ₹${totalIn.toLocaleString('en-IN')} | Out: ₹${totalOut.toLocaleString('en-IN')}</span> ₹ ${totalBal.toLocaleString('en-IN')}`;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCustDepositBreakdown() {
+            const modal = document.getElementById('cust-deposit-breakdown-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
         function showExpenseBreakdown() {
             const modal = document.getElementById('expense-breakdown-modal');
             const tableBody = document.getElementById('expense-breakdown-table-body');
@@ -1334,6 +1395,7 @@
             if (e.key === 'Escape') {
                 closeRoinetBreakdown();
                 closeExpenseBreakdown();
+                closeCustDepositBreakdown();
             }
         });
     </script>

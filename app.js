@@ -6911,6 +6911,7 @@ async function initDailyTxn() {
             };
             const lastRoinetChanges = { roinet: 0, airtel: 0, spicemoney: 0, total: 0 };
             const expenseBreakdown = {};
+            const custDepositBreakdown = {};
 
             // Ensure chronological order for "Last Change" tracking
             const sortedTxns = [...txns].sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
@@ -7182,6 +7183,7 @@ async function initDailyTxn() {
                 }
             };
             window._expenseBreakdown = expenseBreakdown;
+            window._custDepositBreakdown = custDepositBreakdown;
         } catch (err) {
             console.error('Error updating daily balances:', err);
         }
