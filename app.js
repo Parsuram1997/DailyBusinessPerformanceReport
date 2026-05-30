@@ -7045,6 +7045,8 @@ async function initDailyTxn() {
                     if (provider === 'cash') balances.cash -= amt;
                     else balances.online -= amt;
                     balances.expense += amt;
+                    const expCat = (t.note || 'Daily Expense').trim() || 'Daily Expense';
+                    expenseBreakdown[expCat] = (expenseBreakdown[expCat] || 0) + amt;
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     balances.cash -= amt;
                     balances.damaged += amt;
@@ -7089,6 +7091,7 @@ async function initDailyTxn() {
                     else if (provider.includes('jio')) balances.jio -= totalDeduction;
                     else balances.online -= totalDeduction;
                     balances.expense += chg;
+                    if (chg > 0) expenseBreakdown['Settlement Charges'] = (expenseBreakdown['Settlement Charges'] || 0) + chg;
                 } else if (t.type === 'ONLINE_WORK') {
                     balances.online -= amt;
                     if (provider === 'cash') balances.cash += amt;
