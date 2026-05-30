@@ -1083,6 +1083,66 @@
         </div>
     </div>
 
+    <!-- Customer Deposit Breakdown Modal -->
+    <div id="cust-deposit-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-600">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined">account_balance_wallet</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-black text-lg leading-none">Customer Deposit</h3>
+                        <p class="text-white/70 text-[10px] uppercase tracking-widest font-bold mt-1">Per Customer Breakdown</p>
+                    </div>
+                </div>
+                <button onclick="closeCustDepositBreakdown()" class="size-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-separate border-spacing-y-2">
+                        <thead>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="px-3 pb-2">Customer</th>
+                                <th class="px-3 pb-2 text-right text-emerald-600 dark:text-emerald-400">Money In</th>
+                                <th class="px-3 pb-2 text-right text-rose-500 dark:text-rose-400">Money Out</th>
+                                <th class="px-3 pb-2 text-right">Net</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cust-deposit-breakdown-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-teal-500 rounded-2xl overflow-hidden shadow-lg shadow-teal-200 dark:shadow-none">
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-teal-400">
+                                    <p class="text-[10px] font-black text-white uppercase">Net Balance</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-teal-400 text-right">
+                                    <p id="bd-cust-total-in" class="text-xs font-black text-white/80">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-teal-400 text-right">
+                                    <p id="bd-cust-total-out" class="text-xs font-black text-white/80">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-teal-400 text-right">
+                                    <p id="bd-cust-total-net" class="text-sm font-black text-white">₹ 0</p>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-white/5 text-center">
+                <button onclick="closeCustDepositBreakdown()" class="px-8 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">
+                    Got It
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Expense Breakdown Modal -->
     <div id="expense-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">

@@ -6923,16 +6923,6 @@ async function initDailyTxn() {
 
                 const prevBals = { ...balances };
 
-                // Expense Breakdown Tracking
-                if (t.type === 'DAILY_EXPENSE') {
-                    const category = (t.note || 'Other').toUpperCase();
-                    expenseBreakdown[category] = (expenseBreakdown[category] || 0) + amt;
-                } else if (t.type === 'GOLD_SIP') {
-                    expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
-                } else if (t.type === 'SETTLEMENT' && chg > 0) {
-                    expenseBreakdown['SETTLEMENT CHARGES'] = (expenseBreakdown['SETTLEMENT CHARGES'] || 0) + chg;
-                }
-
                 if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
                     // Commission goes to wallet only, skip global cash/online update
                 } else {
@@ -7028,6 +7018,7 @@ async function initDailyTxn() {
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
+                    expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
                     if (provider === 'cash') balances.cash -= amt;
                     else balances.online -= amt;
@@ -7040,10 +7031,16 @@ async function initDailyTxn() {
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
                     balances['cust-deposit'] += amt;
+                    const nameIn = (t.note || 'Unknown').trim();
+                    if (!custDepositBreakdown[nameIn]) custDepositBreakdown[nameIn] = { in: 0, out: 0 };
+                    custDepositBreakdown[nameIn].in += amt;
                 } else if (t.type === 'CUST_MONEY_OUT') {
                     if (provider === 'cash') balances.cash -= amt;
                     else balances.online -= amt;
                     balances['cust-deposit'] -= amt;
+                    const nameOut = (t.note || 'Unknown').trim();
+                    if (!custDepositBreakdown[nameOut]) custDepositBreakdown[nameOut] = { in: 0, out: 0 };
+                    custDepositBreakdown[nameOut].out += amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider === 'cash') balances.cash -= amt;
                     else balances.online -= amt;
