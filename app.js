@@ -2633,7 +2633,7 @@ async function initCalculator() {
 
     if (btnUseCash) {
                 btnUseCash.onclick = () => {
-            const totalText = totalValDisplay.innerText.replace(/[₹,]/g, '');
+            const totalText = totalValDisplay.innerText.replace(/[^0-9.-]+/g, '');
             const finalAmount = parseFloat(totalText);
             if (finalAmount > 0) {
                 // Add Validation
