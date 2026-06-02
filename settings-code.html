@@ -857,15 +857,16 @@ function getBrowserLabel(ua) {
     return 'Browser';
 }
 
-function formatTime(ts) {
-    if (!ts) return 'Unknown';
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffSec = Math.floor(diffMs / 1000);
+function formatTime(s) {
+    // Use lastSeenMs (plain number) as primary, Firestore Timestamp as fallback
+    const ms = s.lastSeenMs || (s.lastSeen?.toDate ? s.lastSeen.toDate().getTime() : 0);
+    if (!ms) return 'Unknown';
+    const now = Date.now();
+    const diffSec = Math.floor((now - ms) / 1000);
     if (diffSec < 10) return 'Just now';
     if (diffSec < 60) return `${diffSec}s ago`;
     if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    const d = new Date(ms);
     return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -875,9 +876,10 @@ function renderDevices(sessions) {
     if (!list || !countEl) return;
 
     // Filter active: last heartbeat within 5 minutes
+    // Use lastSeenMs (plain number) first, then fallback to Firestore Timestamp
     const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
     const active = sessions.filter(s => {
-        const ts = s.lastSeen?.toDate ? s.lastSeen.toDate().getTime() : (s.lastSeen || 0);
+        const ts = s.lastSeenMs || (s.lastSeen?.toDate ? s.lastSeen.toDate().getTime() : 0);
         return ts > fiveMinsAgo;
     });
 
@@ -907,7 +909,7 @@ function renderDevices(sessions) {
         const icon = getDeviceIcon(s.userAgent);
         const deviceLabel = getDeviceLabel(s.userAgent);
         const browserLabel = getBrowserLabel(s.userAgent);
-        const timeLabel = formatTime(s.lastSeen);
+        const timeLabel = formatTime(s);
         const username = s.username || 'Unknown';
         const roleLabel = s.role === 'admin' ? 'Admin' : 'User';
         const roleColor = s.role === 'admin' ? 'text-purple-600 bg-purple-500/10 border-purple-500/20' : 'text-slate-500 bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600';

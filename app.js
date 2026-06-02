@@ -13,7 +13,8 @@ import {
     setDoc,
     getDoc,
     onSnapshot,
-    orderBy
+    orderBy,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Global Dashboard State for Real-Time listeners and Charts
@@ -48,7 +49,7 @@ window._startGlobalEntriesListener();
 // how many devices are currently logged in.
 (function startSessionTracking() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn || !db) return;
+    if (!isLoggedIn) return;
 
     // Generate/retrieve a stable device ID for this browser session
     let deviceId = sessionStorage.getItem('deviceId');
@@ -62,29 +63,34 @@ window._startGlobalEntriesListener();
     const ua = navigator.userAgent;
 
     async function writeHeartbeat() {
+        if (!db) { console.warn('[Session] Firestore db not ready'); return; }
         try {
             await setDoc(doc(db, 'active_sessions', deviceId), {
                 deviceId,
                 username,
                 role,
                 userAgent: ua,
-                lastSeen: new Date(),
+                lastSeen: serverTimestamp(),
+                lastSeenMs: Date.now(),
                 page: window.location.pathname.split('/').pop() || 'index.html'
             });
+            console.log('[Session] Heartbeat written for', deviceId);
         } catch (e) {
-            // Silently fail — non-critical
+            console.error('[Session] Firestore write failed:', e.code, e.message);
         }
     }
 
-    // Write immediately on load, then every 30 seconds
-    writeHeartbeat();
-    const heartbeatInterval = setInterval(writeHeartbeat, 30000);
+    // Delay first write by 2s to let Firebase fully initialize
+    setTimeout(() => {
+        writeHeartbeat();
+        const heartbeatInterval = setInterval(writeHeartbeat, 30000);
 
-    // Remove session on page unload (best-effort)
-    window.addEventListener('beforeunload', () => {
-        clearInterval(heartbeatInterval);
-        try { deleteDoc(doc(db, 'active_sessions', deviceId)).catch(() => {}); } catch (e) {}
-    });
+        // Remove session on page unload (best-effort)
+        window.addEventListener('beforeunload', () => {
+            clearInterval(heartbeatInterval);
+            try { deleteDoc(doc(db, 'active_sessions', deviceId)).catch(() => {}); } catch (e) {}
+        });
+    }, 2000);
 })();
 
 
