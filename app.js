@@ -42,6 +42,52 @@ window._startGlobalEntriesListener = function() {
 };
 window._startGlobalEntriesListener();
 
+// ─── Active Session Tracking ─────────────────────────────────────────────
+// Registers this device in Firestore 'active_sessions' and sends heartbeats
+// every 30s. The Settings page reads this collection in real-time to display
+// how many devices are currently logged in.
+(function startSessionTracking() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn || !db) return;
+
+    // Generate/retrieve a stable device ID for this browser session
+    let deviceId = sessionStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
+        sessionStorage.setItem('deviceId', deviceId);
+    }
+
+    const username = sessionStorage.getItem('username') || 'Unknown';
+    const role = sessionStorage.getItem('userRole') || 'user';
+    const ua = navigator.userAgent;
+
+    async function writeHeartbeat() {
+        try {
+            await setDoc(doc(db, 'active_sessions', deviceId), {
+                deviceId,
+                username,
+                role,
+                userAgent: ua,
+                lastSeen: new Date(),
+                page: window.location.pathname.split('/').pop() || 'index.html'
+            });
+        } catch (e) {
+            // Silently fail — non-critical
+        }
+    }
+
+    // Write immediately on load, then every 30 seconds
+    writeHeartbeat();
+    const heartbeatInterval = setInterval(writeHeartbeat, 30000);
+
+    // Remove session on page unload (best-effort)
+    window.addEventListener('beforeunload', () => {
+        clearInterval(heartbeatInterval);
+        try { deleteDoc(doc(db, 'active_sessions', deviceId)).catch(() => {}); } catch (e) {}
+    });
+})();
+
+
 /**
  * Returns an array of strings representing the input date in various formats used across the app.
  * This is used for Firestore 'in' queries to ensure legacy records are retrieved.

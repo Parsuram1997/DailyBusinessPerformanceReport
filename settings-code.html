@@ -228,6 +228,47 @@
 </section>
 
 
+<!-- Active Devices Section -->
+<div id="active-devices-section" class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-5 md:p-6 border-b border-primary/10">
+        <div class="flex items-center gap-3">
+            <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <span class="material-symbols-outlined text-xl">devices</span>
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-slate-900 dark:text-white">Active Sessions</h4>
+                <p class="text-xs text-slate-500">Devices currently logged in to this dashboard</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div id="active-device-count-badge" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <span class="size-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                <span id="active-device-count" class="text-xs font-black text-emerald-600 dark:text-emerald-400">—</span>
+                <span class="text-xs font-bold text-emerald-600/70 dark:text-emerald-400/70">online</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device List -->
+    <div id="active-devices-list" class="divide-y divide-slate-100 dark:divide-slate-800 min-h-[60px]">
+        <!-- Loading state -->
+        <div id="devices-loading" class="flex items-center justify-center gap-3 py-8 text-slate-400">
+            <svg class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-sm">Loading sessions...</span>
+        </div>
+    </div>
+    
+    <!-- Footer note -->
+    <div class="px-5 md:px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+        <span class="material-symbols-outlined text-slate-400 text-sm">info</span>
+        <p class="text-[11px] text-slate-400">Sessions auto-expire after 5 minutes of inactivity. Heartbeat updates every 30 seconds.</p>
+    </div>
+</div>
+
 <!-- Bulk Data Import (CSV) (Moved to Top) -->
 <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-8">
     <div>
@@ -775,6 +816,163 @@
 </div>
 
 <script type="module" src="app.js"></script>
+
+<!-- Active Devices Real-Time Listener -->
+<script type="module">
+import { db } from './firebase-config.js';
+import {
+    collection, onSnapshot, deleteDoc, doc, query, where, Timestamp
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+// Only show to admin
+const role = sessionStorage.getItem('userRole');
+const currentDeviceId = sessionStorage.getItem('deviceId');
+
+function getDeviceIcon(ua) {
+    ua = (ua || '').toLowerCase();
+    if (/ipad|tablet|android(?!.*mobile)/i.test(ua)) return 'tablet';
+    if (/mobile|iphone|android/i.test(ua)) return 'smartphone';
+    return 'computer';
+}
+
+function getDeviceLabel(ua) {
+    ua = ua || '';
+    if (/iPhone/i.test(ua)) return 'iPhone';
+    if (/iPad/i.test(ua)) return 'iPad';
+    if (/Android/i.test(ua) && /Mobile/i.test(ua)) return 'Android Phone';
+    if (/Android/i.test(ua)) return 'Android Tablet';
+    if (/Windows/i.test(ua)) return 'Windows PC';
+    if (/Mac/i.test(ua)) return 'Mac';
+    if (/Linux/i.test(ua)) return 'Linux';
+    return 'Unknown Device';
+}
+
+function getBrowserLabel(ua) {
+    ua = ua || '';
+    if (/Chrome/i.test(ua) && !/Edge|OPR|Edg/i.test(ua)) return 'Chrome';
+    if (/Firefox/i.test(ua)) return 'Firefox';
+    if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return 'Safari';
+    if (/Edg/i.test(ua)) return 'Edge';
+    if (/OPR/i.test(ua)) return 'Opera';
+    return 'Browser';
+}
+
+function formatTime(ts) {
+    if (!ts) return 'Unknown';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 10) return 'Just now';
+    if (diffSec < 60) return `${diffSec}s ago`;
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderDevices(sessions) {
+    const list = document.getElementById('active-devices-list');
+    const countEl = document.getElementById('active-device-count');
+    if (!list || !countEl) return;
+
+    // Filter active: last heartbeat within 5 minutes
+    const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
+    const active = sessions.filter(s => {
+        const ts = s.lastSeen?.toDate ? s.lastSeen.toDate().getTime() : (s.lastSeen || 0);
+        return ts > fiveMinsAgo;
+    });
+
+    countEl.textContent = active.length;
+
+    if (active.length === 0) {
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center gap-2 py-10 text-slate-400">
+                <span class="material-symbols-outlined text-3xl">device_unknown</span>
+                <span class="text-sm font-medium">No active sessions found</span>
+            </div>
+        `;
+        return;
+    }
+
+    // Sort: current device first, then by lastSeen desc
+    active.sort((a, b) => {
+        if (a.deviceId === currentDeviceId) return -1;
+        if (b.deviceId === currentDeviceId) return 1;
+        const ta = a.lastSeen?.toDate ? a.lastSeen.toDate().getTime() : 0;
+        const tb = b.lastSeen?.toDate ? b.lastSeen.toDate().getTime() : 0;
+        return tb - ta;
+    });
+
+    list.innerHTML = active.map(s => {
+        const isCurrent = s.deviceId === currentDeviceId;
+        const icon = getDeviceIcon(s.userAgent);
+        const deviceLabel = getDeviceLabel(s.userAgent);
+        const browserLabel = getBrowserLabel(s.userAgent);
+        const timeLabel = formatTime(s.lastSeen);
+        const username = s.username || 'Unknown';
+        const roleLabel = s.role === 'admin' ? 'Admin' : 'User';
+        const roleColor = s.role === 'admin' ? 'text-purple-600 bg-purple-500/10 border-purple-500/20' : 'text-slate-500 bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600';
+
+        return `
+            <div class="flex items-center gap-3 px-5 md:px-6 py-4 ${isCurrent ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'} transition-colors group">
+                <!-- Device Icon -->
+                <div class="size-10 rounded-xl ${isCurrent ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">${icon}</span>
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-sm font-bold text-slate-800 dark:text-white truncate">${deviceLabel} · ${browserLabel}</span>
+                        ${isCurrent ? '<span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">This Device</span>' : ''}
+                        <span class="text-[10px] font-black uppercase tracking-widest ${roleColor} border px-2 py-0.5 rounded-full">${roleLabel}</span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-0.5 flex-wrap">
+                        <span class="text-xs text-slate-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">person</span>${username}
+                        </span>
+                        <span class="text-xs text-slate-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">schedule</span>${timeLabel}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Revoke (only admin can revoke non-current sessions) -->
+                ${(role === 'admin' && !isCurrent) ? `
+                <button onclick="revokeSession('${s.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg border border-rose-200 dark:border-rose-500/20 flex items-center gap-1 shrink-0">
+                    <span class="material-symbols-outlined text-sm">logout</span>Revoke
+                </button>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Expose revoke function globally
+window.revokeSession = async function(sessionDocId) {
+    if (!confirm('Revoke this session? The device will be logged out on next page action.')) return;
+    try {
+        await deleteDoc(doc(db, 'active_sessions', sessionDocId));
+    } catch (e) {
+        console.error('Failed to revoke session:', e);
+    }
+};
+
+// Listen to active_sessions collection
+if (db) {
+    const sessionsRef = collection(db, 'active_sessions');
+    onSnapshot(sessionsRef, (snapshot) => {
+        const sessions = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderDevices(sessions);
+    }, (err) => {
+        console.error('Active sessions listener error:', err);
+        const list = document.getElementById('active-devices-list');
+        if (list) list.innerHTML = `<div class="py-6 text-center text-xs text-red-500">Failed to load sessions: ${err.message}</div>`;
+    });
+} else {
+    const list = document.getElementById('active-devices-list');
+    if (list) list.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">Firestore not available.</div>`;
+}
+</script>
+
 <script>
 // Daily Txn Display Settings — localStorage based
 const summaryToggle = document.getElementById('toggle-summary-area');
