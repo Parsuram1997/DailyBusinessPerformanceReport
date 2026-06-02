@@ -263,8 +263,10 @@
                                 <option value="Phonepay">Phonepay</option>
                                 <option value="Gpay">Gpay</option>
                                 <option value="Slice">Slice</option>
-                                <option value="Roinet">Roinet</option>
-                                <option value="Airtel">Airtel</option>
+                                <option value="Roinet(Parsu)">Roinet(Parsu)</option>
+                                <option value="Roinet(Dalai)">Roinet(Dalai)</option>
+                                <option value="Airtel(Parsu)">Airtel(Parsu)</option>
+                                <option value="Airtel(Dalai)">Airtel(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
                                 <option value="Crgb Bc">Crgb Bc</option>
                                 <option value="Yono sbi">Yono sbi</option>
@@ -950,46 +952,76 @@
                     <table class="w-full text-left border-separate border-spacing-y-2">
                         <thead>
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th class="px-3 pb-2">Provider</th>
+                                <th class="px-3 pb-2 text-left">Provider</th>
                                 <th class="px-3 pb-2 text-right">Opening</th>
                                 <th class="px-3 pb-2 text-right">Changes</th>
                                 <th class="px-3 pb-2 text-right">Closing</th>
                             </tr>
                         </thead>
                         <tbody id="breakdown-table-body">
-                            <!-- Roinet Row -->
+                            <!-- Roinet(Parsu) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10">
-                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">ROINET (1+2)</p>
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Roinet(Parsu)</p>
                                 </td>
                                 <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-roinet-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                    <p id="bd-roinet_1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
                                 <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-roinet-chg" class="text-[10px] font-black">₹ 0</p>
+                                    <p id="bd-roinet_1-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
                                 <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-roinet-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                    <p id="bd-roinet_1-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
-                            <!-- Airtel Row -->
+                            <!-- Roinet(Dalai) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10">
-                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">AIRTEL (1+2)</p>
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Roinet(Dalai)</p>
                                 </td>
                                 <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-airtel-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                    <p id="bd-roinet_2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
                                 <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-airtel-chg" class="text-[10px] font-black">₹ 0</p>
+                                    <p id="bd-roinet_2-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
                                 <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
-                                    <p id="bd-airtel-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                    <p id="bd-roinet_2-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                </td>
+                            </tr>
+                            <!-- Airtel(Parsu) Row -->
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Airtel(Parsu)</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_1-chg" class="text-[10px] font-black">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_1-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                </td>
+                            </tr>
+                            <!-- Airtel(Dalai) Row -->
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Airtel(Dalai)</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_2-chg" class="text-[10px] font-black">₹ 0</p>
+                                </td>
+                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                    <p id="bd-airtel_2-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Spice Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10">
+                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">SPICEMONEY</p>
                                 </td>
                                 <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
@@ -1468,8 +1500,8 @@
 
             const fmt = (v) => `₹ ${parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
             const bd = window._roinetBreakdown || { 
-                opening: { roinet: 0, airtel: 0, spicemoney: 0, total: 0 },
-                closing: { roinet: 0, airtel: 0, spicemoney: 0, total: 0 }
+                opening: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 },
+                closing: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 }
             };
 
             const updateRow = (id, op, cl) => {
@@ -1486,8 +1518,10 @@
                 }
             };
 
-            updateRow('roinet', bd.opening.roinet, bd.closing.roinet);
-            updateRow('airtel', bd.opening.airtel, bd.closing.airtel);
+            updateRow('roinet_1', bd.opening.roinet_1, bd.closing.roinet_1);
+            updateRow('roinet_2', bd.opening.roinet_2, bd.closing.roinet_2);
+            updateRow('airtel_1', bd.opening.airtel_1, bd.closing.airtel_1);
+            updateRow('airtel_2', bd.opening.airtel_2, bd.closing.airtel_2);
             updateRow('spice', bd.opening.spicemoney, bd.closing.spicemoney);
             updateRow('total', bd.opening.total, bd.closing.total);
 

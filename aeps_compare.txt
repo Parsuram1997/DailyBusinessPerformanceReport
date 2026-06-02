@@ -1,0 +1,19 @@
+FETCH:
+if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, true);
+                    else if (provider.includes('crgb')) deltas.crgb_bc += amt;
+                    else if (provider.includes('jio')) deltas.jio += amt;
+                    else deltas.online += amt;
+                } else if
+
+UPDATE:
+if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    balances.cash -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet += amt;
+                        lastRoinetChanges.total = amt;
+                    }
+                    else if (provider.includes('crgb')) balances.crgb += amt;
+                    else if (provider.includes('jio')) balances.jio += amt;
+                    else balances.online += amt;
+                } else if

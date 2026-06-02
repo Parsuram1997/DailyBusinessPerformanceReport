@@ -1,0 +1,19 @@
+FETCH:
+if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= amt;
+                    else deltas.online -= amt;
+                    if (t.chargesType === 'Online') deltas.online += amt;
+                } else if
+
+UPDATE:
+if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        updateRoinetBreakdown(provider, -amt);
+                        lastRoinetChanges.total = -amt;
+                    } else {
+                        balances.online -= amt;
+                    }
+                    if (t.chargesType === 'Online') balances.online += amt;
+                    else balances.cash += amt;
+                } else if

@@ -1,0 +1,324 @@
+const updateDailyBalances = async (date, txns = []) => {
+        const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
+        if (!document.getElementById('summary-cash-balance')) return;
+
+        try {
+            // CORRECT: Always look back from the PREVIOUS day for the opening balance
+            // Never use the same day's entry, as that would be today's state, not yesterday's closing
+            const normDate = (dStr) => {
+                if (!dStr) return 0;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                }
+                const parsed = new Date(dStr);
+                return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+            };
+            const selectedTime = normDate(date);
+            const allEntries = [...(window._entriesCache || [])];
+
+            let entryData = {};
+
+            if (allEntries.length > 0) {
+                // Sort descending and find most recent entry BEFORE today
+                allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
+                const prevEntry = allEntries.find(e => normDate(e.date) < selectedTime);
+                if (prevEntry) {
+                    entryData = prevEntry;
+                    console.log(`[Lookback] updateDailyBalances: found ${prevEntry.date} for ${date}`);
+                }
+            }
+
+            // Fallback: Direct Firestore query if cache is empty
+            if (!entryData.date) {
+                const [y, m, d] = date.split('-').map(Number);
+                let lbDate = new Date(y, m - 1, d);
+                const entriesRef = collection(db, "entries");
+                for (let i = 0; i < 7; i++) {
+                    lbDate.setDate(lbDate.getDate() - 1);
+                    const lbStr = lbDate.getFullYear() + '-' + String(lbDate.getMonth() + 1).padStart(2, '0') + '-' + String(lbDate.getDate()).padStart(2, '0');
+                    const lbQueries = getPossibleDateFormats(lbStr);
+                    const lbSnap = await getDocs(query(entriesRef, where("date", "in", lbQueries)));
+                    if (!lbSnap.empty) {
+                        entryData = lbSnap.docs[0].data();
+                        console.log(`[Lookback] updateDailyBalances fallback: found ${lbStr} for ${date}`);
+                        break;
+                    }
+                }
+            }
+            const details = entryData.details || {};
+
+            const balances = {
+                cash: 0,
+                online: 0,
+                roinet: 0,
+                crgb: 0,
+                jio: 0,
+                pending: 0,
+                expense: 0,
+                damaged: 0,
+                'credit-ledger': 0,
+                'cust-deposit': 0
+            };
+
+            const opValues = {
+                cash: details.cash || 0,
+                online: details.online || 0,
+                roinet: details.roinet || 0,
+                jio: details.jio || 0,
+                crgb: details.go2sms || 0,
+                pending: details.pending || 0,
+                expense: 0,
+                damaged: details.damages || 0,
+                'credit-ledger': details.credit || 0,
+                'cust-deposit': details.deposit || 0
+            };
+
+            // Per-provider roinet breakdown tracking
+            const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
+
+            const lastChanges = {
+                cash: 0, online: 0, roinet: 0, crgb: 0, jio: 0,
+                pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
+            };
+            const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
+            const expenseBreakdown = {};
+            const custDepositBreakdown = {};
+
+            const updateRoinetBreakdown = (prov, value) => {
+                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') {
+                    roinetBreakdown.roinet_1 += value;
+                    lastRoinetChanges.roinet_1 = value;
+                } else if (prov.includes('roinet(dalai)') || prov === 'roinet_2') {
+                    roinetBreakdown.roinet_2 += value;
+                    lastRoinetChanges.roinet_2 = value;
+                } else if (prov.includes('airtel(parsu)') || prov === 'airtel_1') {
+                    roinetBreakdown.airtel_1 += value;
+                    lastRoinetChanges.airtel_1 = value;
+                } else if (prov.includes('airtel(dalai)') || prov === 'airtel_2') {
+                    roinetBreakdown.airtel_2 += value;
+                    lastRoinetChanges.airtel_2 = value;
+                } else if (prov.includes('spicemoney')) {
+                    roinetBreakdown.spicemoney += value;
+                    lastRoinetChanges.spicemoney = value;
+                } else {
+                    if (prov.includes('airtel')) {
+                        roinetBreakdown.airtel_1 += value;
+                        lastRoinetChanges.airtel_1 = value;
+                    } else if (prov.includes('spicemoney')) {
+                        roinetBreakdown.spicemoney += value;
+                        lastRoinetChanges.spicemoney = value;
+                    } else {
+                        roinetBreakdown.roinet_1 += value;
+                        lastRoinetChanges.roinet_1 = value;
+                    }
+                }
+                lastRoinetChanges.total = value;
+            };
+
+            // Ensure chronological order for "Last Change" tracking
+            const sortedTxns = [...txns].sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+
+            sortedTxns.forEach(t => {
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                const provider = (t.provider || "").trim().toLowerCase();
+
+                const prevBals = { ...balances };
+
+                if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                    // Commission goes to wallet only, skip global cash/online update
+                } else {
+                    if (t.chargesType === 'Online') balances.online += chg;
+                    else balances.cash += chg;
+                }
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    balances.cash -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet += amt;
+                        lastRoinetChanges.total = amt;
+                    }
+                    else if (provider.includes('crgb')) balances.crgb += amt;
+                    else if (provider.includes('jio')) balances.jio += amt;
+                    else balances.online += amt;
+                } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    balances.cash += amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        updateRoinetBreakdown(provider, -amt);
+                        lastRoinetChanges.total = -amt;
+                    }
+                    else if (provider.includes('crgb')) balances.crgb -= amt;
+                    else if (provider.includes('jio')) balances.jio -= amt;
+                    else balances.online -= amt;
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        updateRoinetBreakdown(provider, -amt);
+                        lastRoinetChanges.total = -amt;
+                    } else {
+                        balances.online -= amt;
+                    }
+                    if (t.chargesType === 'Online') balances.online += amt;
+                    else balances.cash += amt;
+                } else if (t.type === 'JIO_RECHARGE') {
+                    balances.jio -= amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'JIO_TOPUP') {
+                    balances.jio += (amt + chg);
+                    balances.online -= amt;
+                    if (t.chargesType === 'Online') balances.online -= chg;
+                    else balances.cash -= chg;
+                } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
+                    if (provider.includes('crgb')) {
+                        balances.crgb += chg;
+                    } else if (provider.includes('jio')) {
+                        balances.jio += chg;
+                    } else {
+                        balances.roinet += chg;
+                        updateRoinetBreakdown(provider, chg);
+                    }
+                    lastRoinetChanges.total = chg;
+                } else if (t.type === 'GOLD_SIP') {
+                    balances.online -= amt;
+                    balances.expense += amt;
+                    expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
+                } else if (t.type === 'CREDIT_GIVEN') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances['credit-ledger'] += amt;
+                } else if (t.type === 'CREDIT_RECEIVED') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                    balances['credit-ledger'] -= amt;
+                } else if (t.type === 'CUST_MONEY_IN') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                    balances['cust-deposit'] += amt;
+                    const nameIn = (t.note || 'Unknown').trim();
+                    if (!custDepositBreakdown[nameIn]) custDepositBreakdown[nameIn] = { in: 0, out: 0 };
+                    custDepositBreakdown[nameIn].in += amt;
+                } else if (t.type === 'CUST_MONEY_OUT') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances['cust-deposit'] -= amt;
+                    const nameOut = (t.note || 'Unknown').trim();
+                    if (!custDepositBreakdown[nameOut]) custDepositBreakdown[nameOut] = { in: 0, out: 0 };
+                    custDepositBreakdown[nameOut].out += amt;
+                } else if (t.type === 'DAILY_EXPENSE') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                    balances.expense += amt;
+                    const expCat = (t.note || 'Daily Expense').trim() || 'Daily Expense';
+                    expenseBreakdown[expCat] = (expenseBreakdown[expCat] || 0) + amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    balances.cash -= amt;
+                    balances.damaged += amt;
+                } else if (t.type === 'DAMAGED_RECOVERY') {
+                    balances.damaged -= amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else {
+                        balances.online += amt;
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) balances.roinet += amt;
+                        else if (provider.includes('crgb')) balances.crgb += amt;
+                        else if (provider.includes('jio')) balances.jio += amt;
+                    }
+                } else if (t.type === 'CASH_WITHDRAWAL') {
+                    balances.online -= amt;
+                    balances.cash += amt;
+                } else if (t.type === 'CASH_DEPOSIT') {
+                    balances.cash -= amt;
+                    balances.online += amt;
+                } else if (t.type === 'OTHER_INCOME') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'SETTLEMENT') {
+                    balances.online += amt;
+                    if (t.chargesType === 'Online') balances.online -= chg;
+                    else balances.cash -= chg;
+                    const totalDeduction = amt + chg;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= totalDeduction;
+                        updateRoinetBreakdown(provider, -totalDeduction);
+                        lastRoinetChanges.total = -totalDeduction;
+                    }
+                    else if (provider.includes('crgb')) balances.crgb -= totalDeduction;
+                    else if (provider.includes('jio')) balances.jio -= totalDeduction;
+                    else balances.online -= totalDeduction;
+                    balances.expense += chg;
+                    if (chg > 0) expenseBreakdown['Settlement Charges'] = (expenseBreakdown['Settlement Charges'] || 0) + chg;
+                } else if (t.type === 'ONLINE_WORK') {
+                    balances.online -= amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'ADD_CAPITAL') {
+                    if (provider === 'cash') balances.cash += amt;
+                    else balances.online += amt;
+                } else if (t.type === 'SHARE_WITHDRAWN') {
+                    if (provider === 'cash') balances.cash -= amt;
+                    else balances.online -= amt;
+                } else if (t.type === 'PENDING_ADD') {
+                    balances.pending += amt;
+                    balances.online -= amt;
+                } else if (t.type === 'PENDING_REMOVE') {
+                    balances.pending -= amt;
+                    balances.online += amt;
+                }
+
+                // Capture the latest change for each category
+                Object.keys(balances).forEach(key => {
+                    const diff = balances[key] - prevBals[key];
+                    if (diff !== 0) lastChanges[key] = diff;
+                });
+            });
+
+            const fmt = (val) => `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            const fmtChange = (val) => {
+                const sign = val > 0 ? '+' : (val < 0 ? '-' : '');
+                return `${sign}₹${Math.abs(val).toLocaleString('en-IN')}`;
+            };
+
+            const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
+
+            ids.forEach(id => {
+                const d = document.getElementById(`summary-${id}-balance`);
+                const o = document.getElementById(`op-${id}`);
+                const c = document.getElementById(`cl-${id}`);
+                const changeVal = lastChanges[id] || 0;
+
+                if (d) {
+                    d.innerText = fmtChange(changeVal);
+                    // Update color based on positive/negative
+                    if (changeVal > 0) {
+                        d.classList.remove('text-rose-500', 'dark:text-rose-400');
+                        // Use existing card colors (emerald/blue/etc)
+                    } else if (changeVal < 0) {
+                        d.classList.add('text-rose-500', 'dark:text-rose-400');
+                    }
+                }
+                if (o) o.innerText = `₹ ${parseFloat(opValues[id] || 0).toLocaleString('en-IN')}`;
+                if (c) c.innerText = `₹ ${(parseFloat(opValues[id] || 0) + (balances[id] || 0)).toLocaleString('en-IN')}`;
+            });
+            // Update global available cash for validation
+            currentAvailableCash = (parseFloat(opValues.cash || 0) + (balances.cash || 0));
+            currentAvailableOnline = (parseFloat(opValues.online || 0) + (balances.online || 0));
+            currentAvailableJio = (parseFloat(opValues.jio || 0) + (balances.jio || 0));
+            currentAvailableDamaged = (parseFloat(opValues.damaged || 0) + (balances.damaged || 0));
+            currentAvailableCrgb = (parseFloat(opValues.crgb || 0) + (balances.crgb || 0));
+
+            // ID Specific breakdown for validation & Modal
+            const opRoinet = parseFloat(details.roinet_1 || 0) + parseFloat(details.roinet_2 || 0);
+            const opAirtel = parseFloat(details.airtel_1 || 0) + parseFloat(details.airtel_2 || 0);
+            const opSpiceMoney = parseFloat(details.spicemoney || 0);
+            const totalSplitOpening = opRoinet + opAirtel + opSpiceMoney;
+            const roinetOpeningFallback = totalSplitOpening > 0 ? totalSplitOpening : parseFloat(opValues.roinet || 0);
+
+            currentAvailableRoinet1 = parseFloat(details.roinet_1 || 0) + roinetBreakdown.roinet_1;
+            currentAvailableRoinet2 = parseFloat(details.roinet_2 || 0) + roinetBreakdown.roinet_2;
+            currentAvailableAirtel1 = parseFloat(details.airtel_1 || 0) + roinetBreakdown.airtel_1;
+            currentAvailableAirtel2 = parseFloat(details.airtel_2 || 0) + roinetBreakdown.airtel_2;
+            currentAvailableSpiceMoney = parseFloat(details.spicemoney || 0) + roinetBreakdown.spicemoney;
+
+            window._roinetBreakdown =

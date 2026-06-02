@@ -823,9 +823,21 @@ async function initAddEntry() {
             }
 
             const details = prevEntry?.details || {};
+            const opRoinet1 = Number(details.roinet_1 || 0);
+            const opRoinet2 = Number(details.roinet_2 || 0);
+            const opAirtel1 = Number(details.airtel_1 || 0);
+            const opAirtel2 = Number(details.airtel_2 || 0);
+            const opSpice = Number(details.spicemoney || 0);
+            const roinetFallback = (opRoinet1 || opRoinet2 || opAirtel1 || opAirtel2 || opSpice) ? 0 : Number(details.roinet || 0);
+
             const opValues = {
                 online: Number(details.online || 0),
-                roinet: Number(details.roinet || 0),
+                roinet_1: opRoinet1,
+                roinet_2: opRoinet2,
+                airtel_1: opAirtel1,
+                airtel_2: opAirtel2,
+                spicemoney: opSpice,
+                roinet_fallback: roinetFallback,
                 jio: Number(details.jio || 0),
                 crgb_bc: Number(details.crgb_bc || details.go2sms || 0),
                 pending: Number(details.pending || 0),
@@ -841,7 +853,19 @@ async function initAddEntry() {
             const txns = txnSnap.docs.map(doc => doc.data());
 
             // 3. Calculate Deltas for each online module
-            const deltas = { online: 0, roinet: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
+            const deltas = { online: 0, roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, roinet_fallback: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
+
+            const updateSubAccountDelta = (providerStr, amount, isAdd) => {
+                const prov = providerStr.trim().toLowerCase();
+                const diff = isAdd ? amount : -amount;
+                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') deltas.roinet_1 += diff;
+                else if (prov.includes('roinet(dalai)') || prov === 'roinet_2') deltas.roinet_2 += diff;
+                else if (prov.includes('airtel(parsu)') || prov === 'airtel_1') deltas.airtel_1 += diff;
+                else if (prov.includes('airtel(dalai)') || prov === 'airtel_2') deltas.airtel_2 += diff;
+                else if (prov.includes('spicemoney')) deltas.spicemoney += diff;
+                else if (prov === 'roinet') deltas.roinet_fallback += diff; 
+                else if (prov === 'airtel') deltas.airtel_1 += diff; 
+            };
 
             txns.forEach(t => {
                 const amt = parseFloat(t.amount || 0);
@@ -854,17 +878,17 @@ async function initAddEntry() {
                 }
 
                 if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
-                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet += amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, true);
                     else if (provider.includes('crgb')) deltas.crgb_bc += amt;
                     else if (provider.includes('jio')) deltas.jio += amt;
                     else deltas.online += amt;
                 } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
-                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, false);
                     else if (provider.includes('crgb')) deltas.crgb_bc -= amt;
                     else if (provider.includes('jio')) deltas.jio -= amt;
                     else deltas.online -= amt;
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
-                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= amt;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, false);
                     else deltas.online -= amt;
                     if (t.chargesType === 'Online') deltas.online += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
@@ -877,7 +901,7 @@ async function initAddEntry() {
                 } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
                     if (provider.includes('crgb')) deltas.crgb_bc += chg;
                     else if (provider.includes('jio')) deltas.jio += chg;
-                    else deltas.roinet += chg;
+                    else updateSubAccountDelta(provider, chg, true);
                 } else if (t.type === 'GOLD_SIP') {
                     deltas.online -= amt;
                     deltas.expense += amt;
@@ -913,7 +937,7 @@ async function initAddEntry() {
                     deltas.damaged -= amt;
                     if (provider !== 'cash') {
                         deltas.online += amt;
-                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet += amt;
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, true);
                         else if (provider.includes('crgb')) deltas.crgb_bc += amt;
                         else if (provider.includes('jio')) deltas.jio += amt;
                     }
@@ -925,7 +949,7 @@ async function initAddEntry() {
                     const totalDeduction = amt + chg;
                     deltas.expense += chg;
                     deltas.expenseDetails['settlement_charges'] = (deltas.expenseDetails['settlement_charges'] || 0) + chg;
-                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) deltas.roinet -= totalDeduction;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, totalDeduction, false);
                     else if (provider.includes('crgb')) deltas.crgb_bc -= totalDeduction;
                     else if (provider.includes('jio')) deltas.jio -= totalDeduction;
                     else deltas.online -= totalDeduction;
@@ -953,8 +977,8 @@ async function initAddEntry() {
 
             // 4. Calculate Closing Balances and use the requested Reduce pattern
             const data = {};
-            const ONLINE_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending"];
-            const ALL_SYNC_FIELDS = ["online", "roinet", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal", "expense", "damaged"];
+            const ONLINE_FIELDS = ["online", "roinet_1", "roinet_2", "airtel_1", "airtel_2", "spicemoney", "roinet_fallback", "jio", "crgb_bc", "pending"];
+            const ALL_SYNC_FIELDS = ["online", "roinet_1", "roinet_2", "airtel_1", "airtel_2", "spicemoney", "roinet_fallback", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal", "expense", "damaged"];
 
             ALL_SYNC_FIELDS.forEach(key => {
                 data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
@@ -1066,6 +1090,39 @@ async function initAddEntry() {
             const systemData = await fetchSystemOnline(dateStr);
             const breakdown = systemData.breakdown;
             const pendingCredit = await updateCreditLedgerTotalPending();
+
+            window._roinetBreakdown = breakdown;
+            
+            if (breakdown.online) {
+                const expOnlineDisp = document.getElementById('expected-online-split-total-display');
+                if (expOnlineDisp) {
+                    expOnlineDisp.dataset.val = breakdown.online.closing;
+                    expOnlineDisp.innerText = formatCurrency(breakdown.online.closing);
+                    if (typeof updateOnlineSplitTotal === 'function') updateOnlineSplitTotal();
+                }
+            }
+
+            // Expected Roinet Split Total
+            const expectedRoinetTotal = (breakdown.roinet_1?.closing || 0) +
+                (breakdown.roinet_2?.closing || 0) +
+                (breakdown.airtel_1?.closing || 0) +
+                (breakdown.airtel_2?.closing || 0) +
+                (breakdown.spicemoney?.closing || 0) +
+                (breakdown.roinet_fallback?.closing || 0);
+
+            const expRoinetDisp = document.getElementById('expected-split-total-display');
+            if (expRoinetDisp) {
+                expRoinetDisp.dataset.val = expectedRoinetTotal;
+                expRoinetDisp.innerText = formatCurrency(expectedRoinetTotal);
+                if (typeof updateRoinetSplitTotal === 'function') updateRoinetSplitTotal();
+            }
+
+            ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney'].forEach(k => {
+                const el = document.getElementById(`expected-${k}`);
+                if (el) {
+                    el.innerText = `Expected: ${formatCurrency(breakdown[k]?.closing || 0)}`;
+                }
+            });
 
             const syncFields = {
                 'credit': pendingCredit,
@@ -4471,7 +4528,9 @@ async function initReports() {
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
 
-                totalSysIncome += chg;
+                if (t.type !== 'SETTLEMENT') {
+                    if (t.type !== 'SETTLEMENT') { totalSysIncome += chg; }
+                }
 
                 // 1. Charges impact
                 if (!['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
