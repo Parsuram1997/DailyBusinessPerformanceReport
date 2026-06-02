@@ -914,6 +914,14 @@ function renderDevices(sessions) {
         const roleLabel = s.role === 'admin' ? 'Admin' : 'User';
         const roleColor = s.role === 'admin' ? 'text-purple-600 bg-purple-500/10 border-purple-500/20' : 'text-slate-500 bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600';
 
+        const pageLabel = (s.page || '').replace('.html','').replace(/-code$/,'').replace(/-/g,' ') || 'unknown';
+        const pageIcon = {
+            'dashboard': 'dashboard', 'add entry': 'add_circle', 'daily txn': 'point_of_sale',
+            'transactions': 'receipt_long', 'reports': 'bar_chart', 'credit ledger': 'menu_book',
+            'bank withdrawals': 'account_balance', 'settings': 'settings',
+            'cash calculator': 'calculate', 'damaged currency': 'currency_rupee'
+        }[pageLabel] || 'web';
+
         return `
             <div class="flex items-center gap-3 px-5 md:px-6 py-4 ${isCurrent ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'} transition-colors group">
                 <!-- Device Icon -->
@@ -934,6 +942,9 @@ function renderDevices(sessions) {
                         </span>
                         <span class="text-xs text-slate-400 flex items-center gap-1">
                             <span class="material-symbols-outlined text-xs">schedule</span>${timeLabel}
+                        </span>
+                        <span class="text-xs text-slate-400 flex items-center gap-1 capitalize">
+                            <span class="material-symbols-outlined text-xs">${pageIcon}</span>${pageLabel}
                         </span>
                     </div>
                 </div>
