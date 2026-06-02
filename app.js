@@ -1062,7 +1062,7 @@ async function initAddEntry() {
                     indicator = document.createElement('div');
                     indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
                     indicator.innerHTML = `
-                        <span class="text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
+                        <span class="hidden md:inline text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
                         <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
                     `;
                     input.parentElement.appendChild(indicator);
