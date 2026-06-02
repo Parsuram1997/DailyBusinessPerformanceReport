@@ -5197,15 +5197,15 @@ async function initBankWithdrawals() {
                         tr.onclick = () => { showAccountDetails(acc.id); };
                         tr.innerHTML = `
                             <td class="px-5 py-4 align-middle text-center text-sm font-bold text-slate-400 w-14">${index + 1}</td>
-                            <td class="px-5 py-4 align-middle">
+                            <td class="px-5 py-4 align-middle whitespace-nowrap">
                                 <div class="flex flex-col leading-tight">
                                     <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
-                                    <span class="text-xs text-slate-400 font-bold uppercase lg:hidden mt-0.5">${bank} • ${type} • A/c ${accNo}</span>
+                                    
                                 </div>
                             </td>
-                            <td class="px-5 py-4 align-middle text-center hidden md:table-cell"><span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span></td>
-                            <td class="px-5 py-4 align-middle text-center hidden lg:table-cell"><span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span></td>
-                            <td class="px-5 py-4 align-middle text-center hidden md:table-cell"><span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary dark:text-purple-300 rounded border border-primary/20 tracking-wider uppercase">${type}</span></td>
+                            <td class="px-5 py-4 align-middle text-center whitespace-nowrap"><span class="text-sm font-bold text-slate-600 dark:text-slate-300">${bank}</span></td>
+                            <td class="px-5 py-4 align-middle text-center whitespace-nowrap"><span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-200">${accNo}</span></td>
+                            <td class="px-5 py-4 align-middle text-center whitespace-nowrap"><span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary dark:text-purple-300 rounded border border-primary/20 tracking-wider uppercase">${type}</span></td>
                             <td class="px-5 py-4 align-middle text-right whitespace-nowrap"><span class="text-sm font-bold text-rose-600 dark:text-rose-400">${formatCurrency(fyTotal)}</span></td>
                             <td class="px-5 py-4 align-middle text-center whitespace-nowrap"><span class="px-3 py-1 rounded-full text-xs font-bold border ${statusClass}">${statusText} (${pecent.toFixed(1)}%)</span></td>
                         `;
