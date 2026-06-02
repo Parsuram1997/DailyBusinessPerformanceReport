@@ -130,6 +130,63 @@ async function loadEntries() {
 // Ensure listener starts early
 setupEntriesListener();
 
+// ─── Active Session Tracking (app-v2.js) ────────────────────────────────────
+// Registers this device in Firestore 'active_sessions' with periodic heartbeats.
+// Used by Settings page to show real-time active devices list.
+(function startSessionTrackingV2() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn || !db) return;
+
+    let deviceId = sessionStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
+        sessionStorage.setItem('deviceId', deviceId);
+    }
+
+    const username = sessionStorage.getItem('username') || 'Unknown';
+    const role = sessionStorage.getItem('userRole') || 'user';
+    const ua = navigator.userAgent;
+
+    async function writeHeartbeatV2() {
+        try {
+            // app-v2.js uses compat SDK: db.collection().doc().set()
+            await db.collection('active_sessions').doc(deviceId).set({
+                deviceId,
+                username,
+                role,
+                userAgent: ua,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                lastSeenMs: Date.now(),
+                page: window.location.pathname.split('/').pop() || 'index.html'
+            });
+            console.log('[Session v2] Heartbeat written for', deviceId);
+        } catch (e) {
+            console.error('[Session v2] Firestore write failed:', e.code, e.message);
+            // Fallback: try without serverTimestamp
+            try {
+                await db.collection('active_sessions').doc(deviceId).set({
+                    deviceId, username, role, userAgent: ua,
+                    lastSeenMs: Date.now(),
+                    page: window.location.pathname.split('/').pop() || 'index.html'
+                });
+                console.log('[Session v2] Heartbeat written (fallback) for', deviceId);
+            } catch (e2) {
+                console.error('[Session v2] Fallback also failed:', e2.message);
+            }
+        }
+    }
+
+    setTimeout(() => {
+        writeHeartbeatV2();
+        const interval = setInterval(writeHeartbeatV2, 30000);
+        window.addEventListener('beforeunload', () => {
+            clearInterval(interval);
+            try { db.collection('active_sessions').doc(deviceId).delete().catch(() => {}); } catch(e) {}
+        });
+    }, 2000);
+})();
+
+
 async function saveEntry(entry) {
     if (!db) return null;
     try {
