@@ -49,6 +49,23 @@
             });
         }
     </script>
+
+    <style>
+        /* Prevent double-tap to zoom */
+        * { touch-action: manipulation; }
+        /* Prevent input focus zoom on iOS */
+        @media screen and (max-width: 767px) {
+            input, select, textarea { font-size: 16px !important; }
+        }
+    </style>
+    <script>
+        // Prevent pinch-zoom on iOS
+        document.addEventListener('touchmove', function(event) {
+            if (event.scale !== undefined && event.scale !== 1) { 
+                event.preventDefault(); 
+            }
+        }, { passive: false });
+    </script>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen overflow-hidden">
     
