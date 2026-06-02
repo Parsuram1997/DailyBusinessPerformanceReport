@@ -7779,7 +7779,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
-                    <div class="flex justify-center gap-2 ${window.isCheckingMode ? 'opacity-20 pointer-events-none grayscale' : ''}">
+                    <div class="flex justify-center gap-2">
                         <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
                             <span class="material-symbols-outlined text-sm">edit</span>
                         </button>
