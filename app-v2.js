@@ -817,16 +817,16 @@ async function initAddEntry() {
 
                 const button = input.parentElement.querySelector('button');
                 if (button && id !== 'expense') button.style.display = 'none'; // Keep expense split button visible for viewing
-                let rightPos = (button && id === 'expense') ? 'right-12' : 'right-3';
-                input.style.paddingRight = (button && id === 'expense') ? '96px' : '56px';
+                let rightPos = (button && id === 'expense') ? 'right-9' : 'right-3';
+                input.style.paddingRight = (button && id === 'expense') ? '64px' : '40px';
 
                 let indicator = input.parentElement.querySelector('.sync-indicator');
                 if (!indicator) {
                     indicator = document.createElement('div');
                     indicator.className = `sync-indicator absolute ${rightPos} top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none select-none`;
                     indicator.innerHTML = `
-                        <span class="text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
-                        <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
+                        <span class="hidden lg:inline text-[9px] font-bold text-primary uppercase px-1.5 py-0.5 bg-primary/10 rounded border border-primary/20">Sync</span>
+                        <span class="material-symbols-outlined text-[13px] text-primary">sync</span>
                     `;
                     input.parentElement.appendChild(indicator);
                 } else {
