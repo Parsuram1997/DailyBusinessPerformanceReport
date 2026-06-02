@@ -220,7 +220,7 @@
         <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
             <!-- Navbar -->
             <header
-                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-8 sticky top-0 z-10 shadow-sm">
+                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-3 md:px-8 sticky top-0 z-10 shadow-sm">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
                     <h2
@@ -229,7 +229,7 @@
                     </h2>
                 </div>
             </header>
-            <div class="p-3 md:p-8 w-full space-y-4 md:space-y-8">
+            <div class="p-2 sm:p-4 md:p-8 w-full space-y-4 md:space-y-8">
                 <!-- Quick Actions -->
                 <section class="flex flex-wrap gap-4 items-center justify-between">
                     <div class="space-y-1">
@@ -239,9 +239,9 @@
 
                 </section>
                 <!-- Comparison & Summary Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-4 md:p-6">
                     <!-- Comparison Highlights -->
-                    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+                    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 md:gap-4 md:p-6">
                         <div
                             class="bg-gradient-to-br from-emerald-400 to-green-500 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 text-white">
                             <div
@@ -409,7 +409,7 @@
                     </div>
                     <!-- Chart 1: Income vs Expense -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
                             <h5 class="font-bold chart-title">Income vs Expense Trend</h5>
                             <div class="flex items-center gap-2 controls-container">
@@ -431,7 +431,7 @@
                     </div>
                     <!-- Chart 2: Profit Trend -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
                             <h5 class="font-bold chart-title">Profit Growth</h5>
                             <div class="flex items-center gap-2 controls-container">
@@ -449,7 +449,7 @@
                     </div>
                     <!-- Chart 3: Income Growth -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
                             <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Income Growth</h5>
                             <div class="flex items-center gap-2 controls-container">
@@ -469,7 +469,7 @@
                     </div>
                     <!-- Chart 4: Expense Growth -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
                             <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Expense Growth</h5>
                             <div class="flex items-center gap-2 controls-container">
@@ -489,7 +489,7 @@
                     </div>
                     <!-- Chart 5: Monthly Income Comparison -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
                             <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Monthly Income Comparison</h5>
                             <div class="flex items-center gap-2 controls-container">
@@ -505,10 +505,10 @@
                         </div>
                     </div>
                     <!-- New Analytics Grid -->
-                    <div class="lg:col-span-3 flex flex-col gap-6 mt-6 pb-8">
+                    <div class="lg:col-span-3 flex flex-col gap-4 md:gap-4 md:p-6 mt-6 pb-8">
                         <!-- Analytical Comparison (Today & MTD) -->
                         <div
-                            class="bg-gradient-to-br from-green-500 to-emerald-600 border border-white/20 text-white p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
+                            class="bg-gradient-to-br from-green-500 to-emerald-600 border border-white/20 text-white p-4 md:p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
                             <div class="flex items-center justify-between mb-6">
                                 <h5 class="font-bold flex items-center gap-2">
                                     <span class="material-symbols-outlined text-white">analytics</span>
@@ -620,10 +620,10 @@
                         </div>
 
                         <!-- Projections Grid -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-4 md:p-6">
                             <!-- Income Projections -->
                             <div
-                                class="bg-gradient-to-br from-green-500 to-emerald-600 border border-white/20 text-white p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
+                                class="bg-gradient-to-br from-green-500 to-emerald-600 border border-white/20 text-white p-4 md:p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
                                 <div class="flex items-center justify-between mb-4">
                                     <h5 class="font-bold flex items-center gap-2">
                                         <span class="material-symbols-outlined text-white">monitoring</span>
@@ -665,7 +665,7 @@
 
                             <!-- Expense Projections -->
                             <div
-                                class="bg-gradient-to-br from-rose-500 to-red-600 border border-white/20 text-white p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
+                                class="bg-gradient-to-br from-rose-500 to-red-600 border border-white/20 text-white p-4 md:p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
                                 <div class="flex items-center justify-between mb-4">
                                     <h5 class="font-bold flex items-center gap-2">
                                         <span class="material-symbols-outlined text-white">show_chart</span>
@@ -708,7 +708,7 @@
 
                             <!-- Profit Projections -->
                             <div
-                                class="bg-gradient-to-br from-indigo-500 to-blue-600 border border-white/20 text-white p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
+                                class="bg-gradient-to-br from-indigo-500 to-blue-600 border border-white/20 text-white p-4 md:p-6 rounded-xl shadow-lg relative overflow-hidden group flex flex-col h-full">
                                 <div class="flex items-center justify-between mb-4">
                                     <h5 class="font-bold flex items-center gap-2">
                                         <span class="material-symbols-outlined text-white">moving</span>
