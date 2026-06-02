@@ -123,11 +123,19 @@ function initGlobalSettings() {
             checkAndSet('security_pin_enabled_settings', data.security_pin_enabled_settings !== undefined ? data.security_pin_enabled_settings : data.security_pin_enabled);
             checkAndSet('CREDIT_LEDGER_SHOW_ACTIONS', data.CREDIT_LEDGER_SHOW_ACTIONS);
             checkAndSet('dtxn_openInNewTab', data.dtxn_openInNewTab);
-            checkAndSet('HIDE_PUBLIC_DAILY_TXN', data.HIDE_PUBLIC_DAILY_TXN);
+                        checkAndSet('HIDE_PUBLIC_DAILY_TXN', data.HIDE_PUBLIC_DAILY_TXN);
+            checkAndSet('validate_cash_diff', data.validate_cash_diff);
+            checkAndSet('validate_online_diff', data.validate_online_diff);
+            checkAndSet('validate_csp_diff', data.validate_csp_diff);
+
             // User-specific access controls
             checkAndSet('user_pin_add_entry', data.user_pin_add_entry);
             checkAndSet('user_pin_daily_txn', data.user_pin_daily_txn);
-            checkAndSet('user_dtxn_showSummary', data.user_dtxn_showSummary);
+                        checkAndSet('user_dtxn_showSummary', data.user_dtxn_showSummary);
+            checkAndSet('user_validate_cash_diff', data.user_validate_cash_diff);
+            checkAndSet('user_validate_online_diff', data.user_validate_online_diff);
+            checkAndSet('user_validate_csp_diff', data.user_validate_csp_diff);
+
             checkAndSet('user_dtxn_showBalancesGrid', data.user_dtxn_showBalancesGrid);
             checkAndSet('user_dtxn_showBalance', data.user_dtxn_showBalance);
             checkAndSet('user_dtxn_showBalanceDiff', data.user_dtxn_showBalanceDiff);
@@ -1496,8 +1504,29 @@ async function initAddEntry() {
         });
 
         if (useOnlineBtn) {
-            useOnlineBtn.addEventListener('click', () => {
+                        useOnlineBtn.addEventListener('click', () => {
                 const total = updateOnlineSplitTotal();
+                
+                // Add Validation
+                const expectedDisp = document.getElementById('expected-online-split-total-display');
+                const isValidate = localStorage.getItem('validate_online_diff') !== 'false';
+                if (isValidate && expectedDisp && expectedDisp.dataset.val) {
+                    const expected = parseFloat(expectedDisp.dataset.val) || 0;
+                    if (Math.abs(total - expected) > 5000) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Validation Error',
+                                text: 'The difference between Expected Online amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                icon: 'error',
+                                confirmButtonColor: '#e11d48'
+                            });
+                        } else {
+                            alert('The difference between Expected Online amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                        }
+                        return;
+                    }
+                }
+
                 if (onlineInput) {
                     onlineInput.value = total || '';
                     onlineInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1561,8 +1590,29 @@ async function initAddEntry() {
         });
 
         if (useRoinetBtn) {
-            useRoinetBtn.addEventListener('click', () => {
+                        useRoinetBtn.addEventListener('click', () => {
                 const total = updateRoinetSplitTotal();
+                
+                // Add Validation
+                const expectedDisp = document.getElementById('expected-split-total-display');
+                const isValidate = localStorage.getItem('validate_csp_diff') !== 'false';
+                if (isValidate && expectedDisp && expectedDisp.dataset.val) {
+                    const expected = parseFloat(expectedDisp.dataset.val) || 0;
+                    if (Math.abs(total - expected) > 5000) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Validation Error',
+                                text: 'The difference between Expected CSP Wallet amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                icon: 'error',
+                                confirmButtonColor: '#e11d48'
+                            });
+                        } else {
+                            alert('The difference between Expected CSP Wallet amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                        }
+                        return;
+                    }
+                }
+
                 if (roinetInput) {
                     roinetInput.value = total || '';
                     roinetInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2582,10 +2632,28 @@ async function initCalculator() {
     }
 
     if (btnUseCash) {
-        btnUseCash.onclick = () => {
+                btnUseCash.onclick = () => {
             const totalText = totalValDisplay.innerText.replace(/[₹,]/g, '');
             const finalAmount = parseFloat(totalText);
             if (finalAmount > 0) {
+                // Add Validation
+                const isValidate = localStorage.getItem('validate_cash_diff') !== 'false';
+                if (isValidate && typeof currentSystemCash !== 'undefined') {
+                    if (Math.abs(finalAmount - currentSystemCash) > 5000) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Validation Error',
+                                text: 'The difference between Expected Cash and your manual physical total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                icon: 'error',
+                                confirmButtonColor: '#e11d48'
+                            });
+                        } else {
+                            alert('The difference between Expected Cash and your manual physical total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                        }
+                        return;
+                    }
+                }
+
                 localStorage.setItem('temp_calculator_cash', finalAmount);
                 window.location.href = 'add-entry-code.html';
             } else {
