@@ -3893,9 +3893,19 @@ async function initDamagedCurrency() {
         if (total > 0) {
             window.useTotalDamages(total);
         } else {
-            if (confirm('The total is ₹0. Transfer this as clear?')) {
-                window.useTotalDamages(0);
-            }
+                        window.Swal.fire({
+                title: 'Transfer 0?',
+                text: 'The total is ₹0. Transfer this as clear?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, transfer'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.useTotalDamages(0);
+                }
+            });
         }
     };
 
@@ -5887,11 +5897,25 @@ async function initDailyTxn() {
     if (txnViewDate) {
         txnViewDate.value = currentSelectedDate;
         txnViewDate.addEventListener('change', (e) => {
-            if (!window._isConfirmedDateSwitch && window.hasUnsavedData && window.hasUnsavedData()) {
-                if (!confirm("You have unsaved transaction data. Continue changing date?")) {
-                    e.target.value = previousViewDateVal;
-                    return;
-                }
+                        if (!window._isConfirmedDateSwitch && window.hasUnsavedData && window.hasUnsavedData()) {
+                const pendingTargetValue = e.target.value;
+                e.target.value = previousViewDateVal; // rollback immediately
+                window.Swal.fire({
+                    title: 'Unsaved Data',
+                    text: 'You have unsaved transaction data. Continue changing date?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, change date'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window._isConfirmedDateSwitch = true;
+                        e.target.value = pendingTargetValue;
+                        e.target.dispatchEvent(new Event('change'));
+                    }
+                });
+                return;
             }
             window._isConfirmedDateSwitch = false;
             previousViewDateVal = e.target.value;
@@ -8321,7 +8345,16 @@ async function initDailyTxn() {
     
     if (markAllBtn) {
         markAllBtn.onclick = async () => {
-            if (!confirm('Mark all visible rows as checked?')) return;
+                        const result = await window.Swal.fire({
+                title: 'Mark all visible rows?',
+                text: 'All currently visible rows will be marked as checked.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, mark all'
+            });
+            if (!result.isConfirmed) return;
             const rows = Array.from(tableBody.querySelectorAll('tr.group')).filter(r => r.style.display !== 'none');
             const updates = [];
             rows.forEach(row => {
@@ -8343,7 +8376,16 @@ async function initDailyTxn() {
     
     if (uncheckAllBtn) {
         uncheckAllBtn.onclick = async () => {
-            if (!confirm('Uncheck all visible rows?')) return;
+                        const result = await window.Swal.fire({
+                title: 'Uncheck all visible rows?',
+                text: 'All currently visible rows will be unmarked.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, uncheck all'
+            });
+            if (!result.isConfirmed) return;
             const rows = Array.from(tableBody.querySelectorAll('tr.group')).filter(r => r.style.display !== 'none');
             const updates = [];
             rows.forEach(row => {
