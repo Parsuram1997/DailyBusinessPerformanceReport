@@ -6953,7 +6953,21 @@ async function initDailyTxn() {
 
                 const result = await Swal.fire({
                     title: '<span class="text-xl font-black text-slate-800 tracking-tight">Confirm Transaction</span>',
-                    html: `
+                                        html: `
+                        <style>
+                            div.swal2-actions {
+                                flex-direction: row !important;
+                                flex-wrap: nowrap !important;
+                                width: 100% !important;
+                                padding: 0 1rem !important;
+                                box-sizing: border-box !important;
+                            }
+                            div.swal2-actions button {
+                                flex: 1 1 0% !important;
+                                margin: 0 0.25rem !important;
+                                width: 100% !important;
+                            }
+                        </style>
                         <div class="flex flex-col gap-3 text-left mt-2">
                             <div class="flex justify-between items-center border-b border-slate-100 pb-2">
                                 <span class="text-sm font-semibold text-slate-500">Transaction Type</span>
