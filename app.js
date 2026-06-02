@@ -7728,7 +7728,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
-                <td class="px-3 py-1.5">
+                <td class="px-3 py-1.5 whitespace-nowrap">
                     <div class="flex flex-col">
                         <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
                         <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
@@ -7814,7 +7814,7 @@ async function initDailyTxn() {
                         `}
                     </div>
                 </td>
-                <td class="px-3 py-1.5 balance-col-cell">
+                <td class="px-3 py-1.5 balance-col-cell whitespace-nowrap">
                     <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
                         <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
                             <span>C: ₹${txn.runningCash.toLocaleString('en-IN')}</span>
