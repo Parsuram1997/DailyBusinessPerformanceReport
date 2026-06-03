@@ -4728,26 +4728,46 @@ async function initReports() {
                     const chg = parseFloat(t.charges) || 0;
 
                     if (!villageCounts[normalized]) {
-                        villageCounts[normalized] = { count: 0, volume: 0, fees: 0 };
+                        villageCounts[normalized] = { 
+                            count: 0, 
+                            volume: 0, 
+                            fees: 0,
+                            aepsCount: 0,
+                            matmCount: 0,
+                            depositCount: 0,
+                            withdrawCount: 0
+                        };
                     }
                     villageCounts[normalized].count++;
                     villageCounts[normalized].volume += amt;
                     villageCounts[normalized].fees += chg;
+
+                    if (t.type === 'AEPS') villageCounts[normalized].aepsCount++;
+                    else if (t.type === 'MATM') villageCounts[normalized].matmCount++;
+                    else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) villageCounts[normalized].depositCount++;
+                    else if (['WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) villageCounts[normalized].withdrawCount++;
                 }
             });
             
             // Sort to array and pick top 20
-            const sortedVillages = Object.keys(villageCounts).map(v => ({
-                name: v,
-                count: villageCounts[v].count,
-                volume: villageCounts[v].volume,
-                fees: villageCounts[v].fees
-            })).sort((a, b) => b.count - a.count).slice(0, 20);
+            const sortedVillages = Object.keys(villageCounts).map(v => {
+                const data = villageCounts[v];
+                return {
+                    name: v,
+                    count: data.count,
+                    volume: data.volume,
+                    fees: data.fees,
+                    aepsPct: data.count > 0 ? Math.round((data.aepsCount / data.count) * 100) : 0,
+                    matmPct: data.count > 0 ? Math.round((data.matmCount / data.count) * 100) : 0,
+                    depositPct: data.count > 0 ? Math.round((data.depositCount / data.count) * 100) : 0,
+                    withdrawPct: data.count > 0 ? Math.round((data.withdrawCount / data.count) * 100) : 0
+                };
+            }).sort((a, b) => b.count - a.count).slice(0, 20);
             
             if (sortedVillages.length === 0) {
                 topVillagesBody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="px-6 py-10 text-center">
+                        <td colspan="9" class="px-6 py-10 text-center">
                             <div class="flex flex-col items-center gap-2 opacity-40">
                                 <span class="material-symbols-outlined text-4xl">info</span>
                                 <p class="text-sm font-medium">Data Not Available</p>
@@ -4770,6 +4790,18 @@ async function initReports() {
                         </td>
                         <td class="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400">
                             ${formatCurrency(v.fees)}
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                            ${v.aepsPct}%
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                            ${v.matmPct}%
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                            ${v.depositPct}%
+                        </td>
+                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                            ${v.withdrawPct}%
                         </td>
                     </tr>
                 `).join('');
