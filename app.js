@@ -7265,13 +7265,34 @@ async function initDailyTxn() {
             };
 
             // Per-provider roinet breakdown tracking
-            const roinetBreakdown = { roinet: 0, airtel: 0, spicemoney: 0 };
+            const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
+
+            // Helper: map provider string to sub-account key
+            const getSubAccountKey = (prov) => {
+                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
+                if (prov.includes('roinet(dalai)') || prov === 'roinet_2') return 'roinet_2';
+                if (prov.includes('airtel(parsu)') || prov === 'airtel_1') return 'airtel_1';
+                if (prov.includes('airtel(dalai)') || prov === 'airtel_2') return 'airtel_2';
+                if (prov.includes('spicemoney')) return 'spicemoney';
+                // Fallback: generic roinet/airtel → default to _1
+                if (prov.includes('airtel')) return 'airtel_1';
+                if (prov.includes('roinet')) return 'roinet_1';
+                return null;
+            };
+            const updateRoinetDelta = (prov, val) => {
+                const key = getSubAccountKey(prov);
+                if (key) {
+                    roinetBreakdown[key] += val;
+                    lastRoinetChanges[key] = val;
+                    lastRoinetChanges.total = val;
+                }
+            };
 
             const lastChanges = {
                 cash: 0, online: 0, roinet: 0, crgb: 0, jio: 0,
                 pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
             };
-            const lastRoinetChanges = { roinet: 0, airtel: 0, spicemoney: 0, total: 0 };
+            const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
             const expenseBreakdown = {};
             const custDepositBreakdown = {};
 
@@ -7296,17 +7317,7 @@ async function initDailyTxn() {
                     balances.cash -= amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet += amt;
-                        if (provider.includes('airtel')) {
-                            roinetBreakdown.airtel += amt;
-                            lastRoinetChanges.airtel = amt;
-                        } else if (provider.includes('spicemoney')) {
-                            roinetBreakdown.spicemoney += amt;
-                            lastRoinetChanges.spicemoney = amt;
-                        } else {
-                            roinetBreakdown.roinet += amt;
-                            lastRoinetChanges.roinet = amt;
-                        }
-                        lastRoinetChanges.total = amt;
+                        updateRoinetDelta(provider, amt);
                     }
                     else if (provider.includes('crgb')) balances.crgb += amt;
                     else if (provider.includes('jio')) balances.jio += amt;
@@ -7315,17 +7326,7 @@ async function initDailyTxn() {
                     balances.cash += amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
-                        if (provider.includes('airtel')) {
-                            roinetBreakdown.airtel -= amt;
-                            lastRoinetChanges.airtel = -amt;
-                        } else if (provider.includes('spicemoney')) {
-                            roinetBreakdown.spicemoney -= amt;
-                            lastRoinetChanges.spicemoney = -amt;
-                        } else {
-                            roinetBreakdown.roinet -= amt;
-                            lastRoinetChanges.roinet = -amt;
-                        }
-                        lastRoinetChanges.total = -amt;
+                        updateRoinetDelta(provider, -amt);
                     }
                     else if (provider.includes('crgb')) balances.crgb -= amt;
                     else if (provider.includes('jio')) balances.jio -= amt;
@@ -7333,17 +7334,7 @@ async function initDailyTxn() {
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
-                        if (provider.includes('airtel')) {
-                            roinetBreakdown.airtel -= amt;
-                            lastRoinetChanges.airtel = -amt;
-                        } else if (provider.includes('spicemoney')) {
-                            roinetBreakdown.spicemoney -= amt;
-                            lastRoinetChanges.spicemoney = -amt;
-                        } else {
-                            roinetBreakdown.roinet -= amt;
-                            lastRoinetChanges.roinet = -amt;
-                        }
-                        lastRoinetChanges.total = -amt;
+                        updateRoinetDelta(provider, -amt);
                     } else {
                         balances.online -= amt;
                     }
@@ -7365,18 +7356,8 @@ async function initDailyTxn() {
                         balances.jio += chg;
                     } else {
                         balances.roinet += chg;
-                        if (provider.includes('airtel')) {
-                            roinetBreakdown.airtel += chg;
-                            lastRoinetChanges.airtel = chg;
-                        } else if (provider.includes('spicemoney')) {
-                            roinetBreakdown.spicemoney += chg;
-                            lastRoinetChanges.spicemoney = chg;
-                        } else {
-                            roinetBreakdown.roinet += chg;
-                            lastRoinetChanges.roinet = chg;
-                        }
+                        updateRoinetDelta(provider, chg);
                     }
-                    lastRoinetChanges.total = chg;
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
@@ -7437,17 +7418,7 @@ async function initDailyTxn() {
                     const totalDeduction = amt + chg;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= totalDeduction;
-                        if (provider.includes('airtel')) {
-                            roinetBreakdown.airtel -= totalDeduction;
-                            lastRoinetChanges.airtel = -totalDeduction;
-                        } else if (provider.includes('spicemoney')) {
-                            roinetBreakdown.spicemoney -= totalDeduction;
-                            lastRoinetChanges.spicemoney = -totalDeduction;
-                        } else {
-                            roinetBreakdown.roinet -= totalDeduction;
-                            lastRoinetChanges.roinet = -totalDeduction;
-                        }
-                        lastRoinetChanges.total = -totalDeduction;
+                        updateRoinetDelta(provider, -totalDeduction);
                     }
                     else if (provider.includes('crgb')) balances.crgb -= totalDeduction;
                     else if (provider.includes('jio')) balances.jio -= totalDeduction;
@@ -7514,32 +7485,42 @@ async function initDailyTxn() {
             currentAvailableCrgb = (parseFloat(opValues.crgb || 0) + (balances.crgb || 0));
 
             // ID Specific breakdown for validation & Modal
-            const opRoinet = parseFloat(details.roinet_1 || 0) + parseFloat(details.roinet_2 || 0);
-            const opAirtel = parseFloat(details.airtel_1 || 0) + parseFloat(details.airtel_2 || 0);
+            const opRoinet1 = parseFloat(details.roinet_1 || 0);
+            const opRoinet2 = parseFloat(details.roinet_2 || 0);
+            const opAirtel1 = parseFloat(details.airtel_1 || 0);
+            const opAirtel2 = parseFloat(details.airtel_2 || 0);
             const opSpiceMoney = parseFloat(details.spicemoney || 0);
+            const opRoinet = opRoinet1 + opRoinet2;
+            const opAirtel = opAirtel1 + opAirtel2;
             const totalSplitOpening = opRoinet + opAirtel + opSpiceMoney;
             const roinetOpeningFallback = totalSplitOpening > 0 ? totalSplitOpening : parseFloat(opValues.roinet || 0);
 
-            currentAvailableRoinet = (totalSplitOpening > 0 ? opRoinet : roinetOpeningFallback) + roinetBreakdown.roinet;
-            currentAvailableAirtel = opAirtel + roinetBreakdown.airtel;
+            currentAvailableRoinet = (totalSplitOpening > 0 ? opRoinet : roinetOpeningFallback) + roinetBreakdown.roinet_1 + roinetBreakdown.roinet_2;
+            currentAvailableAirtel = opAirtel + roinetBreakdown.airtel_1 + roinetBreakdown.airtel_2;
             currentAvailableSpiceMoney = opSpiceMoney + roinetBreakdown.spicemoney;
 
             window._roinetBreakdown = {
                 opening: {
-                    roinet: totalSplitOpening > 0 ? opRoinet : roinetOpeningFallback,
-                    airtel: opAirtel,
+                    roinet_1: totalSplitOpening > 0 ? opRoinet1 : roinetOpeningFallback,
+                    roinet_2: opRoinet2,
+                    airtel_1: opAirtel1,
+                    airtel_2: opAirtel2,
                     spicemoney: opSpiceMoney,
                     total: roinetOpeningFallback
                 },
                 closing: {
-                    roinet: (totalSplitOpening > 0 ? opRoinet : roinetOpeningFallback) + roinetBreakdown.roinet,
-                    airtel: opAirtel + roinetBreakdown.airtel,
+                    roinet_1: (totalSplitOpening > 0 ? opRoinet1 : roinetOpeningFallback) + roinetBreakdown.roinet_1,
+                    roinet_2: opRoinet2 + roinetBreakdown.roinet_2,
+                    airtel_1: opAirtel1 + roinetBreakdown.airtel_1,
+                    airtel_2: opAirtel2 + roinetBreakdown.airtel_2,
                     spicemoney: opSpiceMoney + roinetBreakdown.spicemoney,
                     total: roinetOpeningFallback + (balances.roinet || 0)
                 },
                 lastChange: {
-                    roinet: lastRoinetChanges.roinet,
-                    airtel: lastRoinetChanges.airtel,
+                    roinet_1: lastRoinetChanges.roinet_1,
+                    roinet_2: lastRoinetChanges.roinet_2,
+                    airtel_1: lastRoinetChanges.airtel_1,
+                    airtel_2: lastRoinetChanges.airtel_2,
                     spicemoney: lastRoinetChanges.spicemoney,
                     total: lastRoinetChanges.total
                 }
