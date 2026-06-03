@@ -2712,7 +2712,12 @@ async function initCalculator() {
                 localStorage.setItem('temp_calculator_cash', finalAmount);
                 window.location.href = 'add-entry-code.html';
             } else {
-                alert('Please calculate an amount greater than 0.');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Amount',
+                    text: 'Please calculate an amount greater than 0.',
+                    confirmButtonColor: '#7f13ec'
+                });
             }
         };
     }
