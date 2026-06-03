@@ -4713,6 +4713,58 @@ async function initReports() {
             }
         }
 
+        // Render Top Villages Table
+        const topVillagesBody = document.getElementById('top-villages-body');
+        if (topVillagesBody) {
+            const villageCounts = {};
+            dailyTxns.forEach(t => {
+                if (t.address && t.address.trim() !== '') {
+                    // Normalize the address string to group effectively
+                    const raw = t.address.trim().toLowerCase();
+                    const words = raw.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+                    const normalized = words.join(' ');
+                    
+                    if (villageCounts[normalized]) {
+                        villageCounts[normalized]++;
+                    } else {
+                        villageCounts[normalized] = 1;
+                    }
+                }
+            });
+            
+            // Sort to array and pick top 20
+            const sortedVillages = Object.keys(villageCounts).map(v => ({
+                name: v,
+                count: villageCounts[v]
+            })).sort((a, b) => b.count - a.count).slice(0, 20);
+            
+            if (sortedVillages.length === 0) {
+                topVillagesBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-6 py-10 text-center">
+                            <div class="flex flex-col items-center gap-2 opacity-40">
+                                <span class="material-symbols-outlined text-4xl">info</span>
+                                <p class="text-sm font-medium">Data Not Available</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                topVillagesBody.innerHTML = sortedVillages.map((v, idx) => `
+                    <tr class="hover:bg-primary/5 transition-colors group">
+                        <td class="px-6 py-4 font-bold text-slate-500 w-12 text-center">${idx + 1}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200">
+                            ${v.name}
+                        </td>
+                        <td class="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
+                            ${v.count}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+
         // Calculate Reconciliation Totals for Cards
         // ONLY include dates that exist in system records AND start from 1st May 2026
         const systemDates = new Set(dailyTxns.map(t => t.date));

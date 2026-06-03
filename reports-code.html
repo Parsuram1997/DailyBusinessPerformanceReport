@@ -501,7 +501,36 @@
                 </div>
             </div>
 
-
+            <!-- Top Villages Table -->
+            <div class="grid grid-cols-1 mt-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-primary/10 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                                <span class="material-symbols-outlined text-xl">location_on</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Top Villages & Locations</h3>
+                                <p class="text-xs text-slate-500">Customer counts by village (Top 20)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="px-6 py-3">#</th>
+                                    <th class="px-6 py-3">Village / Location</th>
+                                    <th class="px-6 py-3 text-right">Customers Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-villages-body" class="divide-y divide-primary/5 dark:divide-primary/10">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 </div>
