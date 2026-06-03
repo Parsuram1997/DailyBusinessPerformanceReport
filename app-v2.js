@@ -1324,7 +1324,31 @@ async function initAddEntry() {
             });
 
             if (hasEmptyFields) {
-                alert('Please fill in all fields. Use 0 if there is no amount for a specific field.');
+                let container = document.getElementById('validation-toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'validation-toast-container';
+                    container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+                    document.body.appendChild(container);
+                }
+                const toast = document.createElement('div');
+                toast.className = 'pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 bg-rose-600/95 dark:bg-rose-500/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out';
+                toast.innerHTML = `
+                    <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                        <span class="material-symbols-outlined text-xl font-bold">error</span>
+                    </span>
+                    <div class="flex flex-col leading-tight">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-white/80">Validation Alert</span>
+                        <span class="text-sm font-bold text-white mt-0.5">Please fill in all fields. Use 0 if empty.</span>
+                    </div>
+                `;
+                container.appendChild(toast);
+                requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg">add_circle</span> Save Entry';
