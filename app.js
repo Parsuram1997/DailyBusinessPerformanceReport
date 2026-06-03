@@ -4653,7 +4653,7 @@ async function initReports() {
             } else {
                 categoryBody.innerHTML = catMap.map(cat => `
                     <tr class="hover:bg-primary/5 transition-colors group">
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-2">
                             <div class="flex items-center gap-3">
                                 <div class="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${cat.color} group-hover:scale-110 transition-transform">
                                     <span class="material-symbols-outlined text-lg">${cat.icon}</span>
@@ -4661,7 +4661,7 @@ async function initReports() {
                                 <span class="font-semibold text-slate-700 dark:text-slate-200">${cat.label}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right font-black italic text-slate-900 dark:text-white">
+                        <td class="px-4 py-2 text-right font-black italic text-slate-900 dark:text-white">
                             ${formatCurrency(cat.val)}
                         </td>
                     </tr>
@@ -4697,7 +4697,7 @@ async function initReports() {
             } else {
                 methodBody.innerHTML = methodMap.map(m => `
                     <tr class="hover:bg-primary/5 transition-colors group">
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-2">
                             <div class="flex items-center gap-3">
                                 <div class="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${m.color} group-hover:scale-110 transition-transform">
                                     <span class="material-symbols-outlined text-lg">${m.icon}</span>
@@ -4705,7 +4705,7 @@ async function initReports() {
                                 <span class="font-semibold text-slate-700 dark:text-slate-200">${m.label}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-right font-black italic text-slate-900 dark:text-white">
+                        <td class="px-4 py-2 text-right font-black italic text-slate-900 dark:text-white">
                             ${formatCurrency(m.val)}
                         </td>
                     </tr>
