@@ -4748,13 +4748,16 @@ async function initReports() {
                     else if (['WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) villageCounts[normalized].withdrawCount++;
                 }
             });
-            
+            // Calculate total customers across all valid villages
+            const totalValidCustomers = Object.values(villageCounts).reduce((sum, v) => sum + v.count, 0);
+
             // Sort to array and pick top 20
             const sortedVillages = Object.keys(villageCounts).map(v => {
                 const data = villageCounts[v];
                 return {
                     name: v,
                     count: data.count,
+                    totalPct: totalValidCustomers > 0 ? Math.round((data.count / totalValidCustomers) * 100) : 0,
                     volume: data.volume,
                     fees: data.fees,
                     aepsPct: data.count > 0 ? Math.round((data.aepsCount / data.count) * 100) : 0,
@@ -4767,7 +4770,7 @@ async function initReports() {
             if (sortedVillages.length === 0) {
                 topVillagesBody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="px-6 py-10 text-center">
+                        <td colspan="10" class="px-6 py-10 text-center">
                             <div class="flex flex-col items-center gap-2 opacity-40">
                                 <span class="material-symbols-outlined text-4xl">info</span>
                                 <p class="text-sm font-medium">Data Not Available</p>
@@ -4784,6 +4787,9 @@ async function initReports() {
                         </td>
                         <td class="px-4 py-2 text-right font-black text-emerald-600 dark:text-emerald-400">
                             ${v.count}
+                        </td>
+                        <td class="px-4 py-2 text-right font-semibold text-slate-500 dark:text-slate-400">
+                            ${v.totalPct}%
                         </td>
                         <td class="px-4 py-2 text-right font-bold text-slate-600 dark:text-slate-300">
                             ${formatCurrency(v.volume)}
