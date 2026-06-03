@@ -1870,35 +1870,34 @@ async function initAddEntry() {
             await saveEntry(payload);
             // Success Toast
             (function showAddEntryToast() {
-                let toast = document.getElementById('ae-success-toast');
-                if (!toast) {
-                    toast = document.createElement('div');
-                    toast.id = 'ae-success-toast';
-                    toast.style.cssText = `
-                        position: fixed; top: 24px; right: 24px; z-index: 9999;
-                        display: flex; align-items: center; gap: 12px;
-                        background: #fff; border: 1px solid #e2e8f0;
-                        border-left: 4px solid #22c55e;
-                        padding: 14px 20px; border-radius: 12px;
-                        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-                        font-family: Inter, sans-serif; font-size: 14px; font-weight: 600;
-                        color: #1e293b; min-width: 260px;
-                        transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-                    `;
-                    document.body.appendChild(toast);
+                let container = document.getElementById('success-toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'success-toast-container';
+                    container.className = 'fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none px-4';
+                    document.body.appendChild(container);
                 }
+                const toast = document.createElement('div');
+                toast.className = 'pointer-events-auto flex flex-col items-center gap-3 p-6 sm:px-8 sm:py-7 bg-emerald-500/95 dark:bg-emerald-600/95 backdrop-blur-2xl text-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(16,185,129,0.5)] border border-white/20 transform scale-75 opacity-0 transition-all duration-500 ease-out';
                 toast.innerHTML = `
-                    <span style="color:#22c55e;font-size:22px;line-height:1" class="material-symbols-outlined">check_circle</span>
-                    <div>
-                        <div style="font-size:14px;font-weight:700">Entry Saved! 🎉</div>
-                        <div style="font-size:12px;font-weight:400;color:#64748b">Daily record has been saved successfully.</div>
+                    <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-inner shrink-0 mb-1">
+                        <span class="material-symbols-outlined text-[36px] font-black text-emerald-500">task_alt</span>
+                    </div>
+                    <div class="flex flex-col text-center">
+                        <span class="text-xl font-black text-white tracking-wide">Entry Saved! 🎉</span>
+                        <span class="text-sm font-semibold text-emerald-50 mt-1.5 leading-snug">Your daily record has been saved<br>successfully to the ledger.</span>
                     </div>
                 `;
+                container.appendChild(toast);
+                
                 requestAnimationFrame(() => {
-                    requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
+                    requestAnimationFrame(() => toast.classList.remove('scale-75', 'opacity-0'));
                 });
-                clearTimeout(toast._t);
-                toast._t = setTimeout(() => { toast.style.transform = 'translateX(120%)'; }, 3000);
+                
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'scale-90', 'translate-y-4');
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
             })();
             form.reset();
 
