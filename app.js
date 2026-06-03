@@ -4778,29 +4778,29 @@ async function initReports() {
             } else {
                 topVillagesBody.innerHTML = sortedVillages.map((v, idx) => `
                     <tr class="hover:bg-primary/5 transition-colors group">
-                        <td class="px-6 py-4 font-bold text-slate-500 w-12 text-center">${idx + 1}</td>
-                        <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200">
+                        <td class="px-4 py-2 font-bold text-slate-500 w-12 text-center">${idx + 1}</td>
+                        <td class="px-4 py-2 font-semibold text-slate-700 dark:text-slate-200">
                             ${v.name}
                         </td>
-                        <td class="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
+                        <td class="px-4 py-2 text-right font-black text-emerald-600 dark:text-emerald-400">
                             ${v.count}
                         </td>
-                        <td class="px-6 py-4 text-right font-bold text-slate-600 dark:text-slate-300">
+                        <td class="px-4 py-2 text-right font-bold text-slate-600 dark:text-slate-300">
                             ${formatCurrency(v.volume)}
                         </td>
-                        <td class="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400">
+                        <td class="px-4 py-2 text-right font-bold text-rose-600 dark:text-rose-400">
                             ${formatCurrency(v.fees)}
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                        <td class="px-4 py-2 text-center font-semibold text-slate-500 dark:text-slate-400">
                             ${v.aepsPct}%
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                        <td class="px-4 py-2 text-center font-semibold text-slate-500 dark:text-slate-400">
                             ${v.matmPct}%
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                        <td class="px-4 py-2 text-center font-semibold text-slate-500 dark:text-slate-400">
                             ${v.depositPct}%
                         </td>
-                        <td class="px-6 py-4 text-center font-semibold text-slate-500 dark:text-slate-400">
+                        <td class="px-4 py-2 text-center font-semibold text-slate-500 dark:text-slate-400">
                             ${v.withdrawPct}%
                         </td>
                     </tr>
