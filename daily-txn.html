@@ -499,11 +499,11 @@
                         </div>
                     </div>
 
-                    <!-- Roinet -->
+                    <!-- CSP Wallet -->
                     <div id="roinet-card" onclick="showRoinetBreakdown()" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-500/10 dark:to-slate-900/90 border border-indigo-100 dark:border-indigo-500/20 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99] group cursor-pointer select-none flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
-                            <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider leading-none">Roinet</span>
+                            <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider leading-none">CSP Wallet</span>
                             <svg class="w-3.5 h-3.5 text-indigo-500 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                         </div>
                         <div class="flex items-center justify-between mb-1.5 leading-none">
@@ -946,7 +946,7 @@
     })();
     </script>
 
-    <!-- Roinet Breakdown Modal -->
+    <!-- CSP Wallet Breakdown Modal -->
     <div id="roinet-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
             <div class="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-indigo-500 to-purple-600">
@@ -955,7 +955,7 @@
                         <span class="material-symbols-outlined">account_balance_wallet</span>
                     </div>
                     <div>
-                        <h3 class="text-white font-black text-lg leading-none">Roinet Breakdown</h3>
+                        <h3 class="text-white font-black text-lg leading-none">CSP Wallet</h3>
                         <p class="text-white/70 text-[10px] uppercase tracking-widest font-bold mt-1">Provider Wise Split</p>
                     </div>
                 </div>
@@ -1522,8 +1522,17 @@
                 closing: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 }
             };
 
+            // daily-txn sets combined keys (roinet, airtel, spicemoney)
+            // add-entry sets split keys (roinet_1, roinet_2, airtel_1, airtel_2)
+            // Handle both formats
+            const getVal = (obj, splitKey, combinedKey) => {
+                if (obj[splitKey] !== undefined && obj[splitKey] !== 0) return obj[splitKey];
+                if (obj[combinedKey] !== undefined) return obj[combinedKey];
+                return 0;
+            };
+
             const updateRow = (id, op, cl) => {
-                const lastChg = bd.lastChange ? (bd.lastChange[id === 'spice' ? 'spicemoney' : id] || 0) : 0;
+                const change = cl - op;
                 const opEl = document.getElementById(`bd-${id}-op`);
                 const clEl = document.getElementById(`bd-${id}-cl`);
                 const chgEl = document.getElementById(`bd-${id}-chg`);
@@ -1531,17 +1540,20 @@
                 if (opEl) opEl.textContent = fmt(op);
                 if (clEl) clEl.textContent = fmt(cl);
                 if (chgEl) {
-                    chgEl.textContent = (lastChg >= 0 ? '+' : '') + fmt(lastChg);
-                    chgEl.className = `text-[10px] font-black ${id === 'total' ? 'text-white/90' : (lastChg > 0 ? 'text-emerald-500' : (lastChg < 0 ? 'text-rose-500' : 'text-slate-400'))}`;
+                    chgEl.textContent = (change >= 0 ? '+' : '') + fmt(change);
+                    chgEl.className = `text-[10px] font-black ${id === 'total' ? 'text-white/90' : (change > 0 ? 'text-emerald-500' : (change < 0 ? 'text-rose-500' : 'text-slate-400'))}`;
                 }
             };
 
-            updateRow('roinet_1', bd.opening.roinet_1, bd.closing.roinet_1);
-            updateRow('roinet_2', bd.opening.roinet_2, bd.closing.roinet_2);
-            updateRow('airtel_1', bd.opening.airtel_1, bd.closing.airtel_1);
-            updateRow('airtel_2', bd.opening.airtel_2, bd.closing.airtel_2);
-            updateRow('spice', bd.opening.spicemoney, bd.closing.spicemoney);
-            updateRow('total', bd.opening.total, bd.closing.total);
+            const op = bd.opening || {};
+            const cl = bd.closing || {};
+
+            updateRow('roinet_1', getVal(op, 'roinet_1', 'roinet'), getVal(cl, 'roinet_1', 'roinet'));
+            updateRow('roinet_2', getVal(op, 'roinet_2', 'roinet'), getVal(cl, 'roinet_2', 'roinet'));
+            updateRow('airtel_1', getVal(op, 'airtel_1', 'airtel'), getVal(cl, 'airtel_1', 'airtel'));
+            updateRow('airtel_2', getVal(op, 'airtel_2', 'airtel'), getVal(cl, 'airtel_2', 'airtel'));
+            updateRow('spice', getVal(op, 'spicemoney', 'spicemoney'), getVal(cl, 'spicemoney', 'spicemoney'));
+            updateRow('total', op.total || 0, cl.total || 0);
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
