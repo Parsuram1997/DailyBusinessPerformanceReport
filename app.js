@@ -4724,24 +4724,30 @@ async function initReports() {
                     const words = raw.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
                     const normalized = words.join(' ');
                     
-                    if (villageCounts[normalized]) {
-                        villageCounts[normalized]++;
-                    } else {
-                        villageCounts[normalized] = 1;
+                    const amt = parseFloat(t.amount) || 0;
+                    const chg = parseFloat(t.charges) || 0;
+
+                    if (!villageCounts[normalized]) {
+                        villageCounts[normalized] = { count: 0, volume: 0, fees: 0 };
                     }
+                    villageCounts[normalized].count++;
+                    villageCounts[normalized].volume += amt;
+                    villageCounts[normalized].fees += chg;
                 }
             });
             
             // Sort to array and pick top 20
             const sortedVillages = Object.keys(villageCounts).map(v => ({
                 name: v,
-                count: villageCounts[v]
+                count: villageCounts[v].count,
+                volume: villageCounts[v].volume,
+                fees: villageCounts[v].fees
             })).sort((a, b) => b.count - a.count).slice(0, 20);
             
             if (sortedVillages.length === 0) {
                 topVillagesBody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-6 py-10 text-center">
+                        <td colspan="5" class="px-6 py-10 text-center">
                             <div class="flex flex-col items-center gap-2 opacity-40">
                                 <span class="material-symbols-outlined text-4xl">info</span>
                                 <p class="text-sm font-medium">Data Not Available</p>
@@ -4758,6 +4764,12 @@ async function initReports() {
                         </td>
                         <td class="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
                             ${v.count}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-600 dark:text-slate-300">
+                            ${formatCurrency(v.volume)}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400">
+                            ${formatCurrency(v.fees)}
                         </td>
                     </tr>
                 `).join('');
