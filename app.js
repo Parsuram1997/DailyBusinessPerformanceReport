@@ -4751,21 +4751,44 @@ async function initReports() {
             // Calculate total customers across all valid villages
             const totalValidCustomers = Object.values(villageCounts).reduce((sum, v) => sum + v.count, 0);
 
-            // Sort to array and pick top 20
-            const sortedVillages = Object.keys(villageCounts).map(v => {
-                const data = villageCounts[v];
-                return {
-                    name: v,
-                    count: data.count,
-                    totalPct: totalValidCustomers > 0 ? Math.round((data.count / totalValidCustomers) * 100) : 0,
-                    volume: data.volume,
-                    fees: data.fees,
-                    aepsPct: data.count > 0 ? Math.round((data.aepsCount / data.count) * 100) : 0,
-                    matmPct: data.count > 0 ? Math.round((data.matmCount / data.count) * 100) : 0,
-                    depositPct: data.count > 0 ? Math.round((data.depositCount / data.count) * 100) : 0,
-                    withdrawPct: data.count > 0 ? Math.round((data.withdrawCount / data.count) * 100) : 0
-                };
-            }).sort((a, b) => b.count - a.count).slice(0, 20);
+            // Sort to array
+            const allVillages = Object.keys(villageCounts).map(v => ({
+                name: v,
+                ...villageCounts[v]
+            })).sort((a, b) => b.count - a.count);
+            
+            const top20 = allVillages.slice(0, 20);
+            const remaining = allVillages.slice(20);
+            
+            if (remaining.length > 0) {
+                const othersData = remaining.reduce((acc, curr) => {
+                    acc.count += curr.count;
+                    acc.volume += curr.volume;
+                    acc.fees += curr.fees;
+                    acc.aepsCount += curr.aepsCount;
+                    acc.matmCount += curr.matmCount;
+                    acc.depositCount += curr.depositCount;
+                    acc.withdrawCount += curr.withdrawCount;
+                    return acc;
+                }, { count: 0, volume: 0, fees: 0, aepsCount: 0, matmCount: 0, depositCount: 0, withdrawCount: 0 });
+                
+                top20.push({
+                    name: 'Others',
+                    ...othersData
+                });
+            }
+            
+            const sortedVillages = top20.map(data => ({
+                name: data.name,
+                count: data.count,
+                totalPct: totalValidCustomers > 0 ? Math.round((data.count / totalValidCustomers) * 100) : 0,
+                volume: data.volume,
+                fees: data.fees,
+                aepsPct: data.count > 0 ? Math.round((data.aepsCount / data.count) * 100) : 0,
+                matmPct: data.count > 0 ? Math.round((data.matmCount / data.count) * 100) : 0,
+                depositPct: data.count > 0 ? Math.round((data.depositCount / data.count) * 100) : 0,
+                withdrawPct: data.count > 0 ? Math.round((data.withdrawCount / data.count) * 100) : 0
+            }));
             
             if (sortedVillages.length === 0) {
                 topVillagesBody.innerHTML = `
