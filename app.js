@@ -6096,8 +6096,10 @@ async function initDailyTxn() {
     let currentAvailableJio = 0; // Tracks live Jio balance for validation
     let currentAvailableDamaged = 0; // Tracks live damaged currency for validation
     let currentAvailableCrgb = 0; // Tracks live CRGB BC balance for validation
-    let currentAvailableRoinet = 0; // Tracks live Roinet (ID specific) for validation
-    let currentAvailableAirtel = 0; // Tracks live Airtel for validation
+    let currentAvailableRoinet1 = 0; // Tracks live Roinet(Parsu) for validation
+    let currentAvailableRoinet2 = 0; // Tracks live Roinet(Dalai) for validation
+    let currentAvailableAirtel1 = 0; // Tracks live Airtel(Parsu) for validation
+    let currentAvailableAirtel2 = 0; // Tracks live Airtel(Dalai) for validation
     let currentAvailableSpiceMoney = 0; // Tracks live Spice Money for validation
 
     // Initialize date picker
@@ -7068,8 +7070,10 @@ async function initDailyTxn() {
                 let available = 0;
                 let providerName = provider;
 
-                if (provider === 'Roinet') { available = currentAvailableRoinet; }
-                else if (provider === 'Airtel') { available = currentAvailableAirtel; }
+                if (provider === 'Roinet(Parsu)') { available = currentAvailableRoinet1; }
+                else if (provider === 'Roinet(Dalai)') { available = currentAvailableRoinet2; }
+                else if (provider === 'Airtel(Parsu)') { available = currentAvailableAirtel1; }
+                else if (provider === 'Airtel(Dalai)') { available = currentAvailableAirtel2; }
                 else if (provider === 'SpiceMoney') { available = currentAvailableSpiceMoney; }
                 else if (provider === 'Crgb Bc') { available = currentAvailableCrgb; }
                 else {
@@ -7648,9 +7652,11 @@ async function initDailyTxn() {
             const totalSplitOpening = opRoinet + opAirtel + opSpiceMoney;
             const roinetOpeningFallback = totalSplitOpening > 0 ? totalSplitOpening : parseFloat(opValues.roinet || 0);
 
-            currentAvailableRoinet = (totalSplitOpening > 0 ? opRoinet : roinetOpeningFallback) + roinetBreakdown.roinet_1 + roinetBreakdown.roinet_2;
-            currentAvailableAirtel = opAirtel + roinetBreakdown.airtel_1 + roinetBreakdown.airtel_2;
-            currentAvailableSpiceMoney = opSpiceMoney + roinetBreakdown.spicemoney;
+            currentAvailableRoinet1 = parseFloat(details.roinet_1 || 0) + roinetBreakdown.roinet_1;
+            currentAvailableRoinet2 = parseFloat(details.roinet_2 || 0) + roinetBreakdown.roinet_2;
+            currentAvailableAirtel1 = parseFloat(details.airtel_1 || 0) + roinetBreakdown.airtel_1;
+            currentAvailableAirtel2 = parseFloat(details.airtel_2 || 0) + roinetBreakdown.airtel_2;
+            currentAvailableSpiceMoney = parseFloat(details.spicemoney || 0) + roinetBreakdown.spicemoney;
 
             window._roinetBreakdown = {
                 opening: {
