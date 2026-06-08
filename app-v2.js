@@ -14,6 +14,7 @@ const query = (col, ...constraints) => {
 };
 const where = (f, o, v) => (q) => q.where(f, o, v);
 const orderBy = (f, d) => (q) => q.orderBy(f, d);
+const limit = (n) => (q) => q.limit(n);
 const onSnapshot = (q, next, error) => q.onSnapshot(next, error);
 const getDocs = (q) => q.get();
 const getDoc = (d) => d.get().then(snap => {
@@ -1354,6 +1355,54 @@ async function initAddEntry() {
                     submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg">add_circle</span> Save Entry';
                 }
                 return;
+            }
+
+            // ─── Transaction Checked Verification Validation ───
+            const isValidateTxnsChecked = window.getAppSetting ? window.getAppSetting('validate_txns_checked', true) : (localStorage.getItem('validate_txns_checked') !== 'false');
+            if (isValidateTxnsChecked) {
+                const dateVal = datePicker ? datePicker.value : null;
+                if (dateVal) {
+                    const dateQueries = getPossibleDateFormats(dateVal);
+                    const txnRef = collection(db, "daily_transactions");
+                    const txnSnap = await getDocs(query(txnRef, where("date", "in", dateQueries)));
+                    
+                    const uncheckedTxns = [];
+                    const typesToCheck = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
+                    
+                    txnSnap.forEach(docSnap => {
+                        const txn = docSnap.data();
+                        const txnType = (txn.type || "").toUpperCase();
+                        if (typesToCheck.includes(txnType) && txn.checked !== true) {
+                            uncheckedTxns.push({
+                                type: txn.type,
+                                provider: txn.provider || 'N/A',
+                                amount: txn.amount || 0
+                            });
+                        }
+                    });
+                    
+                    if (uncheckedTxns.length > 0) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Validation Alert',
+                                html: `<div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.</div><br><div class="max-h-[200px] overflow-y-auto pr-1">` + 
+                                      uncheckedTxns.map(t => `<div class="text-xs text-left mt-1.5 border-b border-primary/10 pb-1.5 flex justify-between"><span>Type: <b>${t.type}</b> (Provider: ${t.provider})</span> <span>Amount: <b>₹${t.amount}</b></span></div>`).join('') + `</div>`,
+                                icon: 'error',
+                                confirmButtonColor: '#7f13ec'
+                            });
+                        } else {
+                            alert('Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.');
+                        }
+                        
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            const btnIcon = existingEntryId ? 'edit_note' : 'save';
+                            const btnText = existingEntryId ? 'Update Entry' : 'Save Entry';
+                            submitBtn.innerHTML = `<span class="material-symbols-outlined text-lg">${btnIcon}</span> ${btnText}`;
+                        }
+                        return;
+                    }
+                }
             }
 
             let income = 0;
@@ -5148,6 +5197,119 @@ async function initDailyTxn() {
     let currentTxnFilter = 'ALL';
     let currentStartCash = 0;
     let currentStartOnline = 0;
+
+    // All-Time Search Functionality
+    window.isAllTimeSearchMode = false;
+    const toggleAllTimeSearchBtn = document.getElementById('toggle-all-time-search-btn');
+    const allTimeSearchBanner = document.getElementById('all-time-search-banner');
+    const allTimeSearchCountBadge = document.getElementById('all-time-search-count-badge');
+    const summaryBalancesGrid = document.getElementById('summary-balances-grid');
+    const summaryBadgesArea = document.getElementById('summary-badges-area');
+    const searchInput = document.getElementById('txn-search-input');
+
+    const loadAllTimeTransactions = () => {
+        try {
+            if (unsubscribe) unsubscribe();
+            
+            if (txnDateText) txnDateText.innerText = "All Time Transactions";
+
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="100" class="px-6 py-24 text-center">
+                            <div class="inline-flex flex-col items-center justify-center gap-5 p-8 rounded-3xl bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/10 backdrop-blur-xl shadow-xl max-w-sm w-full mx-auto animate-fadeIn">
+                                <div class="relative flex items-center justify-center">
+                                    <div class="absolute size-14 rounded-full bg-primary/20 blur-md animate-pulse"></div>
+                                    <div class="size-12 rounded-full border-4 border-primary/10 border-t-primary border-r-primary/50 animate-spin"></div>
+                                    <div class="absolute size-3 rounded-full bg-primary animate-ping"></div>
+                                </div>
+                                <div class="space-y-2">
+                                    <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest leading-none">Loading All-Time Transactions</h4>
+                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Fetching records across all dates...</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            if (allTimeSearchCountBadge) allTimeSearchCountBadge.innerText = "Fetching...";
+
+            const txnCollection = collection(db, 'daily_transactions');
+            const q = query(txnCollection, orderBy('date', 'desc'), limit(5000));
+            
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                txns.sort((a, b) => {
+                    const dateA = a.date || "";
+                    const dateB = b.date || "";
+                    if (dateA !== dateB) return dateB.localeCompare(dateA);
+                    return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                });
+
+                allTxnsForDate = txns;
+                
+                if (allTimeSearchCountBadge) {
+                    allTimeSearchCountBadge.innerText = `${txns.length} Transactions`;
+                }
+
+                renderBadgesAndTable();
+            }, (error) => {
+                console.error('All-Time Transactions Listener Error:', error);
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold border-2 border-rose-100 rounded-xl bg-rose-50/50">
+                                <span class="material-symbols-outlined text-4xl mb-2">error</span>
+                                <div class="text-lg">Failed to load all-time transactions</div>
+                                <div class="text-xs opacity-70 font-medium mt-1">Error: ${error.message}</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        } catch (e) {
+            console.error('Error setting up all-time transactions listener:', e);
+        }
+    };
+
+    if (toggleAllTimeSearchBtn) {
+        toggleAllTimeSearchBtn.onclick = () => {
+            window.isAllTimeSearchMode = !window.isAllTimeSearchMode;
+            if (window.isAllTimeSearchMode) {
+                toggleAllTimeSearchBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
+                toggleAllTimeSearchBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                if (allTimeSearchBanner) allTimeSearchBanner.classList.remove('hidden');
+                if (summaryBalancesGrid) summaryBalancesGrid.classList.add('hidden');
+                if (summaryBadgesArea) summaryBadgesArea.classList.add('hidden');
+                
+                loadAllTimeTransactions();
+            } else {
+                toggleAllTimeSearchBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
+                toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600');
+                if (allTimeSearchBanner) allTimeSearchBanner.classList.add('hidden');
+                
+                const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+                if (getSetting('dtxn_showBalancesGrid', true) && summaryBalancesGrid) {
+                    summaryBalancesGrid.classList.remove('hidden');
+                }
+                if (getSetting('dtxn_showSummary', true) && summaryBadgesArea) {
+                    summaryBadgesArea.classList.remove('hidden');
+                }
+
+                loadTransactions(currentSelectedDate);
+            }
+        };
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (window.isAllTimeSearchMode) {
+                renderBadgesAndTable();
+            }
+        });
+    }
     let currentAvailableCash = 0; // Tracks live cash for validation
     let currentAvailableOnline = 0; // Tracks live online for validation
     let currentAvailableJio = 0; // Tracks live Jio balance for validation
@@ -5368,23 +5530,39 @@ async function initDailyTxn() {
                 if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') && !isDamagedRecovery && !isCashMovement) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
-                    const input = noteFieldContainer.querySelector('input');
                     if (txnType.value === 'DAILY_EXPENSE') {
                         if (label) label.innerText = 'Expense Type';
-                        if (input) input.placeholder = 'Enter description...';
+                        if (txnNote) txnNote.classList.add('hidden');
+                        if (txnExpenseType) txnExpenseType.classList.remove('hidden');
                     } else if (txnType.value === 'OTHER_INCOME') {
                         if (label) label.innerText = 'Income Type';
-                        if (input) input.placeholder = 'e.g. Commission, Bonus...';
+                        if (txnNote) {
+                            txnNote.classList.remove('hidden');
+                            txnNote.placeholder = 'e.g. Commission, Bonus...';
+                        }
+                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
                     } else {
                         if (label) label.innerText = 'Customer Name';
-                        if (input) input.placeholder = 'Enter Name...';
+                        if (txnNote) {
+                            txnNote.classList.remove('hidden');
+                            txnNote.placeholder = 'Enter Name...';
+                        }
+                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
                     }
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
             if (remarkFieldContainer) {
-                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
+                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'DAILY_EXPENSE'].includes(txnType.value)) {
                     remarkFieldContainer.classList.remove('hidden');
+                    const label = remarkFieldContainer.querySelector('label');
+                    if (txnType.value === 'DAILY_EXPENSE') {
+                        if (label) label.innerText = 'Description';
+                        if (txnRemark) txnRemark.placeholder = 'Enter description...';
+                    } else {
+                        if (label) label.innerText = 'Note / Remark';
+                        if (txnRemark) txnRemark.placeholder = 'Enter remark...';
+                    }
                 } else {
                     remarkFieldContainer.classList.add('hidden');
                     if (txnRemark) txnRemark.value = '';
@@ -6118,7 +6296,7 @@ async function initDailyTxn() {
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
                 laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
-                note: capitalizeWords(txnNote.value.trim()),
+                note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
@@ -6321,22 +6499,25 @@ async function initDailyTxn() {
             
             // Per-provider roinet breakdown tracking
             const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
+            const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
+
+            const getSubAccountKey = (prov) => {
+                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
+                if (prov.includes('roinet(dalai)') || prov === 'roinet_2') return 'roinet_2';
+                if (prov.includes('airtel(parsu)') || prov === 'airtel_1') return 'airtel_1';
+                if (prov.includes('airtel(dalai)') || prov === 'airtel_2') return 'airtel_2';
+                if (prov.includes('spicemoney')) return 'spicemoney';
+                if (prov.includes('airtel')) return 'airtel_1';
+                if (prov.includes('roinet')) return 'roinet_1';
+                return null;
+            };
 
             const updateRoinetBreakdown = (prov, value) => {
-                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') {
-                    roinetBreakdown.roinet_1 += value;
-                } else if (prov.includes('roinet(dalai)') || prov === 'roinet_2') {
-                    roinetBreakdown.roinet_2 += value;
-                } else if (prov.includes('airtel(parsu)') || prov === 'airtel_1') {
-                    roinetBreakdown.airtel_1 += value;
-                } else if (prov.includes('airtel(dalai)') || prov === 'airtel_2') {
-                    roinetBreakdown.airtel_2 += value;
-                } else if (prov.includes('spicemoney')) {
-                    roinetBreakdown.spicemoney += value;
-                } else {
-                    if (prov.includes('airtel')) roinetBreakdown.airtel_1 += value;
-                    else if (prov.includes('spicemoney')) roinetBreakdown.spicemoney += value;
-                    else roinetBreakdown.roinet_1 += value;
+                const key = getSubAccountKey(prov);
+                if (key) {
+                    roinetBreakdown[key] += value;
+                    lastRoinetChanges[key] = value;
+                    lastRoinetChanges.total = value;
                 }
             };
 
@@ -6509,6 +6690,14 @@ async function initDailyTxn() {
                     airtel_2: parseFloat(openingBalances.airtel_2 || 0) + roinetBreakdown.airtel_2,
                     spicemoney: parseFloat(openingBalances.spicemoney || 0) + roinetBreakdown.spicemoney,
                     total: roinetOpeningFallback + (balances.roinet || 0)
+                },
+                lastChange: {
+                    roinet_1: lastRoinetChanges.roinet_1,
+                    roinet_2: lastRoinetChanges.roinet_2,
+                    airtel_1: lastRoinetChanges.airtel_1,
+                    airtel_2: lastRoinetChanges.airtel_2,
+                    spicemoney: lastRoinetChanges.spicemoney,
+                    total: lastRoinetChanges.total
                 }
             };
         } catch (err) {
@@ -6529,12 +6718,16 @@ async function initDailyTxn() {
             if (tableBody) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-6 py-20 text-center">
-                            <div class="flex flex-col items-center justify-center gap-4">
-                                <div class="size-12 border-[4px] border-primary/10 border-t-primary rounded-full animate-spin"></div>
-                                <div class="space-y-1">
-                                    <p class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest animate-pulse">Fetching Transactions</p>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Please wait while we sync with database...</p>
+                        <td colspan="100" class="px-6 py-24 text-center">
+                            <div class="inline-flex flex-col items-center justify-center gap-5 p-8 rounded-3xl bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/10 backdrop-blur-xl shadow-xl max-w-sm w-full mx-auto animate-fadeIn">
+                                <div class="relative flex items-center justify-center">
+                                    <div class="absolute size-14 rounded-full bg-primary/20 blur-md animate-pulse"></div>
+                                    <div class="size-12 rounded-full border-4 border-primary/10 border-t-primary border-r-primary/50 animate-spin"></div>
+                                    <div class="absolute size-3 rounded-full bg-primary animate-ping"></div>
+                                </div>
+                                <div class="space-y-2">
+                                    <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest leading-none">Fetching Transactions</h4>
+                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Please wait while we sync with database...</p>
                                 </div>
                             </div>
                         </td>
@@ -6851,7 +7044,38 @@ async function initDailyTxn() {
         }
 
         // Now filter the table data
-        const txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : (currentTxnFilter === 'PENDING' ? allTxnsForDate.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : allTxnsForDate.filter(t => t.type === currentTxnFilter));
+        let txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : (currentTxnFilter === 'PENDING' ? allTxnsForDate.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : allTxnsForDate.filter(t => t.type === currentTxnFilter));
+
+        if (window.isAllTimeSearchMode) {
+            const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const keywords = term.split(/\s+/).filter(k => k.length > 0);
+            
+            if (keywords.length > 0) {
+                txnsToRender = txnsToRender.filter(txn => {
+                    const bankName = (txn.bankName || '').toLowerCase();
+                    const note = (txn.note || '').toLowerCase();
+                    const remark = (txn.remark || '').toLowerCase();
+                    const address = (txn.address || '').toLowerCase();
+                    const extraDetails = (txn.extraDetails || '').toLowerCase();
+                    const type = (txn.type || '').toLowerCase();
+                    const amount = (txn.amount || '').toString();
+                    const date = (txn.date || '').toLowerCase();
+                    const provider = (txn.provider || '').toLowerCase();
+
+                    const fullText = `${bankName} ${note} ${remark} ${address} ${extraDetails} ${type} ${amount} ${date} ${provider}`;
+                    return keywords.every(k => fullText.includes(k));
+                });
+                txnsToRender = txnsToRender.slice(0, 500);
+                if (allTimeSearchCountBadge) {
+                    allTimeSearchCountBadge.innerText = `Found ${txnsToRender.length} matches`;
+                }
+            } else {
+                txnsToRender = txnsToRender.slice(0, 100);
+                if (allTimeSearchCountBadge) {
+                    allTimeSearchCountBadge.innerText = `Showing latest 100 (Total: ${allTxnsForDate.length})`;
+                }
+            }
+        }
         
         const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
         const showBalanceDiff = getSetting('dtxn_showBalanceDiff', true);
@@ -7001,17 +7225,71 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col gap-0.5 max-w-[220px]">
-                        ${accName ? `
-                            <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
-                            ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
+                        ${txn.type === 'SETTLEMENT' ? `
+                            <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
+                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                                    <span class="material-symbols-outlined text-[13px] text-amber-600">account_balance_wallet</span>
+                                    ${txn.provider || 'Wallet'}
+                                </span>
+                                <span class="material-symbols-outlined text-indigo-500 text-sm font-black select-none">east</span>
+                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">
+                                    <span class="material-symbols-outlined text-[13px] text-indigo-600">account_balance</span>
+                                    ${getShortBankName(bankDisplay) || txn.bankName || 'Bank'}
+                                </span>
+                            </div>
+                            ${accName ? `
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mt-1">
+                                    <span class="material-symbols-outlined text-[13px] text-slate-500">person</span>
+                                    <span>${accName}</span>
+                                </div>
+                            ` : ''}
+                            ${accNumber ? `
+                                <div class="flex items-center gap-1 text-[10px] font-mono text-slate-500 dark:text-slate-400 tracking-wider mt-0.5">
+                                    <span class="material-symbols-outlined text-[13px]">pin</span>
+                                    <span>A/C: ${accNumber}</span>
+                                </div>
+                            ` : ''}
+                            ${txn.remark ? `
+                                <div class="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
+                                    <span class="material-symbols-outlined text-[13px]">notes</span>
+                                    <span>${txn.remark}</span>
+                                </div>
+                            ` : ''}
                         ` : (
-                            (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txn.type)) ? `
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || 'No Name'}</span>
-                                ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
-                            ` : `
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
-                            `
-                        )}
+                            ['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type) ? `
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
+                                        <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
+                                            <span class="material-symbols-outlined text-[13px] text-purple-600">account_balance_wallet</span>
+                                            ${txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet')}
+                                        </span>
+                                        <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Commission</span>
+                                    </div>
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-emerald-500 text-sm">monetization_on</span>
+                                        <span>${txn.type === 'ROINET_COMMISSION' ? 'Roinet Commission Received' : 'CSP Commission Earned'}</span>
+                                    </div>
+                                    ${txn.remark ? `
+                                        <div class="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
+                                            <span class="material-symbols-outlined text-[13px]">notes</span>
+                                            <span>${txn.remark}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : (
+                                accName ? `
+                                <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
+                                ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
+                            ` : (
+                                (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DAILY_EXPENSE'].includes(txn.type)) ? `
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name')}</span>
+                                    ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
+                                ` : `
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                                `
+                            )
+                        )
+                    )}
                         ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
                         ${txn.address || txn.extraDetails ? `
                             <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
@@ -7026,7 +7304,7 @@ async function initDailyTxn() {
                         ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
                             <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
                         ` : `
-                            <span class="text-sm font-black text-slate-900 dark:text-white">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span class="text-sm font-black ${txn.type === 'DAILY_EXPENSE' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         `}
                         ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
                     </div>
@@ -7044,12 +7322,12 @@ async function initDailyTxn() {
                 <td class="px-3 py-1.5 balance-col-cell">
                     <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
                         <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
-                            <span>C: ₹${(txn.runningCash || 0).toLocaleString('en-IN')}</span>
-                            ${showBalanceDiff && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                            <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
+                            ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
                         <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center">
-                            <span>O: ₹${(txn.runningOnline || 0).toLocaleString('en-IN')}</span>
-                            ${showBalanceDiff && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                            <span>O: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
+                            ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
                     </div>
                 </td>
@@ -7067,21 +7345,23 @@ async function initDailyTxn() {
             tableBody.appendChild(tr);
         });
 
-        // Add Opening Balance Row at the bottom
-        const opRow = document.createElement('tr');
-        opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
-        opRow.innerHTML = `
-            <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
-            <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
-            <td class="px-3 py-2 text-right">
-                <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                    <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full text-center">C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
-                    <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full text-center">O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
-                </div>
-            </td>
-            <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
-        `;
-        tableBody.appendChild(opRow);
+        if (!window.isAllTimeSearchMode) {
+            // Add Opening Balance Row at the bottom
+            const opRow = document.createElement('tr');
+            opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
+            opRow.innerHTML = `
+                <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
+                <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
+                <td class="px-3 py-2 text-right">
+                    <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                        <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full text-center">C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
+                        <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full text-center">O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
+                    </div>
+                </td>
+                <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+            `;
+            tableBody.appendChild(opRow);
+        }
 
         // Re-attach edit/delete listeners
         document.querySelectorAll('.edit-txn-btn').forEach(btn => {
@@ -7098,6 +7378,7 @@ async function initDailyTxn() {
                     if (txnLaminationSize && txn.laminationSize) txnLaminationSize.value = txn.laminationSize;
                     txnNote.value = txn.note;
                     if (txnRemark) txnRemark.value = txn.remark || '';
+                    if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
                     txnAddress.value = txn.address;
                     txnConditional.value = txn.extraDetails || '';
                     txnProvider.value = txn.provider || '';

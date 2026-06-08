@@ -675,6 +675,27 @@
             </div>
         </div>
 
+        <!-- Validate Checked Transactions -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-rose-600 shrink-0">rule</span>
+                <div>
+                    <p class="font-bold text-sm">Validate Checked Transactions</p>
+                    <p class="text-xs text-slate-500">Prevent saving daily entry if AEPS, MATM, Deposit, or Withdrawal are unchecked.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-validate-txns-checked" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-validate-txns-checked" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
+        </div>
+
         <!-- Danger Zone -->
         <div class="pt-6 mt-2 border-t border-rose-100 dark:border-rose-900/30">
             <div class="flex items-center gap-2 mb-4">
@@ -1004,6 +1025,7 @@ const hidePublicDtxnToggle = document.getElementById('toggle-hide-public-dtxn');
 const toggleValidateCashDiff = document.getElementById('toggle-validate-cash-diff');
 const toggleValidateOnlineDiff = document.getElementById('toggle-validate-online-diff');
 const toggleValidateCspDiff = document.getElementById('toggle-validate-csp-diff');
+const toggleValidateTxnsChecked = document.getElementById('toggle-validate-txns-checked');
 
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
 const compactLockCard = document.getElementById('compact-lock-card');
@@ -1130,6 +1152,7 @@ function applySettingsToUI() {
         if (toggleValidateCashDiff) toggleValidateCashDiff.checked = localStorage.getItem('validate_cash_diff') !== 'false';
     if (toggleValidateOnlineDiff) toggleValidateOnlineDiff.checked = localStorage.getItem('validate_online_diff') !== 'false';
     if (toggleValidateCspDiff) toggleValidateCspDiff.checked = localStorage.getItem('validate_csp_diff') !== 'false';
+    if (toggleValidateTxnsChecked) toggleValidateTxnsChecked.checked = localStorage.getItem('validate_txns_checked') !== 'false';
     pinAddEntryToggle.checked = localStorage.getItem('security_pin_enabled_add_entry') !== 'false';
     pinDailyTxnToggle.checked = localStorage.getItem('security_pin_enabled_daily_txn') !== 'false';
     pinSettingsToggle.checked = localStorage.getItem('security_pin_enabled_settings') !== 'false';
@@ -1158,6 +1181,7 @@ function saveGlobalSettings() {
                 validate_cash_diff: toggleValidateCashDiff ? toggleValidateCashDiff.checked : true,
         validate_online_diff: toggleValidateOnlineDiff ? toggleValidateOnlineDiff.checked : true,
         validate_csp_diff: toggleValidateCspDiff ? toggleValidateCspDiff.checked : true,
+        validate_txns_checked: toggleValidateTxnsChecked ? toggleValidateTxnsChecked.checked : true,
         security_pin_enabled_add_entry: pinAddEntryToggle.checked,
         security_pin_enabled_daily_txn: pinDailyTxnToggle.checked,
         security_pin_enabled_settings: pinSettingsToggle.checked,
@@ -1177,6 +1201,7 @@ function saveGlobalSettings() {
                 if (toggleValidateCashDiff) localStorage.setItem('validate_cash_diff', settings.validate_cash_diff);
         if (toggleValidateOnlineDiff) localStorage.setItem('validate_online_diff', settings.validate_online_diff);
         if (toggleValidateCspDiff) localStorage.setItem('validate_csp_diff', settings.validate_csp_diff);
+        if (toggleValidateTxnsChecked) localStorage.setItem('validate_txns_checked', settings.validate_txns_checked);
         localStorage.setItem('security_pin_enabled_add_entry', settings.security_pin_enabled_add_entry);
         localStorage.setItem('security_pin_enabled_daily_txn', settings.security_pin_enabled_daily_txn);
         localStorage.setItem('security_pin_enabled_settings', settings.security_pin_enabled_settings);
@@ -1196,6 +1221,7 @@ chargesToggle.addEventListener('change', saveGlobalSettings);
 if (toggleValidateCashDiff) toggleValidateCashDiff.addEventListener('change', saveGlobalSettings);
 if (toggleValidateOnlineDiff) toggleValidateOnlineDiff.addEventListener('change', saveGlobalSettings);
 if (toggleValidateCspDiff) toggleValidateCspDiff.addEventListener('change', saveGlobalSettings);
+if (toggleValidateTxnsChecked) toggleValidateTxnsChecked.addEventListener('change', saveGlobalSettings);
 pinAddEntryToggle.addEventListener('change', saveGlobalSettings);
 pinDailyTxnToggle.addEventListener('change', saveGlobalSettings);
 pinSettingsToggle.addEventListener('change', saveGlobalSettings);
@@ -1215,6 +1241,7 @@ const USER_TOGGLE_MAP = [
         { id: 'user-toggle-validate-cash-diff',   key: 'user_validate_cash_diff' },
     { id: 'user-toggle-validate-online-diff', key: 'user_validate_online_diff' },
     { id: 'user-toggle-validate-csp-diff',    key: 'user_validate_csp_diff' },
+    { id: 'user-toggle-validate-txns-checked', key: 'user_validate_txns_checked' },
     { id: 'user-toggle-pin-add-entry',   key: 'user_pin_add_entry' },
     { id: 'user-toggle-pin-daily-txn',   key: 'user_pin_daily_txn' },
     { id: 'user-toggle-summary-area',    key: 'user_dtxn_showSummary' },

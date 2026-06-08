@@ -538,6 +538,40 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Top 20 Repeated Customers Table -->
+            <div class="grid grid-cols-1 mt-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-primary/10 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                                <span class="material-symbols-outlined text-xl">groups</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Top 20 Repeated Customers</h3>
+                                <p class="text-xs text-slate-500">Most frequent customers by transaction count (grouped by Name & Village)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="px-4 py-2.5">#</th>
+                                    <th class="px-4 py-2.5">Customer Name</th>
+                                    <th class="px-4 py-2.5">Village / Location</th>
+                                    <th class="px-4 py-2.5 text-right">Visits / Txns</th>
+                                    <th class="px-4 py-2.5 text-right">Total Volume</th>
+                                    <th class="px-4 py-2.5 text-right">Fees Generated</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-customers-body" class="divide-y divide-primary/5 dark:divide-primary/10">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 </div>

@@ -437,6 +437,10 @@
                                 class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl outline-none text-sm font-bold transition-all shadow-sm">
                         </div>
                         <div class="flex items-center gap-1.5">
+                            <button id="toggle-all-time-search-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs" title="Search All Time (Across all dates)">
+                                <span class="material-symbols-outlined text-sm">history</span>
+                                <span class="hidden sm:inline">Search All-Time</span>
+                            </button>
                             <button id="toggle-checking-mode-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs" title="Toggle Checking Mode">
                                 <span class="material-symbols-outlined text-sm">fact_check</span>
                                 <span class="hidden sm:inline">Checking Mode</span>
@@ -947,9 +951,9 @@
     </script>
 
     <!-- CSP Wallet Breakdown Modal -->
-    <div id="roinet-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div id="roinet-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-2 sm:p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
-            <div class="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-indigo-500 to-purple-600">
+            <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-indigo-500 to-purple-600">
                 <div class="flex items-center gap-3">
                     <div class="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                         <span class="material-symbols-outlined">account_balance_wallet</span>
@@ -964,106 +968,106 @@
                 </button>
             </div>
             
-            <div class="p-6 space-y-6">
-            <div class="p-4">
+            <div class="p-2 sm:p-4 space-y-6">
+            <div class="p-1 sm:p-2">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-separate border-spacing-y-2">
                         <thead>
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th class="px-3 pb-2 text-left">Provider</th>
-                                <th class="px-3 pb-2 text-right">Opening</th>
-                                <th class="px-3 pb-2 text-right">Changes</th>
-                                <th class="px-3 pb-2 text-right">Closing</th>
+                                <th class="px-1.5 pb-2 text-left sm:px-3">Provider</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Opening</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Changes</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Closing</th>
                             </tr>
                         </thead>
                         <tbody id="breakdown-table-body">
                             <!-- Roinet(Parsu) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Roinet(Parsu)</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_1-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_1-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Roinet(Dalai) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Roinet(Dalai)</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_2-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-roinet_2-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Airtel(Parsu) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Airtel(Parsu)</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_1-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_1-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Airtel(Dalai) Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Airtel(Dalai)</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_2-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-airtel_2-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Spice Row -->
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
                                     <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">SPICEMONEY</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-spice-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-spice-chg" class="text-[10px] font-black">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
                                     <p id="bd-spice-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
                                 </td>
                             </tr>
                             <!-- Total Row -->
                             <tr class="bg-indigo-500 rounded-2xl overflow-hidden shadow-lg shadow-indigo-200 dark:shadow-none">
-                                <td class="px-3 py-3 rounded-l-2xl border-y border-l border-indigo-400">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-indigo-400">
                                     <p class="text-[10px] font-black text-white uppercase">TOTAL</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-indigo-400 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-indigo-400 text-right">
                                     <p id="bd-total-op" class="text-xs font-black text-white/90">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 border-y border-indigo-400 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-indigo-400 text-right">
                                     <p id="bd-total-chg" class="text-[10px] font-black text-white/90">₹ 0</p>
                                 </td>
-                                <td class="px-3 py-3 rounded-r-2xl border-y border-r border-indigo-400 text-right">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-indigo-400 text-right">
                                     <p id="bd-total-cl" class="text-sm font-black text-white">₹ 0</p>
                                 </td>
                             </tr>
@@ -1519,20 +1523,22 @@
             const fmt = (v) => `₹ ${parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
             const bd = window._roinetBreakdown || { 
                 opening: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 },
-                closing: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 }
+                closing: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 },
+                lastChange: { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 }
             };
 
             // daily-txn sets combined keys (roinet, airtel, spicemoney)
             // add-entry sets split keys (roinet_1, roinet_2, airtel_1, airtel_2)
             // Handle both formats
             const getVal = (obj, splitKey, combinedKey) => {
+                if (!obj) return 0;
                 if (obj[splitKey] !== undefined && obj[splitKey] !== 0) return obj[splitKey];
                 if (obj[combinedKey] !== undefined) return obj[combinedKey];
                 return 0;
             };
 
-            const updateRow = (id, op, cl) => {
-                const change = cl - op;
+            const updateRow = (id, op, cl, lastChg) => {
+                const change = lastChg;
                 const opEl = document.getElementById(`bd-${id}-op`);
                 const clEl = document.getElementById(`bd-${id}-cl`);
                 const chgEl = document.getElementById(`bd-${id}-chg`);
@@ -1547,13 +1553,14 @@
 
             const op = bd.opening || {};
             const cl = bd.closing || {};
+            const lastChg = bd.lastChange || {};
 
-            updateRow('roinet_1', getVal(op, 'roinet_1', 'roinet'), getVal(cl, 'roinet_1', 'roinet'));
-            updateRow('roinet_2', getVal(op, 'roinet_2', 'roinet'), getVal(cl, 'roinet_2', 'roinet'));
-            updateRow('airtel_1', getVal(op, 'airtel_1', 'airtel'), getVal(cl, 'airtel_1', 'airtel'));
-            updateRow('airtel_2', getVal(op, 'airtel_2', 'airtel'), getVal(cl, 'airtel_2', 'airtel'));
-            updateRow('spice', getVal(op, 'spicemoney', 'spicemoney'), getVal(cl, 'spicemoney', 'spicemoney'));
-            updateRow('total', op.total || 0, cl.total || 0);
+            updateRow('roinet_1', getVal(op, 'roinet_1', 'roinet'), getVal(cl, 'roinet_1', 'roinet'), getVal(lastChg, 'roinet_1', 'roinet'));
+            updateRow('roinet_2', getVal(op, 'roinet_2', 'roinet'), getVal(cl, 'roinet_2', 'roinet'), getVal(lastChg, 'roinet_2', 'roinet'));
+            updateRow('airtel_1', getVal(op, 'airtel_1', 'airtel'), getVal(cl, 'airtel_1', 'airtel'), getVal(lastChg, 'airtel_1', 'airtel'));
+            updateRow('airtel_2', getVal(op, 'airtel_2', 'airtel'), getVal(cl, 'airtel_2', 'airtel'), getVal(lastChg, 'airtel_2', 'airtel'));
+            updateRow('spice', getVal(op, 'spicemoney', 'spicemoney'), getVal(cl, 'spicemoney', 'spicemoney'), getVal(lastChg, 'spicemoney', 'spicemoney'));
+            updateRow('total', op.total || 0, cl.total || 0, lastChg.total || 0);
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
