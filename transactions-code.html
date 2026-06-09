@@ -138,6 +138,29 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
+            // Apply custom accent color if any
+            const accent = localStorage.getItem('biz_accent_color');
+            if (accent) {
+                const style = document.createElement('style');
+                style.id = 'dynamic-accent-styles';
+                style.innerHTML = `
+                    :root {
+                        --color-primary: ${accent} !important;
+                    }
+                    .text-primary { color: ${accent} !important; }
+                    .bg-primary { background-color: ${accent} !important; }
+                    .border-primary { border-color: ${accent} !important; }
+                    .border-primary\\/10 { border-color: ${accent}1a !important; }
+                    .border-primary\\/20 { border-color: ${accent}33 !important; }
+                    .bg-primary\\/5 { background-color: ${accent}0d !important; }
+                    .bg-primary\\/10 { background-color: ${accent}1a !important; }
+                    .hover\\:bg-primary\\/5:hover { background-color: ${accent}0d !important; }
+                    .hover\\:bg-primary\\/10:hover { background-color: ${accent}1a !important; }
+                    .peer-checked\\:bg-purple-600:checked ~ div, .peer-checked\\:bg-purple-600:peer-checked { background-color: ${accent} !important; }
+                    .shadow-primary\\/20 { --tw-shadow-color: ${accent}33 !important; }
+                `;
+                document.head.appendChild(style);
+            }
         })();
     </script>
 </head>

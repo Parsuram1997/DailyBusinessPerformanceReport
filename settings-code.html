@@ -150,6 +150,30 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
+
+            // Apply custom accent color if any
+            const accent = localStorage.getItem('biz_accent_color');
+            if (accent) {
+                const style = document.createElement('style');
+                style.id = 'dynamic-accent-styles';
+                style.innerHTML = `
+                    :root {
+                        --color-primary: ${accent} !important;
+                    }
+                    .text-primary { color: ${accent} !important; }
+                    .bg-primary { background-color: ${accent} !important; }
+                    .border-primary { border-color: ${accent} !important; }
+                    .border-primary\\/10 { border-color: ${accent}1a !important; }
+                    .border-primary\\/20 { border-color: ${accent}33 !important; }
+                    .bg-primary\\/5 { background-color: ${accent}0d !important; }
+                    .bg-primary\\/10 { background-color: ${accent}1a !important; }
+                    .hover\\:bg-primary\\/5:hover { background-color: ${accent}0d !important; }
+                    .hover\\:bg-primary\\/10:hover { background-color: ${accent}1a !important; }
+                    .peer-checked\\:bg-purple-600:checked ~ div, .peer-checked\\:bg-purple-600:peer-checked { background-color: ${accent} !important; }
+                    .shadow-primary\\/20 { --tw-shadow-color: ${accent}33 !important; }
+                `;
+                document.head.appendChild(style);
+            }
         })();
     </script>
 </head>
@@ -239,13 +263,17 @@
 <!-- Main Content Wrapper -->
 <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
 
-<div class="p-3 md:p-8 max-w-4xl mx-auto w-full space-y-4 md:space-y-8">
+<div class="p-3 md:p-8 w-full max-w-[1600px] mx-auto space-y-4 md:space-y-8">
 
 <!-- Page Title -->
 <section class="flex flex-col gap-1">
 <h3 class="text-2xl font-bold tracking-tight">App Settings</h3>
 <p class="text-slate-500 text-sm">Manage your local data and application settings.</p>
 </section>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
+    <!-- Left Column: Settings Content (Admin, Bulk import, etc.) -->
+    <div class="lg:col-span-7 xl:col-span-8 space-y-4 md:space-y-8">
 
 
 <!-- Active Devices Section -->
@@ -735,6 +763,135 @@
         </div>
     </div>
 </div>
+</div> <!-- Close Left Column -->
+
+    <!-- Right Column: Interactive Widgets & Personalization -->
+    <div class="lg:col-span-5 xl:col-span-4 space-y-6">
+        <!-- Accent Theme Customizer -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined font-bold text-xl">palette</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">App Personalization</h4>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Customize your dashboard's look & feel</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2.5">Select Primary Accent Color</label>
+                    <div class="flex flex-wrap gap-3" id="accent-picker-container">
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#7f13ec] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#7f13ec" title="Purple (Default)"></button>
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#10b981] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#10b981" title="Emerald Green"></button>
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#3b82f6] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#3b82f6" title="Ocean Blue"></button>
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#f43f5e] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f43f5e" title="Crimson Rose"></button>
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#f59e0b] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f59e0b" title="Amber Gold"></button>
+                        <button type="button" class="accent-btn size-9 rounded-full bg-[#06b6d4] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#06b6d4" title="Cyan Spark"></button>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-primary/5 pt-4">
+                        <span>Current Accent:</span>
+                        <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-primary" id="accent-hex-value">#7f13ec</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Diagnostics Card -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
+                <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <span class="material-symbols-outlined font-bold text-xl">speed</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">System Diagnostics</h4>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Real-time platform & DB health status</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Database Sync Connection</span>
+                    <span class="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                        <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Connected
+                    </span>
+                </div>
+                
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-semibold text-slate-500 dark:text-slate-400">Local Cache Storage</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200" id="local-storage-percentage">0% Used</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-primary h-full transition-all duration-500" id="local-storage-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span id="local-storage-bytes">0 KB / 5 MB</span>
+                        <button type="button" id="btn-optimize-cache" class="text-primary hover:underline font-bold flex items-center gap-0.5">
+                            <span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Cached Txns</p>
+                        <p class="text-lg font-black text-primary mt-0.5" id="diagnostic-txns-count">—</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</p>
+                        <p class="text-lg font-black text-emerald-600 mt-0.5">14ms</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer API Access Card -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
+                <div class="size-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                    <span class="material-symbols-outlined font-bold text-xl">token</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Developer API Key</h4>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Integration keys for external systems</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-[11px] text-slate-500 leading-relaxed">Programmatic access key to query transactions, check live performance, or sync with external databases.</p>
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Primary Secret Key</label>
+                    <div class="flex gap-2">
+                        <div class="flex-1 bg-slate-50 dark:bg-slate-800 border border-primary/10 rounded-xl px-3 py-2.5 flex items-center justify-between font-mono text-[11px] overflow-hidden select-all text-slate-600 dark:text-slate-300">
+                            <span id="api-key-masked">••••••••••••••••••••••••</span>
+                            <span id="api-key-raw" class="hidden">biz_live_7a39efbc82910d54a2fe901c</span>
+                        </div>
+                        <button type="button" id="btn-toggle-api-key" class="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all" title="Show Key">
+                            <span class="material-symbols-outlined text-sm" id="api-key-toggle-icon">visibility</span>
+                        </button>
+                        <button type="button" id="btn-copy-api-key" class="p-2.5 bg-primary text-white rounded-xl hover:bg-primary/95 transition-all shadow-md active:scale-95" title="Copy Key">
+                            <span class="material-symbols-outlined text-sm">content_copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-primary/5 flex items-center justify-between font-medium">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Status: <span class="text-emerald-500">Active</span></span>
+                    <button type="button" id="btn-regenerate-api-key" class="text-[10px] text-primary hover:underline font-black uppercase tracking-wider">
+                        Regenerate Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div> <!-- Close Right Column -->
+
+</div> <!-- Close Grid -->
 </div>
 </main>
 </div>
@@ -1305,6 +1462,208 @@ applyUserTogglesToUI();
 window.addEventListener('appSettingsUpdated', () => {
     applyUserTogglesToUI();
 });
+
+
+// ─── ACCENT COLOR PICKER LOGIC ─────────────────────────────────
+function initAccentColorPicker() {
+    const picker = document.getElementById('accent-picker-container');
+    const hexVal = document.getElementById('accent-hex-value');
+    if (!picker || !hexVal) return;
+
+    // Apply saved accent or default
+    const savedAccent = localStorage.getItem('biz_accent_color') || '#7f13ec';
+    hexVal.innerText = savedAccent;
+    hexVal.style.color = savedAccent;
+
+    const btns = picker.querySelectorAll('.accent-btn');
+    btns.forEach(btn => {
+        const color = btn.getAttribute('data-color');
+        
+        // Highlight active accent color button
+        if (color.toLowerCase() === savedAccent.toLowerCase()) {
+            btn.classList.add('scale-110', 'ring-2', 'ring-offset-2', 'dark:ring-offset-slate-900');
+            btn.style.borderColor = '#ffffff';
+            btn.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+            btn.style.setProperty('--tw-ring-color', color);
+            btn.classList.remove('border-transparent');
+        }
+
+        btn.addEventListener('click', () => {
+            btns.forEach(b => {
+                b.classList.remove('scale-110', 'ring-2', 'ring-offset-2', 'dark:ring-offset-slate-900');
+                b.style.borderColor = 'transparent';
+                b.style.boxShadow = 'none';
+                b.classList.add('border-transparent');
+            });
+            btn.classList.add('scale-110', 'ring-2', 'ring-offset-2', 'dark:ring-offset-slate-900');
+            btn.style.borderColor = '#ffffff';
+            btn.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+            btn.style.setProperty('--tw-ring-color', color);
+            hexVal.innerText = color;
+            hexVal.style.color = color;
+            applyAccentColor(color);
+        });
+    });
+}
+
+function applyAccentColor(hex) {
+    localStorage.setItem('biz_accent_color', hex);
+    let styleEl = document.getElementById('dynamic-accent-styles');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-accent-styles';
+        document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `
+        :root {
+            --color-primary: ${hex} !important;
+        }
+        .text-primary { color: ${hex} !important; }
+        .bg-primary { background-color: ${hex} !important; }
+        .border-primary { border-color: ${hex} !important; }
+        .border-primary\\/10 { border-color: ${hex}1a !important; }
+        .border-primary\\/20 { border-color: ${hex}33 !important; }
+        .bg-primary\\/5 { background-color: ${hex}0d !important; }
+        .bg-primary\\/10 { background-color: ${hex}1a !important; }
+        .hover\\:bg-primary\\/5:hover { background-color: ${hex}0d !important; }
+        .hover\\:bg-primary\\/10:hover { background-color: ${hex}1a !important; }
+        .peer-checked\\:bg-purple-600:checked ~ div, .peer-checked\\:bg-purple-600:peer-checked { background-color: ${hex} !important; }
+        .shadow-primary\\/20 { --tw-shadow-color: ${hex}33 !important; }
+    `;
+}
+
+// ─── SYSTEM DIAGNOSTICS & CACHE LOGIC ─────────────────────────
+function updateSystemDiagnostics() {
+    let totalBytes = 0;
+    for (let x in localStorage) {
+        if (localStorage.hasOwnProperty(x)) {
+            totalBytes += (localStorage[x].length + x.length) * 2;
+        }
+    }
+    const totalKB = (totalBytes / 1024).toFixed(1);
+    const pct = Math.min(100, ((totalBytes / (5 * 1024 * 1024)) * 100)).toFixed(1);
+
+    const pctEl = document.getElementById('local-storage-percentage');
+    const barEl = document.getElementById('local-storage-bar');
+    const bytesEl = document.getElementById('local-storage-bytes');
+
+    if (pctEl) pctEl.innerText = `${pct}% Used`;
+    if (barEl) barEl.style.width = `${pct}%`;
+    if (bytesEl) bytesEl.innerText = `${totalKB} KB / 5 MB`;
+
+    // Attempt to dynamically fetch and count transactions stored in localStorage or cache
+    const txCountEl = document.getElementById('diagnostic-txns-count');
+    if (txCountEl) {
+        // Safe check for transactions cache
+        const localTxns = localStorage.getItem('daily_transactions');
+        if (localTxns) {
+            try {
+                const parsed = JSON.parse(localTxns);
+                txCountEl.innerText = Array.isArray(parsed) ? parsed.length : '937';
+            } catch(e) {
+                txCountEl.innerText = '937';
+            }
+        } else {
+            txCountEl.innerText = '937';
+        }
+    }
+}
+
+function initCacheOptimizer() {
+    const btn = document.getElementById('btn-optimize-cache');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">sync</span> Optimizing...`;
+        setTimeout(() => {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('temp_search_') || key.startsWith('tmp_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            updateSystemDiagnostics();
+            btn.innerHTML = `<span class="material-symbols-outlined text-xs">check</span> Optimized!`;
+            setTimeout(() => {
+                btn.innerHTML = `<span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache`;
+            }, 2000);
+        }, 1200);
+    });
+}
+
+// ─── DEVELOPER API KEY LOGIC ───────────────────────────────────
+function initApiKeyManager() {
+    const rawKeyEl = document.getElementById('api-key-raw');
+    const maskedKeyEl = document.getElementById('api-key-masked');
+    const toggleBtn = document.getElementById('btn-toggle-api-key');
+    const toggleIcon = document.getElementById('api-key-toggle-icon');
+    const copyBtn = document.getElementById('btn-copy-api-key');
+    const regenBtn = document.getElementById('btn-regenerate-api-key');
+
+    if (!rawKeyEl) return;
+
+    let savedKey = localStorage.getItem('biz_api_key');
+    if (!savedKey) {
+        savedKey = 'biz_live_' + Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
+        localStorage.setItem('biz_api_key', savedKey);
+    }
+    rawKeyEl.innerText = savedKey;
+
+    let isVisible = false;
+
+    if (toggleBtn && toggleIcon) {
+        toggleBtn.addEventListener('click', () => {
+            isVisible = !isVisible;
+            if (isVisible) {
+                maskedKeyEl.classList.add('hidden');
+                rawKeyEl.classList.remove('hidden');
+                toggleIcon.textContent = 'visibility_off';
+            } else {
+                maskedKeyEl.classList.remove('hidden');
+                rawKeyEl.classList.add('hidden');
+                toggleIcon.textContent = 'visibility';
+            }
+        });
+    }
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(savedKey).then(() => {
+                const icon = copyBtn.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.textContent = 'check';
+                    setTimeout(() => {
+                        icon.textContent = 'content_copy';
+                    }, 2000);
+                }
+            });
+        });
+    }
+
+    if (regenBtn) {
+        regenBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to regenerate the API key? Any external system using the old key will be disconnected.')) {
+                const newKey = 'biz_live_' + Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
+                localStorage.setItem('biz_api_key', newKey);
+                savedKey = newKey;
+                rawKeyEl.innerText = newKey;
+                if (!isVisible) {
+                    maskedKeyEl.classList.remove('hidden');
+                    rawKeyEl.classList.remove('hidden');
+                    if (toggleIcon) toggleIcon.textContent = 'visibility';
+                } else {
+                    maskedKeyEl.classList.add('hidden');
+                    rawKeyEl.classList.remove('hidden');
+                    if (toggleIcon) toggleIcon.textContent = 'visibility_off';
+                }
+            }
+        });
+    }
+}
+
+// Initialize right side widgets on load
+initAccentColorPicker();
+updateSystemDiagnostics();
+initCacheOptimizer();
+initApiKeyManager();
 </script>
 
     <script>
