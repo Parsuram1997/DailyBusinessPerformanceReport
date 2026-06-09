@@ -542,7 +542,60 @@
                 alert("Please upload and crop at least one image first.");
                 return;
             }
-            alert("Multi-photo PSD export is currently being optimized. Please use 'Direct Print PDF' for multi-photo layouts.");
+
+            const btn = document.getElementById('btn-generate');
+            const originalText = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Generating PSD...';
+
+                const imagesBase64 = [];
+                // Collect slots in order
+                if (state.slots[0].uploaded && state.slots[0].fullQualityImg) {
+                    imagesBase64.push(state.slots[0].fullQualityImg);
+                }
+                if (state.slots[1].uploaded && state.slots[1].fullQualityImg) {
+                    imagesBase64.push(state.slots[1].fullQualityImg);
+                }
+
+                if (imagesBase64.length === 0) {
+                    throw new Error("No cropped image data available.");
+                }
+
+                const response = await fetch('/api/generate-passport-psd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imagesBase64: imagesBase64,
+                        pageSize: state.pageSize,
+                        count: state.count,
+                        cutLines: state.cutLines
+                    })
+                });
+
+                if (!response.ok) {
+                    const errObj = await response.json();
+                    throw new Error(errObj.error || 'Failed to generate PSD');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Passport_Layout_${state.count}pcs_${state.pageSize.toUpperCase()}.psd`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to export PSD: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         }
 
         async function directPrint() {

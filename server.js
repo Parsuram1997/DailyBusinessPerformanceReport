@@ -340,36 +340,54 @@ app.post('/api/compress-image', async (req, res) => {
 // PSD Generation Endpoint for Passport Maker
 app.post('/api/generate-passport-psd', async (req, res) => {
     try {
-        const { imageBase64, pageSize, count, cutLines } = req.body;
+        const { imageBase64, imagesBase64, pageSize, count, cutLines } = req.body;
         
-        if (!imageBase64) return res.status(400).json({ error: 'No image provided' });
-
-        // Remove data URI prefix if present
-        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const rawPhotos = [];
         
-        // Resize to 413x531 px (standard passport at 300 DPI)
-        const resizedImage = await sharp(imageBuffer)
-            .resize(413, 531, { fit: 'fill' })
-            .toBuffer();
-            
-        // Add a 3px black border (total 419x537 px)
-        const borderedImageBuffer = await sharp(resizedImage)
-            .extend({
-                top: 3, bottom: 3, left: 3, right: 3,
-                background: { r: 0, g: 0, b: 0, alpha: 1 } 
-            })
-            .toBuffer();
+        const processImage = async (base64) => {
+            const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            const resizedImage = await sharp(imageBuffer)
+                .resize(413, 531, { fit: 'fill' })
+                .toBuffer();
+            const borderedImageBuffer = await sharp(resizedImage)
+                .extend({
+                    top: 3, bottom: 3, left: 3, right: 3,
+                    background: { r: 0, g: 0, b: 0, alpha: 1 } 
+                })
+                .toBuffer();
+            const borderedImageObj = await sharp(borderedImageBuffer)
+                .ensureAlpha()
+                .raw()
+                .toBuffer({ resolveWithObject: true });
+            return new Uint8Array(borderedImageObj.data);
+        };
 
-        // Get raw pixels for ag-psd
-        const borderedImageObj = await sharp(borderedImageBuffer)
-            .ensureAlpha()
-            .raw()
-            .toBuffer({ resolveWithObject: true });
+        if (imagesBase64 && Array.isArray(imagesBase64) && imagesBase64.length > 0) {
+            for (const imgBase of imagesBase64) {
+                if (imgBase) {
+                    const rawData = await processImage(imgBase);
+                    rawPhotos.push(rawData);
+                }
+            }
+        } else if (imageBase64) {
+            const rawData = await processImage(imageBase64);
+            rawPhotos.push(rawData);
+        }
+
+        if (rawPhotos.length === 0) {
+            return res.status(400).json({ error: 'No images provided' });
+        }
             
         const photoWidth = 419;
         const photoHeight = 537;
-        const rawPhotoData = new Uint8Array(borderedImageObj.data);
+
+        const getActiveRawData = (photoIndex) => {
+            if (rawPhotos.length >= 2) {
+                return photoIndex < (count / 2) ? rawPhotos[0] : rawPhotos[1];
+            }
+            return rawPhotos[0];
+        };
 
         // Dimensions
         let pageWidth = 1800; // Landscape 4x6 by default
@@ -426,7 +444,7 @@ app.post('/api/generate-passport-psd', async (req, res) => {
                      psdData.children.push({
                          name: `Photo ${currentPhoto + 1}`,
                          left: x, top: y, right: x + photoWidth, bottom: y + photoHeight,
-                         imageData: { width: photoWidth, height: photoHeight, data: rawPhotoData }
+                         imageData: { width: photoWidth, height: photoHeight, data: getActiveRawData(currentPhoto) }
                      });
                      currentPhoto++;
                  }
@@ -440,7 +458,7 @@ app.post('/api/generate-passport-psd', async (req, res) => {
                      psdData.children.push({
                          name: `Photo ${currentPhoto + 1}`,
                          left: x, top: y, right: x + photoWidth, bottom: y + photoHeight,
-                         imageData: { width: photoWidth, height: photoHeight, data: rawPhotoData }
+                         imageData: { width: photoWidth, height: photoHeight, data: getActiveRawData(currentPhoto) }
                      });
                      currentPhoto++;
                  }
