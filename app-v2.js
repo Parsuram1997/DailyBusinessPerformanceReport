@@ -5164,6 +5164,8 @@ async function initDailyTxn() {
     const txnExpenseType = document.getElementById('txn-expense-type');
     const txnConditional = document.getElementById('txn-conditional');
     const txnProvider = document.getElementById('txn-provider');
+    const txnDepositBy = document.getElementById('txn-depositby');
+    const depositByContainer = document.getElementById('depositby-field-container');
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
@@ -5717,6 +5719,18 @@ async function initDailyTxn() {
             providerContainer.classList.add('hidden');
             txnProvider.value = '';
             if (amountLabel) amountLabel.innerText = 'Amount';
+        }
+
+        // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
+        if (depositByContainer && txnDepositBy) {
+            if (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) {
+                depositByContainer.classList.remove('hidden');
+                const depositByLabel = document.getElementById('depositby-label');
+                if (depositByLabel) depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
+            } else {
+                depositByContainer.classList.add('hidden');
+                txnDepositBy.value = '';
+            }
         }
 
         // Service Provider Options Filtering
@@ -6300,6 +6314,7 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
+                depositBy: (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -7382,6 +7397,7 @@ async function initDailyTxn() {
                     txnAddress.value = txn.address;
                     txnConditional.value = txn.extraDetails || '';
                     txnProvider.value = txn.provider || '';
+                    if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
                     txnRemaining.value = txn.remainingAmount || '';
                     txnBank.value = txn.bankName || '';
                     const txnBankSelect = document.getElementById('txn-bank-select');

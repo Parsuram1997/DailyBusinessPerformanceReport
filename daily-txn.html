@@ -274,6 +274,15 @@
                                 <option value="SHARE_WITHDRAWN">Share Withdrawn</option>
                             </select>
                         </div>
+                        <div id="depositby-field-container" class="flex flex-col gap-2 hidden">
+                            <label id="depositby-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Deposit By</label>
+                            <select id="txn-depositby" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select...</option>
+                                <option value="Online(Parsu)">Online(Parsu)</option>
+                                <option value="Online(Dalai)">Online(Dalai)</option>
+                                <option value="Online(Shop)">Online(Shop)</option>
+                            </select>
+                        </div>
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
                             <select id="txn-provider" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
