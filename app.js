@@ -5053,7 +5053,7 @@ async function initReports() {
 
             const ctx = amountDistCanvas.getContext('2d');
             window._amountDistChart = new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: distBins.map(b => b.label),
                     datasets: [{
@@ -5067,6 +5067,7 @@ async function initReports() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '70%',
                     plugins: {
                         legend: {
                             display: false
