@@ -8687,11 +8687,12 @@ async function initDailyTxn() {
     const summaryBalancesGrid = document.getElementById('summary-balances-grid');
     const summaryBadgesArea = document.getElementById('summary-badges-area');
 
-    const loadAllTimeTransactions = () => {
+    const loadAllTimeTransactions = (fromDate, toDate) => {
         try {
             if (unsubscribe) unsubscribe();
-            
-            if (txnDateText) txnDateText.innerText = "All Time Transactions";
+
+            const rangeLabel = `${fromDate} → ${toDate}`;
+            if (txnDateText) txnDateText.innerText = `Transactions: ${rangeLabel}`;
 
             if (tableBody) {
                 tableBody.innerHTML = `
@@ -8704,8 +8705,8 @@ async function initDailyTxn() {
                                     <div class="absolute size-3 rounded-full bg-primary animate-ping"></div>
                                 </div>
                                 <div class="space-y-2">
-                                    <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest leading-none">Loading All-Time Transactions</h4>
-                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Fetching records across all dates...</p>
+                                    <h4 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest leading-none">Loading Transactions</h4>
+                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Fetching ${rangeLabel}...</p>
                                 </div>
                             </div>
                         </td>
@@ -8714,9 +8715,11 @@ async function initDailyTxn() {
             }
 
             if (allTimeSearchCountBadge) allTimeSearchCountBadge.innerText = "Fetching...";
+            const dateRangeLabelText = document.getElementById('date-range-label-text');
+            if (dateRangeLabelText) dateRangeLabelText.innerText = rangeLabel;
 
             const txnCollection = collection(db, 'daily_transactions');
-            const q = query(txnCollection, orderBy('date', 'desc'), limit(5000));
+            const q = query(txnCollection, where('date', '>=', fromDate), where('date', '<=', toDate), orderBy('date', 'desc'));
             
             unsubscribe = onSnapshot(q, (snapshot) => {
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -8736,13 +8739,13 @@ async function initDailyTxn() {
 
                 renderBadgesAndTable();
             }, (error) => {
-                console.error('All-Time Transactions Listener Error:', error);
+                console.error('Date Range Transactions Listener Error:', error);
                 if (tableBody) {
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="7" class="px-6 py-10 text-center text-rose-500 font-bold border-2 border-rose-100 rounded-xl bg-rose-50/50">
                                 <span class="material-symbols-outlined text-4xl mb-2">error</span>
-                                <div class="text-lg">Failed to load all-time transactions</div>
+                                <div class="text-lg">Failed to load transactions</div>
                                 <div class="text-xs opacity-70 font-medium mt-1">Error: ${error.message}</div>
                             </td>
                         </tr>
@@ -8750,9 +8753,22 @@ async function initDailyTxn() {
                 }
             });
         } catch (e) {
-            console.error('Error setting up all-time transactions listener:', e);
+            console.error('Error setting up date range transactions listener:', e);
         }
     };
+
+    const dateRangePanel = document.getElementById('date-range-panel');
+    const rangeFromDate = document.getElementById('range-from-date');
+    const rangeToDate = document.getElementById('range-to-date');
+    const loadDateRangeBtn = document.getElementById('load-date-range-btn');
+    const closeDateRangeBtn = document.getElementById('close-date-range-btn');
+
+    // Set default dates: first day of current month → today
+    const _today = new Date();
+    const _firstOfMonth = new Date(_today.getFullYear(), _today.getMonth(), 1);
+    const _fmt = (d) => d.toISOString().split('T')[0];
+    if (rangeFromDate) rangeFromDate.value = _fmt(_firstOfMonth);
+    if (rangeToDate) rangeToDate.value = _fmt(_today);
 
     if (toggleAllTimeSearchBtn) {
         toggleAllTimeSearchBtn.onclick = () => {
@@ -8760,10 +8776,10 @@ async function initDailyTxn() {
             if (window.isAllTimeSearchMode) {
                 toggleAllTimeSearchBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
                 toggleAllTimeSearchBtn.classList.remove('bg-slate-100', 'text-slate-600');
-                if (allTimeSearchBanner) allTimeSearchBanner.classList.remove('hidden');
+                if (dateRangePanel) dateRangePanel.classList.remove('hidden');
                 if (summaryBalancesGrid) summaryBalancesGrid.classList.add('hidden');
                 if (summaryBadgesArea) summaryBadgesArea.classList.add('hidden');
-                
+
                 // Clear any running checking mode
                 document.querySelectorAll('.checking-col-cell').forEach(cell => cell.classList.add('hidden'));
                 if (checkingModeControls) checkingModeControls.classList.add('hidden');
@@ -8772,13 +8788,12 @@ async function initDailyTxn() {
                     toggleCheckingModeBtn.classList.add('bg-slate-100', 'text-slate-600');
                 }
                 window.isCheckingMode = false;
-                
-                loadAllTimeTransactions();
             } else {
                 toggleAllTimeSearchBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
                 toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600');
+                if (dateRangePanel) dateRangePanel.classList.add('hidden');
                 if (allTimeSearchBanner) allTimeSearchBanner.classList.add('hidden');
-                
+
                 const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
                 if (getSetting('dtxn_showBalancesGrid', true) && summaryBalancesGrid) {
                     summaryBalancesGrid.classList.remove('hidden');
@@ -8789,6 +8804,45 @@ async function initDailyTxn() {
 
                 loadTransactions(currentSelectedDate);
             }
+        };
+    }
+
+    if (loadDateRangeBtn) {
+        loadDateRangeBtn.onclick = () => {
+            const from = rangeFromDate ? rangeFromDate.value : '';
+            const to = rangeToDate ? rangeToDate.value : '';
+            if (!from || !to) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ title: 'Select Dates', text: 'Please select both From and To dates.', icon: 'warning', confirmButtonColor: '#7f13ec' });
+                } else {
+                    alert('Please select both From and To dates.');
+                }
+                return;
+            }
+            if (from > to) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ title: 'Invalid Range', text: 'From date cannot be after To date.', icon: 'error', confirmButtonColor: '#7f13ec' });
+                } else {
+                    alert('From date cannot be after To date.');
+                }
+                return;
+            }
+            if (allTimeSearchBanner) allTimeSearchBanner.classList.remove('hidden');
+            loadAllTimeTransactions(from, to);
+        };
+    }
+
+    if (closeDateRangeBtn) {
+        closeDateRangeBtn.onclick = () => {
+            window.isAllTimeSearchMode = false;
+            toggleAllTimeSearchBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
+            toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600');
+            if (dateRangePanel) dateRangePanel.classList.add('hidden');
+            if (allTimeSearchBanner) allTimeSearchBanner.classList.add('hidden');
+            const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+            if (getSetting('dtxn_showBalancesGrid', true) && summaryBalancesGrid) summaryBalancesGrid.classList.remove('hidden');
+            if (getSetting('dtxn_showSummary', true) && summaryBadgesArea) summaryBadgesArea.classList.remove('hidden');
+            loadTransactions(currentSelectedDate);
         };
     }
 
