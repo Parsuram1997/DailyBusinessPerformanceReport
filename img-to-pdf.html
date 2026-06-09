@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -66,10 +68,10 @@
 </head>
 <body class="min-h-screen pb-12">
     
-    <div class="max-w-full mx-auto px-2 sm:px-6 py-4 md:py-10">
+    <div class="max-w-full mx-auto px-2 sm:px-6 pb-10">
         
         <!-- Header -->
-        <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-10 border-b-2 border-slate-200 pb-8">
+        <header class="sticky top-0 z-50 bg-[#f8fafc]/95 backdrop-blur-xl -mx-2 sm:-mx-6 px-4 sm:px-6 pt-4 pb-4 md:pt-6 md:pb-6 border-b border-slate-200 mb-10 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all">
             <div class="flex items-center gap-4 md:gap-5">
                 <a href="index.html" class="bg-slate-900 border-2 border-slate-900 size-10 md:size-12 rounded-xl flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg shadow-black/10 text-white flex-shrink-0">
                     <span class="material-symbols-outlined text-xl md:text-2xl font-bold">arrow_back</span>
@@ -118,7 +120,10 @@
                 id, 
                 front: null, 
                 back: null, 
+                frontOriginal: null,
+                backOriginal: null,
                 size: 'id', // 'id', 'half', 'full'
+                layout: 'a4_top', // 'a4_top', 'a4_bottom', 'a5'
                 orientation: 'p', // 'p' for portrait, 'l' for landscape
                 fitWidth: true
             });
@@ -143,30 +148,40 @@
             const block = docBlocks.find(b => b.id === id);
             if (block) {
                 block[key] = value;
-                renderBlocks();
+                if (key === 'size' && value === 'id' && block.layout === 'a5') {
+                    block.layout = 'a4_top';
+                }
+                const index = docBlocks.findIndex(b => b.id === id);
+                const blockContainer = document.getElementById('block-container-' + id);
+                if (blockContainer) {
+                    blockContainer.outerHTML = renderBlockHTML(block, index);
+                    drawPreviews();
+                } else {
+                    renderBlocks();
+                }
             }
         }
 
         function handleFileUpload(id, side, file) {
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                alert("File is too big. Max 2MB allowed.");
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File is too big. Max 5MB allowed.");
                 return;
             }
             const reader = new FileReader();
             reader.onload = (e) => {
                 const block = docBlocks.find(b => b.id === id);
                 if (block) {
-                    block[side] = e.target.result;
-                    renderBlocks();
+                    block[side + 'Original'] = e.target.result;
                 }
+                openCropperModal(id, side);
             };
             reader.readAsDataURL(file);
         }
 
-        function renderBlocks() {
-            container.innerHTML = docBlocks.map((block, index) => `
-                <div class="animate-card bg-white border-2 border-slate-200 rounded-xl md:rounded-3xl p-4 md:p-6 step-shadow relative">
+        function renderBlockHTML(block, index) {
+            return `
+                <div class="animate-card bg-white border-2 border-slate-200 rounded-xl md:rounded-3xl p-4 md:p-6 step-shadow relative" id="block-container-${block.id}">
                     <!-- Card Header -->
                     <div class="flex items-center justify-between mb-8 pb-6 border-b-2 border-slate-100">
                         <div class="flex items-center gap-4">
@@ -216,20 +231,28 @@
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- Fit Width Toggle -->
+                            ` : ''}
+
+                            <!-- Layout Position Settings (Only for ID Card or Half Page) -->
+                            ${block.size === 'id' || block.size === 'half' ? `
                             <div class="space-y-2 pt-4 border-t border-slate-200">
-                                <label class="flex items-center justify-between cursor-pointer group">
-                                    <div>
-                                        <span class="text-xs font-black text-slate-700 uppercase block">Fit Page Width</span>
-                                        <span class="text-[9px] font-bold text-slate-400">Ignore height limit to remove side gaps</span>
-                                    </div>
-                                    <div class="relative">
-                                        <input type="checkbox" id="fit-width-${block.id}" class="sr-only" ${block.fitWidth ? 'checked' : ''} onchange="updateBlockOption(${block.id}, 'fitWidth', this.checked)">
-                                        <div class="block w-10 h-6 rounded-full transition-colors ${block.fitWidth ? 'bg-primary' : 'bg-slate-200'}"></div>
-                                        <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${block.fitWidth ? 'translate-x-4' : ''} border border-slate-200 shadow-sm"></div>
-                                    </div>
-                                </label>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Position on Page</label>
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="updateBlockOption(${block.id}, 'layout', 'a4_top')" class="toggle-btn px-4 py-2.5 rounded-xl text-left font-black text-[10px] flex items-center gap-2 ${block.layout === 'a4_top' ? 'active' : ''}">
+                                        <span class="material-symbols-outlined text-sm">${block.layout === 'a4_top' ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                                        Top Half of A4 (ऊपरी हिस्सा)
+                                    </button>
+                                    <button onclick="updateBlockOption(${block.id}, 'layout', 'a4_bottom')" class="toggle-btn px-4 py-2.5 rounded-xl text-left font-black text-[10px] flex items-center gap-2 ${block.layout === 'a4_bottom' ? 'active' : ''}">
+                                        <span class="material-symbols-outlined text-sm">${block.layout === 'a4_bottom' ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                                        Bottom Half of A4 (निचला हिस्सा)
+                                    </button>
+                                    ${block.size === 'half' ? `
+                                    <button onclick="updateBlockOption(${block.id}, 'layout', 'a5')" class="toggle-btn px-4 py-2.5 rounded-xl text-left font-black text-[10px] flex items-center gap-2 ${block.layout === 'a5' ? 'active' : ''}">
+                                        <span class="material-symbols-outlined text-sm">${block.layout === 'a5' ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+                                        A5 Sheet Full (ए5 पूरा पेज)
+                                    </button>
+                                    ` : ''}
+                                </div>
                             </div>
                             ` : ''}
                         </div>
@@ -242,22 +265,30 @@
                                     <span class="bg-indigo-950 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">${block.size === 'id' ? 'FRONT SIDE' : 'SINGLE DOCUMENT'}</span>
                                     ${block.front ? '<span class="text-[10px] font-black text-emerald-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> READY</span>' : ''}
                                 </div>
-                                <label class="cursor-pointer block relative">
-                                    <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'front', this.files[0])">
-                                    <div class="${block.size === 'id' ? 'aspect-[1.58/1]' : (block.orientation === 'p' ? 'aspect-[1/1.41]' : 'aspect-[1.41/1]')} max-h-[300px] rounded-2xl border-4 ${block.front ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
-                                        ${block.front ? `
+                                <div>
+                                    ${block.front ? `
+                                        <div class="${block.size === 'id' ? 'aspect-[1.58/1]' : (block.orientation === 'p' ? 'aspect-[1/1.41]' : 'aspect-[1.41/1]')} max-h-[300px] rounded-2xl border-4 border-success bg-white flex flex-col items-center justify-center overflow-hidden transition-all relative group">
                                             <img src="${block.front}" class="w-full h-full object-contain p-2">
-                                            <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                                <div class="bg-white text-slate-900 px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase">Update Photo</div>
+                                            <div class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onclick="openCropperModal(${block.id}, 'front')" class="bg-white text-slate-900 px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase hover:bg-slate-100 transition-all">Crop / Edit</button>
+                                                <label class="cursor-pointer bg-slate-800 text-white px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase hover:bg-slate-700 transition-all">
+                                                    Change Photo
+                                                    <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'front', this.files[0])">
+                                                </label>
                                             </div>
-                                        ` : `
-                                            <div class="text-center">
-                                                <span class="material-symbols-outlined text-4xl text-slate-400 mb-2 block">add_a_photo</span>
-                                                <p class="text-[10px] font-black text-slate-500 uppercase">${block.size === 'id' ? 'Upload Front Side' : 'Upload Document'}</p>
+                                        </div>
+                                    ` : `
+                                        <label class="cursor-pointer block relative">
+                                            <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'front', this.files[0])">
+                                            <div class="${block.size === 'id' ? 'aspect-[1.58/1]' : (block.orientation === 'p' ? 'aspect-[1/1.41]' : 'aspect-[1.41/1]')} max-h-[300px] rounded-2xl border-4 border-slate-300 bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
+                                                <div class="text-center">
+                                                    <span class="material-symbols-outlined text-4xl text-slate-400 mb-2 block">add_a_photo</span>
+                                                    <p class="text-[10px] font-black text-slate-500 uppercase">${block.size === 'id' ? 'Upload Front Side' : 'Upload Document'}</p>
+                                                </div>
                                             </div>
-                                        `}
-                                    </div>
-                                </label>
+                                        </label>
+                                    `}
+                                </div>
                             </div>
 
                             <!-- BACK (Only for ID Card) -->
@@ -267,22 +298,30 @@
                                     <span class="bg-slate-400 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest italic">BACK SIDE</span>
                                     ${block.back ? '<span class="text-[10px] font-black text-emerald-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> READY</span>' : ''}
                                 </div>
-                                <label class="cursor-pointer block relative">
-                                    <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'back', this.files[0])">
-                                    <div class="aspect-[1.58/1] max-h-[300px] rounded-2xl border-4 ${block.back ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
-                                        ${block.back ? `
+                                <div>
+                                    ${block.back ? `
+                                        <div class="aspect-[1.58/1] max-h-[300px] rounded-2xl border-4 border-success bg-white flex flex-col items-center justify-center overflow-hidden transition-all relative group">
                                             <img src="${block.back}" class="w-full h-full object-contain p-2">
-                                            <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                                <div class="bg-white text-slate-900 px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase">Update Photo</div>
+                                            <div class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onclick="openCropperModal(${block.id}, 'back')" class="bg-white text-slate-900 px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase hover:bg-slate-100 transition-all">Crop / Edit</button>
+                                                <label class="cursor-pointer bg-slate-800 text-white px-4 py-2 rounded-lg font-black text-[10px] shadow-xl uppercase hover:bg-slate-700 transition-all">
+                                                    Change Photo
+                                                    <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'back', this.files[0])">
+                                                </label>
                                             </div>
-                                        ` : `
-                                            <div class="text-center">
-                                                <span class="material-symbols-outlined text-4xl text-slate-400 mb-2 block">add_a_photo</span>
-                                                <p class="text-[10px] font-black text-slate-500 uppercase">Upload Back Side</p>
+                                        </div>
+                                    ` : `
+                                        <label class="cursor-pointer block relative">
+                                            <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'back', this.files[0])">
+                                            <div class="aspect-[1.58/1] max-h-[300px] rounded-2xl border-4 border-slate-300 bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
+                                                <div class="text-center">
+                                                    <span class="material-symbols-outlined text-4xl text-slate-400 mb-2 block">add_a_photo</span>
+                                                    <p class="text-[10px] font-black text-slate-500 uppercase">Upload Back Side</p>
+                                                </div>
                                             </div>
-                                        `}
-                                    </div>
-                                </label>
+                                        </label>
+                                    `}
+                                </div>
                             </div>
                             ` : ''}
                         </div>
@@ -292,14 +331,18 @@
                             <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 self-start">
                                 <span class="material-symbols-outlined text-sm">visibility</span> A4 Print Preview
                             </h4>
-                            <div class="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden w-[140px] aspect-[1/1.414] relative">
+                            <div class="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden w-full max-w-[220px] ${block.orientation === 'p' ? 'aspect-[1/1.414]' : 'aspect-[1.414/1]'} relative">
                                 <canvas id="preview-canvas-${block.id}" class="w-full h-full block"></canvas>
                             </div>
                             <span class="text-[9px] font-semibold text-slate-400 mt-2 text-center uppercase tracking-wide">A4 Sheet Position</span>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+        }
+
+        function renderBlocks() {
+            container.innerHTML = docBlocks.map((block, index) => renderBlockHTML(block, index)).join('');
             drawPreviews();
         }
 
@@ -311,62 +354,77 @@
                 const ctx = canvas.getContext('2d');
                 const a4W = 210;
                 const a4H = 297;
+                const a5W = 148.5;
+                const a5H = 210;
                 
-                const scale = 1.5;
-                const w = 140 * scale;
-                const h = 140 * 1.414 * scale;
-                canvas.width = w;
-                canvas.height = h;
+                const isLandscape = block.orientation === 'l';
+                const isA5 = (block.size === 'half' && block.layout === 'a5');
                 
-                // Draw A4 page background
+                const scale = 3;
+                let w = 140 * scale;
+                let h = 140 * 1.414 * scale;
+                
+                if (isLandscape) {
+                    canvas.width = h;
+                    canvas.height = w;
+                    let temp = w; w = h; h = temp;
+                } else {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+                
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, w, h);
                 
-                // Draw margins outline (dashed line)
                 ctx.strokeStyle = '#e2e8f0';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([2 * scale, 2 * scale]);
                 ctx.strokeRect(10 * scale, 10 * scale, w - 20 * scale, h - 20 * scale);
-                ctx.setLineDash([]); // Reset
+                ctx.setLineDash([]); 
                 
-                // mm to canvas px scale
-                const mmToPx = w / a4W;
+                const sheetW = isA5 ? (isLandscape ? a5H : a5W) : (isLandscape ? a4H : a4W);
+                const sheetH = isA5 ? (isLandscape ? a5W : a5H) : (isLandscape ? a4W : a4H);
+                
+                const pageW = sheetW;
+                const pageH = sheetH;
+                const mmToPx = w / pageW;
                 
                 const drawDocOnCanvas = () => {
                     let drawW, drawH, x, y;
                     
                     if (block.size === 'id') {
                         drawW = 85.6 * mmToPx;
-                        drawH = 54.0 * mmToPx;
+                        drawH = (54.0 * drawW) / 85.6;
                         x = (w - drawW) / 2;
-                        y = 20 * mmToPx;
+                        const targetY = (block.layout === 'a4_bottom') ? ((pageH / 2) + 4) * mmToPx : 20 * mmToPx;
                         
-                        // Draw Front
                         if (block.front) {
                             const img = new Image();
                             img.onload = () => {
-                                ctx.drawImage(img, x, y, drawW, drawH);
+                                drawH = (img.height * drawW) / img.width;
+                                ctx.drawImage(img, x, targetY, drawW, drawH);
                                 drawBackSide();
                             };
                             img.src = block.front;
                         } else {
                             ctx.fillStyle = '#f8fafc';
-                            ctx.fillRect(x, y, drawW, drawH);
+                            ctx.fillRect(x, targetY, drawW, drawH);
                             ctx.strokeStyle = '#cbd5e1';
-                            ctx.strokeRect(x, y, drawW, drawH);
+                            ctx.strokeRect(x, targetY, drawW, drawH);
                             ctx.fillStyle = '#94a3b8';
                             ctx.font = `bold ${6 * scale}px Inter`;
                             ctx.textAlign = 'center';
-                            ctx.fillText('Front Side', x + drawW/2, y + drawH/2 + 2 * scale);
+                            ctx.fillText('Front Side', x + drawW/2, targetY + drawH/2 + 2 * scale);
                             drawBackSide();
                         }
                         
                         function drawBackSide() {
-                            const yBack = y + drawH + (15 * mmToPx);
+                            const yBack = targetY + drawH + (15 * mmToPx);
                             if (block.back) {
                                 const img = new Image();
                                 img.onload = () => {
-                                    ctx.drawImage(img, x, yBack, drawW, drawH);
+                                    const bdH = (img.height * drawW) / img.width;
+                                    ctx.drawImage(img, x, yBack, drawW, bdH);
                                 };
                                 img.src = block.back;
                             } else {
@@ -381,57 +439,41 @@
                             }
                         }
                     } else if (block.size === 'half') {
-                        const pageW = block.orientation === 'p' ? a4W : a4H;
-                        const pageH = block.orientation === 'p' ? a4H : a4W;
-                        const limitH = (pageH / 2) - 16;
-                        
-                        // Width scale
-                        const previewPageW = w;
-                        const previewPageH = h;
-                        const previewMmToPx = previewPageW / pageW;
-                        
-                        const drawHalf = (imgWidth, imgHeight) => {
-                            let dW = (pageW - 24) * previewMmToPx;
-                            let dH = (imgHeight * dW) / imgWidth;
-                            
-                            if (!block.fitWidth && dH > limitH * previewMmToPx) {
-                                dH = limitH * previewMmToPx;
-                                dW = (imgWidth * dH) / imgHeight;
-                            }
-                            
-                            const dx = (previewPageW - dW) / 2;
-                            const dy = 12 * previewMmToPx;
-                            
-                            // Draw document
-                            ctx.save();
-                            // If Landscape, rotate preview drawing context or draw inside rotated boundaries
-                            if (block.orientation === 'l') {
-                                ctx.translate(w / 2, h / 2);
-                                ctx.rotate(-Math.PI / 2);
-                                const lMmToPx = h / a4W;
-                                let ldW = (a4H - 24) * lMmToPx;
-                                let ldH = (imgHeight * ldW) / imgWidth;
-                                if (!block.fitWidth && ldH > ((a4W / 2) - 16) * lMmToPx) {
-                                    ldH = ((a4W / 2) - 16) * lMmToPx;
-                                    ldW = (imgWidth * ldH) / imgHeight;
+                        if (block.layout === 'a5') {
+                            const drawA5Full = (imgWidth, imgHeight) => {
+                                let dW = (pageW - 24) * mmToPx;
+                                let dH = (imgHeight * dW) / imgWidth;
+                                if (dH > (pageH - 24) * mmToPx) {
+                                    dH = (pageH - 24) * mmToPx;
+                                    dW = (imgWidth * dH) / imgHeight;
                                 }
-                                const ldx = -ldW / 2;
-                                const ldy = -h/2 + 12 * lMmToPx;
-                                
-                                drawBlockItem(ldx, ldy, ldW, ldH, 'Half Page');
-                                
-                                // Draw cut line in landscape
-                                ctx.strokeStyle = '#fda4af';
-                                ctx.lineWidth = 1;
-                                ctx.setLineDash([3, 1.5]);
-                                ctx.beginPath();
-                                ctx.moveTo(-h/2, 0);
-                                ctx.lineTo(h/2, 0);
-                                ctx.stroke();
+                                const dx = (w - dW) / 2;
+                                const dy = (h - dH) / 2;
+                                drawBlockItem(dx, dy, dW, dH, 'A5 Sheet');
+                            };
+                            
+                            if (block.front) {
+                                const img = new Image();
+                                img.onload = () => { drawA5Full(img.width, img.height); };
+                                img.src = block.front;
                             } else {
-                                drawBlockItem(dx, dy, dW, dH, 'Half Page');
+                                drawA5Full(100, 140);
+                            }
+                        } else {
+                            const limitH = (pageH / 2) - 16;
+                            const drawHalf = (imgWidth, imgHeight) => {
+                                let dW = (pageW - 24) * mmToPx;
+                                let dH = (imgHeight * dW) / imgWidth;
+                                if (dH > limitH * mmToPx) {
+                                    dH = limitH * mmToPx;
+                                    dW = (imgWidth * dH) / imgHeight;
+                                }
+                                const dx = (w - dW) / 2;
+                                let dy = 12 * mmToPx;
+                                if (block.layout === 'a4_bottom') dy = ((pageH / 2) + 4) * mmToPx;
                                 
-                                // Draw cut line in portrait
+                                drawBlockItem(dx, dy, dW, dH, block.layout === 'a4_bottom' ? 'Half Page (Bot)' : 'Half Page (Top)');
+                                
                                 ctx.strokeStyle = '#fda4af';
                                 ctx.lineWidth = 1;
                                 ctx.setLineDash([3, 1.5]);
@@ -439,100 +481,31 @@
                                 ctx.moveTo(0, h / 2);
                                 ctx.lineTo(w, h / 2);
                                 ctx.stroke();
-                            }
-                            ctx.restore();
-                        };
-                        
-                        function drawBlockItem(dx, dy, dW, dH, label) {
+                            };
                             if (block.front) {
                                 const img = new Image();
-                                img.onload = () => {
-                                    ctx.drawImage(img, dx, dy, dW, dH);
-                                };
+                                img.onload = () => { drawHalf(img.width, img.height); };
                                 img.src = block.front;
                             } else {
-                                ctx.fillStyle = '#f8fafc';
-                                ctx.fillRect(dx, dy, dW, dH);
-                                ctx.strokeStyle = '#cbd5e1';
-                                ctx.strokeRect(dx, dy, dW, dH);
-                                ctx.fillStyle = '#94a3b8';
-                                ctx.font = `bold ${6 * scale}px Inter`;
-                                ctx.textAlign = 'center';
-                                ctx.fillText(label, dx + dW/2, dy + dH/2 + 2 * scale);
+                                drawHalf(100, 140);
                             }
-                        }
-                        
-                        if (block.front) {
-                            const img = new Image();
-                            img.onload = () => {
-                                drawHalf(img.width, img.height);
-                            };
-                            img.src = block.front;
-                        } else {
-                            drawHalf(100, 140);
                         }
                     } else {
-                        // Full page
-                        const pageW = block.orientation === 'p' ? a4W : a4H;
-                        const pageH = block.orientation === 'p' ? a4H : a4W;
-                        
-                        const previewPageW = w;
-                        const previewMmToPx = previewPageW / pageW;
-                        
                         const drawFull = (imgWidth, imgHeight) => {
-                            let dW = (pageW - 24) * previewMmToPx;
+                            let dW = (pageW - 24) * mmToPx;
                             let dH = (imgHeight * dW) / imgWidth;
-                            
                             const limitH = pageH - 24;
-                            if (dH > limitH * previewMmToPx) {
-                                dH = limitH * previewMmToPx;
+                            if (dH > limitH * mmToPx) {
+                                dH = limitH * mmToPx;
                                 dW = (imgWidth * dH) / imgHeight;
                             }
-                            
-                            ctx.save();
-                            if (block.orientation === 'l') {
-                                ctx.translate(w / 2, h / 2);
-                                ctx.rotate(-Math.PI / 2);
-                                const lMmToPx = h / a4W;
-                                let ldW = (a4H - 24) * lMmToPx;
-                                let ldH = (imgHeight * ldW) / imgWidth;
-                                if (ldH > (a4W - 24) * lMmToPx) {
-                                    ldH = (a4W - 24) * lMmToPx;
-                                    ldW = (imgWidth * ldH) / imgHeight;
-                                }
-                                drawBlockItem(-ldW/2, -w/2 + 12*lMmToPx, ldW, ldH, 'Full Page');
-                            } else {
-                                const dx = (previewPageW - dW) / 2;
-                                const dy = 12 * previewMmToPx;
-                                drawBlockItem(dx, dy, dW, dH, 'Full Page');
-                            }
-                            ctx.restore();
+                            const dx = (w - dW) / 2;
+                            const dy = (h - dH) / 2;
+                            drawBlockItem(dx, dy, dW, dH, 'Full Page');
                         };
-                        
-                        function drawBlockItem(dx, dy, dW, dH, label) {
-                            if (block.front) {
-                                const img = new Image();
-                                img.onload = () => {
-                                    ctx.drawImage(img, dx, dy, dW, dH);
-                                };
-                                img.src = block.front;
-                            } else {
-                                ctx.fillStyle = '#f8fafc';
-                                ctx.fillRect(dx, dy, dW, dH);
-                                ctx.strokeStyle = '#cbd5e1';
-                                ctx.strokeRect(dx, dy, dW, dH);
-                                ctx.fillStyle = '#94a3b8';
-                                ctx.font = `bold ${6 * scale}px Inter`;
-                                ctx.textAlign = 'center';
-                                ctx.fillText(label, dx + dW/2, dy + dH/2 + 2 * scale);
-                            }
-                        }
-                        
                         if (block.front) {
                             const img = new Image();
-                            img.onload = () => {
-                                drawFull(img.width, img.height);
-                            };
+                            img.onload = () => { drawFull(img.width, img.height); };
                             img.src = block.front;
                         } else {
                             drawFull(100, 140);
@@ -540,8 +513,58 @@
                     }
                 };
                 
+                function drawBlockItem(dx, dy, dW, dH, label) {
+                    if (block.front) {
+                        const img = new Image();
+                        img.onload = () => { ctx.drawImage(img, dx, dy, dW, dH); };
+                        img.src = block.front;
+                    } else {
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.fillRect(dx, dy, dW, dH);
+                        ctx.strokeStyle = '#cbd5e1';
+                        ctx.strokeRect(dx, dy, dW, dH);
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = `bold ${6 * scale}px Inter`;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(label, dx + dW/2, dy + dH/2 + 2 * scale);
+                    }
+                }
+                
                 drawDocOnCanvas();
             });
+        }
+
+        function groupBlocksIntoPages(blocks) {
+            const pages = [];
+            let currentA4Top = null;
+
+            for (const block of blocks) {
+                if (block.size === 'full') {
+                    pages.push({ type: 'full', items: [block] });
+                } else if (block.size === 'half' && block.layout === 'a5') {
+                    pages.push({ type: 'a5_full', items: [block] });
+                } else {
+                    if (block.layout === 'a4_top') {
+                        if (!currentA4Top) {
+                            currentA4Top = block;
+                        } else {
+                            pages.push({ type: 'shared', top: currentA4Top, bottom: null });
+                            currentA4Top = block;
+                        }
+                    } else if (block.layout === 'a4_bottom') {
+                        if (currentA4Top) {
+                            pages.push({ type: 'shared', top: currentA4Top, bottom: block });
+                            currentA4Top = null;
+                        } else {
+                            pages.push({ type: 'shared', top: null, bottom: block });
+                        }
+                    }
+                }
+            }
+            if (currentA4Top) {
+                pages.push({ type: 'shared', top: currentA4Top, bottom: null });
+            }
+            return pages;
         }
 
         async function generatePDF() {
@@ -559,63 +582,106 @@
                 btn.innerHTML = '<span class="material-symbols-outlined animate-spin shadow-none">sync</span> Creating Optimized PDF...';
 
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                const doc = new jsPDF('p', 'mm', 'a4');
                 const a4W = 210;
                 const a4H = 297;
+                const a5W = 148.5;
+                const a5H = 210;
 
-                for (let i = 0; i < docBlocks.length; i++) {
-                    const block = docBlocks[i];
-                    if (i > 0) pdf.addPage(block.orientation, 'a4');
-                    else {
-                        // First page orientation update if needed
-                        if (block.orientation === 'l') pdf.deletePage(1);
-                        if (block.orientation === 'l') pdf.addPage('l', 'a4');
+                const pages = groupBlocksIntoPages(docBlocks);
+                let isFirst = true;
+
+                for (const page of pages) {
+                    let pageOrientation = 'p';
+                    if (page.type === 'full' || page.type === 'a5_full') {
+                        pageOrientation = page.items[0].orientation;
+                    } else if (page.type === 'shared') {
+                        if (page.top && page.top.orientation === 'l') pageOrientation = 'l';
+                        else if (page.bottom && page.bottom.orientation === 'l') pageOrientation = 'l';
                     }
 
-                    // Reset context values based on orientation
-                    const pageW = block.orientation === 'p' ? a4W : a4H;
-                    const pageH = block.orientation === 'p' ? a4H : a4W;
+                    if (!isFirst) {
+                        doc.addPage(page.type === 'a5_full' ? 'a5' : 'a4', pageOrientation);
+                    } else {
+                        if (pageOrientation === 'l' || page.type === 'a5_full') {
+                            doc.deletePage(1);
+                            doc.addPage(page.type === 'a5_full' ? 'a5' : 'a4', pageOrientation);
+                        }
+                    }
+                    isFirst = false;
 
-                    const processedImg = await processDoc(block);
-                    const imgProps = pdf.getImageProperties(processedImg);
-                    
-                    let drawW, drawH, x, y;
-
-                    if (block.size === 'id') {
-                        drawW = 85.6; // Standard ID width
-                        drawH = (imgProps.height * drawW) / imgProps.width;
-                        x = (pageW - drawW) / 2;
-                        y = 20; // Top Aligned
-                    } else if (block.size === 'half') {
-                        drawW = pageW - 24; // 12mm margin each side (total 24mm)
-                        drawH = (imgProps.height * drawW) / imgProps.width;
+                    const drawBlockOnPDF = async (block, position) => {
+                        if (!block) return;
                         
-                        // Limit height to half page if fitWidth is false
-                        if (!block.fitWidth && drawH > (pageH / 2) - 16) {
-                            drawH = (pageH / 2) - 16;
-                            drawW = (imgProps.width * drawH) / imgProps.height;
+                        const isA5 = (block.size === 'half' && block.layout === 'a5');
+                        const sheetW = isA5 ? a5W : a4W;
+                        const sheetH = isA5 ? a5H : a4H;
+                        const pageW = pageOrientation === 'p' ? sheetW : sheetH;
+                        const pageH = pageOrientation === 'p' ? sheetH : sheetW;
+                        
+                        let imgData;
+                        if (block.size === 'id') {
+                            imgData = await processDoc(block);
+                        } else {
+                            imgData = block.front;
                         }
-                        x = (pageW - drawW) / 2;
-                        y = 12;
-                    } else { // Full Page
-                        drawW = pageW - 24; // 12mm margin each side (total 24mm)
-                        drawH = (imgProps.height * drawW) / imgProps.width;
-                        if (drawH > pageH - 24) {
-                            drawH = pageH - 24;
-                            drawW = (imgProps.width * drawH) / imgProps.height;
-                        }
-                        x = (pageW - drawW) / 2;
-                        y = 12;
-                    }
+                        
+                        const imgProps = doc.getImageProperties(imgData);
+                        let drawW, drawH, x, y;
 
-                    pdf.addImage(processedImg, 'JPEG', x, y, drawW, drawH);
+                        if (block.size === 'id') {
+                            drawW = 85.6; 
+                            drawH = (imgProps.height * drawW) / imgProps.width;
+                            x = (pageW - drawW) / 2;
+                            y = (position === 'bottom') ? ((pageH / 2) + 4) : 20;
+                        } else if (block.size === 'half') {
+                            if (isA5) {
+                                drawW = pageW - 24;
+                                drawH = (imgProps.height * drawW) / imgProps.width;
+                                if (drawH > pageH - 24) {
+                                    drawH = pageH - 24;
+                                    drawW = (imgProps.width * drawH) / imgProps.height;
+                                }
+                                x = (pageW - drawW) / 2;
+                                y = (pageH - drawH) / 2;
+                            } else {
+                                drawW = pageW - 24;
+                                drawH = (imgProps.height * drawW) / imgProps.width;
+                                const limitH = (pageH / 2) - 16;
+                                if (drawH > limitH) {
+                                    drawH = limitH;
+                                    drawW = (imgProps.width * drawH) / imgProps.height;
+                                }
+                                x = (pageW - drawW) / 2;
+                                y = (position === 'bottom') ? ((pageH / 2) + 4) : 12;
+                            }
+                        } else { 
+                            drawW = pageW - 24;
+                            drawH = (imgProps.height * drawW) / imgProps.width;
+                            if (drawH > pageH - 24) {
+                                drawH = pageH - 24;
+                                drawW = (imgProps.width * drawH) / imgProps.height;
+                            }
+                            x = (pageW - drawW) / 2;
+                            y = (pageH - drawH) / 2;
+                        }
+
+                        doc.addImage(imgData, 'JPEG', x, y, drawW, drawH);
+                    };
+
+                    if (page.type === 'full' || page.type === 'a5_full') {
+                        await drawBlockOnPDF(page.items[0], 'top');
+                    } else if (page.type === 'shared') {
+                        if (page.top) await drawBlockOnPDF(page.top, 'top');
+                        if (page.bottom) await drawBlockOnPDF(page.bottom, 'bottom');
+                    }
                 }
 
-                pdf.autoPrint();
-                const blobUrl = pdf.output('bloburl');
+                doc.autoPrint();
+                const blobUrl = doc.output('bloburl');
                 const win = window.open(blobUrl, '_blank');
                 if (!win) {
-                    pdf.save("document_printout.pdf");
+                    doc.save("document_printout.pdf");
                     alert("Popup blocked! PDF has been downloaded instead.");
                 }
             } catch (err) {
@@ -628,7 +694,7 @@
 
         function processDoc(block) {
             return new Promise((resolve) => {
-                const ratio = 1.586; // Precise ID ratio
+                const ratio = 1.585; // Precise ID ratio
                 const gap = 15;
                 const normalize = (src) => {
                     return new Promise(res => {
@@ -636,7 +702,6 @@
                         img.onload = () => {
                             const c = document.createElement('canvas');
                             let w, h;
-                            // Only crop for ID standard size
                             if (block.size === 'id') {
                                 w = img.width; h = img.width / ratio;
                                 c.width = w; c.height = h;
@@ -651,7 +716,6 @@
                                 }
                                 ctx.drawImage(img, ow, oh, dw, dh);
                             } else {
-                                // For half/full page, use original image aspect ratio
                                 c.width = img.width; 
                                 c.height = img.height;
                                 const ctx = c.getContext('2d');
@@ -683,6 +747,130 @@
         }
 
         addDocumentBlock();
+
+        let modalCropper = null;
+        let currentCropperTarget = { id: null, side: null };
+
+        function openCropperModal(id, side) {
+            currentCropperTarget = { id, side };
+            const block = docBlocks.find(b => b.id === id);
+            
+            // Calculate aspect ratio
+            let aspectRatio = NaN; // default free crop
+            if (block.size === 'id') {
+                aspectRatio = 85.6 / 54.0; // 1.585
+            } else if (block.size === 'half') {
+                aspectRatio = block.orientation === 'p' ? 1.414 : 1 / 1.414;
+            } else if (block.size === 'full') {
+                aspectRatio = block.orientation === 'p' ? 1 / 1.414 : 1.414;
+            }
+
+            const modal = document.getElementById('cropper-modal');
+            const cropperImage = document.getElementById('cropper-image');
+            
+            cropperImage.src = block[side + 'Original'] || block[side];
+            modal.classList.remove('hidden');
+
+            if (modalCropper) {
+                modalCropper.destroy();
+            }
+
+            modalCropper = new Cropper(cropperImage, {
+                aspectRatio: aspectRatio,
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 0.9,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                background: true
+            });
+        }
+
+        function closeCropperModal() {
+            const modal = document.getElementById('cropper-modal');
+            modal.classList.add('hidden');
+            if (modalCropper) {
+                modalCropper.destroy();
+                modalCropper = null;
+            }
+        }
+
+        function setCropperRatio(ratio) {
+            if (modalCropper) {
+                modalCropper.setAspectRatio(ratio);
+            }
+        }
+
+        function applyCroppedImage() {
+            if (!modalCropper) return;
+            
+            let canvasOptions = { minWidth: 400, minHeight: 400, maxWidth: 3000, maxHeight: 3000 };
+            const canvas = modalCropper.getCroppedCanvas(canvasOptions);
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            const { id, side } = currentCropperTarget;
+            const block = docBlocks.find(b => b.id === id);
+            if (block) {
+                block[side] = croppedDataUrl;
+                renderBlocks();
+            }
+            closeCropperModal();
+        }
+
+        function applyFullImage() {
+            const { id, side } = currentCropperTarget;
+            const block = docBlocks.find(b => b.id === id);
+            if (block && block[side + 'Original']) {
+                block[side] = block[side + 'Original'];
+                renderBlocks();
+            }
+            closeCropperModal();
+        }
     </script>
+
+    <!-- Cropper Modal -->
+    <div id="cropper-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">Crop & Position Document</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Select the exact print area of your document</p>
+                </div>
+                <button onclick="closeCropperModal()" class="text-slate-400 hover:text-slate-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Modal Content (Cropper Canvas) -->
+            <div class="flex-1 bg-slate-50 p-4 md:p-6 overflow-hidden flex flex-col min-h-[300px] max-h-[60vh]">
+                <div class="mb-4 flex flex-wrap gap-2 justify-center">
+                    <button onclick="setCropperRatio(NaN)" class="px-3 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700">Free Form</button>
+                    <button onclick="setCropperRatio(1.585)" class="px-3 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700">ID Card</button>
+                    <button onclick="setCropperRatio(1.414)" class="px-3 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700">A4 Half (1.41:1)</button>
+                    <button onclick="setCropperRatio(1/1.414)" class="px-3 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700">A4 Full (1:1.41)</button>
+                </div>
+                <div class="flex-1 h-full w-full overflow-hidden relative">
+                    <img id="cropper-image" class="max-w-full max-h-full block">
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-slate-150 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <!-- Cropper controls -->
+                <div class="flex items-center gap-1.5 justify-center">
+                    <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-100" onclick="modalCropper.zoom(0.1)" title="Zoom In"><span class="material-symbols-outlined text-md">zoom_in</span></button>
+                    <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-100" onclick="modalCropper.zoom(-0.1)" title="Zoom Out"><span class="material-symbols-outlined text-md">zoom_out</span></button>
+                    <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-100" onclick="modalCropper.rotate(-90)" title="Rotate Left"><span class="material-symbols-outlined text-md">rotate_left</span></button>
+                    <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-100" onclick="modalCropper.rotate(90)" title="Rotate Right"><span class="material-symbols-outlined text-md">rotate_right</span></button>
+                    <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-100" onclick="modalCropper.reset()" title="Reset"><span class="material-symbols-outlined text-md">restart_alt</span></button>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="applyFullImage()" class="border border-indigo-200 text-indigo-700 bg-indigo-50 px-5 py-2.5 rounded-xl font-bold text-xs uppercase hover:bg-indigo-100 transition-colors">Use Full Image</button>
+                    <button onclick="applyCroppedImage()" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase hover:bg-indigo-600 transition-all shadow-md">Apply Crop</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
