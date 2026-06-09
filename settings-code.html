@@ -938,6 +938,55 @@
     </div>
 </div>
 
+<!-- Custom API Key Regeneration Confirmation Modal -->
+<div id="api-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-primary/10 overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300">
+        <div class="p-8 text-center bg-white dark:bg-slate-900">
+            <div class="size-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner animate-pulse">
+                <span class="material-symbols-outlined text-4xl">key</span>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Regenerate API Key?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8 px-4">
+                Are you absolutely sure? Any external dashboards, automated sheets, or scripts connected using the old key will be **disconnected immediately**.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="btn-cancel-api-regen" class="flex-1 px-6 py-3.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    No, Cancel
+                </button>
+                <button id="btn-confirm-api-regen" class="flex-1 px-6 py-3.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">
+                    Yes, Regenerate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Custom Session Revoke Confirmation Modal -->
+<div id="session-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-rose-100 dark:border-rose-900/30 overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300">
+        <div class="p-8 text-center bg-white dark:bg-slate-900">
+            <div class="size-20 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner animate-pulse">
+                <span class="material-symbols-outlined text-4xl">no_accounts</span>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Revoke Session?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8 px-4">
+                Are you sure you want to revoke this session? The device will be logged out on its next page action.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="btn-cancel-session-revoke" class="flex-1 px-6 py-3.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    No, Keep Active
+                </button>
+                <button id="btn-confirm-session-revoke" class="flex-1 px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-600/20 active:scale-95 transition-all">
+                    Yes, Revoke
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- Bottom Navigation (Mobile) -->
 <nav id="bottom-nav" class="lg:hidden fixed bottom-1 left-1 right-1 bg-white/80 dark:bg-background-dark/80 backdrop-blur-lg border border-primary/10 rounded-2xl shadow-2xl z-50 flex items-center gap-1 px-2 py-3 overflow-x-auto no-scrollbar scroll-smooth">
@@ -1157,15 +1206,40 @@ function renderDevices(sessions) {
     }).join('');
 }
 
+let sessionToRevoke = null;
+
 // Expose revoke function globally
-window.revokeSession = async function(sessionDocId) {
-    if (!confirm('Revoke this session? The device will be logged out on next page action.')) return;
-    try {
-        await deleteDoc(doc(db, 'active_sessions', sessionDocId));
-    } catch (e) {
-        console.error('Failed to revoke session:', e);
+window.revokeSession = function(sessionDocId) {
+    const modal = document.getElementById('session-confirm-modal');
+    if (modal) {
+        sessionToRevoke = sessionDocId;
+        modal.classList.remove('hidden');
     }
 };
+
+// Listeners for custom session revoke modal
+const cancelSessionBtn = document.getElementById('btn-cancel-session-revoke');
+const confirmSessionBtn = document.getElementById('btn-confirm-session-revoke');
+const sessionConfirmModal = document.getElementById('session-confirm-modal');
+
+if (cancelSessionBtn && confirmSessionBtn && sessionConfirmModal) {
+    cancelSessionBtn.addEventListener('click', () => {
+        sessionConfirmModal.classList.add('hidden');
+        sessionToRevoke = null;
+    });
+
+    confirmSessionBtn.addEventListener('click', async () => {
+        sessionConfirmModal.classList.add('hidden');
+        if (sessionToRevoke) {
+            try {
+                await deleteDoc(doc(db, 'active_sessions', sessionToRevoke));
+            } catch (e) {
+                console.error('Failed to revoke session:', e);
+            }
+            sessionToRevoke = null;
+        }
+    });
+}
 
 // Listen to active_sessions collection
 if (db) {
@@ -1638,22 +1712,33 @@ function initApiKeyManager() {
         });
     }
 
-    if (regenBtn) {
+    const apiConfirmModal = document.getElementById('api-confirm-modal');
+    const cancelRegenBtn = document.getElementById('btn-cancel-api-regen');
+    const confirmRegenBtn = document.getElementById('btn-confirm-api-regen');
+
+    if (regenBtn && apiConfirmModal && cancelRegenBtn && confirmRegenBtn) {
         regenBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to regenerate the API key? Any external system using the old key will be disconnected.')) {
-                const newKey = 'biz_live_' + Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
-                localStorage.setItem('biz_api_key', newKey);
-                savedKey = newKey;
-                rawKeyEl.innerText = newKey;
-                if (!isVisible) {
-                    maskedKeyEl.classList.remove('hidden');
-                    rawKeyEl.classList.remove('hidden');
-                    if (toggleIcon) toggleIcon.textContent = 'visibility';
-                } else {
-                    maskedKeyEl.classList.add('hidden');
-                    rawKeyEl.classList.remove('hidden');
-                    if (toggleIcon) toggleIcon.textContent = 'visibility_off';
-                }
+            apiConfirmModal.classList.remove('hidden');
+        });
+
+        cancelRegenBtn.addEventListener('click', () => {
+            apiConfirmModal.classList.add('hidden');
+        });
+
+        confirmRegenBtn.addEventListener('click', () => {
+            apiConfirmModal.classList.add('hidden');
+            const newKey = 'biz_live_' + Array.from({length: 24}, () => Math.floor(Math.random()*16).toString(16)).join('');
+            localStorage.setItem('biz_api_key', newKey);
+            savedKey = newKey;
+            rawKeyEl.innerText = newKey;
+            if (!isVisible) {
+                maskedKeyEl.classList.remove('hidden');
+                rawKeyEl.classList.add('hidden');
+                if (toggleIcon) toggleIcon.textContent = 'visibility';
+            } else {
+                maskedKeyEl.classList.add('hidden');
+                rawKeyEl.classList.remove('hidden');
+                if (toggleIcon) toggleIcon.textContent = 'visibility_off';
             }
         });
     }
