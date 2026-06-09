@@ -117,7 +117,8 @@
                 front: null, 
                 back: null, 
                 size: 'id', // 'id', 'half', 'full'
-                orientation: 'p' // 'p' for portrait, 'l' for landscape
+                orientation: 'p', // 'p' for portrait, 'l' for landscape
+                fitWidth: true
             });
             renderBlocks();
         }
@@ -178,7 +179,7 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
                         <!-- Left: Settings -->
-                        <div class="lg:col-span-4 space-y-8 bg-slate-50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-100">
+                        <div class="lg:col-span-4 space-y-6 bg-slate-50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-100">
                             <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-3">Print Settings</h4>
                             
                             <!-- Size Options -->
@@ -199,6 +200,36 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Page Orientation (Only for Half/Full) -->
+                            ${block.size !== 'id' ? `
+                            <div class="space-y-2 pt-4 border-t border-slate-200">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Page Orientation</label>
+                                <div class="flex gap-2">
+                                    <button onclick="updateBlockOption(${block.id}, 'orientation', 'p')" class="flex-1 toggle-btn py-2.5 rounded-xl font-black text-[10px] ${block.orientation === 'p' ? 'active' : ''}">
+                                        Portrait
+                                    </button>
+                                    <button onclick="updateBlockOption(${block.id}, 'orientation', 'l')" class="flex-1 toggle-btn py-2.5 rounded-xl font-black text-[10px] ${block.orientation === 'l' ? 'active' : ''}">
+                                        Landscape
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Fit Width Toggle -->
+                            <div class="space-y-2 pt-4 border-t border-slate-200">
+                                <label class="flex items-center justify-between cursor-pointer group">
+                                    <div>
+                                        <span class="text-xs font-black text-slate-700 uppercase block">Fit Page Width</span>
+                                        <span class="text-[9px] font-bold text-slate-400">Ignore height limit to remove side gaps</span>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="checkbox" id="fit-width-${block.id}" class="sr-only" ${block.fitWidth ? 'checked' : ''} onchange="updateBlockOption(${block.id}, 'fitWidth', this.checked)">
+                                        <div class="block w-10 h-6 rounded-full transition-colors ${block.fitWidth ? 'bg-primary' : 'bg-slate-200'}"></div>
+                                        <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${block.fitWidth ? 'translate-x-4' : ''} border border-slate-200 shadow-sm"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            ` : ''}
                         </div>
 
                         <!-- Right: Uploads -->
@@ -301,24 +332,25 @@
                         x = (pageW - drawW) / 2;
                         y = 20; // Top Aligned
                     } else if (block.size === 'half') {
-                        drawW = pageW - 40; // Full width with margins
+                        drawW = pageW - 24; // 12mm margin each side (total 24mm)
                         drawH = (imgProps.height * drawW) / imgProps.width;
-                        // Limit height to half page
-                        if (drawH > (pageH / 2) - 20) {
-                            drawH = (pageH / 2) - 20;
+                        
+                        // Limit height to half page if fitWidth is false
+                        if (!block.fitWidth && drawH > (pageH / 2) - 16) {
+                            drawH = (pageH / 2) - 16;
                             drawW = (imgProps.width * drawH) / imgProps.height;
                         }
                         x = (pageW - drawW) / 2;
-                        y = 10;
+                        y = 12;
                     } else { // Full Page
-                        drawW = pageW - 20;
+                        drawW = pageW - 24; // 12mm margin each side (total 24mm)
                         drawH = (imgProps.height * drawW) / imgProps.width;
-                        if (drawH > pageH - 20) {
-                            drawH = pageH - 20;
+                        if (drawH > pageH - 24) {
+                            drawH = pageH - 24;
                             drawW = (imgProps.width * drawH) / imgProps.height;
                         }
                         x = (pageW - drawW) / 2;
-                        y = 10;
+                        y = 12;
                     }
 
                     pdf.addImage(processedImg, 'JPEG', x, y, drawW, drawH);
