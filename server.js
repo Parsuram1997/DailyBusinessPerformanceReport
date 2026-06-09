@@ -421,13 +421,15 @@ app.post('/api/generate-passport-psd', async (req, res) => {
         const psdData = {
              width: pageWidth,
              height: pageHeight,
-             resolutionInfo: {
-                 horizontalResolution: 300,
-                 horizontalResolutionUnit: 'PPI',
-                 widthUnit: 'Inches',
-                 verticalResolution: 300,
-                 verticalResolutionUnit: 'PPI',
-                 heightUnit: 'Inches'
+             imageResources: {
+                 resolutionInfo: {
+                     horizontalResolution: 300,
+                     horizontalResolutionUnit: 'PPI',
+                     widthUnit: 'Inches',
+                     verticalResolution: 300,
+                     verticalResolutionUnit: 'PPI',
+                     heightUnit: 'Inches'
+                 }
              },
              children: []
         };
