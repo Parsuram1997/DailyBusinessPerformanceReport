@@ -166,7 +166,7 @@
 
         function renderBlocks() {
             container.innerHTML = docBlocks.map((block, index) => `
-                <div class="animate-card bg-white border-2 border-slate-200 rounded-xl md:rounded-3xl p-4 md:p-8 step-shadow relative">
+                <div class="animate-card bg-white border-2 border-slate-200 rounded-xl md:rounded-3xl p-4 md:p-6 step-shadow relative">
                     <!-- Card Header -->
                     <div class="flex items-center justify-between mb-8 pb-6 border-b-2 border-slate-100">
                         <div class="flex items-center gap-4">
@@ -179,9 +179,9 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                         <!-- Left: Settings -->
-                        <div class="lg:col-span-4 space-y-6 bg-slate-50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-100">
+                        <div class="lg:col-span-3 space-y-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <h4 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-3">Print Settings</h4>
                             
                             <!-- Size Options -->
@@ -234,17 +234,17 @@
                             ` : ''}
                         </div>
 
-                        <!-- Right: Uploads -->
-                        <div class="lg:col-span-8 grid ${block.size === 'id' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-4 md:gap-8">
+                        <!-- Middle: Uploads -->
+                        <div class="lg:col-span-6 grid ${block.size === 'id' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-4">
                             <!-- FRONT -->
-                            <div class="space-y-4">
+                            <div class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <span class="bg-indigo-950 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">${block.size === 'id' ? 'FRONT SIDE' : 'SINGLE DOCUMENT'}</span>
                                     ${block.front ? '<span class="text-[10px] font-black text-emerald-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> READY</span>' : ''}
                                 </div>
                                 <label class="cursor-pointer block relative">
                                     <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'front', this.files[0])">
-                                    <div class="${block.size === 'id' ? 'aspect-[1.58/1]' : (block.orientation === 'p' ? 'aspect-[1/1.41]' : 'aspect-[1.41/1]')} max-h-[350px] rounded-2xl border-4 ${block.front ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
+                                    <div class="${block.size === 'id' ? 'aspect-[1.58/1]' : (block.orientation === 'p' ? 'aspect-[1/1.41]' : 'aspect-[1.41/1]')} max-h-[300px] rounded-2xl border-4 ${block.front ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
                                         ${block.front ? `
                                             <img src="${block.front}" class="w-full h-full object-contain p-2">
                                             <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -262,14 +262,14 @@
 
                             <!-- BACK (Only for ID Card) -->
                             ${block.size === 'id' ? `
-                            <div class="space-y-4">
+                            <div class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <span class="bg-slate-400 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest italic">BACK SIDE</span>
                                     ${block.back ? '<span class="text-[10px] font-black text-emerald-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> READY</span>' : ''}
                                 </div>
                                 <label class="cursor-pointer block relative">
                                     <input type="file" accept="image/png, image/jpeg" class="hidden" onchange="handleFileUpload(${block.id}, 'back', this.files[0])">
-                                    <div class="aspect-[1.58/1] max-h-[350px] rounded-2xl border-4 ${block.back ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
+                                    <div class="aspect-[1.58/1] max-h-[300px] rounded-2xl border-4 ${block.back ? 'border-success' : 'border-slate-300'} bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary">
                                         ${block.back ? `
                                             <img src="${block.back}" class="w-full h-full object-contain p-2">
                                             <div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -286,9 +286,262 @@
                             </div>
                             ` : ''}
                         </div>
+
+                        <!-- Right: A4 Print Preview -->
+                        <div class="lg:col-span-3 bg-slate-100 p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center min-h-[250px]">
+                            <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 self-start">
+                                <span class="material-symbols-outlined text-sm">visibility</span> A4 Print Preview
+                            </h4>
+                            <div class="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden w-[140px] aspect-[1/1.414] relative">
+                                <canvas id="preview-canvas-${block.id}" class="w-full h-full block"></canvas>
+                            </div>
+                            <span class="text-[9px] font-semibold text-slate-400 mt-2 text-center uppercase tracking-wide">A4 Sheet Position</span>
+                        </div>
                     </div>
                 </div>
             `).join('');
+            drawPreviews();
+        }
+
+        function drawPreviews() {
+            docBlocks.forEach((block) => {
+                const canvas = document.getElementById(`preview-canvas-${block.id}`);
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const a4W = 210;
+                const a4H = 297;
+                
+                const scale = 1.5;
+                const w = 140 * scale;
+                const h = 140 * 1.414 * scale;
+                canvas.width = w;
+                canvas.height = h;
+                
+                // Draw A4 page background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                
+                // Draw margins outline (dashed line)
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2 * scale, 2 * scale]);
+                ctx.strokeRect(10 * scale, 10 * scale, w - 20 * scale, h - 20 * scale);
+                ctx.setLineDash([]); // Reset
+                
+                // mm to canvas px scale
+                const mmToPx = w / a4W;
+                
+                const drawDocOnCanvas = () => {
+                    let drawW, drawH, x, y;
+                    
+                    if (block.size === 'id') {
+                        drawW = 85.6 * mmToPx;
+                        drawH = 54.0 * mmToPx;
+                        x = (w - drawW) / 2;
+                        y = 20 * mmToPx;
+                        
+                        // Draw Front
+                        if (block.front) {
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.drawImage(img, x, y, drawW, drawH);
+                                drawBackSide();
+                            };
+                            img.src = block.front;
+                        } else {
+                            ctx.fillStyle = '#f8fafc';
+                            ctx.fillRect(x, y, drawW, drawH);
+                            ctx.strokeStyle = '#cbd5e1';
+                            ctx.strokeRect(x, y, drawW, drawH);
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = `bold ${6 * scale}px Inter`;
+                            ctx.textAlign = 'center';
+                            ctx.fillText('Front Side', x + drawW/2, y + drawH/2 + 2 * scale);
+                            drawBackSide();
+                        }
+                        
+                        function drawBackSide() {
+                            const yBack = y + drawH + (15 * mmToPx);
+                            if (block.back) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    ctx.drawImage(img, x, yBack, drawW, drawH);
+                                };
+                                img.src = block.back;
+                            } else {
+                                ctx.fillStyle = '#f8fafc';
+                                ctx.fillRect(x, yBack, drawW, drawH);
+                                ctx.strokeStyle = '#cbd5e1';
+                                ctx.strokeRect(x, yBack, drawW, drawH);
+                                ctx.fillStyle = '#94a3b8';
+                                ctx.font = `bold ${6 * scale}px Inter`;
+                                ctx.textAlign = 'center';
+                                ctx.fillText('Back Side', x + drawW/2, yBack + drawH/2 + 2 * scale);
+                            }
+                        }
+                    } else if (block.size === 'half') {
+                        const pageW = block.orientation === 'p' ? a4W : a4H;
+                        const pageH = block.orientation === 'p' ? a4H : a4W;
+                        const limitH = (pageH / 2) - 16;
+                        
+                        // Width scale
+                        const previewPageW = w;
+                        const previewPageH = h;
+                        const previewMmToPx = previewPageW / pageW;
+                        
+                        const drawHalf = (imgWidth, imgHeight) => {
+                            let dW = (pageW - 24) * previewMmToPx;
+                            let dH = (imgHeight * dW) / imgWidth;
+                            
+                            if (!block.fitWidth && dH > limitH * previewMmToPx) {
+                                dH = limitH * previewMmToPx;
+                                dW = (imgWidth * dH) / imgHeight;
+                            }
+                            
+                            const dx = (previewPageW - dW) / 2;
+                            const dy = 12 * previewMmToPx;
+                            
+                            // Draw document
+                            ctx.save();
+                            // If Landscape, rotate preview drawing context or draw inside rotated boundaries
+                            if (block.orientation === 'l') {
+                                ctx.translate(w / 2, h / 2);
+                                ctx.rotate(-Math.PI / 2);
+                                const lMmToPx = h / a4W;
+                                let ldW = (a4H - 24) * lMmToPx;
+                                let ldH = (imgHeight * ldW) / imgWidth;
+                                if (!block.fitWidth && ldH > ((a4W / 2) - 16) * lMmToPx) {
+                                    ldH = ((a4W / 2) - 16) * lMmToPx;
+                                    ldW = (imgWidth * ldH) / imgHeight;
+                                }
+                                const ldx = -ldW / 2;
+                                const ldy = -h/2 + 12 * lMmToPx;
+                                
+                                drawBlockItem(ldx, ldy, ldW, ldH, 'Half Page');
+                                
+                                // Draw cut line in landscape
+                                ctx.strokeStyle = '#fda4af';
+                                ctx.lineWidth = 1;
+                                ctx.setLineDash([3, 1.5]);
+                                ctx.beginPath();
+                                ctx.moveTo(-h/2, 0);
+                                ctx.lineTo(h/2, 0);
+                                ctx.stroke();
+                            } else {
+                                drawBlockItem(dx, dy, dW, dH, 'Half Page');
+                                
+                                // Draw cut line in portrait
+                                ctx.strokeStyle = '#fda4af';
+                                ctx.lineWidth = 1;
+                                ctx.setLineDash([3, 1.5]);
+                                ctx.beginPath();
+                                ctx.moveTo(0, h / 2);
+                                ctx.lineTo(w, h / 2);
+                                ctx.stroke();
+                            }
+                            ctx.restore();
+                        };
+                        
+                        function drawBlockItem(dx, dy, dW, dH, label) {
+                            if (block.front) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    ctx.drawImage(img, dx, dy, dW, dH);
+                                };
+                                img.src = block.front;
+                            } else {
+                                ctx.fillStyle = '#f8fafc';
+                                ctx.fillRect(dx, dy, dW, dH);
+                                ctx.strokeStyle = '#cbd5e1';
+                                ctx.strokeRect(dx, dy, dW, dH);
+                                ctx.fillStyle = '#94a3b8';
+                                ctx.font = `bold ${6 * scale}px Inter`;
+                                ctx.textAlign = 'center';
+                                ctx.fillText(label, dx + dW/2, dy + dH/2 + 2 * scale);
+                            }
+                        }
+                        
+                        if (block.front) {
+                            const img = new Image();
+                            img.onload = () => {
+                                drawHalf(img.width, img.height);
+                            };
+                            img.src = block.front;
+                        } else {
+                            drawHalf(100, 140);
+                        }
+                    } else {
+                        // Full page
+                        const pageW = block.orientation === 'p' ? a4W : a4H;
+                        const pageH = block.orientation === 'p' ? a4H : a4W;
+                        
+                        const previewPageW = w;
+                        const previewMmToPx = previewPageW / pageW;
+                        
+                        const drawFull = (imgWidth, imgHeight) => {
+                            let dW = (pageW - 24) * previewMmToPx;
+                            let dH = (imgHeight * dW) / imgWidth;
+                            
+                            const limitH = pageH - 24;
+                            if (dH > limitH * previewMmToPx) {
+                                dH = limitH * previewMmToPx;
+                                dW = (imgWidth * dH) / imgHeight;
+                            }
+                            
+                            ctx.save();
+                            if (block.orientation === 'l') {
+                                ctx.translate(w / 2, h / 2);
+                                ctx.rotate(-Math.PI / 2);
+                                const lMmToPx = h / a4W;
+                                let ldW = (a4H - 24) * lMmToPx;
+                                let ldH = (imgHeight * ldW) / imgWidth;
+                                if (ldH > (a4W - 24) * lMmToPx) {
+                                    ldH = (a4W - 24) * lMmToPx;
+                                    ldW = (imgWidth * ldH) / imgHeight;
+                                }
+                                drawBlockItem(-ldW/2, -w/2 + 12*lMmToPx, ldW, ldH, 'Full Page');
+                            } else {
+                                const dx = (previewPageW - dW) / 2;
+                                const dy = 12 * previewMmToPx;
+                                drawBlockItem(dx, dy, dW, dH, 'Full Page');
+                            }
+                            ctx.restore();
+                        };
+                        
+                        function drawBlockItem(dx, dy, dW, dH, label) {
+                            if (block.front) {
+                                const img = new Image();
+                                img.onload = () => {
+                                    ctx.drawImage(img, dx, dy, dW, dH);
+                                };
+                                img.src = block.front;
+                            } else {
+                                ctx.fillStyle = '#f8fafc';
+                                ctx.fillRect(dx, dy, dW, dH);
+                                ctx.strokeStyle = '#cbd5e1';
+                                ctx.strokeRect(dx, dy, dW, dH);
+                                ctx.fillStyle = '#94a3b8';
+                                ctx.font = `bold ${6 * scale}px Inter`;
+                                ctx.textAlign = 'center';
+                                ctx.fillText(label, dx + dW/2, dy + dH/2 + 2 * scale);
+                            }
+                        }
+                        
+                        if (block.front) {
+                            const img = new Image();
+                            img.onload = () => {
+                                drawFull(img.width, img.height);
+                            };
+                            img.src = block.front;
+                        } else {
+                            drawFull(100, 140);
+                        }
+                    }
+                };
+                
+                drawDocOnCanvas();
+            });
         }
 
         async function generatePDF() {
