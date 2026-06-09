@@ -4985,7 +4985,113 @@ async function initReports() {
                         </td>
                     </tr>
                 `).join('');
+        }
+        }
+
+
+        // ─── Transaction Amount Distribution Pie Chart ───
+        const amountDistCanvas = document.getElementById('amount-dist-chart');
+        const amountDistTable = document.getElementById('amount-dist-table');
+        const amountDistTotalEl = document.getElementById('amount-dist-total');
+
+        if (amountDistCanvas && amountDistTable && typeof Chart !== 'undefined') {
+            const distBins = [
+                { label: '₹1 - ₹1,000', min: 1, max: 1000, count: 0, total: 0, color: '#f43f5e' },
+                { label: '₹1,001 - ₹2,000', min: 1001, max: 2000, count: 0, total: 0, color: '#f97316' },
+                { label: '₹2,001 - ₹3,000', min: 2001, max: 3000, count: 0, total: 0, color: '#eab308' },
+                { label: '₹3,001 - ₹5,000', min: 3001, max: 5000, count: 0, total: 0, color: '#22c55e' },
+                { label: '₹5,001 - ₹10,000', min: 5001, max: 10000, count: 0, total: 0, color: '#06b6d4' },
+                { label: '₹10,001 - ₹15,000', min: 10001, max: 15000, count: 0, total: 0, color: '#3b82f6' },
+                { label: '₹15,001 - ₹20,000', min: 15001, max: 20000, count: 0, total: 0, color: '#6366f1' },
+                { label: '₹20,001 - ₹50,000', min: 20001, max: 50000, count: 0, total: 0, color: '#a855f7' },
+                { label: '₹50,001 - ₹1,00,000', min: 50001, max: 100000, count: 0, total: 0, color: '#ec4899' }
+            ];
+
+            const excludedDistTypes = ['DAILY_EXPENSE', 'SETTLEMENT', 'GOLD_SIP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'PENDING_ADD', 'PENDING_REMOVE'];
+            
+            let totalDistTxns = 0;
+
+            dailyTxns.forEach(t => {
+                if (!excludedDistTypes.includes(t.type)) {
+                    const amt = parseFloat(t.amount) || 0;
+                    if (amt >= 1) {
+                        for (let bin of distBins) {
+                            if (amt >= bin.min && amt <= bin.max) {
+                                bin.count++;
+                                bin.total += amt;
+                                totalDistTxns++;
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (amountDistTotalEl) {
+                amountDistTotalEl.innerText = totalDistTxns;
             }
+
+            // Populate table
+            amountDistTable.innerHTML = distBins.map(bin => {
+                const pct = totalDistTxns > 0 ? ((bin.count / totalDistTxns) * 100).toFixed(1) : '0.0';
+                return `
+                    <tr class="hover:bg-primary/5 transition-colors group">
+                        <td class="py-2 pr-3 font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                            <span class="size-2.5 rounded-full shrink-0" style="background-color: ${bin.color}"></span>
+                            <span>${bin.label}</span>
+                        </td>
+                        <td class="py-2 px-3 text-center font-bold text-slate-600 dark:text-slate-400">${bin.count}</td>
+                        <td class="py-2 px-3 text-right font-bold text-slate-700 dark:text-slate-200">${formatCurrency(bin.total)}</td>
+                        <td class="py-2 pl-3 text-right font-black text-primary">${pct}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (window._amountDistChart) {
+                window._amountDistChart.destroy();
+            }
+
+            const ctx = amountDistCanvas.getContext('2d');
+            window._amountDistChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: distBins.map(b => b.label),
+                    datasets: [{
+                        data: distBins.map(b => b.count),
+                        totals: distBins.map(b => b.total),
+                        backgroundColor: distBins.map(b => b.color),
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { family: "'Inter', sans-serif", size: 13, weight: '700' },
+                            bodyFont: { family: "'Inter', sans-serif", size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const count = context.raw || 0;
+                                    const totalAmt = context.dataset.totals[context.dataIndex] || 0;
+                                    const pct = totalDistTxns > 0 ? ((count / totalDistTxns) * 100).toFixed(1) + '%' : '0%';
+                                    return [
+                                        ` Transactions: ${count} (${pct})`,
+                                        ` Total Amount: ₹${totalAmt.toLocaleString('en-IN')}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
 
