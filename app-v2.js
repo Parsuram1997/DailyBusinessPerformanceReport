@@ -5790,7 +5790,7 @@ async function initDailyTxn() {
         // Service Provider Options Filtering
         if (txnProvider) {
             const aepsMatmProviders = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
-            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
+            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi', 'Online(Parsu)', 'Online(Dalai)', 'Online'];
             
             const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
@@ -7282,13 +7282,17 @@ async function initDailyTxn() {
                                 </div>
                             </div>
                         ` : ''}
-                        ${(!bankDisplay) ? `
-                            ${txn.provider ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                    <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
-                                    <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
-                                </div>
-                            ` : '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>'}
+                        ${txn.provider ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
+                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                            </div>
+                        ` : (!bankDisplay ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
+                        ${txn.depositBy ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy}</span>
+                            </div>
                         ` : ''}
                     </div>
                 </td>
@@ -7394,7 +7398,7 @@ async function initDailyTxn() {
                             <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
-                        <span class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center">
+                        <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {}).replace(/"/g, '&quot;')})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
                             <span>O: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>

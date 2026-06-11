@@ -4636,21 +4636,45 @@ async function initReports() {
                 window._incomePieChart.destroy();
             }
 
+            const totalIncomeGenerated = aepsFee + matmFee + depFee + witFee + otherFee;
+            const incomeDistTotalEl = document.getElementById('income-dist-total');
+            if(incomeDistTotalEl) incomeDistTotalEl.innerText = formatCurrency(totalIncomeGenerated);
+
+            const distData = [
+                { label: 'AEPS', fee: aepsFee, vol: aepsVol, color: '#3b82f6' },
+                { label: 'MATM', fee: matmFee, vol: matmVol, color: '#10b981' },
+                { label: 'Deposit', fee: depFee, vol: depVol, color: '#8b5cf6' },
+                { label: 'Withdrawal', fee: witFee, vol: witVol, color: '#f59e0b' },
+                { label: 'Other', fee: otherFee, vol: otherVol, color: '#64748b' }
+            ].sort((a,b) => b.fee - a.fee);
+
+            const incomeDistTable = document.getElementById('income-dist-table');
+            if (incomeDistTable) {
+                incomeDistTable.innerHTML = distData.map(bin => {
+                    const pct = totalIncomeGenerated > 0 ? ((bin.fee / totalIncomeGenerated) * 100).toFixed(1) : '0.0';
+                    return `
+                        <tr class="hover:bg-primary/5 transition-colors group">
+                            <td class="py-2 pr-3 font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                <span class="size-2.5 rounded-full shrink-0" style="background-color: ${bin.color}"></span>
+                                <span>${bin.label}</span>
+                            </td>
+                            <td class="py-2 px-3 text-right font-bold text-slate-600 dark:text-slate-400">${formatCurrency(bin.vol)}</td>
+                            <td class="py-2 px-3 text-right font-bold text-slate-700 dark:text-slate-200">${formatCurrency(bin.fee)}</td>
+                            <td class="py-2 pl-3 text-right font-black text-primary">${pct}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
             const ctx = pieCanvas.getContext('2d');
             window._incomePieChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['AEPS', 'MATM', 'Deposit', 'Withdrawal', 'Other'],
+                    labels: distData.map(d => d.label),
                     datasets: [{
-                        data: [aepsFee, matmFee, depFee, witFee, otherFee],
-                        volumes: [aepsVol, matmVol, depVol, witVol, otherVol],
-                        backgroundColor: [
-                            '#3b82f6', // blue-500
-                            '#10b981', // emerald-500
-                            '#8b5cf6', // violet-500
-                            '#f59e0b', // amber-500
-                            '#64748b'  // slate-500
-                        ],
+                        data: distData.map(d => d.fee),
+                        volumes: distData.map(d => d.vol),
+                        backgroundColor: distData.map(d => d.color),
                         borderWidth: 0,
                         hoverOffset: 4
                     }]
@@ -4660,25 +4684,12 @@ async function initReports() {
                     maintainAspectRatio: false,
                     cutout: '70%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    family: "'Inter', sans-serif",
-                                    size: 12,
-                                    weight: '600'
-                                },
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             titleFont: { family: "'Inter', sans-serif", size: 14 },
                             bodyFont: { family: "'Inter', sans-serif", size: 13 },
                             padding: 12,
-                            cornerRadius: 8,
                             callbacks: {
                                 label: function(context) {
                                     const fee = context.raw || 0;
@@ -4996,15 +5007,15 @@ async function initReports() {
 
         if (amountDistCanvas && amountDistTable && typeof Chart !== 'undefined') {
             const distBins = [
-                { label: '₹1 - ₹1,000', min: 1, max: 1000, count: 0, total: 0, color: '#f43f5e' },
-                { label: '₹1,001 - ₹2,000', min: 1001, max: 2000, count: 0, total: 0, color: '#f97316' },
-                { label: '₹2,001 - ₹3,000', min: 2001, max: 3000, count: 0, total: 0, color: '#eab308' },
-                { label: '₹3,001 - ₹5,000', min: 3001, max: 5000, count: 0, total: 0, color: '#22c55e' },
-                { label: '₹5,001 - ₹10,000', min: 5001, max: 10000, count: 0, total: 0, color: '#06b6d4' },
-                { label: '₹10,001 - ₹15,000', min: 10001, max: 15000, count: 0, total: 0, color: '#3b82f6' },
-                { label: '₹15,001 - ₹20,000', min: 15001, max: 20000, count: 0, total: 0, color: '#6366f1' },
-                { label: '₹20,001 - ₹50,000', min: 20001, max: 50000, count: 0, total: 0, color: '#a855f7' },
-                { label: '₹50,001 - ₹1,00,000', min: 50001, max: 100000, count: 0, total: 0, color: '#ec4899' }
+                { label: '₹1 - ₹1,000', min: 1, max: 1000, count: 0, total: 0, fees: 0, color: '#f43f5e' },
+                { label: '₹1,001 - ₹2,000', min: 1001, max: 2000, count: 0, total: 0, fees: 0, color: '#f97316' },
+                { label: '₹2,001 - ₹3,000', min: 2001, max: 3000, count: 0, total: 0, fees: 0, color: '#eab308' },
+                { label: '₹3,001 - ₹5,000', min: 3001, max: 5000, count: 0, total: 0, fees: 0, color: '#22c55e' },
+                { label: '₹5,001 - ₹10,000', min: 5001, max: 10000, count: 0, total: 0, fees: 0, color: '#06b6d4' },
+                { label: '₹10,001 - ₹15,000', min: 10001, max: 15000, count: 0, total: 0, fees: 0, color: '#3b82f6' },
+                { label: '₹15,001 - ₹20,000', min: 15001, max: 20000, count: 0, total: 0, fees: 0, color: '#6366f1' },
+                { label: '₹20,001 - ₹50,000', min: 20001, max: 50000, count: 0, total: 0, fees: 0, color: '#a855f7' },
+                { label: '₹50,001 - ₹1,00,000', min: 50001, max: 100000, count: 0, total: 0, fees: 0, color: '#ec4899' }
             ];
 
             const excludedDistTypes = ['DAILY_EXPENSE', 'SETTLEMENT', 'GOLD_SIP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'PENDING_ADD', 'PENDING_REMOVE'];
@@ -5014,11 +5025,13 @@ async function initReports() {
             dailyTxns.forEach(t => {
                 if (!excludedDistTypes.includes(t.type)) {
                     const amt = parseFloat(t.amount) || 0;
+                    const fee = parseFloat(t.charges) || 0;
                     if (amt >= 1) {
                         for (let bin of distBins) {
                             if (amt >= bin.min && amt <= bin.max) {
                                 bin.count++;
                                 bin.total += amt;
+                                bin.fees += fee;
                                 totalDistTxns++;
                                 break;
                             }
@@ -5042,6 +5055,7 @@ async function initReports() {
                         </td>
                         <td class="py-2 px-3 text-center font-bold text-slate-600 dark:text-slate-400">${bin.count}</td>
                         <td class="py-2 px-3 text-right font-bold text-slate-700 dark:text-slate-200">${formatCurrency(bin.total)}</td>
+                        <td class="py-2 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${formatCurrency(bin.fees)}</td>
                         <td class="py-2 pl-3 text-right font-black text-primary">${pct}%</td>
                     </tr>
                 `;
@@ -6754,7 +6768,7 @@ async function initDailyTxn() {
         // Service Provider Options Filtering
         if (txnProvider) {
             const aepsMatmProviders = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
-            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi'];
+            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi', 'Online(Parsu)', 'Online(Dalai)', 'Online'];
             const aadhaarDepositProviders = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
 
             const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT', 'CSP_COMMISSION'].includes(txnType.value);
@@ -8246,13 +8260,17 @@ async function initDailyTxn() {
                                 </div>
                             </div>
                         ` : ''}
-                        ${(!bankDisplay) ? `
-                            ${txn.provider ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                    <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
-                                    <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
-                                </div>
-                            ` : '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>'}
+                        ${txn.provider ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
+                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                            </div>
+                        ` : (!bankDisplay ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
+                        ${txn.depositBy ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy}</span>
+                            </div>
                         ` : ''}
                     </div>
                 </td>
@@ -8358,7 +8376,7 @@ async function initDailyTxn() {
                             <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
-                        <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {})})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
+                        <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {}).replace(/"/g, '&quot;')})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
                             <span>O: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
