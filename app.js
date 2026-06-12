@@ -8022,6 +8022,7 @@ async function initDailyTxn() {
                 card.className = `flex items-center justify-between p-2.5 rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border ${isActive ? 'border-primary ring-2 ring-primary/40 shadow-md scale-[1.02]' : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm'} transition-all cursor-pointer group select-none relative overflow-hidden`;
                 card.onclick = () => {
                     currentTxnFilter = config.type;
+                    window.currentTxnFilter = config.type;
                     renderBadgesAndTable();
                 };
 
@@ -8421,6 +8422,29 @@ async function initDailyTxn() {
 
         currentTxnsForDownload = [...txnsToRender];
 
+        // Update filter total footer
+        const filterTfoot = document.getElementById('txn-filter-tfoot');
+        const filterTotalLabel = document.getElementById('filter-total-label');
+        const filterTotalCount = document.getElementById('filter-total-count');
+        const filterTotalAmount = document.getElementById('filter-total-amount');
+        const filterTotalCharges = document.getElementById('filter-total-charges');
+
+        const isFiltered = currentTxnFilter !== 'ALL';
+        if (filterTfoot) {
+            if (isFiltered) {
+                const filtTotal = txnsToRender.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+                const filtCharges = txnsToRender.reduce((s, t) => s + parseFloat(t.charges || 0), 0);
+                const filtLabel = MASTER_TXN_TYPES.find(c => c.type === currentTxnFilter);
+                if (filterTotalLabel) filterTotalLabel.textContent = (filtLabel ? filtLabel.label : currentTxnFilter) + ' Total';
+                if (filterTotalCount) filterTotalCount.textContent = txnsToRender.length + ' rows';
+                if (filterTotalAmount) filterTotalAmount.textContent = '₹' + filtTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                if (filterTotalCharges) filterTotalCharges.textContent = 'F: ₹' + filtCharges.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                filterTfoot.classList.remove('hidden');
+            } else {
+                filterTfoot.classList.add('hidden');
+            }
+        }
+
         document.querySelectorAll('.edit-txn-btn').forEach(btn => {
             btn.onclick = () => {
                 const txn = allTxnsForDate.find(t => t.id === btn.dataset.id);
@@ -8772,6 +8796,7 @@ async function initDailyTxn() {
                 });
 
                 allTxnsForDate = txns;
+                window.allTxnsForDate = txns;
                 currentSelectedDate = date;
                 currentStartCash = startCash;
                 currentStartOnline = startOnline;
@@ -8857,6 +8882,7 @@ async function initDailyTxn() {
                 });
 
                 allTxnsForDate = txns;
+                window.allTxnsForDate = txns;
                 
                 if (allTimeSearchCountBadge) {
                     allTimeSearchCountBadge.innerText = `${txns.length} Transactions`;
@@ -9043,6 +9069,44 @@ async function initDailyTxn() {
                 }
             }
         });
+
+        // Update filter tfoot with visible rows total (for search filter)
+        const filterTfoot = document.getElementById('txn-filter-tfoot');
+        const filterTotalLabel = document.getElementById('filter-total-label');
+        const filterTotalCount = document.getElementById('filter-total-count');
+        const filterTotalAmount = document.getElementById('filter-total-amount');
+        const filterTotalCharges = document.getElementById('filter-total-charges');
+
+        const isSearchActive = keywords.length > 0;
+        if (filterTfoot && isSearchActive) {
+            // Calculate total from visible rows using data-id to look up allTxnsForDate
+            let searchTotal = 0;
+            let searchCharges = 0;
+            let searchRowCount = 0;
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const txnId = row.dataset.id;
+                    const txn = (window.allTxnsForDate || []).find(t => t.id === txnId);
+                    if (txn) {
+                        searchTotal += parseFloat(txn.amount || 0);
+                        searchCharges += parseFloat(txn.charges || 0);
+                        searchRowCount++;
+                    }
+                }
+            });
+            if (filterTotalLabel) filterTotalLabel.textContent = 'Search Total';
+            if (filterTotalCount) filterTotalCount.textContent = searchRowCount + ' rows';
+            if (filterTotalAmount) filterTotalAmount.textContent = '₹' + searchTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+            if (filterTotalCharges) filterTotalCharges.textContent = 'F: ₹' + searchCharges.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+            filterTfoot.classList.remove('hidden');
+        } else if (filterTfoot && !isSearchActive) {
+            // If no search and no type filter, hide the tfoot
+            // (type filter tfoot is managed by renderBadgesAndTable)
+            const currentFilter = window.currentTxnFilter || 'ALL';
+            if (currentFilter === 'ALL') {
+                filterTfoot.classList.add('hidden');
+            }
+        }
     };
 
     if (searchInput) {
