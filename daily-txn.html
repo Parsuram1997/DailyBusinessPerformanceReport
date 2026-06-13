@@ -107,6 +107,20 @@
         @media screen and (max-width: 767px) {
             input, select, textarea { font-size: 16px !important; }
         }
+        
+        /* Prevent wrapping of values inside breakdown modals and adjust padding to fit on mobile */
+        #online-breakdown-modal table p,
+        #roinet-breakdown-modal table p {
+            white-space: nowrap !important;
+        }
+
+        @media (max-width: 639px) {
+            #online-breakdown-modal td,
+            #roinet-breakdown-modal td {
+                padding-left: 0.25rem !important; /* px-1 */
+                padding-right: 0.25rem !important; /* px-1 */
+            }
+        }
     </style>
     <script>
         // Prevent pinch-zoom on iOS
@@ -487,6 +501,15 @@
                             <select id="txn-charges-type" tabindex="8" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
+                            </select>
+                        </div>
+                        <div id="charges-account-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges Account</label>
+                            <select id="txn-charges-account" tabindex="9" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select...</option>
+                                <option value="Online(Parsu)">Online(Parsu)</option>
+                                <option value="Online(Dalai)">Online(Dalai)</option>
+                                <option value="Online(Shop)">Online(Shop)</option>
                             </select>
                         </div>
                         <div class="col-span-full order-last flex flex-col sm:flex-row justify-end pt-1">
@@ -1105,7 +1128,7 @@
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <th class="px-1.5 pb-2 text-left sm:px-3">Account</th>
                                 <th class="px-1.5 pb-2 text-right sm:px-3">Opening</th>
-                                <th class="px-1.5 pb-2 text-right sm:px-3">Changes</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Recent Changes</th>
                                 <th class="px-1.5 pb-2 text-right sm:px-3">Closing</th>
                             </tr>
                         </thead>
@@ -1176,7 +1199,7 @@
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <th class="px-1.5 pb-2 text-left sm:px-3">Provider</th>
                                 <th class="px-1.5 pb-2 text-right sm:px-3">Opening</th>
-                                <th class="px-1.5 pb-2 text-right sm:px-3">Changes</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Recent Changes</th>
                                 <th class="px-1.5 pb-2 text-right sm:px-3">Closing</th>
                             </tr>
                         </thead>

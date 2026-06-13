@@ -5777,10 +5777,18 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) {
+            if (['DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
-                if (depositByLabel) depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
+                if (depositByLabel) {
+                    if (txnType.value === 'CASH_WITHDRAWAL') {
+                        depositByLabel.innerText = 'Debited By';
+                    } else if (txnType.value === 'CASH_DEPOSIT') {
+                        depositByLabel.innerText = 'Credit By';
+                    } else {
+                        depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
+                    }
+                }
             } else {
                 depositByContainer.classList.add('hidden');
                 txnDepositBy.value = '';
@@ -6368,7 +6376,7 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                depositBy: (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -6570,6 +6578,10 @@ async function initDailyTxn() {
             const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
             const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
 
+            // Per-provider online breakdown tracking
+            const onlineBreakdown = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
+            const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0 };
+
             const getSubAccountKey = (prov) => {
                 if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
                 if (prov.includes('roinet(dalai)') || prov === 'roinet_2') return 'roinet_2';
@@ -6595,6 +6607,8 @@ async function initDailyTxn() {
                 const amt = parseFloat(t.amount || 0);
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
+                
+                const prevBals = { ...balances };
                 
                 if (t.chargesType === 'Online') balances.online += chg;
                 else balances.cash += chg;
@@ -6710,7 +6724,74 @@ async function initDailyTxn() {
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
+                } else if (t.type === 'ONLINE_EXCHANGE') {
+                    let sourceDest = 'other';
+                    let targetDest = 'other';
+                    const sourceProv = (t.paymentApp || '').toLowerCase();
+                    const targetProv = (t.provider || '').toLowerCase();
+                    
+                    if (sourceProv.includes('parsu')) sourceDest = 'online_p1';
+                    else if (sourceProv.includes('shop')) sourceDest = 'online_p2';
+                    else if (sourceProv.includes('dalai')) sourceDest = 'online_p3';
+
+                    if (targetProv.includes('parsu')) targetDest = 'online_p1';
+                    else if (targetProv.includes('shop')) targetDest = 'online_p2';
+                    else if (targetProv.includes('dalai')) targetDest = 'online_p3';
+
+                    onlineBreakdown[sourceDest] -= amt;
+                    onlineBreakdown[targetDest] += amt;
+                    
+                    lastOnlineChanges[sourceDest] = -amt;
+                    lastOnlineChanges[targetDest] = amt;
+                    lastOnlineChanges.total = 0;
                 }
+
+                // Capture changes for online breakdown
+                Object.keys(balances).forEach(key => {
+                    const diff = balances[key] - prevBals[key];
+                    if (diff !== 0) {
+                        if (key === 'online') {
+                            const onlineChargesDiff = (t.chargesType === 'Online' && !['ROINET_COMMISSION', 'CSP_COMMISSION', 'JIO_TOPUP', 'SETTLEMENT'].includes(t.type)) ? chg : 0;
+                            const onlineAmountDiff = diff - onlineChargesDiff;
+
+                            const getOnlineDest = (prov) => {
+                                const lower = (prov || '').toLowerCase();
+                                if (lower.includes('parsu')) return 'online_p1';
+                                if (lower.includes('shop')) return 'online_p2';
+                                if (lower.includes('dalai')) return 'online_p3';
+                                return 'other';
+                            };
+
+                            let amtDest = 'other';
+                            let actualProviderForAmt = provider;
+                            if (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(t.type) && provider === 'online') {
+                                actualProviderForAmt = t.depositBy || provider;
+                            } else if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(t.type) && t.depositBy) {
+                                actualProviderForAmt = t.depositBy;
+                            }
+                            amtDest = getOnlineDest(actualProviderForAmt);
+
+                            let destDiffs = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
+                            if (onlineAmountDiff !== 0) {
+                                destDiffs[amtDest] += onlineAmountDiff;
+                            }
+                            if (onlineChargesDiff !== 0) {
+                                const chargesProv = t.chargesAccount || actualProviderForAmt;
+                                const chgDest = getOnlineDest(chargesProv);
+                                destDiffs[chgDest] += onlineChargesDiff;
+                            }
+
+                            Object.keys(destDiffs).forEach(d => {
+                                if (destDiffs[d] !== 0) {
+                                    onlineBreakdown[d] += destDiffs[d];
+                                    lastOnlineChanges[d] = destDiffs[d];
+                                }
+                            });
+                            
+                            lastOnlineChanges.total = diff;
+                        }
+                    }
+                });
             });
 
             const fmt = (val) => `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -6767,6 +6848,36 @@ async function initDailyTxn() {
                     airtel_2: lastRoinetChanges.airtel_2,
                     spicemoney: lastRoinetChanges.spicemoney,
                     total: lastRoinetChanges.total
+                }
+            };
+
+            const opOnlineP1 = parseFloat(openingBalances.online_p1 || 0);
+            const opOnlineP2 = parseFloat(openingBalances.online_p2 || 0);
+            const opOnlineP3 = parseFloat(openingBalances.online_p3 || 0);
+            const totalSplitOnline = opOnlineP1 + opOnlineP2 + opOnlineP3;
+            const onlineOpeningFallback = parseFloat(opValues.online || 0);
+
+            window._onlineBreakdown = {
+                opening: {
+                    online_p1: opOnlineP1,
+                    online_p2: opOnlineP2,
+                    online_p3: opOnlineP3,
+                    other: totalSplitOnline > 0 ? (onlineOpeningFallback - totalSplitOnline) : onlineOpeningFallback,
+                    total: onlineOpeningFallback
+                },
+                closing: {
+                    online_p1: opOnlineP1 + onlineBreakdown.online_p1,
+                    online_p2: opOnlineP2 + onlineBreakdown.online_p2,
+                    online_p3: opOnlineP3 + onlineBreakdown.online_p3,
+                    other: (totalSplitOnline > 0 ? (onlineOpeningFallback - totalSplitOnline) : onlineOpeningFallback) + onlineBreakdown.other,
+                    total: onlineOpeningFallback + balances.online
+                },
+                lastChange: {
+                    online_p1: lastOnlineChanges.online_p1,
+                    online_p2: lastOnlineChanges.online_p2,
+                    online_p3: lastOnlineChanges.online_p3,
+                    other: lastOnlineChanges.other,
+                    total: lastOnlineChanges.total
                 }
             };
         } catch (err) {
@@ -7256,19 +7367,24 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-start gap-1">
-                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
-                        txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
-                            txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
+                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
+                        txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
+                            txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20' :
                                 txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
                                     txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
-                                txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
-                                    'bg-primary/10 text-primary'
+                                txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20' :
+                                    'bg-primary/10 text-primary border border-primary/20 dark:border-primary/30'
                 }">${
                     txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
                 }</span>
-                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
+                        ${txn.provider ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
+                                <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
+                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                            </div>
+                        ` : ''}
                     </div>
                 </td>
                  <td class="px-3 py-1.5">
@@ -7276,7 +7392,7 @@ async function initDailyTxn() {
                         ${bankDisplay ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
-                                <div class="flex flex-col leading-tight">
+                                <div class="flex items-center gap-1 whitespace-nowrap">
                                     <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
                                     ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
                                 </div>
@@ -7291,7 +7407,7 @@ async function initDailyTxn() {
                         ${txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : (txn.type === 'CASH_WITHDRAWAL' ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
                             </div>
                         ` : ''}
                     </div>
