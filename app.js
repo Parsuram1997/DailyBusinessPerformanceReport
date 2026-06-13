@@ -8624,7 +8624,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5 whitespace-nowrap">
-                    <div class="flex flex-col gap-1 w-[80px]">
+                    <div class="flex flex-col gap-1 w-[80px] mx-auto">
                         <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wide">${time || 'NA'}</span>
                         </div>
@@ -8634,7 +8634,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
-                    <div class="flex flex-col items-start gap-1">
+                    <div class="flex flex-col items-center gap-1 mx-auto">
                         <span class="px-2 py-1 rounded text-[10px] font-bold tracking-wide flex items-center justify-center gap-1 w-[140px] whitespace-nowrap ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
                     txn.type === 'WITHDRAWAL' || txn.type === 'QR_WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
@@ -8650,7 +8650,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[160px]">
+                    <div class="flex flex-col gap-1 w-[160px] mx-auto">
                         ${(() => {
                             let infoList = [];
                             if (bankDisplay) infoList.push(getShortBankName(bankDisplay) + (typeDisplay ? ' ' + typeDisplay : ''));
@@ -8666,6 +8666,10 @@ async function initDailyTxn() {
                                 else if (txn.type === 'ONLINE_WORK') prefix = 'Debit: ';
                                 else prefix = 'Dep: ';
                                 infoList.push(prefix + txn.depositBy);
+                            }
+                            
+                            if (txn.receivedIn && txn.type === 'JIO_RECHARGE') {
+                                infoList.push('Recv: ' + txn.receivedIn);
                             }
 
                             if (['OTHER_INCOME', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
@@ -8693,8 +8697,8 @@ async function initDailyTxn() {
                         })()}
                     </div>
                 </td>
-                 <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[160px]">
+                <td class="px-3 py-1.5">
+                    <div class="flex flex-col gap-1 w-[160px] mx-auto">
                         ${(() => {
                             let d1 = 'NA';
                             let d2Arr = [];
@@ -8733,7 +8737,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5 text-right">
-                    <div class="flex flex-col gap-1 w-[90px] ml-auto">
+                    <div class="flex flex-col gap-1 w-[90px] mx-auto">
                         ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
@@ -8755,7 +8759,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5 text-right charges-col-cell">
-                    <div class="flex flex-col gap-1 w-[110px] ml-auto">
+                    <div class="flex flex-col gap-1 w-[110px] mx-auto">
                         ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
@@ -8774,7 +8778,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5 balance-col-cell whitespace-nowrap">
-                    <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                    <div class="flex flex-col items-center justify-center gap-1 w-[160px] mx-auto">
                         <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
                             <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
@@ -8786,12 +8790,12 @@ async function initDailyTxn() {
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
-                    <div class="flex justify-center gap-2">
-                        <button class="edit-txn-btn size-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-blue-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                            <span class="material-symbols-outlined text-sm">edit</span>
+                    <div class="flex flex-col gap-1 w-[80px] mx-auto opacity-100 lg:opacity-20 lg:group-hover:opacity-100 transition-opacity">
+                        <button class="edit-txn-btn flex items-center justify-center px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 w-full h-[22px] hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
+                            <span class="text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">edit</span> Edit</span>
                         </button>
-                        <button class="delete-txn-btn size-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center" data-id="${txn.id}">
-                            <span class="material-symbols-outlined text-sm">delete</span>
+                        <button class="delete-txn-btn flex items-center justify-center px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 w-full h-[22px] hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
+                            <span class="text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">delete</span> Delete</span>
                         </button>
                     </div>
                 </td>
