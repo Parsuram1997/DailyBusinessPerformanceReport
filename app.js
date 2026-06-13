@@ -6318,6 +6318,8 @@ async function initDailyTxn() {
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
+    const txnReason = document.getElementById('txn-reason');
+    const reasonFieldContainer = document.getElementById('reason-field-container');
     const qrWalletContainer = document.getElementById('qr-wallet-field-container');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
@@ -6516,6 +6518,8 @@ async function initDailyTxn() {
         if (remarkFieldContainer) remarkFieldContainer.classList.add('hidden');
         if (txnReceivedIn) txnReceivedIn.value = '';
         if (receivedInContainer) receivedInContainer.classList.add('hidden');
+        if (txnReason) txnReason.value = '';
+        if (reasonFieldContainer) reasonFieldContainer.classList.add('hidden');
         const chargesLabel = document.getElementById('charges-account-label');
         if (chargesLabel) chargesLabel.innerText = 'Charges Account';
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -6677,11 +6681,22 @@ async function initDailyTxn() {
                 if (['ONLINE_WORK', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) addressFieldContainer.classList.add('hidden');
                 else addressFieldContainer.classList.remove('hidden');
             }
-            if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
+            if (chargesFieldContainer) {
+                if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                    chargesFieldContainer.classList.add('hidden');
+                    if (typeof txnCharges !== 'undefined' && txnCharges) txnCharges.value = '';
+                } else {
+                    chargesFieldContainer.classList.remove('hidden');
+                }
+            }
             if (chargesModeContainer) {
-                chargesModeContainer.classList.remove('hidden');
-                const label = chargesModeContainer.querySelector('label');
-                if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+                if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                    chargesModeContainer.classList.add('hidden');
+                } else {
+                    chargesModeContainer.classList.remove('hidden');
+                    const label = chargesModeContainer.querySelector('label');
+                    if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+                }
             }
 
             if (txnType.value === 'AEPS') {
@@ -6751,8 +6766,8 @@ async function initDailyTxn() {
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
             if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
-                if (providerLabel) providerLabel.innerText = 'Reason';
-                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Reason...';
+                if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = 'Amount';
             } else if (txnType.value === 'ONLINE_EXCHANGE') {
                 if (providerLabel) providerLabel.innerText = 'Source Account';
@@ -6786,18 +6801,27 @@ async function initDailyTxn() {
             if (txnQrWallet) txnQrWallet.value = '';
         }
 
+        if (reasonFieldContainer) {
+            if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                reasonFieldContainer.classList.remove('hidden');
+            } else {
+                reasonFieldContainer.classList.add('hidden');
+                if (txnReason) txnReason.value = '';
+            }
+        }
+
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
             const isCustMoneyOnline = ['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online';
-            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value) || isCustMoneyOnline) {
+            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) || isCustMoneyOnline) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
                 if (depositByLabel) {
                     if (txnType.value === 'ONLINE_WORK') {
                         depositByLabel.innerText = 'Debited By';
-                    } else if (['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL'].includes(txnType.value)) {
+                    } else if (['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Received In';
-                    } else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL'].includes(txnType.value)) {
+                    } else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Debited By';
                     } else if (txnType.value === 'CASH_DEPOSIT') {
                         depositByLabel.innerText = 'Credit By';
@@ -6824,7 +6848,7 @@ async function initDailyTxn() {
         }
         
         if (chargesAccountContainer && txnChargesAccount) {
-            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP'];
+            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
             if (txnChargesType && txnChargesType.value === 'Online' && !typesHidingChargesAccount.includes(txnType.value)) {
                 chargesAccountContainer.classList.remove('hidden');
                 chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
@@ -6855,9 +6879,9 @@ async function initDailyTxn() {
                 if (!opt.value) return; // Skip placeholder
 
                 if (txnType.value === 'FREE_DEPOSIT') {
-                    opt.style.display = ['aeps and deposit', 'matm and deposit', 'Other reason'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (txnType.value === 'FREE_WITHDRAWAL') {
-                    opt.style.display = ['transfer and matm', 'transfer and aeps', 'service and withdrawl', 'Other reason'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (txnType.value === 'ONLINE_EXCHANGE') {
                     opt.style.display = ['Online(Parsu)', 'Online(Shop)', 'Online(Dalai)'].includes(opt.value) ? '' : 'none';
                 } else if (isAepsMatm) {
@@ -6972,6 +6996,7 @@ async function initDailyTxn() {
         const customBankSearch = document.getElementById('custom-bank-search');
         if (customBankSearch) customBankSearch.tabIndex = 2;
         if (txnMethod) txnMethod.tabIndex = 2;
+        if (txnReason) txnReason.tabIndex = 2;
         if (txnAmount) txnAmount.tabIndex = 3;
         if (txnRemaining) txnRemaining.tabIndex = 3;
         if (txnNote) txnNote.tabIndex = 4;
@@ -7516,11 +7541,12 @@ async function initDailyTxn() {
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnProvider.value : '',
                 provider: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
+                reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
@@ -7889,7 +7915,10 @@ async function initDailyTxn() {
                     }
                     else if (provider.includes('crgb')) balances.crgb += amt;
                     else if (provider.includes('jio')) balances.jio += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                 } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                     balances.cash += amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
@@ -7898,7 +7927,10 @@ async function initDailyTxn() {
                     }
                     else if (provider.includes('crgb')) balances.crgb -= amt;
                     else if (provider.includes('jio')) balances.jio -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
@@ -8001,6 +8033,7 @@ async function initDailyTxn() {
                     if (provider === 'cash') balances.cash += amt;
                     else {
                         balances.online += amt;
+                        onlineBreakdown[getOnlineDest(provider)] += amt;
                         if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) balances.roinet += amt;
                         else if (provider.includes('crgb')) balances.crgb += amt;
                         else if (provider.includes('jio')) balances.jio += amt;
@@ -8069,10 +8102,18 @@ async function initDailyTxn() {
                     else balances.online -= amt;
                 } else if (t.type === 'PENDING_ADD') {
                     balances.pending += amt;
-                    balances.online -= amt;
+                    if (provider === 'cash') balances.cash -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                 } else if (t.type === 'PENDING_REMOVE') {
                     balances.pending -= amt;
-                    balances.online += amt;
+                    if (provider === 'cash') balances.cash += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'ONLINE_EXCHANGE') {
                     let sourceDest = 'other';
                     let targetDest = 'other';
@@ -8533,7 +8574,7 @@ async function initDailyTxn() {
                     txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))
                 }</span>
-                        ${txn.provider ? `
+                        ${(['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type) && txn.provider) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
                                 <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">${(['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type) && txn.paymentApp ? txn.paymentApp + ' ➔ ' + txn.provider : txn.provider).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
@@ -8542,7 +8583,7 @@ async function initDailyTxn() {
                     </div>
                 </td>
                  <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1.5 max-w-[200px]">
+                    <div class="flex flex-col items-start gap-1 max-w-[200px]">
                         ${bankDisplay ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
@@ -8552,12 +8593,12 @@ async function initDailyTxn() {
                                 </div>
                             </div>
                         ` : ''}
-                        ${(txn.provider && txn.type !== 'SETTLEMENT') ? `
+                        ${(txn.provider && txn.type !== 'SETTLEMENT' && !['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type)) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
                                 <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>
-                        ` : (!bankDisplay && txn.type !== 'SETTLEMENT' ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
+                        ` : ''}
                         ${txn.type === 'ONLINE_WORK' ? `
                             ${txn.depositBy ? `
                                 <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
@@ -8565,10 +8606,16 @@ async function initDailyTxn() {
                                     <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">Debit: ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                 </div>
                             ` : ''}
-                        ` : (txn.depositBy && (['WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type) || (txn.type === 'DEPOSIT' && txn.chargesType !== 'Online'))) ? `
+                        ` : (txn.depositBy && (['WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type) || (txn.type === 'DEPOSIT' && txn.chargesType !== 'Online'))) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL'].includes(txn.type) ? 'Recv:' : (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE'].includes(txn.type) ? 'Recv:' : (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                            </div>
+                        ` : ''}
+                        ${txn.reason ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 w-fit mt-1">
+                                <span class="material-symbols-outlined text-[14px] text-rose-600">info</span>
+                                <span class="text-[10px] font-bold text-rose-700 dark:text-rose-400 tracking-wide">${txn.reason}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -8768,6 +8815,7 @@ async function initDailyTxn() {
                     const txnBank = document.getElementById('txn-bank');
                     const txnChargesType = document.getElementById('txn-charges-type');
                     const txnMethod = document.getElementById('txn-method');
+                    const txnReason = document.getElementById('txn-reason');
 
                     editingTxnId = txn.id;
                     editingTxnTimestamp = txn.timestamp || null;
@@ -8789,6 +8837,7 @@ async function initDailyTxn() {
                     } else {
                         if (txnProvider) txnProvider.value = txn.provider || '';
                     }
+                    if (txnReason && txn.reason) txnReason.value = txn.reason;
                     if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
                     if (txnReceivedIn) txnReceivedIn.value = txn.receivedIn || '';
                     const editTxnChargesAccount = document.getElementById('txn-charges-account');

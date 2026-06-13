@@ -367,6 +367,18 @@
                                 <option value="service and withdrawl">service and withdrawl</option>
                             </select>
                         </div>
+                        <div id="reason-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reason</label>
+                            <select id="txn-reason" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select Reason...</option>
+                                <option value="aeps and deposit">aeps and deposit</option>
+                                <option value="matm and deposit">matm and deposit</option>
+                                <option value="transfer and matm">transfer and matm</option>
+                                <option value="transfer and aeps">transfer and aeps</option>
+                                <option value="service and withdrawl">service and withdrawl</option>
+                                <option value="Other reason">Other reason</option>
+                            </select>
+                        </div>
                         <div id="depositby-field-container" class="flex flex-col gap-2 hidden">
                             <label id="depositby-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Deposit By</label>
                             <select id="txn-depositby" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">

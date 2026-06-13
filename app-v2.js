@@ -5542,6 +5542,10 @@ async function initDailyTxn() {
         if (remarkFieldContainer) remarkFieldContainer.classList.add('hidden');
         if (txnReceivedIn) txnReceivedIn.value = '';
         if (receivedInContainer) receivedInContainer.classList.add('hidden');
+        const txnReason = document.getElementById('txn-reason');
+        if (txnReason) txnReason.value = '';
+        const reasonFieldContainer = document.getElementById('reason-field-container');
+        if (reasonFieldContainer) reasonFieldContainer.classList.add('hidden');
         const chargesLabel = document.getElementById('charges-account-label');
         if (chargesLabel) chargesLabel.innerText = 'Charges Account';
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -5695,11 +5699,33 @@ async function initDailyTxn() {
                 if (['ONLINE_WORK', 'ELECTRICITY_BILL'].includes(txnType.value)) addressFieldContainer.classList.add('hidden');
                 else addressFieldContainer.classList.remove('hidden');
             }
-            if (chargesFieldContainer) chargesFieldContainer.classList.remove('hidden');
+            if (chargesFieldContainer) {
+                if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                    chargesFieldContainer.classList.add('hidden');
+                    if (typeof txnCharges !== 'undefined' && txnCharges) txnCharges.value = '';
+                } else {
+                    chargesFieldContainer.classList.remove('hidden');
+                }
+            }
             if (chargesModeContainer) {
-                chargesModeContainer.classList.remove('hidden');
-                const label = chargesModeContainer.querySelector('label');
-                if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+                if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                    chargesModeContainer.classList.add('hidden');
+                } else {
+                    chargesModeContainer.classList.remove('hidden');
+                    const label = chargesModeContainer.querySelector('label');
+                    if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+                }
+            }
+            
+            const reasonFieldContainer = document.getElementById('reason-field-container');
+            const txnReason = document.getElementById('txn-reason');
+            if (reasonFieldContainer) {
+                if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+                    reasonFieldContainer.classList.remove('hidden');
+                } else {
+                    reasonFieldContainer.classList.add('hidden');
+                    if (txnReason) txnReason.value = '';
+                }
             }
             
             if (txnType.value === 'AEPS') {
@@ -5761,8 +5787,8 @@ async function initDailyTxn() {
         if (providerTypes.includes(txnType.value)) {
             providerContainer.classList.remove('hidden');
             if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
-                if (providerLabel) providerLabel.innerText = 'Reason';
-                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Reason...';
+                if (providerLabel) providerLabel.innerText = 'Service Provider';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = 'Amount';
             } else if (isCredit || ['DAMAGED_RECOVERY', 'ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
@@ -5785,14 +5811,16 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
+            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
                 if (depositByLabel) {
                     if (txnType.value === 'ONLINE_WORK' || txnType.value === 'CASH_WITHDRAWAL') {
                         depositByLabel.innerText = 'Debited By';
-                    } else if (txnType.value === 'CASH_DEPOSIT') {
-                        depositByLabel.innerText = 'Credit By';
+                    } else if (['CASH_DEPOSIT', 'PENDING_REMOVE'].includes(txnType.value)) {
+                        depositByLabel.innerText = 'Received In';
+                    } else if (txnType.value === 'PENDING_ADD') {
+                        depositByLabel.innerText = 'Debited By';
                     } else {
                         depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
                     }
@@ -5814,7 +5842,7 @@ async function initDailyTxn() {
         }
 
         if (chargesAccountContainer && txnChargesAccount) {
-            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP'];
+            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
             if (txnChargesType && txnChargesType.value === 'Online' && !typesHidingChargesAccount.includes(txnType.value)) {
                 chargesAccountContainer.classList.remove('hidden');
                 chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
@@ -5842,9 +5870,9 @@ async function initDailyTxn() {
                 if (!opt.value) return; // Skip placeholder
                 
                 if (txnType.value === 'FREE_DEPOSIT') {
-                    opt.style.display = ['aeps and deposit', 'matm and deposit', 'Other reason'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (txnType.value === 'FREE_WITHDRAWAL') {
-                    opt.style.display = ['transfer and matm', 'transfer and aeps', 'service and withdrawl', 'Other reason'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (isAepsMatm) {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
@@ -6437,13 +6465,14 @@ async function initDailyTxn() {
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
+                reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
@@ -7488,7 +7517,7 @@ async function initDailyTxn() {
                     txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
                 }</span>
-                        ${txn.provider ? `
+                        ${(['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type) && txn.provider) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
                                 <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
@@ -7507,12 +7536,12 @@ async function initDailyTxn() {
                                 </div>
                             </div>
                         ` : ''}
-                        ${txn.provider ? `
+                        ${(txn.provider && txn.type !== 'SETTLEMENT' && !['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type)) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
                                 <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
                             </div>
-                        ` : (!bankDisplay ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
+                        ` : ''}
                         ${txn.type === 'ONLINE_WORK' ? `
                             ${txn.depositBy ? `
                                 <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
@@ -7523,7 +7552,7 @@ async function initDailyTxn() {
                         ` : txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : (txn.type === 'CASH_WITHDRAWAL' ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${['WITHDRAWAL', 'PENDING_REMOVE'].includes(txn.type) ? 'Recv:' : (['CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
                             </div>
                         ` : ''}
                     </div>
