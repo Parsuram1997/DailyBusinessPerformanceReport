@@ -5811,13 +5811,13 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) {
+            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) || (txnType.value === 'DAMAGED_RECOVERY' && txnProvider && txnProvider.value === 'Online')) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
                 if (depositByLabel) {
                     if (txnType.value === 'ONLINE_WORK' || txnType.value === 'CASH_WITHDRAWAL') {
                         depositByLabel.innerText = 'Debited By';
-                    } else if (['CASH_DEPOSIT', 'PENDING_REMOVE'].includes(txnType.value)) {
+                    } else if (['CASH_DEPOSIT', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Received In';
                     } else if (txnType.value === 'PENDING_ADD') {
                         depositByLabel.innerText = 'Debited By';
@@ -5974,7 +5974,9 @@ async function initDailyTxn() {
 
     if (txnType) {
         txnType.addEventListener('change', updateConditionalField);
-        if (txnProvider) txnProvider.addEventListener('change', updateConditionalField);
+        if (txnProvider) {
+            txnProvider.addEventListener('change', updateConditionalField);
+        }
         if (txnAmount) txnAmount.addEventListener('input', updateConditionalField);
         if (txnChargesType) txnChargesType.addEventListener('change', updateConditionalField);
         updateConditionalField();
@@ -6465,7 +6467,7 @@ async function initDailyTxn() {
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) || (txnType.value === 'DAMAGED_RECOVERY' && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
@@ -6817,6 +6819,7 @@ async function initDailyTxn() {
                     if (provider === 'cash') balances.cash += amt;
                     else {
                         balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy || provider)] += amt;
                         if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) balances.roinet += amt;
                         else if (provider.includes('crgb')) balances.crgb += amt;
                         else if (provider.includes('jio')) balances.jio += amt;
@@ -7552,7 +7555,7 @@ async function initDailyTxn() {
                         ` : txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${['WITHDRAWAL', 'PENDING_REMOVE'].includes(txn.type) ? 'Recv:' : (['CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${['WITHDRAWAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) ? 'Recv:' : (['CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
                             </div>
                         ` : ''}
                     </div>
