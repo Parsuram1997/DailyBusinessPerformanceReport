@@ -6711,6 +6711,10 @@ async function initDailyTxn() {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Acc/Phone (Last 4)';
                 txnConditional.placeholder = 'Last 4 digits...';
+            } else if (txnType.value === 'AADHAAR_DEPOSIT') {
+                conditionalContainer.classList.remove('hidden');
+                conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
+                txnConditional.placeholder = 'Last 4 digits...';
             } else {
                 conditionalContainer.classList.add('hidden');
             }
@@ -7539,16 +7543,16 @@ async function initDailyTxn() {
                 note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
-                extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? txnConditional.value.trim() : '',
+                extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnProvider.value : '',
                 provider: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
-                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
+                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
