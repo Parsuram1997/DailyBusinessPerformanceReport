@@ -7909,11 +7909,18 @@ async function initDailyTxn() {
                             onlineBreakdown[getOnlineDest(provider)] -= amt;
                         }
                     }
-                    if (t.chargesType === 'Online') {
-                        balances.online += amt;
-                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
+
+                    if (t.type === 'PAN_CARD') {
+                        if (t.chargesType === 'Online') {
+                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += chg;
+                        }
+                    } else {
+                        if (t.chargesType === 'Online') {
+                            balances.online += amt;
+                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += (amt + chg);
+                        }
+                        else balances.cash += amt;
                     }
-                    else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
                     if (provider === 'cash') balances.cash += amt;
