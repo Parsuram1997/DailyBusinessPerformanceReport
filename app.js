@@ -6776,10 +6776,10 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
+            if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT'].includes(txnType.value)) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
-                if (depositByLabel) depositByLabel.innerText = ['WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(txnType.value) ? 'Received By' : 'Deposit By';
+                if (depositByLabel) depositByLabel.innerText = ['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT'].includes(txnType.value) ? 'Received In' : 'Deposit By';
             } else {
                 depositByContainer.classList.add('hidden');
                 txnDepositBy.value = '';
@@ -7429,7 +7429,7 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnProvider.value : '',
                 provider: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -8378,7 +8378,7 @@ async function initDailyTxn() {
                         ${txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT'].includes(txn.type) ? 'Recv:' : 'Dep:'} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>
                         ` : ''}
                     </div>
