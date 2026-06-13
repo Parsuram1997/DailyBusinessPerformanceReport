@@ -5850,7 +5850,7 @@ async function initDailyTxn() {
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(txnType.value)) {
-                    opt.style.display = ['Online', 'Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = ['Online(Parsu)', 'Online(Shop)', 'Online(Dalai)', 'Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
                 } else if (isCredit || ['JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
@@ -6706,8 +6706,13 @@ async function initDailyTxn() {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
                         updateRoinetBreakdown(provider, -amt);
+                    } else if (provider.toLowerCase().includes('online')) {
+                        onlineBreakdown[getOnlineDest(provider)] -= amt;
                     }
-                    if (t.chargesType === 'Online') balances.online += amt;
+                    if (t.chargesType === 'Online') {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
+                    }
                     else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
