@@ -7695,6 +7695,9 @@ async function initDailyTxn() {
 
             // Per-provider roinet breakdown tracking
             const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
+            
+            // Per-provider online breakdown tracking
+            const onlineBreakdown = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
 
             // Helper: map provider string to sub-account key
             const getSubAccountKey = (prov) => {
@@ -7722,6 +7725,7 @@ async function initDailyTxn() {
                 pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
             };
             const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
+            const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0 };
             const expenseBreakdown = {};
             const custDepositBreakdown = {};
 
@@ -7875,7 +7879,20 @@ async function initDailyTxn() {
                 // Capture the latest change for each category
                 Object.keys(balances).forEach(key => {
                     const diff = balances[key] - prevBals[key];
-                    if (diff !== 0) lastChanges[key] = diff;
+                    if (diff !== 0) {
+                        lastChanges[key] = diff;
+                        if (key === 'online') {
+                            let onlineDest = 'other';
+                            const lowerProv = (provider || '').toLowerCase();
+                            if (lowerProv.includes('parsu')) onlineDest = 'online_p1';
+                            else if (lowerProv.includes('shop')) onlineDest = 'online_p2';
+                            else if (lowerProv.includes('dalai')) onlineDest = 'online_p3';
+                            
+                            onlineBreakdown[onlineDest] += diff;
+                            lastOnlineChanges[onlineDest] = diff;
+                            lastOnlineChanges.total = diff;
+                        }
+                    }
                 });
             });
 
@@ -7956,6 +7973,37 @@ async function initDailyTxn() {
                     total: lastRoinetChanges.total
                 }
             };
+            
+            const opOnlineP1 = parseFloat(details.online_p1 || 0);
+            const opOnlineP2 = parseFloat(details.online_p2 || 0);
+            const opOnlineP3 = parseFloat(details.online_p3 || 0);
+            const totalSplitOnline = opOnlineP1 + opOnlineP2 + opOnlineP3;
+            const onlineOpeningFallback = parseFloat(opValues.online || 0);
+
+            window._onlineBreakdown = {
+                opening: {
+                    online_p1: opOnlineP1,
+                    online_p2: opOnlineP2,
+                    online_p3: opOnlineP3,
+                    other: totalSplitOnline > 0 ? (onlineOpeningFallback - totalSplitOnline) : onlineOpeningFallback,
+                    total: onlineOpeningFallback
+                },
+                closing: {
+                    online_p1: opOnlineP1 + onlineBreakdown.online_p1,
+                    online_p2: opOnlineP2 + onlineBreakdown.online_p2,
+                    online_p3: opOnlineP3 + onlineBreakdown.online_p3,
+                    other: (totalSplitOnline > 0 ? (onlineOpeningFallback - totalSplitOnline) : onlineOpeningFallback) + onlineBreakdown.other,
+                    total: onlineOpeningFallback + balances.online
+                },
+                lastChange: {
+                    online_p1: lastOnlineChanges.online_p1,
+                    online_p2: lastOnlineChanges.online_p2,
+                    online_p3: lastOnlineChanges.online_p3,
+                    other: lastOnlineChanges.other,
+                    total: lastOnlineChanges.total
+                }
+            };
+            
             window._expenseBreakdown = expenseBreakdown;
             window._custDepositBreakdown = custDepositBreakdown;
         } catch (err) {

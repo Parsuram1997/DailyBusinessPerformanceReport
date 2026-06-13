@@ -568,7 +568,7 @@
                     </div>
                     
                     <!-- Online -->
-                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-500/10 dark:to-slate-900/90 border border-blue-100 dark:border-blue-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <div onclick="openOnlineBreakdown()" class="relative cursor-pointer overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-500/10 dark:to-slate-900/90 border border-blue-100 dark:border-blue-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
                             <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider leading-none">Online</span>
@@ -1055,6 +1055,85 @@
         });
     })();
     </script>
+
+    <!-- Online Breakdown Modal -->
+    <div id="online-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-2 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
+            <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-500 to-cyan-500">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined">language</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-black text-lg leading-none">Online Money</h3>
+                        <p class="text-white/70 text-[10px] uppercase tracking-widest font-bold mt-1">Account Wise Split</p>
+                    </div>
+                </div>
+                <button onclick="closeOnlineBreakdown()" class="size-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-2 sm:p-4 space-y-6">
+            <div class="p-1 sm:p-2">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-separate border-spacing-y-2">
+                        <thead>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="px-1.5 pb-2 text-left sm:px-3">Account</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Opening</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Changes</th>
+                                <th class="px-1.5 pb-2 text-right sm:px-3">Closing</th>
+                            </tr>
+                        </thead>
+                        <tbody id="online-breakdown-table-body">
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Parsu)</p>
+                                </td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p1-chg" class="text-[10px] font-black">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p1-cl" class="text-xs font-black text-blue-600 dark:text-blue-400">₹ 0</p></td>
+                            </tr>
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Shop)</p>
+                                </td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p2-chg" class="text-[10px] font-black">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p2-cl" class="text-xs font-black text-blue-600 dark:text-blue-400">₹ 0</p></td>
+                            </tr>
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Dalai)</p>
+                                </td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p3-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p3-chg" class="text-[10px] font-black">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p3-cl" class="text-xs font-black text-blue-600 dark:text-blue-400">₹ 0</p></td>
+                            </tr>
+                            <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Other Online</p>
+                                </td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_other-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_other-chg" class="text-[10px] font-black">₹ 0</p></td>
+                                <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right"><p id="bd-online_other-cl" class="text-xs font-black text-blue-600 dark:text-blue-400">₹ 0</p></td>
+                            </tr>
+                            <tr class="bg-slate-100 dark:bg-white/10 rounded-2xl overflow-hidden">
+                                <td class="px-1.5 py-3 sm:px-3 rounded-l-2xl border-y border-l border-slate-200 dark:border-white/20 text-left">
+                                    <p class="text-[11px] font-black text-slate-800 dark:text-white">Total</p>
+                                </td>
+                                <td class="px-1.5 py-3 sm:px-3 border-y border-slate-200 dark:border-white/20 text-right"><p id="bd-online_total-op" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p></td>
+                                <td class="px-1.5 py-3 sm:px-3 border-y border-slate-200 dark:border-white/20 text-right"><p id="bd-online_total-chg" class="text-[11px] font-black">₹ 0</p></td>
+                                <td class="px-1.5 py-3 sm:px-3 rounded-r-2xl border-y border-r border-slate-200 dark:border-white/20 text-right"><p id="bd-online_total-cl" class="text-[13px] font-black text-blue-600 dark:text-blue-400">₹ 0</p></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
 
     <!-- CSP Wallet Breakdown Modal -->
     <div id="roinet-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-2 sm:p-4">
@@ -1679,10 +1758,57 @@
             modal.classList.remove('flex');
         }
 
+        function openOnlineBreakdown() {
+            const modal = document.getElementById('online-breakdown-modal');
+            if (!modal || !window._onlineBreakdown) return;
+
+            const op = window._onlineBreakdown.opening;
+            const cl = window._onlineBreakdown.closing;
+            const lastChg = window._onlineBreakdown.lastChange;
+
+            const fmt = (val) => `₹ ${parseFloat(val || 0).toLocaleString('en-IN')}`;
+            const fmtChg = (val) => {
+                const num = parseFloat(val || 0);
+                const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
+                return `${sign}₹${Math.abs(num).toLocaleString('en-IN')}`;
+            };
+            const updateColor = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerText = fmtChg(val);
+                el.className = `text-[10px] font-black ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : (val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')}`;
+            };
+
+            const updateRow = (key, o, c, chg) => {
+                const elOp = document.getElementById(`bd-online_${key}-op`);
+                const elCl = document.getElementById(`bd-online_${key}-cl`);
+                if (elOp) elOp.innerText = fmt(o);
+                if (elCl) elCl.innerText = fmt(c);
+                updateColor(`bd-online_${key}-chg`, chg);
+            };
+
+            updateRow('p1', op.online_p1, cl.online_p1, lastChg.online_p1);
+            updateRow('p2', op.online_p2, cl.online_p2, lastChg.online_p2);
+            updateRow('p3', op.online_p3, cl.online_p3, lastChg.online_p3);
+            updateRow('other', op.other, cl.other, lastChg.other);
+            updateRow('total', op.total, cl.total, lastChg.total);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeOnlineBreakdown() {
+            const modal = document.getElementById('online-breakdown-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeRoinetBreakdown();
+                closeOnlineBreakdown();
                 closeExpenseBreakdown();
                 closeCustDepositBreakdown();
             }
