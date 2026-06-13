@@ -121,6 +121,49 @@
             -moz-appearance: textfield;
             appearance: textfield;
         }
+
+        /* Ghost Privacy Toggle Button */
+        #privacy-toggle-btn {
+            background: transparent !important;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 10px;
+            transition: background 0.25s ease, opacity 0.25s ease;
+            opacity: 0;
+            pointer-events: auto;
+        }
+        #privacy-toggle-btn .mat-icon {
+            font-size: 20px;
+            color: transparent;
+            transition: color 0.25s ease;
+            user-select: none;
+        }
+        #privacy-toggle-btn:hover {
+            opacity: 1;
+            background: rgba(127, 19, 236, 0.07) !important;
+        }
+        #privacy-toggle-btn:hover .mat-icon {
+            color: rgba(127, 19, 236, 0.55);
+        }
+        /* When values are hidden (mode ON), subtle indicator on hover */
+        #privacy-toggle-btn.hide-mode:hover {
+            background: rgba(244, 63, 94, 0.08) !important;
+        }
+        #privacy-toggle-btn.hide-mode:hover .mat-icon {
+            color: rgba(244, 63, 94, 0.55);
+        }
+        /* Dark mode variants */
+        .dark #privacy-toggle-btn:hover {
+            background: rgba(127, 19, 236, 0.1) !important;
+        }
+        .dark #privacy-toggle-btn:hover .mat-icon {
+            color: rgba(167, 100, 255, 0.5);
+        }
+        .dark #privacy-toggle-btn.hide-mode:hover .mat-icon {
+            color: rgba(253, 100, 120, 0.5);
+        }
     </style>
     <script src="auth.js"></script>
     <link rel="icon" type="image/png" href="favicon.png"/>
@@ -280,7 +323,7 @@
         <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
             <!-- Navbar -->
             <header
-                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-center px-3 md:px-8 sticky top-0 z-10 shadow-sm">
+                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-3 md:px-8 sticky top-0 z-10 shadow-sm">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
                     <h2
@@ -288,6 +331,10 @@
                         <span class="hidden md:inline">Daily Business </span>Performance Report
                     </h2>
                 </div>
+                <!-- Ghost Privacy Toggle Button (invisible unless hovered) -->
+                <button id="privacy-toggle-btn" title="Toggle Value Privacy" aria-label="Toggle value privacy mode">
+                    <span class="material-symbols-outlined mat-icon" id="privacy-toggle-icon">visibility_off</span>
+                </button>
             </header>
             <div class="p-2 sm:p-4 md:p-8 w-full space-y-4 md:space-y-8">
                 <!-- Quick Actions -->
@@ -980,6 +1027,139 @@
             if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
             if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
         })();
+    </script>
+
+    <!-- ====== Global Privacy / Value-Hide Toggle ====== -->
+    <script>
+    (function() {
+        const LS_KEY  = 'biz_hide_values';
+        const DIVISOR = 4;
+
+        const VALUE_IDS = [
+            'total-income-top', 'total-expense-top', 'total-profit-top',
+            'closing-balance-top', 'total-capital-top', 'total-withdrawals-top',
+            'today-income-top', 'today-expense-top', 'today-profit-top',
+            'this-month-income-top', 'this-month-expense-top', 'this-month-profit-top',
+            'mom-today-income', 'mom-today-expense', 'mom-today-profit',
+            'mom-last-income', 'mom-last-expense', 'mom-last-profit',
+            'mtd-current-income', 'mtd-current-expense', 'mtd-current-profit',
+            'mtd-last-income', 'mtd-last-expense', 'mtd-last-profit',
+            'proj-monthly', 'proj-quarterly', 'proj-yearly',
+            'proj-monthly-exp', 'proj-quarterly-exp', 'proj-yearly-exp',
+            'proj-monthly-profit', 'proj-quarterly-profit', 'proj-yearly-profit'
+        ];
+
+        // Raw numeric originals - NEVER cleared, persist across all toggles
+        const _raw = {};
+        let _observing = false;
+
+        function isHideModeOn() {
+            const v = localStorage.getItem(LS_KEY);
+            return v === null ? true : v === 'true';
+        }
+
+        function parseCurrency(text) {
+            if (!text || text === '...') return null;
+            const n = parseFloat(text.replace(/[₹,\s]/g, ''));
+            return isNaN(n) ? null : n;
+        }
+
+        function fmt(val) {
+            if (typeof formatCurrency === 'function') return formatCurrency(val);
+            return '₹' + Math.round(val).toLocaleString('en-IN');
+        }
+
+        // MutationObserver intercepts fresh values written by app.js
+        const observer = new MutationObserver((mutations) => {
+            if (!isHideModeOn()) return;
+            observer.disconnect();
+            _observing = false;
+            mutations.forEach(m => {
+                const el = m.target.nodeType === Node.TEXT_NODE
+                    ? m.target.parentElement : m.target;
+                if (!el || !VALUE_IDS.includes(el.id)) return;
+                const text = (el.innerText || '').trim();
+                if (!text || text === '...' || !text.includes('₹')) return;
+                const num = parseCurrency(text);
+                if (num === null) return;
+                _raw[el.id] = num;           // save real value
+                el.innerText = fmt(num / DIVISOR);
+            });
+            startObserving();
+        });
+
+        function startObserving() {
+            if (_observing) return;
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) observer.observe(el, { childList: true, subtree: true, characterData: true });
+            });
+            _observing = true;
+        }
+
+        function stopObserving() {
+            observer.disconnect();
+            _observing = false;
+        }
+
+        function applyHide() {
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const text = (el.innerText || '').trim();
+                if (!text || text === '...' || !text.includes('₹')) return;
+                const num = parseCurrency(text);
+                if (num === null) return;
+                _raw[id] = num;
+                el.innerText = fmt(num / DIVISOR);
+            });
+        }
+
+        function applyShow() {
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el || _raw[id] === undefined) return;
+                el.innerText = fmt(_raw[id]);
+            });
+        }
+
+        function updateButtonUI(hideOn) {
+            const btn  = document.getElementById('privacy-toggle-btn');
+            const icon = document.getElementById('privacy-toggle-icon');
+            if (!btn || !icon) return;
+            if (hideOn) {
+                btn.classList.add('hide-mode');
+                icon.textContent = 'visibility_off';
+                btn.title = 'Values hidden (÷4) — Click to show real values';
+            } else {
+                btn.classList.remove('hide-mode');
+                icon.textContent = 'visibility';
+                btn.title = 'Values visible — Click to hide';
+            }
+        }
+
+        // ONE click = hide, NEXT click = unhide (simple flip)
+        function togglePrivacy() {
+            const newHide = !isHideModeOn();
+            localStorage.setItem(LS_KEY, String(newHide));
+            updateButtonUI(newHide);
+            if (newHide) {
+                applyHide();
+                startObserving();
+            } else {
+                stopObserving();
+                applyShow();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('privacy-toggle-btn');
+            if (btn) btn.addEventListener('click', togglePrivacy);
+            const hideOn = isHideModeOn();
+            updateButtonUI(hideOn);
+            if (hideOn) startObserving();
+        });
+    })();
     </script>
 </body>
 
