@@ -7876,8 +7876,8 @@ async function initDailyTxn() {
                 cash: 0, online: 0, roinet: 0, crgb: 0, jio: 0,
                 pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
             };
-            const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0 };
-            const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0 };
+            const lastRoinetChanges = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, total: 0, mostRecent: null };
+            const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0, mostRecent: null };
             const getOnlineDest = (prov) => {
                 const lower = (prov || '').toLowerCase();
                 if (lower.includes('parsu')) return 'online_p1';
@@ -8149,11 +8149,18 @@ async function initDailyTxn() {
                     (onlineBreakdown.other !== prevOnlineBreakdown.other);
 
                 if (hasOnlineMovement) {
-                    lastOnlineChanges.online_p1 = onlineBreakdown.online_p1 - prevOnlineBreakdown.online_p1;
-                    lastOnlineChanges.online_p2 = onlineBreakdown.online_p2 - prevOnlineBreakdown.online_p2;
-                    lastOnlineChanges.online_p3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
-                    lastOnlineChanges.other = onlineBreakdown.other - prevOnlineBreakdown.other;
-                    lastOnlineChanges.total = balances.online - prevBals.online;
+                    const d1 = onlineBreakdown.online_p1 - prevOnlineBreakdown.online_p1;
+                    const d2 = onlineBreakdown.online_p2 - prevOnlineBreakdown.online_p2;
+                    const d3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
+                    const dother = onlineBreakdown.other - prevOnlineBreakdown.other;
+                    
+                    if (d1 !== 0) { lastOnlineChanges.online_p1 = d1; lastOnlineChanges.mostRecent = 'p1'; }
+                    if (d2 !== 0) { lastOnlineChanges.online_p2 = d2; lastOnlineChanges.mostRecent = 'p2'; }
+                    if (d3 !== 0) { lastOnlineChanges.online_p3 = d3; lastOnlineChanges.mostRecent = 'p3'; }
+                    if (dother !== 0) { lastOnlineChanges.other = dother; lastOnlineChanges.mostRecent = 'other'; }
+                    
+                    const dtotal = balances.online - prevBals.online;
+                    if (dtotal !== 0) lastOnlineChanges.total = dtotal;
                 }
 
                 // Calculate exact deltas for Roinet breakdown if there was roinet movement
@@ -8166,12 +8173,20 @@ async function initDailyTxn() {
                     (roinetBreakdown.spicemoney !== prevRoinetBreakdown.spicemoney);
 
                 if (hasRoinetMovement) {
-                    lastRoinetChanges.roinet_1 = roinetBreakdown.roinet_1 - prevRoinetBreakdown.roinet_1;
-                    lastRoinetChanges.roinet_2 = roinetBreakdown.roinet_2 - prevRoinetBreakdown.roinet_2;
-                    lastRoinetChanges.airtel_1 = roinetBreakdown.airtel_1 - prevRoinetBreakdown.airtel_1;
-                    lastRoinetChanges.airtel_2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
-                    lastRoinetChanges.spicemoney = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
-                    lastRoinetChanges.total = balances.roinet - prevBals.roinet;
+                    const d_r1 = roinetBreakdown.roinet_1 - prevRoinetBreakdown.roinet_1;
+                    const d_r2 = roinetBreakdown.roinet_2 - prevRoinetBreakdown.roinet_2;
+                    const d_a1 = roinetBreakdown.airtel_1 - prevRoinetBreakdown.airtel_1;
+                    const d_a2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
+                    const d_sm = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
+                    
+                    if (d_r1 !== 0) { lastRoinetChanges.roinet_1 = d_r1; lastRoinetChanges.mostRecent = 'roinet_1'; }
+                    if (d_r2 !== 0) { lastRoinetChanges.roinet_2 = d_r2; lastRoinetChanges.mostRecent = 'roinet_2'; }
+                    if (d_a1 !== 0) { lastRoinetChanges.airtel_1 = d_a1; lastRoinetChanges.mostRecent = 'airtel_1'; }
+                    if (d_a2 !== 0) { lastRoinetChanges.airtel_2 = d_a2; lastRoinetChanges.mostRecent = 'airtel_2'; }
+                    if (d_sm !== 0) { lastRoinetChanges.spicemoney = d_sm; lastRoinetChanges.mostRecent = 'spicemoney'; }
+                    
+                    const d_total = balances.roinet - prevBals.roinet;
+                    if (d_total !== 0) lastRoinetChanges.total = d_total;
                 }
             });
 
@@ -8249,7 +8264,8 @@ async function initDailyTxn() {
                     airtel_1: lastRoinetChanges.airtel_1,
                     airtel_2: lastRoinetChanges.airtel_2,
                     spicemoney: lastRoinetChanges.spicemoney,
-                    total: lastRoinetChanges.total
+                    total: lastRoinetChanges.total,
+                    mostRecent: lastRoinetChanges.mostRecent
                 }
             };
             
@@ -8279,7 +8295,8 @@ async function initDailyTxn() {
                     online_p2: lastOnlineChanges.online_p2,
                     online_p3: lastOnlineChanges.online_p3,
                     other: lastOnlineChanges.other,
-                    total: lastOnlineChanges.total
+                    total: lastOnlineChanges.total,
+                    mostRecent: lastOnlineChanges.mostRecent
                 }
             };
             

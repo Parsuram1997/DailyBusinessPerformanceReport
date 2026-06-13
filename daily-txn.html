@@ -1781,7 +1781,12 @@
                 return 0;
             };
 
-            const updateRow = (id, op, cl, lastChg) => {
+            const op = bd.opening || {};
+            const cl = bd.closing || {};
+            const lastChg = bd.lastChange || {};
+            const mostRecent = lastChg.mostRecent;
+
+            const updateRow = (id, op, cl, lastChg, mappedKey) => {
                 const change = lastChg;
                 const opEl = document.getElementById(`bd-${id}-op`);
                 const clEl = document.getElementById(`bd-${id}-cl`);
@@ -1791,20 +1796,22 @@
                 if (clEl) clEl.textContent = fmt(cl);
                 if (chgEl) {
                     chgEl.textContent = (change >= 0 ? '+' : '') + fmt(change);
-                    chgEl.className = `text-[10px] font-black ${id === 'total' ? 'text-white/90' : (change > 0 ? 'text-emerald-500' : (change < 0 ? 'text-rose-500' : 'text-slate-400'))}`;
+                    if (mostRecent === mappedKey && mappedKey !== 'total') {
+                        chgEl.className = `text-[11px] font-black ${change > 0 ? 'text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm' : (change < 0 ? 'text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200 shadow-sm' : 'text-slate-400')}`;
+                    } else if (id === 'total') {
+                        chgEl.className = `text-[11px] font-black text-white/90`;
+                    } else {
+                        chgEl.className = `text-[10px] font-bold ${change > 0 ? 'text-emerald-500/70' : (change < 0 ? 'text-rose-500/70' : 'text-slate-400/50')}`;
+                    }
                 }
             };
 
-            const op = bd.opening || {};
-            const cl = bd.closing || {};
-            const lastChg = bd.lastChange || {};
-
-            updateRow('roinet_1', getVal(op, 'roinet_1', 'roinet'), getVal(cl, 'roinet_1', 'roinet'), getVal(lastChg, 'roinet_1', 'roinet'));
-            updateRow('roinet_2', getVal(op, 'roinet_2', 'roinet'), getVal(cl, 'roinet_2', 'roinet'), getVal(lastChg, 'roinet_2', 'roinet'));
-            updateRow('airtel_1', getVal(op, 'airtel_1', 'airtel'), getVal(cl, 'airtel_1', 'airtel'), getVal(lastChg, 'airtel_1', 'airtel'));
-            updateRow('airtel_2', getVal(op, 'airtel_2', 'airtel'), getVal(cl, 'airtel_2', 'airtel'), getVal(lastChg, 'airtel_2', 'airtel'));
-            updateRow('spice', getVal(op, 'spicemoney', 'spicemoney'), getVal(cl, 'spicemoney', 'spicemoney'), getVal(lastChg, 'spicemoney', 'spicemoney'));
-            updateRow('total', op.total || 0, cl.total || 0, lastChg.total || 0);
+            updateRow('roinet_1', getVal(op, 'roinet_1', 'roinet'), getVal(cl, 'roinet_1', 'roinet'), getVal(lastChg, 'roinet_1', 'roinet'), 'roinet_1');
+            updateRow('roinet_2', getVal(op, 'roinet_2', 'roinet'), getVal(cl, 'roinet_2', 'roinet'), getVal(lastChg, 'roinet_2', 'roinet'), 'roinet_2');
+            updateRow('airtel_1', getVal(op, 'airtel_1', 'airtel'), getVal(cl, 'airtel_1', 'airtel'), getVal(lastChg, 'airtel_1', 'airtel'), 'airtel_1');
+            updateRow('airtel_2', getVal(op, 'airtel_2', 'airtel'), getVal(cl, 'airtel_2', 'airtel'), getVal(lastChg, 'airtel_2', 'airtel'), 'airtel_2');
+            updateRow('spice', getVal(op, 'spicemoney', 'spicemoney'), getVal(cl, 'spicemoney', 'spicemoney'), getVal(lastChg, 'spicemoney', 'spicemoney'), 'spicemoney');
+            updateRow('total', op.total || 0, cl.total || 0, lastChg.total || 0, 'total');
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1824,6 +1831,7 @@
             const op = window._onlineBreakdown.opening;
             const cl = window._onlineBreakdown.closing;
             const lastChg = window._onlineBreakdown.lastChange;
+            const mostRecent = lastChg.mostRecent;
 
             const fmt = (val) => `₹ ${parseFloat(val || 0).toLocaleString('en-IN')}`;
             const fmtChg = (val) => {
@@ -1831,11 +1839,17 @@
                 const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
                 return `${sign}₹${Math.abs(num).toLocaleString('en-IN')}`;
             };
-            const updateColor = (id, val) => {
+            const updateColor = (id, val, isMostRecent, isTotal) => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.innerText = fmtChg(val);
-                el.className = `text-[10px] font-black ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : (val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')}`;
+                if (isMostRecent) {
+                    el.className = `text-[11px] font-black ${val > 0 ? 'text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm' : (val < 0 ? 'text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200 shadow-sm' : 'text-slate-400')}`;
+                } else if (isTotal) {
+                    el.className = `text-[11px] font-black ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : (val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400')}`;
+                } else {
+                    el.className = `text-[10px] font-bold ${val > 0 ? 'text-emerald-600/70 dark:text-emerald-400/70' : (val < 0 ? 'text-rose-600/70 dark:text-rose-400/70' : 'text-slate-400/50')}`;
+                }
             };
 
             const updateRow = (key, o, c, chg) => {
@@ -1843,7 +1857,7 @@
                 const elCl = document.getElementById(`bd-online_${key}-cl`);
                 if (elOp) elOp.innerText = fmt(o);
                 if (elCl) elCl.innerText = fmt(c);
-                updateColor(`bd-online_${key}-chg`, chg);
+                updateColor(`bd-online_${key}-chg`, chg, mostRecent === key, key === 'total');
             };
 
             updateRow('p1', op.online_p1, cl.online_p1, lastChg.online_p1);
