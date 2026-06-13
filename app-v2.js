@@ -5803,9 +5803,9 @@ async function initDailyTxn() {
             }
         }
 
-        // Received In field visibility (ONLINE_WORK only, when pay mode is Online)
+        // Received In field visibility
         if (receivedInContainer && txnReceivedIn) {
-            if (txnType.value === 'ONLINE_WORK' && txnProvider && txnProvider.value === 'Online') {
+            if (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online') {
                 receivedInContainer.classList.remove('hidden');
             } else {
                 receivedInContainer.classList.add('hidden');
@@ -6438,7 +6438,7 @@ async function initDailyTxn() {
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
-                receivedIn: (txnType.value === 'ONLINE_WORK' && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
+                receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -6718,7 +6718,10 @@ async function initDailyTxn() {
                     balances.jio -= amt;
                     balances.online -= amt; // Total digital decreases by recharge amount
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt; // Added back to digital if paid digitally
+                    else {
+                        balances.online += amt; // Added back to digital if paid digitally
+                        onlineBreakdown[getOnlineDest(t.receivedIn || t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'JIO_TOPUP') {
                     balances.jio += (amt + chg); // Both topup and commission stay in Jio wallet
                     balances.online -= amt;

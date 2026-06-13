@@ -6812,9 +6812,9 @@ async function initDailyTxn() {
             depositByContainer.style.order = ''; // Reset order
         }
 
-        // Received In field visibility (ONLINE_WORK only, when pay mode is Online)
+        // Received In field visibility (ONLINE_WORK and JIO_RECHARGE only, when pay mode is Online)
         if (receivedInContainer && txnReceivedIn) {
-            if (txnType.value === 'ONLINE_WORK' && txnProvider && txnProvider.value === 'Online') {
+            if (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online') {
                 receivedInContainer.classList.remove('hidden');
             } else {
                 receivedInContainer.classList.add('hidden');
@@ -7517,7 +7517,7 @@ async function initDailyTxn() {
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
-                receivedIn: (txnType.value === 'ONLINE_WORK' && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
+                receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnProvider.value : '',
                 provider: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -7917,7 +7917,10 @@ async function initDailyTxn() {
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.receivedIn || t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'JIO_TOPUP') {
                     balances.jio += (amt + chg);
                     balances.online -= amt;
