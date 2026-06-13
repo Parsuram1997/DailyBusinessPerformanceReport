@@ -299,6 +299,7 @@
                                 <option value="MATM">MATM</option>
                                 <option value="DEPOSIT">Deposit</option>
                                 <option value="AADHAAR_DEPOSIT">Aadhaar Deposit</option>
+                                <option value="AADHAAR_PAY">Aadhaar Pay</option>
                                 <option value="WITHDRAWAL">Withdrawal</option>
                                 <option value="QR_WITHDRAWAL">QR Withdrawal</option>
                                 <option value="CASH_WITHDRAWAL">Cash Withdrawal</option>
@@ -483,6 +484,7 @@
                                 <option value="SHOP RENT EXPENSE">SHOP RENT EXPENSE</option>
                                 <option value="BUSINESS DEVLOPMENT">BUSINESS DEVLOPMENT</option>
                                 <option value="SETTLEMENT CHARGES">SETTLEMENT CHARGES</option>
+                                <option value="Aadhaar Pay Charges">Aadhaar Pay Charges</option>
                                 <option value="INTERNET EXPENSE">INTERNET EXPENSE</option>
                                 <option value="GOLD SIP">GOLD SIP</option>
                             </select>
@@ -515,6 +517,13 @@
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                                 <input id="txn-charges" tabindex="7" type="number" placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold">
+                            </div>
+                        </div>
+                        <div id="provider-charge-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Provider Charge</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400 font-bold">₹</span>
+                                <input id="txn-provider-charge" tabindex="7" type="number" placeholder="0.00" class="w-full pl-7 pr-3 py-2 rounded-lg text-sm border border-rose-200 bg-rose-50 dark:bg-rose-900/10 focus:ring-2 focus:ring-rose-200 focus:border-rose-400 outline-none transition-all font-bold text-rose-600 dark:text-rose-400">
                             </div>
                         </div>
                         <div id="charges-mode-container" class="flex flex-col gap-2">
