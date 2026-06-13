@@ -940,7 +940,7 @@ async function initAddEntry() {
                     if (t.chargesType === 'Online') deltas.online += chg;
                 }
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, true);
                     else if (provider.includes('crgb')) deltas.crgb_bc += amt;
                     else if (provider.includes('jio')) deltas.jio += amt;
@@ -1813,7 +1813,7 @@ async function initAddEntry() {
                     const txnSnap = await getDocs(query(txnRef, where("date", "in", dateQueries)));
                     
                     const uncheckedTxns = [];
-                    const typesToCheck = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
+                    const typesToCheck = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'];
                     
                     txnSnap.forEach(docSnap => {
                         const txn = docSnap.data();
@@ -2591,7 +2591,7 @@ async function initCalculator() {
                     if (t.chargesType !== 'Online') cashVal += chg;
                 }
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     cashVal -= amt;
                 } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
@@ -4541,7 +4541,7 @@ async function initReports() {
             reportsSummaryArea.innerHTML = '';
 
             const excludedTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
-            const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL'];
+            const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'];
 
             const countableTxns = dailyTxns.filter(t => !excludedTypes.includes(t.type));
             const volumeTxns = dailyTxns.filter(t => includedVolumeTypes.includes(t.type));
@@ -4621,7 +4621,7 @@ async function initReports() {
                     matmVol += stat.amount; matmFee += stat.charges;
                 } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(type)) {
                     depVol += stat.amount; depFee += stat.charges;
-                } else if (['WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(type)) {
+                } else if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(type)) {
                     witVol += stat.amount; witFee += stat.charges;
                 } else if (!excludedIncomeTypes.includes(type)) {
                     // All other income-generating types
@@ -4830,7 +4830,7 @@ async function initReports() {
                     if (t.type === 'AEPS') villageCounts[normalized].aepsCount++;
                     else if (t.type === 'MATM') villageCounts[normalized].matmCount++;
                     else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(t.type)) villageCounts[normalized].depositCount++;
-                    else if (['WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) villageCounts[normalized].withdrawCount++;
+                    else if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(t.type)) villageCounts[normalized].withdrawCount++;
                 }
             });
             // Calculate total customers across all valid villages
@@ -5170,7 +5170,7 @@ async function initReports() {
                 }
 
                 // 2. Transaction types logic matching main app
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     balances.cash -= amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet += amt;
@@ -6186,6 +6186,7 @@ const MASTER_TXN_TYPES = [
     { type: 'DEPOSIT', label: 'Money Transfer', icon: 'send', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
     { type: 'AADHAAR_DEPOSIT', label: 'Aadhaar Deposit', icon: 'fingerprint', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
     { type: 'WITHDRAWAL', label: 'Online Wdrl', icon: 'account_balance', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
+    { type: 'QR_WITHDRAWAL', label: 'QR Withdrawal', icon: 'qr_code_scanner', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
     { type: 'CASH_WITHDRAWAL', label: 'Cash Wdrl (Bank)', icon: 'move_down', bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', borderLeft: 'bg-teal-500' },
     { type: 'CASH_DEPOSIT', label: 'Cash Dep (Bank)', icon: 'move_up', bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', borderLeft: 'bg-teal-500' },
     { type: 'PHOTOCOPY', label: 'Photocopy', icon: 'file_copy', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
@@ -6306,11 +6307,13 @@ async function initDailyTxn() {
     const txnChargesType = document.getElementById('txn-charges-type');
     const txnConditional = document.getElementById('txn-conditional');
     const txnProvider = document.getElementById('txn-provider');
+    const txnQrWallet = document.getElementById('txn-qr-wallet');
     const txnDepositBy = document.getElementById('txn-depositby');
     const depositByContainer = document.getElementById('depositby-field-container');
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
+    const qrWalletContainer = document.getElementById('qr-wallet-field-container');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
     const remarkFieldContainer = document.getElementById('remark-field-container');
@@ -6722,7 +6725,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION'];
         const remainingTypes = ['AEPS', 'MATM'];
 
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -6753,6 +6756,13 @@ async function initDailyTxn() {
             if (amountLabel) amountLabel.innerText = 'Amount';
         }
 
+        if (txnType.value === 'QR_WITHDRAWAL') {
+            qrWalletContainer.classList.remove('hidden');
+        } else {
+            qrWalletContainer.classList.add('hidden');
+            if (txnQrWallet) txnQrWallet.value = '';
+        }
+
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
             if (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) {
@@ -6768,11 +6778,11 @@ async function initDailyTxn() {
         // Service Provider Options Filtering
         if (txnProvider) {
             const aepsMatmProviders = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
-            const depositWithdrawProviders = ['Phonepay', 'Gpay', 'Slice', 'Yono sbi', 'Online(Parsu)', 'Online(Dalai)', 'Online'];
+            const depositWithdrawProviders = ['Phonepe', 'Phonepe Business', 'Googlepay', 'Gpay Business', 'Paytm', 'Paytm Business', 'BHIM Pay', 'Slice', 'Slice Business', 'Yono SBI'];
             const aadhaarDepositProviders = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
 
             const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT', 'CSP_COMMISSION'].includes(txnType.value);
-            const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value);
+            const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value);
             const isAadhaarDeposit = txnType.value === 'AADHAAR_DEPOSIT';
             const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value);
             const isCspComm = txnType.value === 'CSP_COMMISSION';
@@ -7162,7 +7172,7 @@ async function initDailyTxn() {
             const existingTxn = editingTxnId ? allTxnsForDate.find(t => t.id === editingTxnId) : null;
 
             // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
-            if (['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(txnType.value)) {
+            if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(txnType.value)) {
                 let effCash = currentAvailableCash;
                 if (existingTxn && ['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(existingTxn.type)) {
                     effCash += parseFloat(existingTxn.amount || 0);
@@ -7390,8 +7400,9 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                depositBy: (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
+                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                paymentApp: (txnType.value === 'QR_WITHDRAWAL') ? txnProvider.value : '',
+                provider: (txnType.value === 'QR_WITHDRAWAL') ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
 
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -7746,7 +7757,7 @@ async function initDailyTxn() {
                     else balances.cash += chg;
                 }
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     balances.cash -= amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet += amt;
@@ -8284,7 +8295,7 @@ async function initDailyTxn() {
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-start gap-1">
                         <span class="px-3 py-1 rounded-lg text-[10px] font-black tracking-wide flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
-                    txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
+                    txn.type === 'WITHDRAWAL' || txn.type === 'QR_WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                             txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
                                 txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
@@ -8295,7 +8306,7 @@ async function initDailyTxn() {
                     txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))
                 }</span>
-                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
+                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${(txn.type === 'QR_WITHDRAWAL' && txn.paymentApp ? txn.paymentApp + ' ➔ ' + txn.provider : txn.provider).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
                     </div>
                 </td>
                  <td class="px-3 py-1.5">
@@ -8526,7 +8537,13 @@ async function initDailyTxn() {
                     if (txn.type === 'DAILY_EXPENSE' && txnExpenseType) txnExpenseType.value = txn.note;
                     if (txnAddress) txnAddress.value = txn.address;
                     if (txnConditional) txnConditional.value = txn.extraDetails || '';
-                    if (txnProvider) txnProvider.value = txn.provider || '';
+                    if (txn.type === 'QR_WITHDRAWAL') {
+                        if (txnProvider) txnProvider.value = txn.paymentApp || '';
+                        const txnQrWallet = document.getElementById('txn-qr-wallet');
+                        if (txnQrWallet) txnQrWallet.value = txn.provider || '';
+                    } else {
+                        if (txnProvider) txnProvider.value = txn.provider || '';
+                    }
                     if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
                     if (txnRemaining) txnRemaining.value = txn.remainingAmount || '';
                     if (txnBank) txnBank.value = txn.bankName || '';
@@ -8745,7 +8762,7 @@ async function initDailyTxn() {
                         else currentCash += chg;
                     }
 
-                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
                         addAmt(provider, amt);
                     } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {

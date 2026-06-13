@@ -286,6 +286,7 @@
                                 <option value="DEPOSIT">Deposit</option>
                                 <option value="AADHAAR_DEPOSIT">Aadhaar Deposit</option>
                                 <option value="WITHDRAWAL">Withdrawal</option>
+                                <option value="QR_WITHDRAWAL">QR Withdrawal</option>
                                 <option value="CASH_WITHDRAWAL">Cash Withdrawal</option>
                                 <option value="CASH_DEPOSIT">Cash Deposit</option>
                                 <option value="DAILY_EXPENSE">Daily Expense</option>
@@ -330,27 +331,42 @@
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
                             <select id="txn-provider" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="">Select Provider...</option>
-                                <option value="Phonepay">Phonepay</option>
-                                <option value="Gpay">Gpay</option>
+                                <option value="Phonepe">Phonepe</option>
+                                <option value="Phonepe Business">Phonepe Business</option>
+                                <option value="Googlepay">Googlepay</option>
+                                <option value="Gpay Business">Gpay Business</option>
+                                <option value="Paytm">Paytm</option>
+                                <option value="Paytm Business">Paytm Business</option>
+                                <option value="BHIM Pay">BHIM Pay</option>
                                 <option value="Slice">Slice</option>
+                                <option value="Slice Business">Slice Business</option>
                                 <option value="Roinet(Parsu)">Roinet(Parsu)</option>
                                 <option value="Roinet(Dalai)">Roinet(Dalai)</option>
                                 <option value="Airtel(Parsu)">Airtel(Parsu)</option>
                                 <option value="Airtel(Dalai)">Airtel(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
                                 <option value="Crgb Bc">Crgb Bc</option>
-                                <option value="Yono sbi">Yono sbi</option>
+                                <option value="Yono SBI">Yono SBI</option>
                                 <option value="Jio">Jio</option>
                                 <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
                                 <option value="aeps and deposit">aeps and deposit</option>
                                 <option value="matm and deposit">matm and deposit</option>
                                 <option value="Other reason">Other reason</option>
                                 <option value="transfer and matm">transfer and matm</option>
                                 <option value="transfer and aeps">transfer and aeps</option>
                                 <option value="service and withdrawl">service and withdrawl</option>
+                            </select>
+                        </div>
+                        <div id="qr-wallet-field-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">QR Wallet</label>
+                            <select id="txn-qr-wallet" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select Wallet...</option>
+                                <option value="Airtel(Parsu)">Airtel(Parsu)</option>
+                                <option value="Airtel(Dalai)">Airtel(Dalai)</option>
+                                <option value="Roinet(Parsu)">Roinet(Parsu)</option>
+                                <option value="Roinet(Dalai)">Roinet(Dalai)</option>
+                                <option value="SpiceMoney">SpiceMoney</option>
                             </select>
                         </div>
 
