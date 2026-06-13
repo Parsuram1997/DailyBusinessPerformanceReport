@@ -6504,10 +6504,13 @@ async function initDailyTxn() {
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                 <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.provider || 'N/A'}</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.depositBy || newTxn.receivedIn || 'N/A'}</span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                    ${newTxn.charges > 0 ? `<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">${newTxn.chargesType === 'Online' ? `Online (${newTxn.chargesAccount || newTxn.depositBy || newTxn.receivedIn || 'N/A'})` : 'Cash'}</span>` : ''}
+                                </div>
                                 <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div class="flex flex-col gap-2 mt-2">
@@ -6710,8 +6713,16 @@ async function initDailyTxn() {
                 const prevOnlineBreakdown = { ...onlineBreakdown };
                 const prevRoinetBreakdown = { ...roinetBreakdown };
                 
-                if (t.chargesType === 'Online') balances.online += chg;
-                else balances.cash += chg;
+                if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                    // Commission goes to wallet only, skip global cash/online update
+                } else {
+                    if (t.chargesType === 'Online') {
+                        balances.online += chg;
+                        const dest = getOnlineDest(t.chargesAccount || t.receivedIn || t.depositBy || provider);
+                        onlineBreakdown[dest] += chg;
+                    }
+                    else balances.cash += chg;
+                }
 
                 if (['AEPS', 'MATM', 'WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                     balances.cash -= amt; 
@@ -6742,13 +6753,11 @@ async function initDailyTxn() {
                     }
 
                     if (t.type === 'PAN_CARD') {
-                        if (t.chargesType === 'Online') {
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += chg;
-                        }
+                        // charges handled globally
                     } else {
                         if (t.chargesType === 'Online') {
                             balances.online += amt;
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += (amt + chg);
+                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
                         }
                         else balances.cash += amt;
                     }
@@ -6873,12 +6882,7 @@ async function initDailyTxn() {
                         onlineBreakdown[receivedDest] += amt;
                     }
 
-                    // Handle charges
-                    if (t.chargesType === 'Online') {
-                        const chargesProv = t.chargesAccount || t.receivedIn || t.depositBy;
-                        const chgDest = getOnlineDest(chargesProv);
-                        onlineBreakdown[chgDest] += chg;
-                    }
+                    // Handle charges (already handled globally at the top of the loop)
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;

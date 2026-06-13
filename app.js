@@ -7631,11 +7631,14 @@ async function initDailyTxn() {
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                 <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || 'N/A'}</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.depositBy || newTxn.receivedIn || 'N/A'}</span>
                             </div>
                             ${providerHtml}
                             <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                    ${newTxn.charges > 0 ? `<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">${newTxn.chargesType === 'Online' ? `Online (${newTxn.chargesAccount || newTxn.depositBy || newTxn.receivedIn || 'N/A'})` : 'Cash'}</span>` : ''}
+                                </div>
                                 <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             ${remainingHtml}
@@ -7903,7 +7906,11 @@ async function initDailyTxn() {
                 if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
                     // Commission goes to wallet only, skip global cash/online update
                 } else {
-                    if (t.chargesType === 'Online') balances.online += chg;
+                    if (t.chargesType === 'Online') {
+                        balances.online += chg;
+                        const dest = getOnlineDest(t.chargesAccount || t.receivedIn || t.depositBy || provider);
+                        onlineBreakdown[dest] += chg;
+                    }
                     else balances.cash += chg;
                 }
 
@@ -7943,13 +7950,11 @@ async function initDailyTxn() {
                     }
 
                     if (t.type === 'PAN_CARD') {
-                        if (t.chargesType === 'Online') {
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += chg;
-                        }
+                        // charges handled globally
                     } else {
                         if (t.chargesType === 'Online') {
                             balances.online += amt;
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += (amt + chg);
+                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
                         }
                         else balances.cash += amt;
                     }
@@ -8088,12 +8093,7 @@ async function initDailyTxn() {
                         onlineBreakdown[receivedDest] += amt;
                     }
 
-                    // Handle charges
-                    if (t.chargesType === 'Online') {
-                        const chargesProv = t.chargesAccount || t.receivedIn || t.depositBy;
-                        const chgDest = getOnlineDest(chargesProv);
-                        onlineBreakdown[chgDest] += chg;
-                    }
+                    // Handle charges (already handled globally at the top of the loop)
                 } else if (t.type === 'ADD_CAPITAL') {
                     if (provider === 'cash') balances.cash += amt;
                     else balances.online += amt;
@@ -8623,7 +8623,7 @@ async function initDailyTxn() {
                                     <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">Debit: ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                 </div>
                             ` : ''}
-                        ` : (txn.depositBy && (['WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) || (txn.type === 'DEPOSIT' && txn.chargesType !== 'Online'))) ? `
+                        ` : (txn.depositBy && (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type))) ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
                                 <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) ? 'Recv:' : (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
