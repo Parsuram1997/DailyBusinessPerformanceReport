@@ -5166,6 +5166,10 @@ async function initDailyTxn() {
     const txnProvider = document.getElementById('txn-provider');
     const txnDepositBy = document.getElementById('txn-depositby');
     const depositByContainer = document.getElementById('depositby-field-container');
+    const txnReceivedIn = document.getElementById('txn-receivedin');
+    const receivedInContainer = document.getElementById('receivedin-field-container');
+    const txnChargesAccount = document.getElementById('txn-charges-account');
+    const chargesAccountContainer = document.getElementById('charges-account-container');
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
@@ -5536,6 +5540,10 @@ async function initDailyTxn() {
         if (txnMethod) txnMethod.value = 'ATM';
         if (methodContainer) methodContainer.classList.add('hidden');
         if (remarkFieldContainer) remarkFieldContainer.classList.add('hidden');
+        if (txnReceivedIn) txnReceivedIn.value = '';
+        if (receivedInContainer) receivedInContainer.classList.add('hidden');
+        const chargesLabel = document.getElementById('charges-account-label');
+        if (chargesLabel) chargesLabel.innerText = 'Charges Account';
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
@@ -5777,11 +5785,11 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
+            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
                 if (depositByLabel) {
-                    if (txnType.value === 'CASH_WITHDRAWAL') {
+                    if (txnType.value === 'ONLINE_WORK' || txnType.value === 'CASH_WITHDRAWAL') {
                         depositByLabel.innerText = 'Debited By';
                     } else if (txnType.value === 'CASH_DEPOSIT') {
                         depositByLabel.innerText = 'Credit By';
@@ -5792,6 +5800,31 @@ async function initDailyTxn() {
             } else {
                 depositByContainer.classList.add('hidden');
                 txnDepositBy.value = '';
+            }
+        }
+
+        // Received In field visibility (ONLINE_WORK only, when pay mode is Online)
+        if (receivedInContainer && txnReceivedIn) {
+            if (txnType.value === 'ONLINE_WORK' && txnProvider && txnProvider.value === 'Online') {
+                receivedInContainer.classList.remove('hidden');
+            } else {
+                receivedInContainer.classList.add('hidden');
+                txnReceivedIn.value = '';
+            }
+        }
+
+        if (chargesAccountContainer && txnChargesAccount) {
+            if (txnChargesType && txnChargesType.value === 'Online') {
+                chargesAccountContainer.classList.remove('hidden');
+                chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
+                const chargesLabel = document.getElementById('charges-account-label');
+                if (chargesLabel) {
+                    chargesLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Received In' : 'Charges Account';
+                }
+            } else {
+                chargesAccountContainer.classList.add('hidden');
+                chargesAccountContainer.style.order = '';
+                txnChargesAccount.value = '';
             }
         }
 
@@ -5894,22 +5927,27 @@ async function initDailyTxn() {
         }
 
         // Reset order for all form containers
-        [providerContainer, bankContainer, methodContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer].forEach(c => {
+        [providerContainer, bankContainer, methodContainer, amountFieldContainer, remainingContainer, noteFieldContainer, remarkFieldContainer, addressFieldContainer, conditionalContainer, laminationSizeContainer, quantityFieldContainer, chargesFieldContainer, chargesModeContainer, depositByContainer, receivedInContainer, chargesAccountContainer].forEach(c => {
             if (c) c.style.order = '0';
         });
 
         if (txnType.value === 'ONLINE_WORK') {
             if (noteFieldContainer) noteFieldContainer.style.order = '1';
             if (amountFieldContainer) amountFieldContainer.style.order = '2';
-            if (providerContainer) providerContainer.style.order = '3';
-            if (chargesFieldContainer) chargesFieldContainer.style.order = '4';
-            if (chargesModeContainer) chargesModeContainer.style.order = '5';
+            if (depositByContainer) depositByContainer.style.order = '3';
+            if (providerContainer) providerContainer.style.order = '4';
+            if (receivedInContainer) receivedInContainer.style.order = '5';
+            if (chargesFieldContainer) chargesFieldContainer.style.order = '6';
+            if (chargesModeContainer) chargesModeContainer.style.order = '7';
+            if (chargesAccountContainer) chargesAccountContainer.style.order = '8';
         }
     };
 
     if (txnType) {
         txnType.addEventListener('change', updateConditionalField);
+        if (txnProvider) txnProvider.addEventListener('change', updateConditionalField);
         if (txnAmount) txnAmount.addEventListener('input', updateConditionalField);
+        if (txnChargesType) txnChargesType.addEventListener('change', updateConditionalField);
         updateConditionalField();
         txnType.focus();
         setTimeout(() => txnType.focus(), 50);
@@ -6093,6 +6131,27 @@ async function initDailyTxn() {
             if (txnChargesType && !txnChargesType.value.trim()) {
                 const labelText = chargesModeContainer.querySelector('label')?.innerText || 'Charges Mode';
                 return { valid: false, element: txnChargesType, message: `Please select ${labelText}` };
+            }
+        }
+
+        if (isVisible(txnDepositBy)) {
+            if (!txnDepositBy.value.trim()) {
+                const labelText = document.getElementById('depositby-label')?.innerText || 'Deposit By';
+                return { valid: false, element: txnDepositBy, message: `Please select ${labelText}` };
+            }
+        }
+
+        if (isVisible(txnReceivedIn)) {
+            if (!txnReceivedIn.value.trim()) {
+                const labelText = document.getElementById('receivedin-label')?.innerText || 'Received In';
+                return { valid: false, element: txnReceivedIn, message: `Please select ${labelText}` };
+            }
+        }
+
+        if (isVisible(txnChargesAccount)) {
+            if (!txnChargesAccount.value.trim()) {
+                const labelText = document.getElementById('charges-account-label')?.innerText || 'Charges Account';
+                return { valid: false, element: txnChargesAccount, message: `Please select ${labelText}` };
             }
         }
 
@@ -6376,7 +6435,9 @@ async function initDailyTxn() {
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                receivedIn: (txnType.value === 'ONLINE_WORK' && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -6581,6 +6642,13 @@ async function initDailyTxn() {
             // Per-provider online breakdown tracking
             const onlineBreakdown = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
             const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0 };
+            const getOnlineDest = (prov) => {
+                const lower = (prov || '').toLowerCase();
+                if (lower.includes('parsu')) return 'online_p1';
+                if (lower.includes('shop')) return 'online_p2';
+                if (lower.includes('dalai')) return 'online_p3';
+                return 'other';
+            };
 
             const getSubAccountKey = (prov) => {
                 if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
@@ -6597,8 +6665,6 @@ async function initDailyTxn() {
                 const key = getSubAccountKey(prov);
                 if (key) {
                     roinetBreakdown[key] += value;
-                    lastRoinetChanges[key] = value;
-                    lastRoinetChanges.total = value;
                 }
             };
 
@@ -6609,6 +6675,8 @@ async function initDailyTxn() {
                 const provider = (t.provider || "").trim().toLowerCase();
                 
                 const prevBals = { ...balances };
+                const prevOnlineBreakdown = { ...onlineBreakdown };
+                const prevRoinetBreakdown = { ...roinetBreakdown };
                 
                 if (t.chargesType === 'Online') balances.online += chg;
                 else balances.cash += chg;
@@ -6718,9 +6786,24 @@ async function initDailyTxn() {
                     // Add charges to expense
                     balances.expense += chg;
                 } else if (t.type === 'ONLINE_WORK') {
-                    balances.online -= amt; // Work cost
-                    if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt; // Paid from bank
+                    balances.online -= amt;
+                    const debitedDest = getOnlineDest(t.depositBy);
+                    onlineBreakdown[debitedDest] -= amt;
+
+                    if (provider === 'cash') {
+                        balances.cash += amt;
+                    } else {
+                        balances.online += amt;
+                        const receivedDest = getOnlineDest(t.receivedIn);
+                        onlineBreakdown[receivedDest] += amt;
+                    }
+
+                    // Handle charges
+                    if (t.chargesType === 'Online') {
+                        const chargesProv = t.chargesAccount || t.receivedIn || t.depositBy;
+                        const chgDest = getOnlineDest(chargesProv);
+                        onlineBreakdown[chgDest] += chg;
+                    }
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
@@ -6740,58 +6823,41 @@ async function initDailyTxn() {
 
                     onlineBreakdown[sourceDest] -= amt;
                     onlineBreakdown[targetDest] += amt;
-                    
-                    lastOnlineChanges[sourceDest] = -amt;
-                    lastOnlineChanges[targetDest] = amt;
-                    lastOnlineChanges.total = 0;
                 }
 
-                // Capture changes for online breakdown
-                Object.keys(balances).forEach(key => {
-                    const diff = balances[key] - prevBals[key];
-                    if (diff !== 0) {
-                        if (key === 'online') {
-                            const onlineChargesDiff = (t.chargesType === 'Online' && !['ROINET_COMMISSION', 'CSP_COMMISSION', 'JIO_TOPUP', 'SETTLEMENT'].includes(t.type)) ? chg : 0;
-                            const onlineAmountDiff = diff - onlineChargesDiff;
+                // Calculate exact deltas for Online breakdown if there was online movement
+                const hasOnlineMovement = 
+                    (balances.online !== prevBals.online) ||
+                    (onlineBreakdown.online_p1 !== prevOnlineBreakdown.online_p1) ||
+                    (onlineBreakdown.online_p2 !== prevOnlineBreakdown.online_p2) ||
+                    (onlineBreakdown.online_p3 !== prevOnlineBreakdown.online_p3) ||
+                    (onlineBreakdown.other !== prevOnlineBreakdown.other);
 
-                            const getOnlineDest = (prov) => {
-                                const lower = (prov || '').toLowerCase();
-                                if (lower.includes('parsu')) return 'online_p1';
-                                if (lower.includes('shop')) return 'online_p2';
-                                if (lower.includes('dalai')) return 'online_p3';
-                                return 'other';
-                            };
+                if (hasOnlineMovement) {
+                    lastOnlineChanges.online_p1 = onlineBreakdown.online_p1 - prevOnlineBreakdown.online_p1;
+                    lastOnlineChanges.online_p2 = onlineBreakdown.online_p2 - prevOnlineBreakdown.online_p2;
+                    lastOnlineChanges.online_p3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
+                    lastOnlineChanges.other = onlineBreakdown.other - prevOnlineBreakdown.other;
+                    lastOnlineChanges.total = balances.online - prevBals.online;
+                }
 
-                            let amtDest = 'other';
-                            let actualProviderForAmt = provider;
-                            if (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE'].includes(t.type) && provider === 'online') {
-                                actualProviderForAmt = t.depositBy || provider;
-                            } else if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(t.type) && t.depositBy) {
-                                actualProviderForAmt = t.depositBy;
-                            }
-                            amtDest = getOnlineDest(actualProviderForAmt);
+                // Calculate exact deltas for Roinet breakdown if there was roinet movement
+                const hasRoinetMovement = 
+                    (balances.roinet !== prevBals.roinet) ||
+                    (roinetBreakdown.roinet_1 !== prevRoinetBreakdown.roinet_1) ||
+                    (roinetBreakdown.roinet_2 !== prevRoinetBreakdown.roinet_2) ||
+                    (roinetBreakdown.airtel_1 !== prevRoinetBreakdown.airtel_1) ||
+                    (roinetBreakdown.airtel_2 !== prevRoinetBreakdown.airtel_2) ||
+                    (roinetBreakdown.spicemoney !== prevRoinetBreakdown.spicemoney);
 
-                            let destDiffs = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
-                            if (onlineAmountDiff !== 0) {
-                                destDiffs[amtDest] += onlineAmountDiff;
-                            }
-                            if (onlineChargesDiff !== 0) {
-                                const chargesProv = t.chargesAccount || actualProviderForAmt;
-                                const chgDest = getOnlineDest(chargesProv);
-                                destDiffs[chgDest] += onlineChargesDiff;
-                            }
-
-                            Object.keys(destDiffs).forEach(d => {
-                                if (destDiffs[d] !== 0) {
-                                    onlineBreakdown[d] += destDiffs[d];
-                                    lastOnlineChanges[d] = destDiffs[d];
-                                }
-                            });
-                            
-                            lastOnlineChanges.total = diff;
-                        }
-                    }
-                });
+                if (hasRoinetMovement) {
+                    lastRoinetChanges.roinet_1 = roinetBreakdown.roinet_1 - prevRoinetBreakdown.roinet_1;
+                    lastRoinetChanges.roinet_2 = roinetBreakdown.roinet_2 - prevRoinetBreakdown.roinet_2;
+                    lastRoinetChanges.airtel_1 = roinetBreakdown.airtel_1 - prevRoinetBreakdown.airtel_1;
+                    lastRoinetChanges.airtel_2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
+                    lastRoinetChanges.spicemoney = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
+                    lastRoinetChanges.total = balances.roinet - prevBals.roinet;
+                }
             });
 
             const fmt = (val) => `₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -7404,7 +7470,14 @@ async function initDailyTxn() {
                                 <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
                             </div>
                         ` : (!bankDisplay ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
-                        ${txn.depositBy ? `
+                        ${txn.type === 'ONLINE_WORK' ? `
+                            ${txn.depositBy ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
+                                    <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
+                                    <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Debit: ${txn.depositBy}</span>
+                                </div>
+                            ` : ''}
+                        ` : txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
                                 <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : (txn.type === 'CASH_WITHDRAWAL' ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
@@ -7475,6 +7548,12 @@ async function initDailyTxn() {
                                     ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
                                 ` : `
                                     <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                                    ${txn.type === 'ONLINE_WORK' && txn.provider !== 'cash' && txn.receivedIn ? `
+                                        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit mt-1">
+                                            <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
+                                            <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Recv: ${txn.receivedIn}</span>
+                                        </div>
+                                    ` : ''}
                                 `
                             )
                         )
@@ -7572,6 +7651,8 @@ async function initDailyTxn() {
                     txnConditional.value = txn.extraDetails || '';
                     txnProvider.value = txn.provider || '';
                     if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
+                    if (txnReceivedIn) txnReceivedIn.value = txn.receivedIn || '';
+                    if (txnChargesAccount) txnChargesAccount.value = txn.chargesAccount || '';
                     txnRemaining.value = txn.remainingAmount || '';
                     txnBank.value = txn.bankName || '';
                     const txnBankSelect = document.getElementById('txn-bank-select');
