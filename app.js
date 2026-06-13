@@ -6824,7 +6824,8 @@ async function initDailyTxn() {
         }
         
         if (chargesAccountContainer && txnChargesAccount) {
-            if (txnChargesType && txnChargesType.value === 'Online') {
+            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP'];
+            if (txnChargesType && txnChargesType.value === 'Online' && !typesHidingChargesAccount.includes(txnType.value)) {
                 chargesAccountContainer.classList.remove('hidden');
                 chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
                 const chargesLabel = document.getElementById('charges-account-label');
@@ -7914,7 +7915,11 @@ async function initDailyTxn() {
                 } else if (t.type === 'JIO_TOPUP') {
                     balances.jio += (amt + chg);
                     balances.online -= amt;
-                    if (t.chargesType === 'Online') balances.online -= chg;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    if (t.chargesType === 'Online') {
+                        balances.online -= chg;
+                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] -= chg;
+                    }
                     else balances.cash -= chg;
                 } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
                     if (provider.includes('crgb')) {
@@ -7931,29 +7936,44 @@ async function initDailyTxn() {
                     expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances['credit-ledger'] += amt;
                 } else if (t.type === 'CREDIT_RECEIVED') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                     balances['credit-ledger'] -= amt;
                 } else if (t.type === 'CUST_MONEY_IN') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                     balances['cust-deposit'] += amt;
                     const nameIn = (t.note || 'Unknown').trim();
                     if (!custDepositBreakdown[nameIn]) custDepositBreakdown[nameIn] = { in: 0, out: 0 };
                     custDepositBreakdown[nameIn].in += amt;
                 } else if (t.type === 'CUST_MONEY_OUT') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances['cust-deposit'] -= amt;
                     const nameOut = (t.note || 'Unknown').trim();
                     if (!custDepositBreakdown[nameOut]) custDepositBreakdown[nameOut] = { in: 0, out: 0 };
                     custDepositBreakdown[nameOut].out += amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances.expense += amt;
                     const expCat = (t.note || 'Daily Expense').trim() || 'Daily Expense';
                     expenseBreakdown[expCat] = (expenseBreakdown[expCat] || 0) + amt;
@@ -7971,17 +7991,28 @@ async function initDailyTxn() {
                     }
                 } else if (t.type === 'CASH_WITHDRAWAL') {
                     balances.online -= amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     balances.cash += amt;
                 } else if (t.type === 'CASH_DEPOSIT') {
                     balances.cash -= amt;
                     balances.online += amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                 } else if (t.type === 'OTHER_INCOME') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'SETTLEMENT') {
                     balances.online += amt;
-                    if (t.chargesType === 'Online') balances.online -= chg;
+                    if (t.depositBy || provider) onlineBreakdown[getOnlineDest(t.depositBy || provider)] += amt;
+                    
+                    if (t.chargesType === 'Online') {
+                        balances.online -= chg;
+                        if (t.chargesAccount || t.depositBy || provider) onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy || provider)] -= chg;
+                    }
                     else balances.cash -= chg;
+                    
                     const totalDeduction = amt + chg;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= totalDeduction;
@@ -7989,7 +8020,10 @@ async function initDailyTxn() {
                     }
                     else if (provider.includes('crgb')) balances.crgb -= totalDeduction;
                     else if (provider.includes('jio')) balances.jio -= totalDeduction;
-                    else balances.online -= totalDeduction;
+                    else {
+                        balances.online -= totalDeduction;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= totalDeduction;
+                    }
                     balances.expense += chg;
                     if (chg > 0) expenseBreakdown['Settlement Charges'] = (expenseBreakdown['Settlement Charges'] || 0) + chg;
                 } else if (t.type === 'ONLINE_WORK') {

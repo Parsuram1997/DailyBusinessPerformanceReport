@@ -5814,7 +5814,8 @@ async function initDailyTxn() {
         }
 
         if (chargesAccountContainer && txnChargesAccount) {
-            if (txnChargesType && txnChargesType.value === 'Online') {
+            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP'];
+            if (txnChargesType && txnChargesType.value === 'Online' && !typesHidingChargesAccount.includes(txnType.value)) {
                 chargesAccountContainer.classList.remove('hidden');
                 chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
                 const chargesLabel = document.getElementById('charges-account-label');
@@ -6716,8 +6717,12 @@ async function initDailyTxn() {
                 } else if (t.type === 'JIO_TOPUP') {
                     balances.jio += (amt + chg); // Both topup and commission stay in Jio wallet
                     balances.online -= amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     // Remove chg from where it was generically added at the start of the loop
-                    if (t.chargesType === 'Online') balances.online -= chg;
+                    if (t.chargesType === 'Online') {
+                        balances.online -= chg;
+                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] -= chg;
+                    }
                     else balances.cash -= chg;
                 } else if (t.type === 'ROINET_COMMISSION') {
                     balances.roinet += chg;
@@ -6727,23 +6732,38 @@ async function initDailyTxn() {
                     else balances.online += amt;
                 } else if (t.type === 'CREDIT_GIVEN') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances['credit-ledger'] += amt;
                 } else if (t.type === 'CREDIT_RECEIVED') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                     balances['credit-ledger'] -= amt;
                 } else if (t.type === 'CUST_MONEY_IN') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                     balances['cust-deposit'] += amt;
                 } else if (t.type === 'CUST_MONEY_OUT') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances['cust-deposit'] -= amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                     balances.expense += amt;
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     balances.cash -= amt;
@@ -6759,15 +6779,18 @@ async function initDailyTxn() {
                     }
                 } else if (t.type === 'CASH_WITHDRAWAL') {
                     balances.online -= amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     balances.cash += amt;
                 } else if (t.type === 'CASH_DEPOSIT') {
                     balances.cash -= amt;
                     balances.online += amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                 } else if (t.type === 'SETTLEMENT') {
                     // Settlement between digital accounts has no net effect on 'Total Online'
                     if (provider === 'cash') {
                         balances.cash -= amt;
                         balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
                     // Subtract charges from where they were generically added
                     if (t.chargesType === 'Online') balances.online -= chg;
@@ -6785,6 +6808,11 @@ async function initDailyTxn() {
                     
                     // Add charges to expense
                     balances.expense += chg;
+
+                    // The amount settles INTO the depositBy account (the bank account receiving the settlement)
+                    if (provider !== 'cash' && t.depositBy) {
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'ONLINE_WORK') {
                     balances.online -= amt;
                     const debitedDest = getOnlineDest(t.depositBy);
