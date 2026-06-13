@@ -8235,7 +8235,7 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-start gap-1">
-                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-black tracking-wide flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' :
                     txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10' :
                             txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10' :
@@ -8244,10 +8244,10 @@ async function initDailyTxn() {
                                 txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10' :
                                     'bg-primary/10 text-primary'
                 }">${
-                    txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
-                    (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
+                    txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
+                    (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))
                 }</span>
-                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold uppercase tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider}</span>` : ''}
+                        ${txn.provider ? `<span class="text-[9px] text-primary font-bold tracking-tight flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">account_balance_wallet</span>${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
                     </div>
                 </td>
                  <td class="px-3 py-1.5">
@@ -8256,21 +8256,21 @@ async function initDailyTxn() {
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
                                 <div class="flex flex-col leading-tight">
-                                    <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
-                                    ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
+                                    <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay).toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                    ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 tracking-wider">${typeDisplay.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
                                 </div>
                             </div>
                         ` : ''}
                         ${txn.provider ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
-                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
+                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>
                         ` : (!bankDisplay ? '<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>' : '')}
                         ${txn.depositBy ? `
                             <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
                                 <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy}</span>
+                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">${txn.type === 'WITHDRAWAL' ? 'Recv:' : 'Dep:'} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -8279,20 +8279,20 @@ async function initDailyTxn() {
                     <div class="flex flex-col gap-0.5 max-w-[220px]">
                         ${txn.type === 'SETTLEMENT' ? `
                             <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
-                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">
                                     <span class="material-symbols-outlined text-[13px] text-amber-600">account_balance_wallet</span>
-                                    ${txn.provider || 'Wallet'}
+                                    ${(txn.provider || 'Wallet').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                                 </span>
                                 <span class="material-symbols-outlined text-indigo-500 text-sm font-black select-none">east</span>
-                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-[10px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">
+                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-[10px] font-black text-indigo-700 dark:text-indigo-400 tracking-tight">
                                     <span class="material-symbols-outlined text-[13px] text-indigo-600">account_balance</span>
-                                    ${getShortBankName(bankDisplay) || txn.bankName || 'Bank'}
+                                    ${(getShortBankName(bankDisplay) || txn.bankName || 'Bank').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                                 </span>
                             </div>
                             ${accName ? `
-                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mt-1">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1">
                                     <span class="material-symbols-outlined text-[13px] text-slate-500">person</span>
-                                    <span>${accName}</span>
+                                    <span>${accName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                 </div>
                             ` : ''}
                             ${accNumber ? `
@@ -8311,11 +8311,11 @@ async function initDailyTxn() {
                             ['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type) ? `
                                 <div class="flex flex-col gap-1">
                                     <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
-                                        <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
+                                        <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">
                                             <span class="material-symbols-outlined text-[13px] text-purple-600">account_balance_wallet</span>
-                                            ${txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet')}
+                                            ${(txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet')).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                                         </span>
-                                        <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Commission</span>
+                                        <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider">Commission</span>
                                     </div>
                                     <div class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                                         <span class="material-symbols-outlined text-emerald-500 text-sm">monetization_on</span>
@@ -8330,14 +8330,14 @@ async function initDailyTxn() {
                                 </div>
                             ` : (
                                 accName ? `
-                                <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">${accName}</span>
+                                <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 tracking-tight">${accName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                 ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
                             ` : (
                                 (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DAILY_EXPENSE'].includes(txn.type)) ? `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name')}</span>
-                                    ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${(txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name')).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                    ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
                                 ` : `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${(txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                 `
                             )
                         )
