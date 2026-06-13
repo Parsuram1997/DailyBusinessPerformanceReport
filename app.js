@@ -8144,10 +8144,16 @@ async function initDailyTxn() {
                     // Handle charges (already handled globally at the top of the loop)
                 } else if (t.type === 'ADD_CAPITAL') {
                     if (provider === 'cash') balances.cash += amt;
-                    else balances.online += amt;
+                    else {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
+                    }
                 } else if (t.type === 'SHARE_WITHDRAWN') {
                     if (provider === 'cash') balances.cash -= amt;
-                    else balances.online -= amt;
+                    else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
                 } else if (t.type === 'PENDING_ADD') {
                     balances.pending += amt;
                     if (provider === 'cash') balances.cash -= amt;
@@ -8668,8 +8674,11 @@ async function initDailyTxn() {
                                 infoList.push(prefix + txn.depositBy);
                             }
                             
-                            if (txn.receivedIn && txn.type === 'JIO_RECHARGE') {
-                                infoList.push('Recv: ' + txn.receivedIn);
+                            if (txn.receivedIn) {
+                                let rPrefix = (txn.type === 'ONLINE_WORK' && txn.provider !== 'Cash') ? 'Recv: ' : 'Recv: ';
+                                if (!infoList.includes(rPrefix + txn.receivedIn)) {
+                                    infoList.push(rPrefix + txn.receivedIn);
+                                }
                             }
 
                             if (['OTHER_INCOME', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
@@ -8720,7 +8729,6 @@ async function initDailyTxn() {
                                 if (txn.remark) d2Arr.push(txn.remark);
                             } else {
                                 d1 = txn.remark || txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : (txn.type === 'QR_WITHDRAWAL' ? 'QR Withdrawal' : 'No Details'));
-                                if (txn.type === 'ONLINE_WORK' && txn.provider !== 'cash' && txn.receivedIn) d2Arr.push('Recv: ' + txn.receivedIn);
                                 if (txn.pages) d2Arr.push(txn.type === 'LAMINATION' && txn.laminationSize ? txn.laminationSize + ' (' + txn.pages + ')' : txn.pages + ' ' + (txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))));
                                 if (txn.extraDetails) d2Arr.push(txn.extraDetails);
                                 if (txn.address) d2Arr.push(txn.address);
