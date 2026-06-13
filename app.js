@@ -6527,7 +6527,7 @@ async function initDailyTxn() {
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
-        const noteAndAmountTypes = ['FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
+        const noteAndAmountTypes = [];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
         const isCashMovement = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);
@@ -6543,7 +6543,7 @@ async function initDailyTxn() {
         txnAmount.disabled = isChargesOnly;
         txnNote.disabled = (isChargesOnly && txnType.value !== 'OTHER_INCOME') || isSimplified || isAmountOnly || isDamagedRecovery || isCashMovement;
         txnAddress.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement;
-        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement;
+        txnConditional.disabled = isChargesOnly || isSimplified || isAmountOnly || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement;
 
         // Reset Labels
         if (chargesModeContainer) {
@@ -6683,6 +6683,10 @@ async function initDailyTxn() {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Debit Card (Last 4)';
                 txnConditional.placeholder = 'Last 4 digits...';
+            } else if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) {
+                conditionalContainer.classList.remove('hidden');
+                conditionalLabel.innerText = 'Acc/Phone (Last 4)';
+                txnConditional.placeholder = 'Last 4 digits...';
             } else {
                 conditionalContainer.classList.add('hidden');
             }
@@ -6765,10 +6769,10 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['DEPOSIT', 'WITHDRAWAL'].includes(txnType.value)) {
+            if (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
-                if (depositByLabel) depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
+                if (depositByLabel) depositByLabel.innerText = ['WITHDRAWAL', 'FREE_WITHDRAWAL'].includes(txnType.value) ? 'Received By' : 'Deposit By';
             } else {
                 depositByContainer.classList.add('hidden');
                 txnDepositBy.value = '';
@@ -7399,8 +7403,8 @@ async function initDailyTxn() {
                 note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
-                extraDetails: (['AEPS', 'MATM'].includes(txnType.value)) ? txnConditional.value.trim() : '',
-                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? txnConditional.value.trim() : '',
+                depositBy: (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value)) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 paymentApp: (txnType.value === 'QR_WITHDRAWAL') ? txnProvider.value : '',
                 provider: (txnType.value === 'QR_WITHDRAWAL') ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txnType.value)) ? txnProvider.value : '',
                 remainingAmount: (['AEPS', 'MATM'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
@@ -8405,7 +8409,7 @@ async function initDailyTxn() {
                         ${txn.address || txn.extraDetails ? `
                             <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
                                 ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
-                                ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">fingerprint</span>${txn.extraDetails}</span>` : ''}
+                                ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">${txn.type === 'AEPS' ? 'fingerprint' : (txn.type === 'MATM' ? 'credit_card' : (txn.type === 'QR_WITHDRAWAL' ? 'qr_code_scanner' : 'account_balance'))}</span>${txn.extraDetails}</span>` : ''}
                             </div>
                         ` : ''}
                     </div>
