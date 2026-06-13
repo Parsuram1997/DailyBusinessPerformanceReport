@@ -6484,39 +6484,39 @@ async function initDailyTxn() {
                 const formatAmt = (amt) => '₹ ' + parseFloat(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 });
                 const formattedAmount = formatAmt(newTxn.amount);
                 const remainingAmt = parseFloat(newTxn.remainingAmount || 0);
-                const remainingColor = remainingAmt >= 500 ? 'text-emerald-600' : 'text-rose-600';
+                const remainingColor = remainingAmt >= 500 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
 
                 const result = await Swal.fire({
-                    title: '<span class="text-xl font-black text-slate-800">Confirm Transaction</span>',
+                    title: '<div class="border-b border-slate-100 dark:border-slate-700/50 pb-3 flex items-center justify-center gap-2 text-xl font-black text-slate-800 dark:text-white tracking-tight"><span class="material-symbols-outlined text-indigo-500 dark:text-indigo-400">receipt_long</span> Confirm Transaction</div>',
                     html: `
-                        <div class="flex flex-col gap-3 text-left mt-4">
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Transaction Type</span>
-                                <span class="text-sm font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${newTxn.type}</span>
+                        <div class="flex flex-col gap-3 text-left mt-2">
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Transaction Type</span>
+                                <span class="text-sm font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">${newTxn.type}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Customer Name</span>
-                                <span class="text-sm font-bold text-slate-800">${newTxn.note || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Customer Name</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.note || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Aadhaar/Account</span>
-                                <span class="text-sm font-mono font-bold text-slate-700">${newTxn.extraDetails || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Aadhaar/Account</span>
+                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">${newTxn.extraDetails || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Bank/Provider</span>
-                                <span class="text-sm font-bold text-slate-800">${newTxn.bankName || newTxn.provider || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.provider || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Charges</span>
-                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500' : 'text-slate-800'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div class="flex flex-col gap-2 mt-2">
-                                <div class="flex justify-between items-center bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
-                                    <span class="text-sm font-bold text-slate-600">Transaction Amount</span>
-                                    <span class="text-2xl font-black text-primary">${formattedAmount}</span>
+                                <div class="flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                                    <span class="text-sm font-bold text-slate-600 dark:text-slate-300">Transaction Amount</span>
+                                    <span class="text-2xl font-black text-primary dark:text-indigo-400">${formattedAmount}</span>
                                 </div>
-                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                    <span class="text-sm font-bold text-slate-600">Remaining Balance</span>
+                                <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                                    <span class="text-sm font-bold text-slate-600 dark:text-slate-300">Remaining Balance</span>
                                     <span class="text-lg font-black ${remainingColor}">${formatAmt(remainingAmt)}</span>
                                 </div>
                             </div>
@@ -6531,7 +6531,7 @@ async function initDailyTxn() {
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     customClass: {
-                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100',
+                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 dark:bg-slate-900',
                         title: 'pt-2',
                         confirmButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
                         cancelButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',

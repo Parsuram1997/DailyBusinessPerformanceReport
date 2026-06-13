@@ -7560,19 +7560,19 @@ async function initDailyTxn() {
                 const formattedAmount = formatAmt(newTxn.amount);
                 
                 let providerIcon = 'account_balance_wallet';
-                let providerColor = 'text-slate-600 bg-slate-100 border-slate-200';
+                let providerColor = 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
                 if (newTxn.provider) {
                     const prov = newTxn.provider.toUpperCase();
-                    if (prov.includes('ROINET')) { providerIcon = 'signal_cellular_alt'; providerColor = 'text-indigo-600 bg-indigo-50 border-indigo-200'; }
-                    else if (prov.includes('AIRTEL')) { providerIcon = 'cell_tower'; providerColor = 'text-rose-600 bg-rose-50 border-rose-200'; }
-                    else if (prov.includes('SPICE')) { providerIcon = 'local_fire_department'; providerColor = 'text-orange-600 bg-orange-50 border-orange-200'; }
-                    else if (prov.includes('RELIPAY')) { providerIcon = 'bolt'; providerColor = 'text-blue-600 bg-blue-50 border-blue-200'; }
-                    else { providerColor = 'text-slate-700 bg-slate-100 border-slate-300'; }
+                    if (prov.includes('ROINET')) { providerIcon = 'signal_cellular_alt'; providerColor = 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800/50'; }
+                    else if (prov.includes('AIRTEL')) { providerIcon = 'cell_tower'; providerColor = 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/50'; }
+                    else if (prov.includes('SPICE')) { providerIcon = 'local_fire_department'; providerColor = 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800/50'; }
+                    else if (prov.includes('RELIPAY')) { providerIcon = 'bolt'; providerColor = 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50'; }
+                    else { providerColor = 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600'; }
                 }
 
                 const providerHtml = newTxn.provider ? `
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span class="text-sm font-semibold text-slate-500">Service Provider</span>
+                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Service Provider</span>
                         <span class="text-xs font-black ${providerColor} px-2 py-0.5 rounded-lg border flex items-center gap-1">
                             <span class="material-symbols-outlined text-[14px]">${providerIcon}</span>
                             ${newTxn.provider.toUpperCase()}
@@ -7581,16 +7581,16 @@ async function initDailyTxn() {
                 ` : '';
 
                 const remainingHtml = newTxn.remainingAmount ? `
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span class="text-sm font-semibold text-slate-500">Remaining Amount</span>
-                        <span class="text-xs font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Remaining Amount</span>
+                        <span class="text-xs font-black text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800/50">
                             ₹ ${parseFloat(newTxn.remainingAmount).toLocaleString('en-IN')} Remaining
                         </span>
                     </div>
                 ` : '';
 
                 const result = await Swal.fire({
-                    title: '<span class="text-xl font-black text-slate-800 tracking-tight">Confirm Transaction</span>',
+                    title: '<div class="border-b border-slate-100 dark:border-slate-700/50 pb-3 flex items-center justify-center gap-2 text-xl font-black text-slate-800 dark:text-white tracking-tight"><span class="material-symbols-outlined text-indigo-500 dark:text-indigo-400">receipt_long</span> Confirm Transaction</div>',
                                         html: `
                         <style>
                             div.swal2-actions {
@@ -7617,31 +7617,31 @@ async function initDailyTxn() {
                             }
                         </style>
                         <div class="flex flex-col gap-3 text-left mt-2">
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Transaction Type</span>
-                                <span class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg tracking-widest uppercase">${newTxn.type}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Transaction Type</span>
+                                <span class="text-xs font-black text-primary dark:text-indigo-400 bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 px-2 py-0.5 rounded-lg tracking-widest uppercase">${newTxn.type}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Customer Name</span>
-                                <span class="text-sm font-bold text-slate-800">${newTxn.note || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Customer Name</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.note || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Aadhaar/Account</span>
-                                <span class="text-sm font-mono font-bold text-slate-700">${newTxn.extraDetails || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Aadhaar/Account</span>
+                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">${newTxn.extraDetails || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Bank/Provider</span>
-                                <span class="text-sm font-bold text-slate-800">${newTxn.bankName || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || 'N/A'}</span>
                             </div>
                             ${providerHtml}
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <span class="text-sm font-semibold text-slate-500">Charges</span>
-                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500' : 'text-slate-800'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             ${remainingHtml}
-                            <div class="flex justify-between items-center bg-gradient-to-r from-primary/5 to-primary/10 py-2 px-3 rounded-xl border border-primary/20 shadow-sm mt-1">
-                                <span class="text-xs sm:text-sm font-bold text-slate-700 whitespace-nowrap mr-2">Transaction Amount</span>
-                                <span class="text-lg sm:text-xl font-black text-primary drop-shadow-sm whitespace-nowrap">${formattedAmount}</span>
+                            <div class="flex justify-between items-center bg-gradient-to-r from-primary/5 to-primary/10 dark:from-indigo-900/40 dark:to-indigo-800/20 py-2 px-3 rounded-xl border border-primary/20 dark:border-indigo-700/50 shadow-sm mt-1">
+                                <span class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap mr-2">Transaction Amount</span>
+                                <span class="text-lg sm:text-xl font-black text-primary dark:text-indigo-400 drop-shadow-sm whitespace-nowrap">${formattedAmount}</span>
                             </div>
                         </div>
                     `,
@@ -7654,7 +7654,7 @@ async function initDailyTxn() {
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     customClass: {
-                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100',
+                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 dark:bg-slate-900',
                         title: 'pt-2',
                         confirmButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
                         cancelButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
