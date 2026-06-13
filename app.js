@@ -8618,11 +8618,19 @@ async function initDailyTxn() {
                         </button>
                     </div>
                 </td>
-                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}"><span class="serial-text text-xs font-bold text-slate-500">${isExcluded ? '<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-400">—</span>' : '#' + serialPos}</span></td>
+                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}">
+                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[30px] h-[22px]">
+                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '—' : '#' + serialPos}</span>
+                    </div>
+                </td>
                 <td class="px-3 py-1.5 whitespace-nowrap">
-                    <div class="flex flex-col">
-                        <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${time}</span>
-                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${txn.date}</span>
+                    <div class="flex flex-col gap-1 w-[80px]">
+                        <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
+                            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wide">${time || 'NA'}</span>
+                        </div>
+                        <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
+                            <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${txn.date || 'NA'}</span>
+                        </div>
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
@@ -8641,180 +8649,127 @@ async function initDailyTxn() {
                 }</span>
                     </div>
                 </td>
-                 <td class="px-3 py-1.5">
-                    <div class="flex flex-col items-start gap-1 max-w-[200px]">
-                        ${['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'GOLD_SIP', 'OTHER_INCOME'].includes(txn.type) ? `
-                            ${txn.type === 'OTHER_INCOME' ? `
-                                ${txn.chargesType === 'Online' && txn.chargesAccount ? `
-                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
-                                        <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${txn.chargesAccount.toLowerCase().includes('dalai') ? 'Online(dalai)' : (txn.chargesAccount.toLowerCase().includes('shop') ? 'Online(shop)' : (txn.chargesAccount.toLowerCase().includes('parsu') ? 'Online(parsu)' : txn.chargesAccount))}</span>
-                                    </div>
-                                ` : `
-                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[14px] text-emerald-600 min-w-[14px]">payments</span>
-                                        <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 tracking-wide whitespace-nowrap">Cash</span>
-                                    </div>
-                                `}
-                            ` : (txn.type === 'GOLD_SIP' ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">smartphone</span>
-                                    <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 tracking-wide whitespace-nowrap">Phonepe</span>
-                                </div>
-                            ` : (txn.paymentApp ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">smartphone</span>
-                                    <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 tracking-wide whitespace-nowrap truncate" title="${txn.paymentApp}">${txn.paymentApp.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                </div>
-                            ` : ''))}
-                            ${txn.type === 'GOLD_SIP' ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap mt-1">
-                                    <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
-                                    <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${txn.depositBy ? txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Online(shop)'}</span>
-                                </div>
-                            ` : (txn.provider ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-[140px] flex-nowrap whitespace-nowrap ${txn.paymentApp ? 'mt-1' : ''}">
-                                    <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
-                                    <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 tracking-wide whitespace-nowrap truncate" title="${txn.provider}">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                </div>
-                            ` : '')}
-                        ` : `
-                            ${bankDisplay ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
-                                    <div class="flex items-center gap-1 whitespace-nowrap min-w-0">
-                                        <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay).toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                        ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 tracking-wider whitespace-nowrap">${typeDisplay.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            ${(txn.provider && txn.type !== 'SETTLEMENT') ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                    <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
-                                    <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 tracking-wide whitespace-nowrap truncate" title="${txn.provider}">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                </div>
-                            ` : ''}
-                        `}
-                        ${txn.type === 'ONLINE_WORK' ? `
-                            ${txn.depositBy ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                    <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
-                                    <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">Debit: ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                </div>
-                            ` : ''}
-                        ` : (txn.depositBy && (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type))) ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
-                                <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
-                                <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) ? 'Recv:' : (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                            </div>
-                        ` : ''}
-                        ${txn.reason ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 w-fit mt-1">
-                                <span class="material-symbols-outlined text-[14px] text-rose-600">info</span>
-                                <span class="text-[10px] font-bold text-rose-700 dark:text-rose-400 tracking-wide">${txn.reason}</span>
-                            </div>
-                        ` : ''}
+                <td class="px-3 py-1.5">
+                    <div class="flex flex-col gap-1 w-[160px]">
+                        ${(() => {
+                            let infoList = [];
+                            if (bankDisplay) infoList.push(getShortBankName(bankDisplay) + (typeDisplay ? ' ' + typeDisplay : ''));
+                            if (txn.paymentApp) infoList.push(txn.paymentApp);
+                            if (txn.provider && txn.type !== 'SETTLEMENT') {
+                                if (!infoList.includes(txn.provider)) infoList.push(txn.provider);
+                            }
+                            if (txn.depositBy) {
+                                let prefix = '';
+                                if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type)) prefix = 'Recv: ';
+                                else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type)) prefix = 'Debit: ';
+                                else if (txn.type === 'CASH_DEPOSIT') prefix = 'Credit: ';
+                                else if (txn.type === 'ONLINE_WORK') prefix = 'Debit: ';
+                                else prefix = 'Dep: ';
+                                infoList.push(prefix + txn.depositBy);
+                            }
+
+                            if (['OTHER_INCOME', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
+                                if ((['OTHER_INCOME', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type) && txn.chargesType === 'Online' && txn.chargesAccount) || (txn.type === 'CSP_COMMISSION' && txn.provider && txn.provider !== 'Cash') || txn.type === 'ROINET_COMMISSION') {
+                                    let acc = txn.type === 'ROINET_COMMISSION' ? 'Roinet' : (txn.type === 'CSP_COMMISSION' ? txn.provider : txn.chargesAccount);
+                                    infoList = ['Online', acc];
+                                } else {
+                                    infoList = ['Cash'];
+                                }
+                            } else if (txn.type === 'GOLD_SIP') {
+                                infoList = ['Phonepe', txn.depositBy || 'Online(shop)'];
+                            }
+
+                            let b1 = infoList[0] || 'NA';
+                            let b2 = infoList.length > 1 ? infoList.slice(1).join(' | ') : 'NA';
+
+                            const formatB = (str) => String(str) === 'NA' ? 'NA' : String(str).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                            
+                            return '<div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">' +
+                                   '<span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center" title="' + String(b1).replace(/"/g, '&quot;') + '">' + formatB(b1) + '</span>' +
+                                   '</div>' +
+                                   '<div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">' +
+                                   '<span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate w-full text-center" title="' + String(b2).replace(/"/g, '&quot;') + '">' + formatB(b2) + '</span>' +
+                                   '</div>';
+                        })()}
                     </div>
                 </td>
-                <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-0.5 max-w-[220px]">
-                        ${txn.type === 'SETTLEMENT' ? `
-                            <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
-                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">
-                                    <span class="material-symbols-outlined text-[13px] text-amber-600">account_balance_wallet</span>
-                                    ${(txn.provider || 'Wallet').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                                </span>
-                                <span class="material-symbols-outlined text-indigo-500 text-sm font-black select-none">east</span>
-                                <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-[10px] font-black text-indigo-700 dark:text-indigo-400 tracking-tight">
-                                    <span class="material-symbols-outlined text-[13px] text-indigo-600">account_balance</span>
-                                    ${(getShortBankName(bankDisplay) || txn.bankName || 'Bank').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                                </span>
-                            </div>
-                            ${accName ? `
-                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1">
-                                    <span class="material-symbols-outlined text-[13px] text-slate-500">person</span>
-                                    <span>${accName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                </div>
-                            ` : ''}
-                            ${accNumber ? `
-                                <div class="flex items-center gap-1 text-[10px] font-mono text-slate-500 dark:text-slate-400 tracking-wider mt-0.5">
-                                    <span class="material-symbols-outlined text-[13px]">pin</span>
-                                    <span>A/C: ${accNumber}</span>
-                                </div>
-                            ` : ''}
-                            ${txn.remark ? `
-                                <div class="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
-                                    <span class="material-symbols-outlined text-[13px]">notes</span>
-                                    <span>${txn.remark}</span>
-                                </div>
-                            ` : ''}
-                        ` : (
-                            ['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type) ? `
-                                <div class="flex flex-col gap-1">
-                                    <div class="flex items-center gap-1.5 py-0.5 flex-wrap">
-                                        <span class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">
-                                            <span class="material-symbols-outlined text-[13px] text-purple-600">account_balance_wallet</span>
-                                            ${(txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet')).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                                        </span>
-                                        <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider">Commission</span>
-                                    </div>
-                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-emerald-500 text-sm">monetization_on</span>
-                                        <span>${txn.type === 'ROINET_COMMISSION' ? 'Roinet Commission Received' : 'CSP Commission Earned'}</span>
-                                    </div>
-                                    ${txn.remark ? `
-                                        <div class="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
-                                            <span class="material-symbols-outlined text-[13px]">notes</span>
-                                            <span>${txn.remark}</span>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            ` : (
-                                accName ? `
-                                <span class="text-xs font-black text-indigo-700 dark:text-indigo-400 tracking-tight">${accName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                ${accNumber ? `<span class="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${accNumber}</span>` : ''}
-                            ` : (
-                                (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DAILY_EXPENSE'].includes(txn.type)) ? `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${(txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name')).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                    ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>` : ''}
-                                ` : `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${(txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : (txn.type === 'QR_WITHDRAWAL' ? 'QR Withdrawal' : 'No Details')))).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                    ${txn.type === 'ONLINE_WORK' && txn.provider !== 'cash' && txn.receivedIn ? `
-                                        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit mt-1">
-                                            <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                            <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 tracking-wide">Recv: ${txn.receivedIn.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                                        </div>
-                                    ` : ''}
-                                `
-                            )
-                        )
-                    )}
-                        ${txn.pages ? `<span class="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-500/20 w-fit mt-0.5"><span class="material-symbols-outlined text-[13px]">${txn.type === 'PASSPORT' ? 'photo_camera' : (txn.type === 'LAMINATION' ? 'layers' : 'file_copy')}</span>${txn.type === 'LAMINATION' && txn.laminationSize ? `${txn.laminationSize} (${txn.pages})` : `${txn.pages} ${txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))}`}</span>` : ''}
-                        ${txn.address || txn.extraDetails ? `
-                            <div class="flex items-center gap-3 text-[10px] text-slate-500 font-medium mt-0.5">
-                                ${txn.address ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>${txn.address}</span>` : ''}
-                                ${txn.extraDetails ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">${['AEPS', 'AADHAAR_PAY', 'AADHAAR_DEPOSIT'].includes(txn.type) ? 'fingerprint' : (txn.type === 'MATM' ? 'credit_card' : (txn.type === 'QR_WITHDRAWAL' ? 'qr_code_scanner' : 'account_balance'))}</span>${txn.extraDetails}</span>` : ''}
-                            </div>
-                        ` : ''}
+                 <td class="px-3 py-1.5">
+                    <div class="flex flex-col gap-1 w-[160px]">
+                        ${(() => {
+                            let d1 = 'NA';
+                            let d2Arr = [];
+                            if (txn.type === 'SETTLEMENT') {
+                                d1 = (txn.provider || 'Wallet') + ' ➔ ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
+                                if (accName) d2Arr.push(accName);
+                                if (accNumber) d2Arr.push(accNumber);
+                                if (txn.remark) d2Arr.push(txn.remark);
+                            } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) {
+                                d1 = txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet');
+                                d2Arr.push(txn.remark || (txn.type === 'ROINET_COMMISSION' ? 'Roinet Commission' : 'CSP Commission'));
+                            } else if (accName) {
+                                d1 = accName;
+                                if (accNumber) d2Arr.push(accNumber);
+                                if (txn.extraDetails) d2Arr.push(txn.extraDetails);
+                                if (txn.address) d2Arr.push(txn.address);
+                            } else if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DAILY_EXPENSE'].includes(txn.type)) {
+                                d1 = txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name');
+                                if (txn.remark) d2Arr.push(txn.remark);
+                            } else {
+                                d1 = txn.remark || txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : (txn.type === 'QR_WITHDRAWAL' ? 'QR Withdrawal' : 'No Details'));
+                                if (txn.type === 'ONLINE_WORK' && txn.provider !== 'cash' && txn.receivedIn) d2Arr.push('Recv: ' + txn.receivedIn);
+                                if (txn.pages) d2Arr.push(txn.type === 'LAMINATION' && txn.laminationSize ? txn.laminationSize + ' (' + txn.pages + ')' : txn.pages + ' ' + (txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))));
+                                if (txn.extraDetails) d2Arr.push(txn.extraDetails);
+                                if (txn.address) d2Arr.push(txn.address);
+                            }
+                            const d2 = d2Arr.length > 0 ? d2Arr.join(' | ') : 'NA';
+                            const formatD = (str) => String(str) === 'NA' ? 'NA' : String(str).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                            return '<div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">' +
+                                   '<span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center" title="' + String(d1).replace(/"/g, '&quot;') + '">' + formatD(d1) + '</span>' +
+                                   '</div>' +
+                                   '<div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">' +
+                                   '<span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate w-full text-center" title="' + String(d2).replace(/"/g, '&quot;') + '">' + formatD(d2) + '</span>' +
+                                   '</div>';
+                        })()}
                     </div>
                 </td>
                 <td class="px-3 py-1.5 text-right">
-                    <div class="flex flex-col items-end">
+                    <div class="flex flex-col gap-1 w-[90px] ml-auto">
                         ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
-                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
+                            </div>
                         ` : `
-                            <span class="text-sm font-black ${txn.type === 'DAILY_EXPENSE' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${txn.type === 'DAILY_EXPENSE' ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400'} border w-full h-[22px]">
+                                <span class="text-[11px] font-black tracking-wide">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
                         `}
-                        ${txn.remainingAmount ? `<span class="text-[9px] text-amber-600 font-bold">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>` : ''}
+                        ${txn.remainingAmount ? `
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 w-full h-[22px]">
+                                <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>
+                            </div>
+                        ` : `
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
+                            </div>
+                        `}
                     </div>
                 </td>
                 <td class="px-3 py-1.5 text-right charges-col-cell">
-                    <div class="flex flex-col items-end">
-                        ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) ? '' : ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
-                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-fit">N/A</span>
+                    <div class="flex flex-col gap-1 w-[110px] ml-auto">
+                        ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
+                            </div>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
+                            </div>
                         ` : `
-                            <span class="text-sm font-bold text-primary italic">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                            <span class="text-[8px] font-black uppercase tracking-widest ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'text-indigo-500' : (txn.chargesType === 'Online' ? 'text-blue-500' : 'text-emerald-500')}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}</span>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 w-full h-[22px]">
+                                <span class="text-[11px] font-black text-indigo-700 dark:text-indigo-400 tracking-wide">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400' : (txn.chargesType === 'Online' ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400')} border w-full h-[22px]">
+                                <span class="text-[9px] font-black capitalize tracking-widest truncate max-w-full" title="${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}</span>
+                            </div>
                         `}
                     </div>
                 </td>
