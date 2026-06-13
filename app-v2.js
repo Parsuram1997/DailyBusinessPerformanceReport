@@ -1367,7 +1367,7 @@ async function initAddEntry() {
                     const txnSnap = await getDocs(query(txnRef, where("date", "in", dateQueries)));
                     
                     const uncheckedTxns = [];
-                    const typesToCheck = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL'];
+                    const typesToCheck = ['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_PAY'];
                     
                     txnSnap.forEach(docSnap => {
                         const txn = docSnap.data();
@@ -5830,18 +5830,21 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT'].includes(txnType.value) || (txnType.value === 'DAMAGED_RECOVERY' && txnProvider && txnProvider.value === 'Online')) {
+            const isCustMoneyOnline = ['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online';
+            if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'GOLD_SIP'].includes(txnType.value) || isCustMoneyOnline) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
                 if (depositByLabel) {
-                    if (txnType.value === 'ONLINE_WORK' || txnType.value === 'CASH_WITHDRAWAL') {
+                    if (txnType.value === 'ONLINE_WORK') {
                         depositByLabel.innerText = 'Debited By';
-                    } else if (['CASH_DEPOSIT', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
+                    } else if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Received In';
-                    } else if (txnType.value === 'PENDING_ADD') {
+                    } else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD', 'GOLD_SIP'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Debited By';
+                    } else if (txnType.value === 'CASH_DEPOSIT') {
+                        depositByLabel.innerText = 'Credit By';
                     } else {
-                        depositByLabel.innerText = txnType.value === 'WITHDRAWAL' ? 'Received By' : 'Deposit By';
+                        depositByLabel.innerText = 'Deposit By';
                     }
                 }
             } else {
@@ -6498,7 +6501,7 @@ async function initDailyTxn() {
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 provider: (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
@@ -6511,7 +6514,7 @@ async function initDailyTxn() {
             };
 
             // --- Summary Confirmation Popup for specific types ---
-            if (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'AADHAAR_PAY'].includes(newTxn.type)) {
+            if (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_PAY'].includes(newTxn.type)) {
                 const formatAmt = (amt) => '₹ ' + parseFloat(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 });
                 const formattedAmount = formatAmt(newTxn.amount);
                 const remainingAmt = parseFloat(newTxn.remainingAmount || 0);
@@ -6949,6 +6952,8 @@ async function initDailyTxn() {
                 } else if (t.type === 'GOLD_SIP') {
                     balances.online -= amt;
                     balances.expense += amt;
+                    expenseBreakdown['GOLD SIP'] = (expenseBreakdown['GOLD SIP'] || 0) + amt;
+                    onlineBreakdown[getOnlineDest(t.depositBy || 'shop')] -= amt;
                 } else if (t.type === 'ONLINE_EXCHANGE') {
                     let sourceDest = 'other';
                     let targetDest = 'other';
@@ -7391,7 +7396,7 @@ async function initDailyTxn() {
         }, {});
 
         const excludedTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
-        const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'AADHAAR_PAY'];
+        const includedVolumeTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_PAY'];
         
         const countableTxns = allTxnsForDate.filter(t => !excludedTypes.includes(t.type));
         const volumeTxns = allTxnsForDate.filter(t => includedVolumeTypes.includes(t.type));
@@ -7598,7 +7603,7 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-start gap-1">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' || txn.type === 'AADHAAR_DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
+                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-[125px] ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' || txn.type === 'AADHAAR_DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
                     txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
                             txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20' :
@@ -7610,42 +7615,73 @@ async function initDailyTxn() {
                     txn.type === 'CASH_WITHDRAWAL' ? 'CASH WDRL <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'CASH DEP <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace('_', ' '))
                 }</span>
-                        ${(['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type) && txn.provider) ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
-                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
-                            </div>
-                        ` : ''}
                     </div>
                 </td>
                  <td class="px-3 py-1.5">
                     <div class="flex flex-col gap-1.5 max-w-[200px]">
-                        ${bankDisplay ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-fit">
-                                <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
-                                <div class="flex items-center gap-1 whitespace-nowrap">
-                                    <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
-                                    ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">${typeDisplay}</span>` : ''}
+                        ${['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'GOLD_SIP', 'OTHER_INCOME'].includes(txn.type) ? `
+                            ${txn.type === 'OTHER_INCOME' ? `
+                                ${txn.chargesType === 'Online' && txn.chargesAccount ? `
+                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                        <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
+                                        <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${txn.chargesAccount.toLowerCase().includes('dalai') ? 'Online(dalai)' : (txn.chargesAccount.toLowerCase().includes('shop') ? 'Online(shop)' : (txn.chargesAccount.toLowerCase().includes('parsu') ? 'Online(parsu)' : txn.chargesAccount))}</span>
+                                    </div>
+                                ` : `
+                                    <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                        <span class="material-symbols-outlined text-[14px] text-emerald-600 min-w-[14px]">payments</span>
+                                        <span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 tracking-wide whitespace-nowrap">Cash</span>
+                                    </div>
+                                `}
+                            ` : (txn.type === 'GOLD_SIP' ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">smartphone</span>
+                                    <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 tracking-wide whitespace-nowrap">Phonepe</span>
                                 </div>
-                            </div>
-                        ` : ''}
-                        ${(txn.provider && txn.type !== 'SETTLEMENT' && !['FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txn.type)) ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-fit">
-                                <span class="material-symbols-outlined text-[14px] text-amber-600">account_balance_wallet</span>
-                                <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">${txn.provider}</span>
-                            </div>
-                        ` : ''}
-                        ${txn.type === 'ONLINE_WORK' ? `
-                            ${txn.depositBy ? `
-                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
-                                    <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                    <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Debit: ${txn.depositBy}</span>
+                            ` : (txn.paymentApp ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">smartphone</span>
+                                    <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide whitespace-nowrap truncate" title="${txn.paymentApp}">${txn.paymentApp.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                </div>
+                            ` : ''))}
+                            ${txn.type === 'GOLD_SIP' ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap mt-1">
+                                    <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
+                                    <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${txn.depositBy ? txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Online(shop)'}</span>
+                                </div>
+                            ` : (txn.provider ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-[140px] flex-nowrap whitespace-nowrap ${txn.paymentApp ? 'mt-1' : ''}">
+                                    <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
+                                    <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide whitespace-nowrap truncate" title="${txn.provider}">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                </div>
+                            ` : '')}
+                        ` : `
+                            ${bankDisplay ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                    <span class="material-symbols-outlined text-[14px] text-blue-600 min-w-[14px]">account_balance</span>
+                                    <div class="flex items-center gap-1 whitespace-nowrap min-w-0">
+                                        <span class="text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide whitespace-nowrap truncate" title="${bankDisplay}">${getShortBankName(bankDisplay)}</span>
+                                        ${typeDisplay ? `<span class="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">${typeDisplay}</span>` : ''}
+                                    </div>
                                 </div>
                             ` : ''}
-                        ` : txn.depositBy ? `
-                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit">
-                                <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">${['WITHDRAWAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) ? 'Recv:' : (['CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy}</span>
+                            ${(txn.provider && txn.type !== 'SETTLEMENT') ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                    <span class="material-symbols-outlined text-[14px] text-amber-600 min-w-[14px]">account_balance_wallet</span>
+                                    <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide whitespace-nowrap truncate" title="${txn.provider}">${txn.provider.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                                </div>
+                            ` : ''}
+                        `}
+                        ${txn.type === 'ONLINE_WORK' ? `
+                            ${txn.depositBy ? `
+                                <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                    <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
+                                    <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide whitespace-nowrap">Debit: ${txn.depositBy}</span>
+                                </div>
+                            ` : ''}
+                        ` : (txn.depositBy && (['DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type))) ? `
+                            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-[140px] flex-nowrap whitespace-nowrap">
+                                <span class="material-symbols-outlined text-[14px] text-purple-600 min-w-[14px]">person</span>
+                                <span class="text-[9px] font-bold text-purple-700 dark:text-purple-400 tracking-wide whitespace-nowrap">${['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type) ? 'Recv:' : (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type) ? 'Debit:' : (txn.type === 'CASH_DEPOSIT' ? 'Credit:' : 'Dep:'))} ${txn.depositBy.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -7712,7 +7748,7 @@ async function initDailyTxn() {
                                     <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name')}</span>
                                     ${txn.remark ? `<span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">${txn.remark}</span>` : ''}
                                 ` : `
-                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : 'No Details'))}</span>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${(txn.remark || (txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : (txn.type === 'QR_WITHDRAWAL' ? 'QR Withdrawal' : 'No Details')))).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
                                     ${txn.type === 'ONLINE_WORK' && txn.provider !== 'cash' && txn.receivedIn ? `
                                         <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 w-fit mt-1">
                                             <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
