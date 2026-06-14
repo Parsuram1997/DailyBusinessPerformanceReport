@@ -907,7 +907,7 @@ async function initAddEntry() {
                 const provider = (t.provider || "").trim().toLowerCase();
 
                 // Track charges if they are Online
-                if (!['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                if (!['CSP_COMMISSION'].includes(t.type)) {
                     if (t.chargesType === 'Online') {
                         deltas.online += chg;
                         updateOnlineSubDelta(t.chargesAccount || t.receivedIn || t.depositBy || provider, chg, true);
@@ -980,7 +980,7 @@ async function initAddEntry() {
                         deltas.online -= chg;
                         updateOnlineSubDelta(t.chargesAccount || t.depositBy, chg, false);
                     }
-                } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
+                } else if (['CSP_COMMISSION'].includes(t.type)) {
                     if (provider.includes('crgb')) deltas.crgb_bc += chg;
                     else if (provider.includes('jio')) deltas.jio += chg;
                     else updateSubAccountDelta(provider, chg, true);
@@ -4271,6 +4271,14 @@ async function initReports() {
 
         // Calculate Category Wise Expenses across both Entries and Daily Transactions to ensure real-time accuracy
         const dtxnCatByDate = {};
+        const providerStats = {
+            'Airtel(Parsu)': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 },
+            'Airtel(Dalai)': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 },
+            'Roinet(Parsu)': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 },
+            'Roinet(Dalai)': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 },
+            'Crgb Bc': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 },
+            'SpiceMoney': { fees: 0, settlement: 0, volume: 0, count: 0, commission: 0 }
+        };
         dailyTxns.forEach(t => {
             const date = t.date;
             if (!dtxnCatByDate[date]) {
@@ -4295,6 +4303,29 @@ async function initReports() {
                 else if (note === 'SETTLEMENT CHARGES') dtxnCatByDate[date].settlement += amt;
                 else if (note === 'INTERNET EXPENSE') dtxnCatByDate[date].internet += amt;
                 else if (note === 'AADHAAR PAY CHARGES') dtxnCatByDate[date].aadhaarPay += amt;
+            }
+
+            // Provider Stats Calculation
+            let prov = t.provider;
+            if (prov === 'Spice money' || prov === 'Spicemoney') prov = 'SpiceMoney';
+            if (prov === 'Crgb bc' || prov === 'CRGB BC') prov = 'Crgb Bc';
+
+            if (prov && providerStats[prov] !== undefined) {
+                if (t.type === 'SETTLEMENT') {
+                    providerStats[prov].settlement += chg;
+                } else if (t.type === 'DAILY_EXPENSE' && (t.note || '').toUpperCase() === 'SETTLEMENT CHARGES') {
+                    providerStats[prov].settlement += amt;
+                } else if (t.type === 'CSP_COMMISSION') {
+                    providerStats[prov].commission += (amt + chg);
+                } else {
+                    if (chg > 0 && t.chargesAccount !== 'Expense') {
+                        providerStats[prov].fees += chg;
+                    }
+                    if (amt > 0 && t.type !== 'DAILY_EXPENSE') {
+                        providerStats[prov].volume += amt;
+                        providerStats[prov].count += 1;
+                    }
+                }
             }
         });
 
@@ -4355,7 +4386,8 @@ async function initReports() {
             profit: 0, 
             periodCap: 0, 
             withdrawal: 0,
-            categories: realTimeCategories
+            categories: realTimeCategories,
+            providerStats: providerStats
         });
 
         // Aggregate Bank Withdrawal Methods
@@ -4556,6 +4588,95 @@ async function initReports() {
                         </td>
                     </tr>
                 `).join('');
+            }
+        }
+
+        // Render Provider Fees Table
+        const providerFeesBody = document.getElementById('provider-fees-body');
+        if (providerFeesBody && totals.providerStats) {
+            const providerArr = Object.keys(totals.providerStats).map(name => ({
+                name,
+                fees: totals.providerStats[name].fees,
+                settlement: totals.providerStats[name].settlement,
+                volume: totals.providerStats[name].volume,
+                count: totals.providerStats[name].count,
+                commission: totals.providerStats[name].commission,
+                net: totals.providerStats[name].fees + totals.providerStats[name].commission - totals.providerStats[name].settlement
+            })).sort((a, b) => b.net - a.net);
+
+            const hasData = providerArr.some(p => p.fees > 0 || p.settlement > 0 || p.volume > 0 || p.count > 0 || p.commission > 0);
+
+            if (!hasData) {
+                providerFeesBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center">
+                            <div class="flex flex-col items-center gap-2 opacity-40">
+                                <span class="material-symbols-outlined text-4xl">info</span>
+                                <p class="text-sm font-medium">Data Not Available</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                providerFeesBody.innerHTML = providerArr.map(p => `
+                    <tr class="hover:bg-primary/5 transition-colors group">
+                        <td class="px-4 py-2 font-semibold text-slate-700 dark:text-slate-200">
+                            ${p.name}
+                        </td>
+                        <td class="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                            ${formatCurrency(p.volume)}
+                        </td>
+                        <td class="px-4 py-2 text-right font-semibold text-slate-700 dark:text-slate-200">
+                            ${p.count.toLocaleString('en-IN')}
+                        </td>
+                        <td class="px-4 py-2 text-right font-black italic text-emerald-600 dark:text-emerald-400">
+                            ${formatCurrency(p.fees)}
+                        </td>
+                        <td class="px-4 py-2 text-right font-black italic text-purple-600 dark:text-purple-400">
+                            ${formatCurrency(p.commission)}
+                        </td>
+                        <td class="px-4 py-2 text-right font-black italic text-rose-600 dark:text-rose-400">
+                            ${formatCurrency(p.settlement)}
+                        </td>
+                        <td class="px-4 py-2 text-right font-black italic text-indigo-600 dark:text-indigo-400">
+                            ${formatCurrency(p.net)}
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Add Total Row
+                const totalVol = providerArr.reduce((sum, p) => sum + p.volume, 0);
+                const totalCnt = providerArr.reduce((sum, p) => sum + p.count, 0);
+                const totalFee = providerArr.reduce((sum, p) => sum + p.fees, 0);
+                const totalCommission = providerArr.reduce((sum, p) => sum + p.commission, 0);
+                const totalSettlement = providerArr.reduce((sum, p) => sum + p.settlement, 0);
+                const totalNet = providerArr.reduce((sum, p) => sum + p.net, 0);
+
+                providerFeesBody.innerHTML += `
+                    <tr class="bg-primary/5 dark:bg-primary/10 border-t border-primary/20 group">
+                        <td class="px-4 py-3 font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest text-xs">
+                            Total
+                        </td>
+                        <td class="px-4 py-3 text-right font-black text-slate-800 dark:text-slate-100">
+                            ${formatCurrency(totalVol)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-black text-slate-800 dark:text-slate-100">
+                            ${totalCnt.toLocaleString('en-IN')}
+                        </td>
+                        <td class="px-4 py-3 text-right font-black italic text-emerald-600 dark:text-emerald-400">
+                            ${formatCurrency(totalFee)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-black italic text-purple-600 dark:text-purple-400">
+                            ${formatCurrency(totalCommission)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-black italic text-rose-600 dark:text-rose-400">
+                            ${formatCurrency(totalSettlement)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-black italic text-indigo-600 dark:text-indigo-400">
+                            ${formatCurrency(totalNet)}
+                        </td>
+                    </tr>
+                `;
             }
         }
     }
@@ -5598,7 +5719,7 @@ const MASTER_TXN_TYPES = [
     { type: 'ELECTRICITY_BILL', label: 'Electricity Bill', icon: 'bolt', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'GOLD_SIP', label: 'Gold SIP', icon: 'savings', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
     { type: 'CSP_COMMISSION', label: 'CSP Comm', icon: 'account_balance', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
-    { type: 'ROINET_COMMISSION', label: 'Roinet Comm', icon: 'receipt_long', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
+
     { type: 'DAILY_EXPENSE', label: 'Daily Expense', icon: 'receipt', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
     { type: 'OTHER_INCOME', label: 'Other Income', icon: 'add_circle', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
     { type: 'FREE_DEPOSIT', label: 'Free Deposit', icon: 'input', bg: 'bg-slate-50 dark:bg-slate-500/10', text: 'text-slate-700 dark:text-slate-400', borderLeft: 'bg-slate-500' },
@@ -6039,7 +6160,7 @@ async function initDailyTxn() {
     const updateConditionalField = () => {
         if (!txnType || !conditionalContainer) return;
         
-        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
+        const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'OTHER_INCOME'];
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
         const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
@@ -6121,7 +6242,7 @@ async function initDailyTxn() {
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.add('hidden');
                     }
-                } else if (['JIO_TOPUP', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'SETTLEMENT'].includes(txnType.value)) {
+                } else if (['JIO_TOPUP', 'CSP_COMMISSION', 'SETTLEMENT'].includes(txnType.value)) {
                     chargesFieldContainer.classList.remove('hidden');
                     if (chargesModeContainer) chargesModeContainer.classList.add('hidden');
                 } else {
@@ -6263,7 +6384,7 @@ async function initDailyTxn() {
         }
 
         // Set Default Charges Mode based on Type
-        if (['JIO_TOPUP', 'ROINET_COMMISSION', 'CSP_COMMISSION'].includes(txnType.value)) {
+        if (['JIO_TOPUP', 'CSP_COMMISSION'].includes(txnType.value)) {
             if (txnChargesType) txnChargesType.value = 'Online';
         } else if (!editingTxnId && txnChargesType) {
             // Default to Cash for others if creating new
@@ -6338,7 +6459,7 @@ async function initDailyTxn() {
         }
 
         if (chargesAccountContainer && txnChargesAccount) {
-            const typesHidingChargesAccount = ['CSP_COMMISSION', 'ROINET_COMMISSION', 'JIO_TOPUP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
+            const typesHidingChargesAccount = ['CSP_COMMISSION', 'JIO_TOPUP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL'];
             if (txnChargesType && txnChargesType.value === 'Online' && !typesHidingChargesAccount.includes(txnType.value)) {
                 chargesAccountContainer.classList.remove('hidden');
                 chargesAccountContainer.style.order = txnType.value === 'ONLINE_WORK' ? '8' : '99';
@@ -6724,7 +6845,7 @@ async function initDailyTxn() {
         }
 
         try {
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'ROINET_COMMISSION', 'OTHER_INCOME'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'OTHER_INCOME'];
             const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
             
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
@@ -6977,7 +7098,7 @@ async function initDailyTxn() {
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : '',
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -7232,7 +7353,7 @@ async function initDailyTxn() {
                 const prevOnlineBreakdown = { ...onlineBreakdown };
                 const prevRoinetBreakdown = { ...roinetBreakdown };
                 
-                if (['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                if (['CSP_COMMISSION'].includes(t.type)) {
                     // Commission goes to wallet only, skip global cash/online update
                 } else {
                     if (t.chargesType === 'Online') {
@@ -7318,7 +7439,7 @@ async function initDailyTxn() {
                         onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] -= chg;
                     }
                     else balances.cash -= chg;
-                } else if (t.type === 'ROINET_COMMISSION') {
+
                     balances.roinet += chg;
                     balances.online += chg;
                 } else if (t.type === 'OTHER_INCOME') {
@@ -7754,7 +7875,7 @@ async function initDailyTxn() {
                     const isNewLogic = normalizeDate(date) >= normalizeDate('2026-05-01');
                     const isJio = provider.includes('jio');
                     
-                    if (t.type !== 'ROINET_COMMISSION') {
+
                         if (t.chargesType === 'Online') currentOnline += chg;
                         else currentCash += chg;
                     }
@@ -7788,7 +7909,7 @@ async function initDailyTxn() {
                         // Commission stays in JIO wallet, so remove it from generic Cash/Online addition
                         if (t.chargesType === 'Online') currentOnline -= chg;
                         else currentCash -= chg;
-                    } else if (t.type === 'ROINET_COMMISSION') {
+
                         if (!(isNewLogic && isJio)) {
                             currentOnline += chg;
                         }
@@ -8101,7 +8222,7 @@ async function initDailyTxn() {
                         <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-[125px] ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' || txn.type === 'AADHAAR_DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
                     txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
-                            txn.type === 'ROINET_COMMISSION' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20' :
+                            
                                 txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
                                     txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
                                 txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20' :
@@ -8138,9 +8259,9 @@ async function initDailyTxn() {
                                 }
                             }
 
-                            if (['OTHER_INCOME', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
-                                if ((['OTHER_INCOME', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type) && txn.chargesType === 'Online' && txn.chargesAccount) || (txn.type === 'CSP_COMMISSION' && txn.provider && txn.provider !== 'Cash') || txn.type === 'ROINET_COMMISSION') {
-                                    let acc = txn.type === 'ROINET_COMMISSION' ? 'Roinet' : (txn.type === 'CSP_COMMISSION' ? txn.provider : txn.chargesAccount);
+                            if (['OTHER_INCOME', 'CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
+                                if ((['OTHER_INCOME', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type) && txn.chargesType === 'Online' && txn.chargesAccount) || (txn.type === 'CSP_COMMISSION' && txn.provider && txn.provider !== 'Cash')) {
+                                    let acc = txn.type === 'CSP_COMMISSION' ? txn.provider : txn.chargesAccount;
                                     infoList = ['Online', acc];
                                 } else {
                                     infoList = ['Cash'];
@@ -8173,9 +8294,9 @@ async function initDailyTxn() {
                                 if (accName) d2Arr.push(accName);
                                 if (accNumber) d2Arr.push(accNumber);
                                 if (txn.remark) d2Arr.push(txn.remark);
-                            } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) {
-                                d1 = txn.provider || (txn.type === 'ROINET_COMMISSION' ? 'Roinet' : 'CSP Wallet');
-                                d2Arr.push(txn.remark || (txn.type === 'ROINET_COMMISSION' ? 'Roinet Commission' : 'CSP Commission'));
+                            } else if (['CSP_COMMISSION'].includes(txn.type)) {
+                                d1 = txn.provider || 'CSP Wallet';
+                                d2Arr.push(txn.remark || 'CSP Commission');
                             } else if (accName) {
                                 d1 = accName;
                                 if (accNumber) d2Arr.push(accNumber);
@@ -8203,7 +8324,7 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5 text-right">
                     <div class="flex flex-col gap-1 w-[90px] mx-auto">
-                        ${(['CSP_COMMISSION', 'ROINET_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
+                        ${(['CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
                             </div>
@@ -8225,7 +8346,7 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5 text-right charges-col-cell">
                     <div class="flex flex-col gap-1 w-[110px] mx-auto">
-                        ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
+                        ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
                             </div>
@@ -8236,8 +8357,8 @@ async function initDailyTxn() {
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 w-full h-[22px]">
                                 <span class="text-[11px] font-black text-indigo-700 dark:text-indigo-400 tracking-wide">₹${parseFloat(txn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400' : (txn.chargesType === 'Online' ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400')} border w-full h-[22px]">
-                                <span class="text-[9px] font-black capitalize tracking-widest truncate max-w-full" title="${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}">${(['SETTLEMENT', 'CSP_COMMISSION', 'ROINET_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}</span>
+                            <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${(['SETTLEMENT', 'CSP_COMMISSION'].includes(txn.type)) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400' : (txn.chargesType === 'Online' ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400')} border w-full h-[22px]">
+                                <span class="text-[9px] font-black capitalize tracking-widest truncate max-w-full" title="${(['SETTLEMENT', 'CSP_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}">${(['SETTLEMENT', 'CSP_COMMISSION'].includes(txn.type)) ? 'Wallet' : (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'))}</span>
                             </div>
                         `}
                     </div>
