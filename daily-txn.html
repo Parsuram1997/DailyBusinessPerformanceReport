@@ -354,9 +354,9 @@
                                 <option value="SpiceMoney">SpiceMoney</option>
                                 <option value="Crgb Bc">Crgb Bc</option>
                                 <option value="Yono SBI">Yono SBI</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
-                                <option value="Online(Shop)">Online(Shop)</option>
+                                <option value="online(parsu)">online(parsu)</option>
+                                <option value="online(dalai)">online(dalai)</option>
+                                <option value="online(shop)">online(shop)</option>
                                 <option value="Jio">Jio</option>
                                 <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
@@ -384,18 +384,18 @@
                             <label id="depositby-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Deposit By</label>
                             <select id="txn-depositby" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="">Select...</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
-                                <option value="Online(Shop)">Online(Shop)</option>
+                                <option value="online(parsu)">online(parsu)</option>
+                                <option value="online(dalai)">online(dalai)</option>
+                                <option value="online(shop)">online(shop)</option>
                             </select>
                         </div>
                         <div id="receivedin-field-container" class="flex flex-col gap-2 hidden">
                             <label id="receivedin-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Received In</label>
                             <select id="txn-receivedin" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="">Select Account...</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
-                                <option value="Online(Shop)">Online(Shop)</option>
+                                <option value="online(parsu)">online(parsu)</option>
+                                <option value="online(dalai)">online(dalai)</option>
+                                <option value="online(shop)">online(shop)</option>
                             </select>
                         </div>
                         <div id="qr-wallet-field-container" class="flex flex-col gap-2 hidden">
@@ -407,9 +407,9 @@
                                 <option value="Roinet(Parsu)">Roinet(Parsu)</option>
                                 <option value="Roinet(Dalai)">Roinet(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
-                                <option value="Online(Shop)">Online(Shop)</option>
+                                <option value="online(parsu)">online(parsu)</option>
+                                <option value="online(dalai)">online(dalai)</option>
+                                <option value="online(shop)">online(shop)</option>
                             </select>
                         </div>
 
@@ -537,9 +537,9 @@
                             <label id="charges-account-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Charges Account</label>
                             <select id="txn-charges-account" tabindex="9" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
                                 <option value="">Select...</option>
-                                <option value="Online(Parsu)">Online(Parsu)</option>
-                                <option value="Online(Dalai)">Online(Dalai)</option>
-                                <option value="Online(Shop)">Online(Shop)</option>
+                                <option value="online(parsu)">online(parsu)</option>
+                                <option value="online(dalai)">online(dalai)</option>
+                                <option value="online(shop)">online(shop)</option>
                             </select>
                         </div>
                         <div class="col-span-full order-last flex flex-col sm:flex-row justify-end pt-1">
@@ -619,7 +619,7 @@
                 </div>
 
                 <!-- Unified Summary Grid -->
-                <div id="summary-balances-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 mb-4 font-display">
+                <div id="summary-balances-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 mb-4 font-display">
                     <!-- Cash -->
                     <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-500/10 dark:to-slate-900/90 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
@@ -735,6 +735,29 @@
                         </div>
                     </div>
 
+                    <!-- Add Capital -->
+                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-fuchsia-50/80 to-white dark:from-fuchsia-500/10 dark:to-slate-900/90 border border-fuchsia-100 dark:border-fuchsia-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-fuchsia-500"></div>
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-wider leading-none">Add Capital</span>
+                            <svg class="w-3.5 h-3.5 text-fuchsia-500 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center my-0.5">
+                            <span id="summary-capital-balance" class="text-base font-black text-fuchsia-600 dark:text-fuchsia-400 tracking-tight font-mono">₹ 0</span>
+                        </div>
+                        <div class="mt-auto pt-1.5 border-t border-fuchsia-500/15 flex items-end justify-between leading-none relative">
+                            <div class="flex items-baseline gap-1.5 truncate relative z-10">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Closing</span>
+                                <span id="cl-capital" class="text-[13px] font-black text-fuchsia-600 dark:text-fuchsia-400 tracking-tight font-mono whitespace-nowrap">₹ 0</span>
+                            </div>
+                            <span class="absolute right-0 bottom-0 text-[8px] font-semibold text-slate-400 uppercase tracking-wide opacity-20 pointer-events-none">Today</span>
+                        </div>
+                        <div class="flex items-center justify-between mb-1.5 leading-none">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                            <span id="op-capital" class="text-[9.5px] font-extrabold text-slate-500 dark:text-slate-400 font-mono">₹ 0</span>
+                        </div>
+                    </div>
+
                     <!-- Pending -->
                     <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-500/10 dark:to-slate-900/90 border border-amber-100 dark:border-amber-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
@@ -845,6 +868,29 @@
                             <div class="flex items-baseline gap-1.5 truncate relative z-10">
                                 <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Closing</span>
                                 <span id="cl-cust-deposit" class="text-[13px] font-black text-teal-600 dark:text-teal-400 tracking-tight font-mono whitespace-nowrap">₹ 0</span>
+                            </div>
+                            <span class="absolute right-0 bottom-0 text-[8px] font-semibold text-slate-400 uppercase tracking-wide opacity-20 pointer-events-none">Today</span>
+                        </div>
+                    </div>
+
+                    <!-- Share Withdrawal -->
+                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-pink-50/80 to-white dark:from-pink-500/10 dark:to-slate-900/90 border border-pink-100 dark:border-pink-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>
+                        <div class="flex items-center justify-between mb-0.5">
+                            <span class="text-[10px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider leading-none">Share Withdrawal</span>
+                            <svg class="w-3.5 h-3.5 text-pink-500 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="flex items-center justify-between mb-1.5 leading-none">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Opening</span>
+                            <span id="op-withdrawal" class="text-[9.5px] font-extrabold text-slate-500 dark:text-slate-400 font-mono">₹ 0</span>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center my-0.5">
+                            <span id="summary-withdrawal-balance" class="text-base font-black text-pink-600 dark:text-pink-400 tracking-tight font-mono">₹ 0</span>
+                        </div>
+                        <div class="mt-auto pt-1.5 border-t border-pink-500/15 flex items-end justify-between leading-none relative">
+                            <div class="flex items-baseline gap-1.5 truncate relative z-10">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Closing</span>
+                                <span id="cl-withdrawal" class="text-[13px] font-black text-pink-600 dark:text-pink-400 tracking-tight font-mono whitespace-nowrap">₹ 0</span>
                             </div>
                             <span class="absolute right-0 bottom-0 text-[8px] font-semibold text-slate-400 uppercase tracking-wide opacity-20 pointer-events-none">Today</span>
                         </div>
@@ -1165,7 +1211,7 @@
                         <tbody id="online-breakdown-table-body">
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
-                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Parsu)</p>
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">online(parsu)</p>
                                 </td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p1-chg" class="text-[10px] font-black">₹ 0</p></td>
@@ -1173,7 +1219,7 @@
                             </tr>
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
-                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Shop)</p>
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">online(shop)</p>
                                 </td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p2-chg" class="text-[10px] font-black">₹ 0</p></td>
@@ -1181,7 +1227,7 @@
                             </tr>
                             <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden">
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
-                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">Online(Dalai)</p>
+                                    <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">online(dalai)</p>
                                 </td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p3-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p></td>
                                 <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right"><p id="bd-online_p3-chg" class="text-[10px] font-black">₹ 0</p></td>

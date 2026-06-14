@@ -794,6 +794,458 @@ async function initAddEntry() {
     if (!form) return;
 
     let existingEntryId = null; // tracks Firestore ID of existing entry for current date
+    let currentSystemOnline = 0;
+    let syncListenerUnsubscribe = null;
+
+    const fetchSystemOnline = async (dateStr) => {
+        if (!dateStr) return { total: 0, breakdown: {} };
+
+        try {
+            // 1. Get Opening Balances from Previous Day
+            const normDate = (dStr) => {
+                if (!dStr) return 0;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                }
+                const parsed = new Date(dStr);
+                return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+            };
+
+            const selectedTime = normDate(dateStr);
+            const allEntries = [...(entriesCache || [])];
+            let prevEntry = null;
+
+            if (allEntries.length > 0) {
+                // Sort descending and find most recent entry BEFORE selected date
+                allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
+                prevEntry = allEntries.find(e => normDate(e.date) < selectedTime);
+            }
+
+            // Fallback: Direct Firestore query if cache doesn't have it
+            if (!prevEntry) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                let lbDate = new Date(y, m - 1, d);
+                for (let i = 0; i < 7; i++) {
+                    lbDate.setDate(lbDate.getDate() - 1);
+                    const lbStr = lbDate.getFullYear() + '-' + String(lbDate.getMonth() + 1).padStart(2, '0') + '-' + String(lbDate.getDate()).padStart(2, '0');
+                    const lbQueries = getPossibleDateFormats(lbStr);
+                    const lbSnap = await getDocs(query(collection(db, "entries"), where("date", "in", lbQueries)));
+                    if (!lbSnap.empty) {
+                        prevEntry = lbSnap.docs[0].data();
+                        break;
+                    }
+                }
+            }
+
+            const details = prevEntry?.details || {};
+            const opRoinet1 = Number(details.roinet_1 || 0);
+            const opRoinet2 = Number(details.roinet_2 || 0);
+            const opAirtel1 = Number(details.airtel_1 || 0);
+            const opAirtel2 = Number(details.airtel_2 || 0);
+            const opSpice = Number(details.spicemoney || 0);
+            const roinetFallback = (opRoinet1 || opRoinet2 || opAirtel1 || opAirtel2 || opSpice) ? 0 : Number(details.roinet || 0);
+
+            const opValues = {
+                online: Number(details.online || 0),
+                online_p1: Number(details.online_p1 || 0),
+                online_p2: Number(details.online_p2 || 0),
+                online_p3: Number(details.online_p3 || 0),
+                other: Number(details.other || 0),
+                roinet_1: opRoinet1,
+                roinet_2: opRoinet2,
+                airtel_1: opAirtel1,
+                airtel_2: opAirtel2,
+                spicemoney: opSpice,
+                roinet_fallback: roinetFallback,
+                jio: Number(details.jio || 0),
+                crgb_bc: Number(details.crgb_bc || details.go2sms || 0),
+                pending: Number(details.pending || 0),
+                deposit: Number(details.deposit || 0),
+                capital: Number(details.capital || 0),
+                damaged: Number(details.damages || 0)
+            };
+
+            // 2. Fetch Today's Transactions
+            const txnRef = collection(db, "daily_transactions");
+            const dateQueriesTxn = getPossibleDateFormats(dateStr);
+            const txnSnap = await getDocs(query(txnRef, where("date", "in", dateQueriesTxn)));
+            const txns = txnSnap.docs.map(doc => doc.data());
+
+            // 3. Calculate Deltas for each online module
+            const deltas = { online: 0, online_p1: 0, online_p2: 0, online_p3: 0, other: 0, roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, roinet_fallback: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
+
+            const getOnlineDest = (prov) => {
+                const lower = (prov || '').toLowerCase();
+                if (lower.includes('parsu')) return 'online_p1';
+                if (lower.includes('shop')) return 'online_p2';
+                if (lower.includes('dalai')) return 'online_p3';
+                return 'other';
+            };
+
+            const updateOnlineSubDelta = (prov, amount, isAdd) => {
+                const dest = getOnlineDest(prov);
+                const diff = isAdd ? amount : -amount;
+                deltas[dest] += diff;
+            };
+
+            const updateSubAccountDelta = (providerStr, amount, isAdd) => {
+                const prov = providerStr.trim().toLowerCase();
+                const diff = isAdd ? amount : -amount;
+                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') deltas.roinet_1 += diff;
+                else if (prov.includes('roinet(dalai)') || prov === 'roinet_2') deltas.roinet_2 += diff;
+                else if (prov.includes('airtel(parsu)') || prov === 'airtel_1') deltas.airtel_1 += diff;
+                else if (prov.includes('airtel(dalai)') || prov === 'airtel_2') deltas.airtel_2 += diff;
+                else if (prov.includes('spicemoney')) deltas.spicemoney += diff;
+                else if (prov === 'roinet') deltas.roinet_fallback += diff; 
+                else if (prov === 'airtel') deltas.airtel_1 += diff; 
+            };
+
+            txns.forEach(t => {
+                const amt = parseFloat(t.amount || 0);
+                const chg = parseFloat(t.charges || 0);
+                const provider = (t.provider || "").trim().toLowerCase();
+
+                // Track charges if they are Online
+                if (!['ROINET_COMMISSION', 'CSP_COMMISSION'].includes(t.type)) {
+                    if (t.chargesType === 'Online') {
+                        deltas.online += chg;
+                        updateOnlineSubDelta(t.chargesAccount || t.receivedIn || t.depositBy || provider, chg, true);
+                    }
+                }
+
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        updateSubAccountDelta(provider, amt, true);
+                    } else if (provider.includes('crgb')) {
+                        deltas.crgb_bc += amt;
+                    } else if (provider.includes('jio')) {
+                        deltas.jio += amt;
+                    } else {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
+                } else if (t.type === 'AADHAAR_PAY') {
+                    const provCharge = parseFloat(t.providerCharge || 0);
+                    const walletCredit = amt - provCharge;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        updateSubAccountDelta(provider, walletCredit, true);
+                    } else if (provider.includes('crgb')) {
+                        deltas.crgb_bc += walletCredit;
+                    } else if (provider.includes('jio')) {
+                        deltas.jio += walletCredit;
+                    } else {
+                        deltas.online += walletCredit;
+                        updateOnlineSubDelta(t.depositBy, walletCredit, true);
+                    }
+                    if (provCharge > 0) {
+                        deltas.expense += provCharge;
+                        deltas.expenseDetails['Aadhaar Pay Charges'] = (deltas.expenseDetails['Aadhaar Pay Charges'] || 0) + provCharge;
+                    }
+                } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        updateSubAccountDelta(provider, amt, false);
+                    } else if (provider.includes('crgb')) {
+                        deltas.crgb_bc -= amt;
+                    } else if (provider.includes('jio')) {
+                        deltas.jio -= amt;
+                    } else {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        updateSubAccountDelta(provider, amt, false);
+                    } else {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(provider, amt, false);
+                    }
+                    if (t.type !== 'PAN_CARD') {
+                        if (t.chargesType === 'Online') {
+                            deltas.online += amt;
+                            updateOnlineSubDelta(t.chargesAccount || t.depositBy, amt, true);
+                        }
+                    }
+                } else if (t.type === 'JIO_RECHARGE') {
+                    deltas.jio -= amt;
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.receivedIn || t.depositBy, amt, true);
+                    }
+                } else if (t.type === 'JIO_TOPUP') {
+                    deltas.jio += (amt + chg);
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(t.depositBy, amt, false);
+                    if (t.chargesType === 'Online') {
+                        deltas.online -= chg;
+                        updateOnlineSubDelta(t.chargesAccount || t.depositBy, chg, false);
+                    }
+                } else if (['CSP_COMMISSION', 'ROINET_COMMISSION'].includes(t.type)) {
+                    if (provider.includes('crgb')) deltas.crgb_bc += chg;
+                    else if (provider.includes('jio')) deltas.jio += chg;
+                    else updateSubAccountDelta(provider, chg, true);
+                } else if (t.type === 'GOLD_SIP') {
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(t.depositBy || 'shop', amt, false);
+                    deltas.expense += amt;
+                    deltas.expenseDetails['gold_sip'] = (deltas.expenseDetails['gold_sip'] || 0) + amt;
+                } else if (t.type === 'CREDIT_GIVEN') {
+                    if (provider !== 'cash') {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                } else if (t.type === 'CREDIT_RECEIVED') {
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
+                } else if (t.type === 'CUST_MONEY_IN') {
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
+                    deltas.deposit += amt;
+                } else if (t.type === 'CUST_MONEY_OUT') {
+                    if (provider !== 'cash') {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                    deltas.deposit -= amt;
+                } else if (t.type === 'DAILY_EXPENSE') {
+                    if (provider !== 'cash') {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                    deltas.expense += amt;
+                    const catMap = {
+                        'PERSONAL EXPENSE': 'personal_expense',
+                        'SALARY EXPENSE': 'salary_expense',
+                        'ELECTRICITY EXPENSE': 'electricity_expense',
+                        'SHOP RENT EXPENSE': 'shop_rent_expense',
+                        'BUSINESS DEVLOPMENT': 'business_development',
+                        'SETTLEMENT CHARGES': 'settlement_charges',
+                        'INTERNET EXPENSE': 'internet_expense',
+                        'GOLD SIP': 'gold_sip'
+                    };
+                    const catId = catMap[t.note] || 'other_expense';
+                    deltas.expenseDetails[catId] = (deltas.expenseDetails[catId] || 0) + amt;
+                } else if (t.type === 'DAMAGED_CURRENCY') {
+                    deltas.damaged += amt;
+                } else if (t.type === 'DAMAGED_RECOVERY') {
+                    deltas.damaged -= amt;
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy || provider, amt, true);
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, amt, true);
+                        else if (provider.includes('crgb')) deltas.crgb_bc += amt;
+                        else if (provider.includes('jio')) deltas.jio += amt;
+                    }
+                } else if (t.type === 'OTHER_INCOME') {
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
+                } else if (t.type === 'SETTLEMENT') {
+                    deltas.online += amt;
+                    updateOnlineSubDelta(t.depositBy || provider, amt, true);
+                    if (t.chargesType === 'Online') {
+                        deltas.online -= chg;
+                        updateOnlineSubDelta(t.chargesAccount || t.depositBy || provider, chg, false);
+                    }
+                    const totalDeduction = amt + chg;
+                    deltas.expense += chg;
+                    deltas.expenseDetails['settlement_charges'] = (deltas.expenseDetails['settlement_charges'] || 0) + chg;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) updateSubAccountDelta(provider, totalDeduction, false);
+                    else if (provider.includes('crgb')) deltas.crgb_bc -= totalDeduction;
+                    else if (provider.includes('jio')) deltas.jio -= totalDeduction;
+                    else {
+                        deltas.online -= totalDeduction;
+                        updateOnlineSubDelta(t.depositBy, totalDeduction, false);
+                    }
+                } else if (t.type === 'ONLINE_WORK') {
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(t.depositBy, amt, false);
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.receivedIn, amt, true);
+                    }
+                } else if (t.type === 'ADD_CAPITAL') {
+                    if (provider !== 'cash') {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
+                    deltas.capital += amt;
+                } else if (t.type === 'SHARE_WITHDRAWN') {
+                    if (provider !== 'cash') {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                    deltas.withdrawal += amt;
+                } else if (t.type === 'PENDING_ADD') {
+                    deltas.pending += amt;
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(t.depositBy, amt, false);
+                } else if (t.type === 'PENDING_REMOVE') {
+                    deltas.pending -= amt;
+                    deltas.online += amt;
+                    updateOnlineSubDelta(t.depositBy, amt, true);
+                } else if (t.type === 'CASH_WITHDRAWAL') {
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(t.depositBy, amt, false);
+                } else if (t.type === 'CASH_DEPOSIT') {
+                    deltas.online += amt;
+                    updateOnlineSubDelta(t.depositBy, amt, true);
+                }
+            });
+
+            // 4. Calculate Closing Balances and use the requested Reduce pattern
+            const data = {};
+            const ONLINE_FIELDS = ["online", "roinet_1", "roinet_2", "airtel_1", "airtel_2", "spicemoney", "roinet_fallback", "jio", "crgb_bc", "pending"];
+            const ALL_SYNC_FIELDS = ["online", "online_p1", "online_p2", "online_p3", "other", "roinet_1", "roinet_2", "airtel_1", "airtel_2", "spicemoney", "roinet_fallback", "jio", "crgb_bc", "pending", "deposit", "capital", "withdrawal", "expense", "damaged"];
+
+            ALL_SYNC_FIELDS.forEach(key => {
+                data[key] = { closing: (opValues[key] || 0) + (deltas[key] || 0) };
+            });
+
+            const expectedOnline = ONLINE_FIELDS.reduce(
+                (sum, key) => sum + Number(data[key]?.closing || 0),
+                0
+            );
+
+            return { total: expectedOnline, breakdown: { ...data, expenseDetails: deltas.expenseDetails } };
+        } catch (e) {
+            console.error("Error fetching system online:", e);
+            return { total: 0, breakdown: {} };
+        }
+    };
+
+    const updateOnlineComparison = () => {
+        const manualTotalDisplay = document.getElementById('manual-online-total');
+        const systemDisplay = document.getElementById('system-online-val');
+        const diffDisplay = document.getElementById('online-diff-val');
+
+        const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+        const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
+
+        if (manualTotalDisplay) manualTotalDisplay.innerText = formatCurrency(manualTotal);
+        if (systemDisplay) systemDisplay.innerText = formatCurrency(currentSystemOnline);
+
+        if (diffDisplay) {
+            const diff = manualTotal - currentSystemOnline;
+            diffDisplay.innerText = formatCurrency(diff);
+
+            if (Math.abs(diff) < 0.01) {
+                diffDisplay.className = 'text-xs font-black italic text-slate-400';
+            } else if (diff > 0) {
+                diffDisplay.className = 'text-xs font-black italic text-emerald-500';
+            } else {
+                diffDisplay.className = 'text-xs font-black italic text-rose-500';
+            }
+        }
+    };
+
+    const setupRealTimeSync = (dateStr) => {
+        if (syncListenerUnsubscribe) {
+            syncListenerUnsubscribe();
+            syncListenerUnsubscribe = null;
+        }
+
+        if (!dateStr) {
+            return;
+        }
+
+        lockAutoSyncedFields(existingEntryId !== null);
+
+        const txnRef = collection(db, "daily_transactions");
+        const dateQueriesTxn = getPossibleDateFormats(dateStr);
+        const q = query(txnRef, where("date", "in", dateQueriesTxn));
+
+        syncListenerUnsubscribe = onSnapshot(q, async (snapshot) => {
+            const systemData = await fetchSystemOnline(dateStr);
+            currentSystemOnline = systemData.total;
+            const breakdown = systemData.breakdown;
+            const pendingCredit = await updateCreditLedgerTotalPending();
+
+            window._roinetBreakdown = breakdown;
+            
+            if (breakdown.online) {
+                const expOnlineDisp = document.getElementById('expected-online-split-total-display');
+                if (expOnlineDisp) {
+                    expOnlineDisp.dataset.val = breakdown.online.closing;
+                    expOnlineDisp.innerText = formatCurrency(breakdown.online.closing);
+                    if (typeof updateOnlineSplitTotal === 'function') updateOnlineSplitTotal();
+                }
+            }
+
+            // Expected Roinet Split Total
+            const expectedRoinetTotal = (breakdown.roinet_1?.closing || 0) +
+                (breakdown.roinet_2?.closing || 0) +
+                (breakdown.airtel_1?.closing || 0) +
+                (breakdown.airtel_2?.closing || 0) +
+                (breakdown.spicemoney?.closing || 0) +
+                (breakdown.roinet_fallback?.closing || 0);
+
+            const expRoinetDisp = document.getElementById('expected-split-total-display');
+            if (expRoinetDisp) {
+                expRoinetDisp.dataset.val = expectedRoinetTotal;
+                expRoinetDisp.innerText = formatCurrency(expectedRoinetTotal);
+                if (typeof updateRoinetSplitTotal === 'function') updateRoinetSplitTotal();
+            }
+
+            ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'online_p1', 'online_p2', 'online_p3'].forEach(k => {
+                const el = document.getElementById(`expected-${k}`);
+                if (el) {
+                    el.innerText = `Expected: ${formatCurrency(breakdown[k]?.closing || 0)}`;
+                }
+            });
+
+            const syncFields = {
+                'credit': pendingCredit,
+                'jio': breakdown.jio?.closing || 0,
+                'go2sms': breakdown.crgb_bc?.closing || 0,
+                'pending': breakdown.pending?.closing || 0,
+                'deposit': breakdown.deposit?.closing || 0,
+                'capital': breakdown.capital?.closing || 0,
+                'withdrawal': breakdown.withdrawal?.closing || 0,
+                'expense': breakdown.expense?.closing || 0,
+                'damages': breakdown.damaged?.closing || 0,
+                'personal_expense': 0,
+                'salary_expense': 0,
+                'electricity_expense': 0,
+                'shop_rent_expense': 0,
+                'business_development': 0,
+                'settlement_charges': 0,
+                'internet_expense': 0,
+                'gold_sip': 0
+            };
+
+            if (breakdown.expenseDetails) {
+                Object.keys(breakdown.expenseDetails).forEach(key => {
+                    syncFields[key] = breakdown.expenseDetails[key];
+                });
+            }
+
+            Object.keys(syncFields).forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = syncFields[id];
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+
+            lockAutoSyncedFields(existingEntryId !== null);
+
+            if (typeof updateExpenseSplitTotal === 'function') {
+                const modalTotal = updateExpenseSplitTotal();
+                const expInput = document.getElementById('expense');
+                if (expInput) {
+                    expInput.value = modalTotal;
+                    expInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            if (typeof updateRealTimeTotal === 'function') updateRealTimeTotal();
+        });
+    };
 
     const datePicker = document.getElementById('entry-date-picker');
     const formTitle = document.getElementById('form-title');
@@ -844,6 +1296,12 @@ async function initAddEntry() {
 
     async function checkExisting() {
         if (!datePicker) return;
+
+        // Refresh system online balance for the new date
+        const systemRes = await fetchSystemOnline(datePicker.value);
+        currentSystemOnline = systemRes.total;
+        updateOnlineComparison();
+
         const entries = await loadEntries();
 
         // Convert YYYY-MM-DD picker value to saved format "Mar 15, 2026"
@@ -888,12 +1346,16 @@ async function initAddEntry() {
             }
 
             lockAutoSyncedFields(true /* isExisting */);
+            setupRealTimeSync(datePicker.value);
         } else {
             if (formTitle) formTitle.innerText = "New Daily Record";
             if (formSubtitle) formSubtitle.innerText = "Please fill in the performance metrics for today's business activity.";
             if (submitText) submitText.innerText = "Save Entry";
             if (submitIcon) submitIcon.innerText = "save";
             existingEntryId = null;
+
+            // Start real-time sync for the new entry
+            setupRealTimeSync(datePicker.value);
 
             // Pre-fill and lock Credit Ledger total pending balance
             const pendingCredit = await updateCreditLedgerTotalPending();
@@ -1089,6 +1551,7 @@ async function initAddEntry() {
             const total = v('cash') + v('online') + v('roinet') + v('jio') + v('go2sms') + v('credit') + v('pending') + v('damages') - v('deposit') - v('expense');
             
             display.textContent = formatCurrency(isNaN(total) ? 0 : total);
+            updateOnlineComparison();
         };
 
         // Attach listeners to all relevant inputs for instant feedback
@@ -5903,7 +6366,7 @@ async function initDailyTxn() {
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
-                    opt.style.display = ['Online(Parsu)', 'Online(Shop)', 'Online(Dalai)', 'Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
+                    opt.style.display = ['online(parsu)', 'online(shop)', 'online(dalai)', 'Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
                 } else if (isCredit || ['JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
                 } else {
@@ -6703,12 +7166,14 @@ async function initDailyTxn() {
                 expense: 0,
                 damaged: parseFloat(openingBalances.damaged || 0),
                 'credit-ledger': parseFloat(openingBalances['credit-ledger'] || 0),
-                'cust-deposit': parseFloat(openingBalances['cust-deposit'] || 0)
+                'cust-deposit': parseFloat(openingBalances['cust-deposit'] || 0),
+                capital: parseFloat(openingBalances.capital || 0),
+                withdrawal: parseFloat(openingBalances.withdrawal || 0)
             };
 
-            const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit'];
+            const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit', 'capital', 'withdrawal'];
             let balances = {
-                cash: 0, online: 0, roinet: 0, jio: 0, crgb: 0, pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0
+                cash: 0, online: 0, roinet: 0, jio: 0, crgb: 0, pending: 0, expense: 0, damaged: 0, 'credit-ledger': 0, 'cust-deposit': 0, capital: 0, withdrawal: 0
             };
             
             // Per-provider roinet breakdown tracking
@@ -6810,29 +7275,26 @@ async function initDailyTxn() {
                         onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     }
                 } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
-                    balances.online -= amt;
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
                         updateRoinetDelta(provider, -amt);
-                    } else if (provider.toLowerCase().includes('online')) {
-                        onlineBreakdown[getOnlineDest(provider)] -= amt;
+                    } else {
+                        balances.online -= amt;
+                        if (provider.toLowerCase().includes('online')) {
+                            onlineBreakdown[getOnlineDest(provider)] -= amt;
+                        }
                     }
 
-                    if (t.type === 'PAN_CARD') {
-                        // charges handled globally
-                    } else {
-                        if (t.chargesType === 'Online') {
-                            balances.online += amt;
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
-                        }
-                        else balances.cash += amt;
+                    if (t.chargesType === 'Online') {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
                     }
+                    else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
-                    balances.online -= amt; // Total digital decreases by recharge amount
                     if (provider === 'cash') balances.cash += amt;
                     else {
-                        balances.online += amt; // Added back to digital if paid digitally
+                        balances.online += amt;
                         onlineBreakdown[getOnlineDest(t.receivedIn || t.depositBy)] += amt;
                     }
                 } else if (t.type === 'JIO_TOPUP') {
@@ -6976,12 +7438,14 @@ async function initDailyTxn() {
                         balances.online += amt;
                         onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
+                    balances.capital += amt;
                 } else if (t.type === 'SHARE_WITHDRAWN') {
                     if (provider === 'cash') balances.cash -= amt;
                     else {
                         balances.online -= amt;
                         onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     }
+                    balances.withdrawal += amt;
                 }
 
                 // Calculate exact deltas for Online breakdown if there was online movement
