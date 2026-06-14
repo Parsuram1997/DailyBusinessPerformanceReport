@@ -1294,7 +1294,9 @@ async function initAddEntry() {
             ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney', 'online_p1', 'online_p2', 'online_p3'].forEach(k => {
                 const el = document.getElementById(`expected-${k}`);
                 if (el) {
-                    el.innerText = `Expected: ${formatCurrency(breakdown[k]?.closing || 0)}`;
+                    const expectedVal = breakdown[k]?.closing || 0;
+                    el.dataset.val = expectedVal;
+                    el.innerText = `Expected: ${formatCurrency(expectedVal)}`;
                 }
             });
 
@@ -1633,13 +1635,51 @@ async function initAddEntry() {
     const p2Input = document.getElementById('online_p2');
     const p3Input = document.getElementById('online_p3');
 
+    const updateIndividualDiff = (inputId) => {
+        const input = document.getElementById(inputId);
+        const expectedEl = document.getElementById(`expected-${inputId}`);
+        const diffEl = document.getElementById(`diff-${inputId}`);
+        if (input && expectedEl && diffEl && expectedEl.dataset.val !== undefined) {
+            if (input.value === '') {
+                diffEl.classList.add('hidden');
+            } else {
+                const entered = parseFloat(input.value) || 0;
+                const expected = parseFloat(expectedEl.dataset.val) || 0;
+                const diff = entered - expected;
+                diffEl.classList.remove('hidden');
+                if (diff === 0) {
+                    diffEl.textContent = '₹0';
+                    diffEl.className = 'text-[10px] font-bold text-slate-400';
+                } else if (diff > 0) {
+                    diffEl.textContent = '+' + formatCurrency(Math.abs(diff));
+                    diffEl.className = 'text-[10px] font-bold text-emerald-500';
+                } else {
+                    diffEl.textContent = '-' + formatCurrency(Math.abs(diff));
+                    diffEl.className = 'text-[10px] font-bold text-rose-500';
+                }
+            }
+        }
+    };
+
     const updateOnlineSplitTotal = () => {
         if (!p1Input) return 0;
+        ['online_p1', 'online_p2', 'online_p3'].forEach(updateIndividualDiff);
         const p1 = parseFloat(p1Input.value) || 0;
         const p2 = parseFloat(p2Input.value) || 0;
         const p3 = parseFloat(p3Input.value) || 0;
         const total = p1 + p2 + p3;
         if (onlineSplitTotalDisplay) onlineSplitTotalDisplay.textContent = formatCurrency(total);
+        
+        const onlineSplitDiffDisplay = document.getElementById('online-split-diff-display');
+        const expectedOnlineDisp = document.getElementById('expected-online-split-total-display');
+        if (onlineSplitDiffDisplay && expectedOnlineDisp && expectedOnlineDisp.dataset.val) {
+            const expected = parseFloat(expectedOnlineDisp.dataset.val) || 0;
+            const diff = total - expected;
+            const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+            onlineSplitDiffDisplay.textContent = sign + formatCurrency(Math.abs(diff));
+            onlineSplitDiffDisplay.className = diff > 0 ? 'text-sm font-black text-emerald-500 font-mono' : (diff < 0 ? 'text-sm font-black text-rose-500 font-mono' : 'text-sm font-black text-slate-400 font-mono');
+        }
+        
         return total;
     };
 
@@ -1720,12 +1760,24 @@ async function initAddEntry() {
 
     const updateRoinetSplitTotal = () => {
         if (!r1Input) return 0;
+        ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney'].forEach(updateIndividualDiff);
         const total = (parseFloat(r1Input.value) || 0) +
             (parseFloat(r2Input.value) || 0) +
             (parseFloat(a1Input.value) || 0) +
             (parseFloat(a2Input.value) || 0) +
             (parseFloat(sInput.value) || 0);
         if (roinetSplitTotalDisplay) roinetSplitTotalDisplay.textContent = formatCurrency(total);
+        
+        const roinetSplitDiffDisplay = document.getElementById('roinet-split-diff-display');
+        const expectedRoinetDisp = document.getElementById('expected-split-total-display');
+        if (roinetSplitDiffDisplay && expectedRoinetDisp && expectedRoinetDisp.dataset.val) {
+            const expected = parseFloat(expectedRoinetDisp.dataset.val) || 0;
+            const diff = total - expected;
+            const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+            roinetSplitDiffDisplay.textContent = sign + formatCurrency(Math.abs(diff));
+            roinetSplitDiffDisplay.className = diff > 0 ? 'text-sm font-black text-emerald-500 font-mono' : (diff < 0 ? 'text-sm font-black text-rose-500 font-mono' : 'text-sm font-black text-slate-400 font-mono');
+        }
+        
         return total;
     };
 
