@@ -4274,14 +4274,17 @@ async function initReports() {
         dailyTxns.forEach(t => {
             const date = t.date;
             if (!dtxnCatByDate[date]) {
-                dtxnCatByDate[date] = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0 };
+                dtxnCatByDate[date] = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0, aadhaarPay: 0 };
             }
             const amt = parseFloat(t.amount || 0);
             const chg = parseFloat(t.charges || 0);
+            const provChg = parseFloat(t.providerCharge || 0);
             if (t.type === 'GOLD_SIP') {
                 dtxnCatByDate[date].goldSip += amt;
             } else if (t.type === 'SETTLEMENT' && chg > 0) {
                 dtxnCatByDate[date].settlement += chg;
+            } else if (t.type === 'AADHAAR_PAY' && provChg > 0) {
+                dtxnCatByDate[date].aadhaarPay += provChg;
             } else if (t.type === 'DAILY_EXPENSE') {
                 const note = (t.note || '').toUpperCase();
                 if (note === 'PERSONAL EXPENSE') dtxnCatByDate[date].personal += amt;
@@ -4291,6 +4294,7 @@ async function initReports() {
                 else if (note === 'BUSINESS DEVLOPMENT' || note === 'BUSINESS DEVELOPMENT') dtxnCatByDate[date].bizDev += amt;
                 else if (note === 'SETTLEMENT CHARGES') dtxnCatByDate[date].settlement += amt;
                 else if (note === 'INTERNET EXPENSE') dtxnCatByDate[date].internet += amt;
+                else if (note === 'AADHAAR PAY CHARGES') dtxnCatByDate[date].aadhaarPay += amt;
             }
         });
 
@@ -4298,7 +4302,7 @@ async function initReports() {
         const entryByDate = {};
         filtered.forEach(e => { entryByDate[e.date] = e; });
 
-        const realTimeCategories = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0 };
+        const realTimeCategories = { personal: 0, salary: 0, electricity: 0, rent: 0, bizDev: 0, settlement: 0, internet: 0, goldSip: 0, aadhaarPay: 0 };
         allReportDates.forEach(d => {
             const entryDet = (entryByDate[d] && entryByDate[d].details) ? entryByDate[d].details : {};
             const dtxnDet = dtxnCatByDate[d] || {};
@@ -4310,6 +4314,7 @@ async function initReports() {
             realTimeCategories.settlement += Math.max(parseFloat(entryDet.settlement_charges) || 0, dtxnDet.settlement || 0);
             realTimeCategories.internet += Math.max(parseFloat(entryDet.internet_expense) || 0, dtxnDet.internet || 0);
             realTimeCategories.goldSip += Math.max(parseFloat(entryDet.gold_sip) || 0, dtxnDet.goldSip || 0);
+            realTimeCategories.aadhaarPay += Math.max(parseFloat(entryDet['Aadhaar Pay Charges']) || 0, dtxnDet.aadhaarPay || 0);
         });
 
         // Now aggregate metrics only for filtered entries
@@ -4474,7 +4479,8 @@ async function initReports() {
                 { label: 'Business Development', val: totals.categories.bizDev, icon: 'trending_up', color: 'text-cyan-500' },
                 { label: 'Settlement Charges', val: totals.categories.settlement, icon: 'price_check', color: 'text-indigo-500' },
                 { label: 'Internet Expense', val: totals.categories.internet, icon: 'wifi', color: 'text-rose-500' },
-                { label: 'Gold SIP', val: totals.categories.goldSip, icon: 'savings', color: 'text-amber-600' }
+                { label: 'Gold SIP', val: totals.categories.goldSip, icon: 'savings', color: 'text-amber-600' },
+                { label: 'Aadhaar Pay Charges', val: totals.categories.aadhaarPay, icon: 'receipt', color: 'text-pink-500' }
             ];
 
             const totalCatExpense = Object.values(totals.categories).reduce((a, b) => a + b, 0);
