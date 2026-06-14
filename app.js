@@ -4716,6 +4716,9 @@ async function initReports() {
             let matmVol = 0, matmFee = 0;
             let depVol = 0, depFee = 0;
             let witVol = 0, witFee = 0;
+            let apVol = 0, apFee = 0;
+            let qwVol = 0, qwFee = 0;
+            let adVol = 0, adFee = 0;
             let otherVol = 0, otherFee = 0;
 
             const excludedIncomeTypes = ['DAILY_EXPENSE', 'SETTLEMENT', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'];
@@ -4727,9 +4730,15 @@ async function initReports() {
                     aepsVol += stat.amount; aepsFee += stat.charges;
                 } else if (type === 'MATM') {
                     matmVol += stat.amount; matmFee += stat.charges;
-                } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(type)) {
+                } else if (type === 'AADHAAR_PAY') {
+                    apVol += stat.amount; apFee += stat.charges;
+                } else if (type === 'QR_WITHDRAWAL') {
+                    qwVol += stat.amount; qwFee += stat.charges;
+                } else if (type === 'AADHAAR_DEPOSIT') {
+                    adVol += stat.amount; adFee += stat.charges;
+                } else if (['DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(type)) {
                     depVol += stat.amount; depFee += stat.charges;
-                } else if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(type)) {
+                } else if (['WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(type)) {
                     witVol += stat.amount; witFee += stat.charges;
                 } else if (!excludedIncomeTypes.includes(type)) {
                     // All other income-generating types
@@ -4744,7 +4753,7 @@ async function initReports() {
                 window._incomePieChart.destroy();
             }
 
-            const totalIncomeGenerated = aepsFee + matmFee + depFee + witFee + otherFee;
+            const totalIncomeGenerated = aepsFee + matmFee + depFee + witFee + apFee + qwFee + adFee + otherFee;
             const incomeDistTotalEl = document.getElementById('income-dist-total');
             if(incomeDistTotalEl) incomeDistTotalEl.innerText = formatCurrency(totalIncomeGenerated);
 
@@ -4753,6 +4762,9 @@ async function initReports() {
                 { label: 'MATM', fee: matmFee, vol: matmVol, color: '#10b981' },
                 { label: 'Deposit', fee: depFee, vol: depVol, color: '#8b5cf6' },
                 { label: 'Withdrawal', fee: witFee, vol: witVol, color: '#f59e0b' },
+                { label: 'Aadhaar Pay', fee: apFee, vol: apVol, color: '#ec4899' },
+                { label: 'QR Withdrawal', fee: qwFee, vol: qwVol, color: '#06b6d4' },
+                { label: 'Aadhaar Deposit', fee: adFee, vol: adVol, color: '#14b8a6' },
                 { label: 'Other', fee: otherFee, vol: otherVol, color: '#64748b' }
             ].sort((a,b) => b.fee - a.fee);
 
