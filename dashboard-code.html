@@ -323,16 +323,19 @@
         <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
             <!-- Navbar -->
             <header
-                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-3 md:px-8 sticky top-0 z-10 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
-                    <h2
-                        class="text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent tracking-tight">
-                        <span class="hidden md:inline">Daily Business </span>Performance Report
-                    </h2>
+                class="h-20 border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md relative flex items-center px-3 md:px-8 sticky top-0 z-10 shadow-sm">
+                <!-- Centered title -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary text-2xl">trending_up</span>
+                        <h2
+                            class="text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent tracking-tight">
+                            <span class="hidden md:inline">Daily Business </span>Performance Report
+                        </h2>
+                    </div>
                 </div>
                 <!-- Ghost Privacy Toggle Button (invisible unless hovered) -->
-                <button id="privacy-toggle-btn" title="Toggle Value Privacy" aria-label="Toggle value privacy mode">
+                <button id="privacy-toggle-btn" title="Toggle Value Privacy" aria-label="Toggle value privacy mode" class="ml-auto relative z-10">
                     <span class="material-symbols-outlined mat-icon" id="privacy-toggle-icon">visibility_off</span>
                 </button>
             </header>

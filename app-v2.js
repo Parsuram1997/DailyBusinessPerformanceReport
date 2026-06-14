@@ -3286,7 +3286,7 @@ async function initCreditLedger() {
 
                         tr.innerHTML = `
                             <td class="px-4 py-2.5 align-middle text-sm font-bold text-slate-500 w-14">${index + 1}</td>
-                            <td class="px-4 py-2.5 align-middle">
+                            <td class="px-4 py-2.5 align-middle whitespace-nowrap">
                                 <div class="flex items-center gap-3">
                                     <div class="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-inner shrink-0">${initial}</div>
                                     <span class="text-sm font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${safeEscape(custNameStr)}</span>
@@ -3402,7 +3402,7 @@ async function initCreditLedger() {
                             <td class="px-4 py-2.5 align-middle text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">${formatStandardDate(cr.date)}</td>
                             <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-orange-600 dark:text-orange-400 whitespace-nowrap">${creditAmt > 0 ? formatCurrency(creditAmt) : '-'}</td>
                             <td class="px-4 py-2.5 align-middle text-sm font-bold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">${paidAmt > 0 ? formatCurrency(paidAmt) : '-'}</td>
-                            <td class="px-4 py-2.5 align-middle text-sm text-slate-600 dark:text-slate-300 font-medium italic">${safeEscape(cr.note || '')}</td>
+                            <td class="px-4 py-2.5 align-middle text-sm text-slate-600 dark:text-slate-300 font-medium italic whitespace-nowrap">${safeEscape(cr.note || '')}</td>
                         `;
                         tableBody.appendChild(tr);
                     });
@@ -4894,7 +4894,7 @@ async function initBankWithdrawals() {
                         tr.onclick = () => { showAccountDetails(acc.id); };
                         tr.innerHTML = `
                             <td class="px-5 py-4 align-middle text-center text-sm font-bold text-slate-400 w-14">${index + 1}</td>
-                            <td class="px-5 py-4 align-middle">
+                            <td class="px-5 py-4 align-middle whitespace-nowrap">
                                 <div class="flex flex-col leading-tight">
                                     <span class="text-sm font-extrabold text-slate-800 dark:text-white group-hover:text-primary transition-colors">${holder}</span>
                                     <span class="text-xs text-slate-400 font-bold uppercase lg:hidden mt-0.5">${bank} • ${type} • A/c ${accNo}</span>
@@ -5040,7 +5040,12 @@ async function initBankWithdrawals() {
                             <td class="px-5 py-4 align-middle whitespace-nowrap"><span class="text-sm font-bold text-slate-800 dark:text-slate-200">${wDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></td>
                             <td class="px-5 py-4 align-middle text-right whitespace-nowrap"><span class="text-sm font-black text-rose-600 dark:text-rose-400">${formatCurrency(amount)}</span></td>
                             <td class="px-5 py-4 align-middle text-center whitespace-nowrap">${methodHtml}</td>
-                            <td class="px-5 py-4 align-middle"><span class="text-sm text-slate-700 dark:text-slate-300 font-semibold">${w.note || "-"}</span>${autoBadge}</td>
+                            <td class="px-5 py-4 align-middle whitespace-nowrap">
+                                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                    <span class="text-sm text-slate-700 dark:text-slate-300 font-semibold whitespace-nowrap">${w.note || "-"}</span>
+                                    ${autoBadge}
+                                </div>
+                            </td>
                         `;
                         tableBody.appendChild(tr);
                     });
