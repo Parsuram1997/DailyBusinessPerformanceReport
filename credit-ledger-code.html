@@ -249,46 +249,39 @@
 <main class="flex-1 flex flex-col overflow-y-auto w-full pb-20 lg:pb-0">
 
 <!-- Content Scrollable -->
-<div class="p-0 sm:p-4 md:p-8 flex-1 overflow-y-auto space-y-4 md:space-y-8">
+<div class="p-3 sm:p-4 md:p-8 flex-1 overflow-y-auto space-y-4 md:space-y-8">
 <!-- Summary Row -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <!-- Total Credit Card -->
-    <div class="bg-gradient-to-br from-purple-500/15 via-indigo-500/5 to-blue-500/15 dark:from-purple-500/10 dark:via-slate-900 dark:to-blue-500/10 p-5 rounded-[20px] border border-purple-500/20 shadow-lg shadow-purple-500/5 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1 transition-all duration-300 flex items-center gap-4">
-        <div class="size-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-purple-500/30 shrink-0">
-            <span class="material-symbols-outlined text-2xl font-bold">account_balance_wallet</span>
-        </div>
-        <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Total Credit</p>
-            <div class="flex items-baseline justify-between gap-2">
-                <h3 id="summary-total-credit" class="text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate">₹0.00</h3>
-                <span id="trend-total-credit" class="text-xs font-bold flex items-center shrink-0"></span>
+<!-- Summary Row -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5 p-3 md:p-6">
+    <div class="grid grid-cols-3 gap-2 md:gap-6 divide-x divide-primary/10">
+        <!-- Total Credit Stat -->
+        <div class="flex flex-col items-center justify-center text-center px-1">
+            <div class="size-8 md:size-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-1 md:mb-2">
+                <span class="material-symbols-outlined text-lg md:text-xl">account_balance_wallet</span>
             </div>
+            <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Total Credit</p>
+            <h3 id="summary-total-credit" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+            <span id="trend-total-credit" class="text-[10px] font-bold mt-0.5 inline-block"></span>
         </div>
-    </div>
-    <!-- Received Card -->
-    <div class="bg-gradient-to-br from-emerald-500/15 via-teal-500/5 to-emerald-500/15 dark:from-emerald-500/10 dark:via-slate-900 dark:to-teal-500/10 p-5 rounded-[20px] border border-emerald-500/20 shadow-lg shadow-emerald-500/5 hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all duration-300 flex items-center gap-4">
-        <div class="size-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/30 shrink-0">
-            <span class="material-symbols-outlined text-2xl font-bold">done_all</span>
-        </div>
-        <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Received</p>
-            <div class="flex items-baseline justify-between gap-2">
-                <h3 id="summary-received" class="text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate">₹0.00</h3>
-                <span id="trend-received" class="text-xs font-bold flex items-center shrink-0"></span>
+        
+        <!-- Received Stat -->
+        <div class="flex flex-col items-center justify-center text-center px-1">
+            <div class="size-8 md:size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-1 md:mb-2">
+                <span class="material-symbols-outlined text-lg md:text-xl">done_all</span>
             </div>
+            <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Received</p>
+            <h3 id="summary-received" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+            <span id="trend-received" class="text-[10px] font-bold mt-0.5 inline-block"></span>
         </div>
-    </div>
-    <!-- Pending Card -->
-    <div class="bg-gradient-to-br from-orange-500/15 via-rose-500/5 to-red-500/15 dark:from-orange-500/10 dark:via-slate-900 dark:to-red-500/10 p-5 rounded-[20px] border border-orange-500/20 shadow-lg shadow-orange-500/5 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1 transition-all duration-300 flex items-center gap-4">
-        <div class="size-12 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-600 text-white flex items-center justify-center shadow-md shadow-orange-500/30 shrink-0">
-            <span class="material-symbols-outlined text-2xl font-bold">pending_actions</span>
-        </div>
-        <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Pending</p>
-            <div class="flex items-baseline justify-between gap-2">
-                <h3 id="summary-pending" class="text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate">₹0.00</h3>
-                <span id="trend-pending" class="text-xs font-bold flex items-center shrink-0"></span>
+        
+        <!-- Pending Stat -->
+        <div class="flex flex-col items-center justify-center text-center px-1">
+            <div class="size-8 md:size-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-1 md:mb-2">
+                <span class="material-symbols-outlined text-lg md:text-xl">pending_actions</span>
             </div>
+            <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Pending</p>
+            <h3 id="summary-pending" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+            <span id="trend-pending" class="text-[10px] font-bold mt-0.5 inline-block"></span>
         </div>
     </div>
 </div>
