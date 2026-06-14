@@ -4,7 +4,7 @@ NEW_SCRIPT = '''    <!-- ====== Global Privacy / Value-Hide Toggle ====== -->
     <script>
     (function() {
         const LS_KEY  = 'biz_hide_values';
-        const DIVISOR = 4;
+        const DIVISOR = 2;
 
         const VALUE_IDS = [
             'total-income-top', 'total-expense-top', 'total-profit-top',
@@ -101,7 +101,7 @@ NEW_SCRIPT = '''    <!-- ====== Global Privacy / Value-Hide Toggle ====== -->
             if (hideOn) {
                 btn.classList.add('hide-mode');
                 icon.textContent = 'visibility_off';
-                btn.title = 'Values hidden (\u00f74) \u2014 Click to show real values';
+                btn.title = 'Values hidden (\u00f72) \u2014 Click to show real values';
             } else {
                 btn.classList.remove('hide-mode');
                 icon.textContent = 'visibility';

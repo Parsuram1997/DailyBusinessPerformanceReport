@@ -806,7 +806,7 @@
     <script>
     (function() {
         const LS_KEY  = 'biz_hide_values';
-        const DIVISOR = 4;
+        const DIVISOR = 2;
 
         // Analytics page value element IDs
         const VALUE_IDS = [
@@ -898,7 +898,7 @@
             if (hideOn) {
                 btn.classList.add('hide-mode');
                 icon.textContent = 'visibility_off';
-                btn.title = 'Values hidden (÷4) — Click to show real values';
+                btn.title = 'Values hidden (÷2) — Click to show real values';
             } else {
                 btn.classList.remove('hide-mode');
                 icon.textContent = 'visibility';
