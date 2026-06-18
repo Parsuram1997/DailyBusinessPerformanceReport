@@ -1029,6 +1029,19 @@ async function initAddEntry() {
                     };
                     const catId = catMap[t.note] || 'other_expense';
                     deltas.expenseDetails[catId] = (deltas.expenseDetails[catId] || 0) + amt;
+                } else if (t.type === 'CSP_SUBSCRIPTION') {
+                    // Deduct from the specific CSP sub-account (provider field stores the CSP provider)
+                    const cspProv = (t.provider || '').trim().toLowerCase();
+                    if (cspProv.includes('roinet') || cspProv.includes('airtel') || cspProv.includes('spicemoney')) {
+                        updateSubAccountDelta(t.provider, amt, false);
+                    } else if (cspProv.includes('crgb')) {
+                        deltas.crgb_bc -= amt;
+                    } else {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                    deltas.expense += amt;
+                    deltas.expenseDetails['csp_subscription'] = (deltas.expenseDetails['csp_subscription'] || 0) + amt;
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     deltas.damaged += amt;
                 } else if (t.type === 'DAMAGED_RECOVERY') {
@@ -5771,6 +5784,7 @@ const MASTER_TXN_TYPES = [
     { type: 'ELECTRICITY_BILL', label: 'Electricity Bill', icon: 'bolt', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'GOLD_SIP', label: 'Gold SIP', icon: 'savings', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
     { type: 'CSP_COMMISSION', label: 'CSP Comm', icon: 'account_balance', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
+    { type: 'CSP_SUBSCRIPTION', label: 'CSP Subscr', icon: 'subscriptions', bg: 'bg-orange-50 dark:bg-orange-500/10', text: 'text-orange-700 dark:text-orange-400', borderLeft: 'bg-orange-500' },
 
     { type: 'DAILY_EXPENSE', label: 'Daily Expense', icon: 'receipt', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
     { type: 'OTHER_INCOME', label: 'Other Income', icon: 'add_circle', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
@@ -6036,10 +6050,29 @@ async function initDailyTxn() {
         txnViewDate.value = currentSelectedDate;
         txnViewDate.addEventListener('change', (e) => {
             if (!window._isConfirmedDateSwitch && window.hasUnsavedData && window.hasUnsavedData()) {
-                if (!confirm("You have unsaved transaction data. Continue changing date?")) {
-                    e.target.value = previousViewDateVal;
-                    return;
-                }
+                const pendingTargetValue = e.target.value;
+                e.target.value = previousViewDateVal; // rollback immediately
+                window.Swal.fire({
+                    title: 'Unsaved Data',
+                    text: 'You have unsaved transaction data. Continue changing date?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, change date',
+                    customClass: {
+                        popup: 'rounded-3xl',
+                        confirmButton: 'rounded-xl px-6',
+                        cancelButton: 'rounded-xl px-6'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window._isConfirmedDateSwitch = true;
+                        e.target.value = pendingTargetValue;
+                        e.target.dispatchEvent(new Event('change'));
+                    }
+                });
+                return;
             }
             window._isConfirmedDateSwitch = false;
             previousViewDateVal = e.target.value;
@@ -6195,6 +6228,10 @@ async function initDailyTxn() {
         if (txnReason) txnReason.value = '';
         const reasonFieldContainer = document.getElementById('reason-field-container');
         if (reasonFieldContainer) reasonFieldContainer.classList.add('hidden');
+        const cspProviderEl = document.getElementById('txn-csp-provider');
+        if (cspProviderEl) cspProviderEl.value = '';
+        const cspSubContainerEl = document.getElementById('csp-subscription-provider-container');
+        if (cspSubContainerEl) cspSubContainerEl.classList.add('hidden');
         const chargesLabel = document.getElementById('charges-account-label');
         if (chargesLabel) chargesLabel.innerText = 'Charges Account';
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -6216,7 +6253,7 @@ async function initDailyTxn() {
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
         const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
-        const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+        const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
         const isCashMovement = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
@@ -6247,7 +6284,7 @@ async function initDailyTxn() {
                 if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME') && !isDamagedRecovery && !isCashMovement) {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
-                    if (txnType.value === 'DAILY_EXPENSE') {
+                    if (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') {
                         if (label) label.innerText = 'Expense Type';
                         if (txnNote) txnNote.classList.add('hidden');
                         if (txnExpenseType) txnExpenseType.classList.remove('hidden');
@@ -6270,10 +6307,10 @@ async function initDailyTxn() {
                 else noteFieldContainer.classList.add('hidden');
             }
             if (remarkFieldContainer) {
-                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'DAILY_EXPENSE'].includes(txnType.value)) {
+                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'].includes(txnType.value)) {
                     remarkFieldContainer.classList.remove('hidden');
                     const label = remarkFieldContainer.querySelector('label');
-                    if (txnType.value === 'DAILY_EXPENSE') {
+                    if (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') {
                         if (label) label.innerText = 'Description';
                         if (txnRemark) txnRemark.placeholder = 'Enter description...';
                     } else {
@@ -6389,7 +6426,21 @@ async function initDailyTxn() {
                     if (txnReason) txnReason.value = '';
                 }
             }
-            
+
+            // Show/Hide CSP Subscription Provider Container
+            const cspSubContainer = document.getElementById('csp-subscription-provider-container');
+            const txnCspProvider = document.getElementById('txn-csp-provider');
+            if (cspSubContainer) {
+                if (txnType.value === 'CSP_SUBSCRIPTION') {
+                    cspSubContainer.classList.remove('hidden');
+                    if (providerContainer) providerContainer.classList.add('hidden');
+                    if (txnProvider) txnProvider.value = '';
+                } else {
+                    cspSubContainer.classList.add('hidden');
+                    if (txnCspProvider) txnCspProvider.value = '';
+                }
+            }
+
             if (txnType.value === 'AEPS' || txnType.value === 'AADHAAR_PAY') {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
@@ -6710,6 +6761,17 @@ async function initDailyTxn() {
             if (!txnProvider.value.trim()) {
                 const labelText = txnProvider.closest('div').querySelector('label')?.innerText || 'Service Provider / Mode';
                 return { valid: false, element: txnProvider, message: `Please select ${labelText}` };
+            }
+        }
+
+        // CSP Subscription Provider validation
+        if (valType === 'CSP_SUBSCRIPTION') {
+            const cspSubContainer = document.getElementById('csp-subscription-provider-container');
+            const cspProvEl = document.getElementById('txn-csp-provider');
+            if (cspSubContainer && !cspSubContainer.classList.contains('hidden')) {
+                if (!cspProvEl || !cspProvEl.value.trim()) {
+                    return { valid: false, element: cspProvEl, message: 'Please select a CSP Provider' };
+                }
             }
         }
 
@@ -7143,14 +7205,14 @@ async function initDailyTxn() {
                 providerCharge: txnType.value === 'AADHAAR_PAY' ? (parseFloat(txnProviderCharge ? txnProviderCharge.value : 0) || 0) : 0,
                 pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
                 laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
-                note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
+                note: (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') ? (txnExpenseType.value || (txnType.value === 'CSP_SUBSCRIPTION' ? 'CSP SUBSCRIPTION' : 'Daily Expense')) : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
-                provider: (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : ''),
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -7405,8 +7467,8 @@ async function initDailyTxn() {
                 const prevOnlineBreakdown = { ...onlineBreakdown };
                 const prevRoinetBreakdown = { ...roinetBreakdown };
                 
-                if (['CSP_COMMISSION'].includes(t.type)) {
-                    // Commission goes to wallet only, skip global cash/online update
+                if (['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
+                    // Commission/Subscription: wallet only, skip global cash/online charge update
                 } else {
                     if (t.chargesType === 'Online') {
                         balances.online += chg;
@@ -7528,6 +7590,19 @@ async function initDailyTxn() {
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider === 'cash') balances.cash -= amt;
                     else {
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
+                    balances.expense += amt;
+                } else if (t.type === 'CSP_SUBSCRIPTION') {
+                    // Deduct from the specific CSP wallet (sub-account)
+                    const cspProv = provider; // already lowercased
+                    if (cspProv.includes('roinet') || cspProv.includes('airtel') || cspProv.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        updateRoinetDelta(t.provider, -amt);
+                    } else if (cspProv.includes('crgb')) {
+                        balances.crgb -= amt;
+                    } else {
                         balances.online -= amt;
                         onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     }

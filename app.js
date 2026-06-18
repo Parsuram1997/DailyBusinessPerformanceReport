@@ -1076,6 +1076,20 @@ async function initAddEntry() {
                     };
                     const catId = catMap[t.note] || 'other_expense';
                     deltas.expenseDetails[catId] = (deltas.expenseDetails[catId] || 0) + amt;
+                } else if (t.type === 'CSP_SUBSCRIPTION') {
+                    // Deduct from the specific CSP sub-account (provider field stores the CSP provider)
+                    const cspProv = (t.provider || '').trim().toLowerCase();
+                    if (cspProv.includes('roinet') || cspProv.includes('airtel') || cspProv.includes('spicemoney')) {
+                        updateSubAccountDelta(t.provider, amt, false);
+                    } else if (cspProv.includes('crgb')) {
+                        deltas.crgb_bc -= amt;
+                    } else {
+                        // fallback: deduct from online
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
+                    deltas.expense += amt;
+                    deltas.expenseDetails['csp_subscription'] = (deltas.expenseDetails['csp_subscription'] || 0) + amt;
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     deltas.damaged += amt;
                 } else if (t.type === 'DAMAGED_RECOVERY') {
@@ -2726,14 +2740,52 @@ async function initCalculator() {
             const yesterdayFormatted = yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             const entriesRef = collection(db, "entries");
-            const yesterdayDateQueries = getPossibleDateFormats(yesterdayDateStr);
-            const qEntry = query(entriesRef, where("date", "in", yesterdayDateQueries));
-            const entrySnap = await getDocs(qEntry);
 
+            // Use 7-day lookback (same as updateDailyBalances) - find most recent entry BEFORE today
             let cashVal = 0;
-            if (!entrySnap.empty) {
-                const entry = entrySnap.docs[0].data();
-                cashVal = parseFloat(entry.details?.cash || 0);
+            const allEntries = [...(window._entriesCache || [])];
+            let foundEntry = null;
+
+            if (allEntries.length > 0) {
+                const normDate = (dStr) => {
+                    if (!dStr) return 0;
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                        const [y, m, d] = dStr.split('-').map(Number);
+                        return new Date(y, m - 1, d).getTime();
+                    }
+                    const parsed = new Date(dStr);
+                    return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+                };
+                const selectedTime = normDate(dateStr);
+                allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
+                foundEntry = allEntries.find(e => normDate(e.date) < selectedTime);
+            }
+
+            // Fallback: Direct Firestore query - 7 day lookback
+            if (!foundEntry) {
+                const yesterdayDateQueries = getPossibleDateFormats(yesterdayDateStr);
+                const qEntry = query(entriesRef, where("date", "in", yesterdayDateQueries));
+                const entrySnap = await getDocs(qEntry);
+                if (!entrySnap.empty) {
+                    foundEntry = entrySnap.docs[0].data();
+                } else {
+                    // Try up to 7 days back
+                    let lbDate = new Date(current);
+                    for (let i = 1; i <= 7; i++) {
+                        lbDate.setDate(lbDate.getDate() - 1);
+                        const lbStr = lbDate.getFullYear() + '-' + String(lbDate.getMonth() + 1).padStart(2, '0') + '-' + String(lbDate.getDate()).padStart(2, '0');
+                        const lbQueries = getPossibleDateFormats(lbStr);
+                        const lbSnap = await getDocs(query(entriesRef, where("date", "in", lbQueries)));
+                        if (!lbSnap.empty) {
+                            foundEntry = lbSnap.docs[0].data();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (foundEntry) {
+                cashVal = parseFloat(foundEntry.details?.cash || 0);
             }
 
             const txnRef = collection(db, "daily_transactions");
@@ -2747,16 +2799,18 @@ async function initCalculator() {
                 const chg = parseFloat(t.charges || 0);
                 const provider = (t.provider || "").trim().toLowerCase();
 
-                if (!['CSP_COMMISSION'].includes(t.type)) {
+                if (!['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
                     if (t.chargesType !== 'Online') cashVal += chg;
                 }
 
-                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
+                if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL', 'AADHAAR_PAY'].includes(t.type)) {
                     cashVal -= amt;
                 } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
-                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(t.type)) {
                     if (t.chargesType !== 'Online') cashVal += amt;
+                } else if (t.type === 'PAN_CARD') {
+                    // PAN_CARD amount is ignored in updateDailyBalances, so we match it here.
                 } else if (t.type === 'JIO_RECHARGE') {
                     if (provider === 'cash') cashVal += amt;
                 } else if (t.type === 'JIO_TOPUP') {
@@ -2771,6 +2825,9 @@ async function initCalculator() {
                     if (provider === 'cash') cashVal -= amt;
                 } else if (t.type === 'DAILY_EXPENSE') {
                     if (provider === 'cash') cashVal -= amt;
+                } else if (t.type === 'CSP_SUBSCRIPTION') {
+                    // CSP Subscription deducts from wallet (roinet/airtel/crgb) - no cash change
+                    // cashVal unchanged
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     cashVal -= amt;
                 } else if (t.type === 'DAMAGED_RECOVERY') {
@@ -6506,6 +6563,7 @@ const MASTER_TXN_TYPES = [
     { type: 'ELECTRICITY_BILL', label: 'Electricity Bill', icon: 'bolt', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'GOLD_SIP', label: 'Gold SIP', icon: 'savings', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
     { type: 'CSP_COMMISSION', label: 'CSP Comm', icon: 'account_balance', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
+    { type: 'CSP_SUBSCRIPTION', label: 'CSP Subscr', icon: 'subscriptions', bg: 'bg-orange-50 dark:bg-orange-500/10', text: 'text-orange-700 dark:text-orange-400', borderLeft: 'bg-orange-500' },
 
     { type: 'DAILY_EXPENSE', label: 'Daily Expense', icon: 'receipt', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
     { type: 'OTHER_INCOME', label: 'Other Income', icon: 'add_circle', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
@@ -6827,6 +6885,10 @@ async function initDailyTxn() {
         if (receivedInContainer) receivedInContainer.classList.add('hidden');
         if (txnReason) txnReason.value = '';
         if (reasonFieldContainer) reasonFieldContainer.classList.add('hidden');
+        const cspProviderEl = document.getElementById('txn-csp-provider');
+        if (cspProviderEl) cspProviderEl.value = '';
+        const cspSubContainerEl = document.getElementById('csp-subscription-provider-container');
+        if (cspSubContainerEl) cspSubContainerEl.classList.add('hidden');
         const chargesLabel = document.getElementById('charges-account-label');
         if (chargesLabel) chargesLabel.innerText = 'Charges Account';
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -6848,7 +6910,7 @@ async function initDailyTxn() {
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'SETTLEMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'ONLINE_EXCHANGE'];
         const noteAndAmountTypes = [];
-        const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'];
+        const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
         const isCashMovement = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);
         const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
@@ -6878,37 +6940,46 @@ async function initDailyTxn() {
                 else amountFieldContainer.classList.add('hidden');
             }
             if (noteFieldContainer) {
-                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery && !isCashMovement) {
+                if ((isNoteAndAmount || isCredit || txnType.value === 'OTHER_INCOME' || isPending) && !isDamagedRecovery && !isCashMovement && txnType.value !== 'CSP_SUBSCRIPTION') {
                     noteFieldContainer.classList.remove('hidden');
                     const label = noteFieldContainer.querySelector('label');
 
                     if (txnType.value === 'DAILY_EXPENSE') {
                         if (label) label.innerText = 'Expense Type';
                         if (txnNote) txnNote.classList.add('hidden');
-                        if (txnExpenseType) txnExpenseType.classList.remove('hidden');
+                        if (txnExpenseType) {
+                            txnExpenseType.classList.remove('hidden');
+                            txnExpenseType.disabled = false;
+                        }
                     } else if (txnType.value === 'OTHER_INCOME') {
                         if (label) label.innerText = 'Income Type';
                         if (txnNote) {
                             txnNote.classList.remove('hidden');
                             txnNote.placeholder = 'e.g. Commission, Bonus...';
                         }
-                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                        if (txnExpenseType) {
+                            txnExpenseType.classList.add('hidden');
+                            txnExpenseType.disabled = false;
+                        }
                     } else {
                         if (label) label.innerText = isPending ? 'Account Name' : 'Customer Name';
                         if (txnNote) {
                             txnNote.classList.remove('hidden');
                             txnNote.placeholder = isPending ? 'Enter account name...' : 'Enter Name...';
                         }
-                        if (txnExpenseType) txnExpenseType.classList.add('hidden');
+                        if (txnExpenseType) {
+                            txnExpenseType.classList.add('hidden');
+                            txnExpenseType.disabled = false;
+                        }
                     }
                 }
                 else noteFieldContainer.classList.add('hidden');
             }
             if (remarkFieldContainer) {
-                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'DAILY_EXPENSE'].includes(txnType.value)) {
+                if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'].includes(txnType.value)) {
                     remarkFieldContainer.classList.remove('hidden');
                     const label = remarkFieldContainer.querySelector('label');
-                    if (txnType.value === 'DAILY_EXPENSE') {
+                    if (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') {
                         if (label) label.innerText = 'Description';
                         if (txnRemark) txnRemark.placeholder = 'Enter description...';
                     } else {
@@ -7129,6 +7200,21 @@ async function initDailyTxn() {
             if (txnQrWallet) txnQrWallet.value = '';
         }
 
+        // Show/Hide CSP Subscription Provider Container
+        const cspSubContainer = document.getElementById('csp-subscription-provider-container');
+        const txnCspProvider = document.getElementById('txn-csp-provider');
+        if (cspSubContainer) {
+            if (txnType.value === 'CSP_SUBSCRIPTION') {
+                cspSubContainer.classList.remove('hidden');
+                // Hide the regular provider dropdown for CSP_SUBSCRIPTION (uses dedicated csp provider select)
+                if (providerContainer) providerContainer.classList.add('hidden');
+                if (txnProvider) txnProvider.value = '';
+            } else {
+                cspSubContainer.classList.add('hidden');
+                if (txnCspProvider) txnCspProvider.value = '';
+            }
+        }
+
         if (reasonFieldContainer) {
             if (['FREE_DEPOSIT', 'FREE_WITHDRAWAL'].includes(txnType.value)) {
                 reasonFieldContainer.classList.remove('hidden');
@@ -7140,7 +7226,7 @@ async function initDailyTxn() {
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
         if (depositByContainer && txnDepositBy) {
-            const isCustMoneyOnline = ['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online';
+            const isCustMoneyOnline = ['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online';
             if (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'GOLD_SIP'].includes(txnType.value) || isCustMoneyOnline) {
                 depositByContainer.classList.remove('hidden');
                 const depositByLabel = document.getElementById('depositby-label');
@@ -7149,7 +7235,7 @@ async function initDailyTxn() {
                         depositByLabel.innerText = 'Debited By';
                     } else if (['WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Received In';
-                    } else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD', 'GOLD_SIP'].includes(txnType.value)) {
+                    } else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION', 'CASH_WITHDRAWAL', 'PENDING_ADD', 'GOLD_SIP'].includes(txnType.value)) {
                         depositByLabel.innerText = 'Debited By';
                     } else if (txnType.value === 'CASH_DEPOSIT') {
                         depositByLabel.innerText = 'Credit By';
@@ -7200,7 +7286,7 @@ async function initDailyTxn() {
             const isAepsMatm = ['AEPS', 'MATM', 'SETTLEMENT', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value);
             const isDepositWithdraw = ['DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL'].includes(txnType.value);
             const isAadhaarDeposit = txnType.value === 'AADHAAR_DEPOSIT';
-            const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(txnType.value);
+            const isCredit = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'].includes(txnType.value);
             const isCspComm = txnType.value === 'CSP_COMMISSION';
 
             Array.from(txnProvider.options).forEach(opt => {
@@ -7432,6 +7518,17 @@ async function initDailyTxn() {
             if (!txnProvider.value.trim()) {
                 const labelText = txnProvider.closest('div').querySelector('label')?.innerText || 'Service Provider / Mode';
                 return { valid: false, element: txnProvider, message: `Please select ${labelText}` };
+            }
+        }
+
+        // CSP Subscription Provider validation
+        if (valType === 'CSP_SUBSCRIPTION') {
+            const cspSubContainer = document.getElementById('csp-subscription-provider-container');
+            const cspProvEl = document.getElementById('txn-csp-provider');
+            if (cspSubContainer && !cspSubContainer.classList.contains('hidden')) {
+                if (!cspProvEl || !cspProvEl.value.trim()) {
+                    return { valid: false, element: cspProvEl, message: 'Please select a CSP Provider' };
+                }
             }
         }
 
@@ -7865,7 +7962,7 @@ async function initDailyTxn() {
                 providerCharge: txnType.value === 'AADHAAR_PAY' ? (parseFloat(txnProviderCharge ? txnProviderCharge.value : 0) || 0) : 0,
                 pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
                 laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
-                note: txnType.value === 'DAILY_EXPENSE' ? (txnExpenseType.value || 'Daily Expense') : capitalizeWords(txnNote.value.trim()),
+                note: (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') ? (txnExpenseType.value || (txnType.value === 'CSP_SUBSCRIPTION' ? 'CSP SUBSCRIPTION' : 'Daily Expense')) : capitalizeWords(txnNote.value.trim()),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnConditional.value.trim() : '',
@@ -7873,7 +7970,7 @@ async function initDailyTxn() {
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnProvider.value : '',
-                provider: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : ''),
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
@@ -8178,20 +8275,32 @@ async function initDailyTxn() {
                 online: details.online || 0,
                 roinet: details.roinet || 0,
                 jio: details.jio || 0,
-                crgb: details.go2sms || 0,
+                crgb: details.go2sms || details.crgb_bc || 0,
                 pending: details.pending || 0,
                 expense: 0,
                 damaged: details.damages || 0,
                 'credit-ledger': details.credit || 0,
                 'cust-deposit': details.deposit || 0,
                 capital: details.capital || entryData.capital || 0,
-                withdrawal: details.withdrawal || entryData.withdrawal || 0
+                withdrawal: details.withdrawal || entryData.withdrawal || 0,
+                // Sub-account opening balances
+                roinet_1: Number(details.roinet_1 || 0),
+                roinet_2: Number(details.roinet_2 || 0),
+                airtel_1: Number(details.airtel_1 || 0),
+                airtel_2: Number(details.airtel_2 || 0),
+                spicemoney: Number(details.spicemoney || 0),
+                online_p1: Number(details.online_p1 || 0),
+                online_p2: Number(details.online_p2 || 0),
+                online_p3: Number(details.online_p3 || 0),
+                other: Number(details.other || 0)
             };
 
-            // Per-provider roinet breakdown tracking
+            // Per-provider roinet breakdown tracking - DELTA only (0-seeded)
+            // Opening is added separately when computing closing (see _roinetBreakdown.closing)
             const roinetBreakdown = { roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0 };
             
-            // Per-provider online breakdown tracking
+            // Per-provider online breakdown tracking - DELTA only (0-seeded)
+            // Opening is added separately when computing closing (see _onlineBreakdown.closing)
             const onlineBreakdown = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0 };
 
             // Helper: map provider string to sub-account key
@@ -8241,8 +8350,8 @@ async function initDailyTxn() {
                 const prevOnlineBreakdown = { ...onlineBreakdown };
                 const prevRoinetBreakdown = { ...roinetBreakdown };
 
-                if (['CSP_COMMISSION'].includes(t.type)) {
-                    // Commission goes to wallet only, skip global cash/online update
+                if (['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
+                    // Commission/Subscription: wallet only, skip global cash/online charge update
                 } else {
                     if (t.chargesType === 'Online') {
                         balances.online += chg;
@@ -8387,6 +8496,22 @@ async function initDailyTxn() {
                     balances.expense += amt;
                     const expCat = (t.note || 'Daily Expense').trim() || 'Daily Expense';
                     expenseBreakdown[expCat] = (expenseBreakdown[expCat] || 0) + amt;
+                } else if (t.type === 'CSP_SUBSCRIPTION') {
+                    // Deduct from the specific CSP wallet (sub-account)
+                    const cspProv = provider; // already lowercased
+                    if (cspProv.includes('roinet') || cspProv.includes('airtel') || cspProv.includes('spicemoney')) {
+                        balances.roinet -= amt;
+                        updateRoinetDelta(t.provider, -amt);
+                    } else if (cspProv.includes('crgb')) {
+                        balances.crgb -= amt;
+                    } else {
+                        // fallback: deduct from online
+                        balances.online -= amt;
+                        onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
+                    }
+                    balances.expense += amt;
+                    const cspExpCat = (t.note || 'CSP Subscription').trim() || 'CSP Subscription';
+                    expenseBreakdown[cspExpCat] = (expenseBreakdown[cspExpCat] || 0) + amt;
                 } else if (t.type === 'DAMAGED_CURRENCY') {
                     balances.cash -= amt;
                     balances.damaged += amt;

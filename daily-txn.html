@@ -313,6 +313,7 @@
                                 <option value="LAMINATION">Lamination</option>
 
                                 <option value="CSP_COMMISSION">CSP Commission</option>
+                                <option value="CSP_SUBSCRIPTION">CSP Subscription</option>
                                 <option value="JIO_TOPUP">Jio Topup</option>
                                 <option value="DISHTV_RECHARGE">DishTV Recharge</option>
                                 <option value="JIO_RECHARGE">Jio Recharge</option>
@@ -366,6 +367,18 @@
                                 <option value="transfer and matm">transfer and matm</option>
                                 <option value="transfer and aeps">transfer and aeps</option>
                                 <option value="service and withdrawl">service and withdrawl</option>
+                            </select>
+                        </div>
+                        <div id="csp-subscription-provider-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">CSP Provider</label>
+                            <select id="txn-csp-provider" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="">Select CSP Provider...</option>
+                                <option value="Roinet(Parsu)">Roinet (Parsu)</option>
+                                <option value="Roinet(Dalai)">Roinet (Dalai)</option>
+                                <option value="Airtel(Parsu)">Airtel (Parsu)</option>
+                                <option value="Airtel(Dalai)">Airtel (Dalai)</option>
+                                <option value="SpiceMoney">SpiceMoney</option>
+                                <option value="Crgb Bc">CRGB BC</option>
                             </select>
                         </div>
                         <div id="reason-field-container" class="flex flex-col gap-2 hidden">
@@ -487,6 +500,7 @@
                                 <option value="Aadhaar Pay Charges">Aadhaar Pay Charges</option>
                                 <option value="INTERNET EXPENSE">INTERNET EXPENSE</option>
                                 <option value="GOLD SIP">GOLD SIP</option>
+                                <option value="CSP SUBSCRIPTION">CSP SUBSCRIPTION</option>
                             </select>
                         </div>
                         <div id="remark-field-container" class="flex flex-col gap-2 hidden">
@@ -1602,8 +1616,32 @@
 
         window.confirmSelectBankingDay = function(isoDate) {
             if (window.hasUnsavedData()) {
-                if (!confirm("You have unsaved transaction data. Continue switching date?")) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Unsaved Data',
+                        text: 'You have unsaved transaction data. Continue switching date?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, switch date',
+                        cancelButtonText: 'No, stay here',
+                        confirmButtonColor: '#e11d48',
+                        cancelButtonColor: '#64748b',
+                        customClass: {
+                            popup: 'rounded-3xl',
+                            confirmButton: 'rounded-xl px-6',
+                            cancelButton: 'rounded-xl px-6'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window._isConfirmedDateSwitch = true;
+                            selectBankingDay(isoDate);
+                        }
+                    });
                     return;
+                } else {
+                    if (!confirm("You have unsaved transaction data. Continue switching date?")) {
+                        return;
+                    }
                 }
             }
             window._isConfirmedDateSwitch = true;
