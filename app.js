@@ -1368,6 +1368,7 @@ async function initAddEntry() {
         // Refresh system online balance for the new date
         const systemRes = await fetchSystemOnline(datePicker.value);
         currentSystemOnline = systemRes.total;
+        window._roinetBreakdown = systemRes.breakdown;
         updateOnlineComparison();
 
         const entries = await loadEntries();
@@ -1728,20 +1729,32 @@ async function initAddEntry() {
                 const total = updateOnlineSplitTotal();
                 
                 // Add Validation
-                const expectedDisp = document.getElementById('expected-online-split-total-display');
                 const isValidate = localStorage.getItem('validate_online_diff') !== 'false';
-                if (isValidate && expectedDisp && expectedDisp.dataset.val) {
-                    const expected = parseFloat(expectedDisp.dataset.val) || 0;
-                    if (Math.abs(total - expected) > 5000) {
+                if (isValidate) {
+                    const inputs = ['online_p1', 'online_p2', 'online_p3'];
+                    let hasExceeded = false;
+                    for (const inputId of inputs) {
+                        const input = document.getElementById(inputId);
+                        const expectedEl = document.getElementById(`expected-${inputId}`);
+                        if (input && input.value !== '' && expectedEl && expectedEl.dataset.val !== undefined) {
+                            const entered = parseFloat(input.value) || 0;
+                            const expected = parseFloat(expectedEl.dataset.val) || 0;
+                            if (Math.abs(entered - expected) > 2000) {
+                                hasExceeded = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasExceeded) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference between Expected Online amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: 'The difference for one of the individual Online accounts exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference between Expected Online amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                            alert('The difference for one of the individual Online accounts exceeds ₹2,000. Please verify and correct your transactions.');
                         }
                         return;
                     }
@@ -1826,20 +1839,32 @@ async function initAddEntry() {
                 const total = updateRoinetSplitTotal();
                 
                 // Add Validation
-                const expectedDisp = document.getElementById('expected-split-total-display');
                 const isValidate = localStorage.getItem('validate_csp_diff') !== 'false';
-                if (isValidate && expectedDisp && expectedDisp.dataset.val) {
-                    const expected = parseFloat(expectedDisp.dataset.val) || 0;
-                    if (Math.abs(total - expected) > 5000) {
+                if (isValidate) {
+                    const inputs = ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney'];
+                    let hasExceeded = false;
+                    for (const inputId of inputs) {
+                        const input = document.getElementById(inputId);
+                        const expectedEl = document.getElementById(`expected-${inputId}`);
+                        if (input && input.value !== '' && expectedEl && expectedEl.dataset.val !== undefined) {
+                            const entered = parseFloat(input.value) || 0;
+                            const expected = parseFloat(expectedEl.dataset.val) || 0;
+                            if (Math.abs(entered - expected) > 2000) {
+                                hasExceeded = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasExceeded) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference between Expected CSP Wallet amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: 'The difference for one of the individual CSP Wallet accounts exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference between Expected CSP Wallet amount and your manual total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                            alert('The difference for one of the individual CSP Wallet accounts exceeds ₹2,000. Please verify and correct your transactions.');
                         }
                         return;
                     }
@@ -1973,6 +1998,109 @@ async function initAddEntry() {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg">add_circle</span> Save Entry';
+                }
+                return;
+            }
+
+            // ─── Transaction Checked Verification Validation ───
+            let hasValidationError = false;
+            let validationErrorMsg = '';
+
+            const checkDifferences = (inputIds, settingKey) => {
+                if (localStorage.getItem(settingKey) === 'false') return;
+                const nameMap = {
+                    'online_p1': 'Online(Parsu)',
+                    'online_p2': 'Online(Shop)',
+                    'online_p3': 'Online(Dalai)',
+                    'roinet_1': 'Roinet(Parsu)',
+                    'roinet_2': 'Roinet(Dalai)',
+                    'airtel_1': 'Airtel(Parsu)',
+                    'airtel_2': 'Airtel(Dalai)',
+                    'spicemoney': 'SpiceMoney'
+                };
+                for (let i = 0; i < inputIds.length; i++) {
+                    const inp = document.getElementById(inputIds[i]);
+                    const exp = document.getElementById('expected-' + inputIds[i]);
+                    if (inp && inp.value !== '' && exp && exp.dataset && exp.dataset.val != null) {
+                        const entered = parseFloat(inp.value) || 0;
+                        const expected = parseFloat(exp.dataset.val) || 0;
+                        const diff = Math.abs(entered - expected);
+                        if (diff > 2000) {
+                            hasValidationError = true;
+                            const name = nameMap[inputIds[i]] || inputIds[i].replace(/_/g, ' ');
+                            validationErrorMsg = name + ' individual difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                            break;
+                        }
+                    }
+                }
+            };
+
+            checkDifferences(['online_p1', 'online_p2', 'online_p3'], 'validate_online_diff');
+            if (!hasValidationError) {
+                checkDifferences(['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney'], 'validate_csp_diff');
+            }
+
+            const checkMainDifference = (inputId, expId, name, settingKey) => {
+                 if (localStorage.getItem(settingKey) === 'false') return;
+                 const inp = document.getElementById(inputId);
+                 const exp = document.getElementById(expId);
+                 if (inp && inp.value !== '' && exp && exp.dataset && exp.dataset.val != null) {
+                        const entered = parseFloat(inp.value) || 0;
+                        const expected = parseFloat(exp.dataset.val) || 0;
+                        const diff = Math.abs(entered - expected);
+                        if (diff > 2000) {
+                            hasValidationError = true;
+                            validationErrorMsg = name + ' manual total and Expected ' + name + ' difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                        }
+                 }
+            };
+
+            if (!hasValidationError) checkMainDifference('online', 'expected-online-split-total-display', 'Online', 'validate_online_diff');
+            if (!hasValidationError) checkMainDifference('roinet', 'expected-split-total-display', 'CSP Wallet', 'validate_csp_diff');
+
+            // Check TOTAL ONLINE Group Difference
+            if (!hasValidationError && localStorage.getItem('validate_online_diff') !== 'false') {
+                const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+                const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
+                if (typeof currentSystemOnline !== 'undefined') {
+                    const diff = Math.abs(manualTotal - currentSystemOnline);
+                    if (diff > 2000) {
+                        hasValidationError = true;
+                        validationErrorMsg = 'Overall Online Accounts (Online+CSP+Jio+CRGB+Pending) total difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                    }
+                }
+            }
+
+            // Check CASH Difference
+            if (!hasValidationError && localStorage.getItem('validate_cash_diff') !== 'false') {
+                const cashInput = parseFloat(document.getElementById('cash')?.value) || 0;
+                let expectedCash = 0;
+                if (window._roinetBreakdown && window._roinetBreakdown.cash) {
+                    expectedCash = window._roinetBreakdown.cash.closing || 0;
+                    const diff = Math.abs(cashInput - expectedCash);
+                    if (diff > 2000) {
+                        hasValidationError = true;
+                        validationErrorMsg = 'Cash difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                    }
+                }
+            }
+
+            if (hasValidationError) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Validation Error',
+                        text: validationErrorMsg + ' Please verify on the Daily Txn page first.',
+                        icon: 'error',
+                        confirmButtonColor: '#e11d48'
+                    });
+                } else {
+                    alert(validationErrorMsg);
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    const btnIcon = existingEntryId ? 'edit_note' : 'save';
+                    const btnText = existingEntryId ? 'Update Entry' : 'Save Entry';
+                    submitBtn.innerHTML = `<span class="material-symbols-outlined text-lg">${btnIcon}</span> ${btnText}`;
                 }
                 return;
             }
@@ -2985,16 +3113,16 @@ async function initCalculator() {
                 // Add Validation
                 const isValidate = localStorage.getItem('validate_cash_diff') !== 'false';
                 if (isValidate && typeof currentSystemCash !== 'undefined') {
-                    if (Math.abs(finalAmount - currentSystemCash) > 5000) {
+                    if (Math.abs(finalAmount - currentSystemCash) > 2000) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference between Expected Cash and your manual physical total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: 'The difference between Expected Cash and your manual physical total exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference between Expected Cash and your manual physical total exceeds ₹5,000. Please verify and correct your transactions on the Daily Txn page.');
+                            alert('The difference between Expected Cash and your manual physical total exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.');
                         }
                         return;
                     }
@@ -4035,8 +4163,8 @@ async function initCreditLedger() {
                         <div class="space-y-1.5 flex-1">
                             <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug font-inter">Action Blocked</h3>
                             <p class="text-sm text-rose-700 dark:text-rose-300 font-medium leading-relaxed font-inter">
-                                Customer delete nahi kiya ja sakta.<br>
-                                Pehle Daily TXN page me credit received entry karke due balance clear karein.
+                                Customer cannot be deleted.<br>
+                                Please clear the due balance by adding a credit received entry on the Daily TXN page first.
                             </p>
                         </div>
                     </div>
@@ -7979,6 +8107,109 @@ async function initDailyTxn() {
                 date: currentSelectedDate,
                 timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
             };
+
+            // Generic Closing Balance validations for Online Accounts
+            if (window._onlineBreakdown && window._onlineBreakdown.closing) {
+                const getOnlineSub = (prov) => {
+                    const l = (prov || '').toLowerCase();
+                    if (l.includes('parsu')) return 'online_p1';
+                    if (l.includes('shop')) return 'online_p2';
+                    if (l.includes('dalai')) return 'online_p3';
+                    return 'other';
+                };
+                let deductOnlineAccount = null;
+                let deductOnlineAmount = 0;
+                let pName = '';
+
+                if (newTxn.type === 'ONLINE_WORK') {
+                    deductOnlineAccount = getOnlineSub(newTxn.depositBy);
+                    deductOnlineAmount = newTxn.amount;
+                    pName = newTxn.depositBy || 'Online';
+                } else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN'].includes(newTxn.type) && newTxn.provider === 'Online') {
+                    deductOnlineAccount = getOnlineSub(newTxn.depositBy);
+                    deductOnlineAmount = newTxn.amount;
+                    pName = newTxn.depositBy || 'Online';
+                } else if (newTxn.type === 'CASH_WITHDRAWAL') {
+                    deductOnlineAccount = getOnlineSub(newTxn.depositBy);
+                    deductOnlineAmount = newTxn.amount;
+                    pName = newTxn.depositBy || 'Online';
+                } else if (newTxn.type === 'ELECTRICITY_BILL' || newTxn.type === 'DISHTV_RECHARGE') {
+                    if (newTxn.chargesType === 'Online') {
+                        deductOnlineAccount = getOnlineSub(newTxn.provider);
+                        deductOnlineAmount = newTxn.amount;
+                        pName = newTxn.provider || 'Online';
+                    }
+                }
+
+                if (deductOnlineAccount) {
+                    let available = window._onlineBreakdown.closing[deductOnlineAccount] || 0;
+                    if (existingTxn) {
+                        if (existingTxn.type === 'ONLINE_WORK' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN'].includes(existingTxn.type) && existingTxn.provider === 'Online' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (existingTxn.type === 'CASH_WITHDRAWAL' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (['ELECTRICITY_BILL', 'DISHTV_RECHARGE'].includes(existingTxn.type) && existingTxn.chargesType === 'Online' && getOnlineSub(existingTxn.provider) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                    }
+                    if (deductOnlineAmount > available) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Insufficient Balance',
+                            text: `Account ${pName} only has ₹ ${available.toLocaleString('en-IN')}. You cannot deduct ₹ ${deductOnlineAmount.toLocaleString('en-IN')}.`,
+                            confirmButtonColor: '#7c3aed'
+                        });
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // Generic Closing Balance validations for CSP Wallets
+            if (window._roinetBreakdown && window._roinetBreakdown.closing) {
+                const getRoinetSub = (prov) => {
+                    const l = (prov || '').toLowerCase();
+                    if (l.includes('roinet(parsu)') || l === 'roinet_1') return 'roinet_1';
+                    if (l.includes('roinet(dalai)') || l === 'roinet_2') return 'roinet_2';
+                    if (l.includes('airtel(parsu)') || l === 'airtel_1') return 'airtel_1';
+                    if (l.includes('airtel(dalai)') || l === 'airtel_2') return 'airtel_2';
+                    if (l.includes('spicemoney')) return 'spicemoney';
+                    if (l.includes('airtel')) return 'airtel_1';
+                    if (l.includes('roinet')) return 'roinet_1';
+                    return null;
+                };
+
+                let deductRoinetAccount = null;
+                let deductRoinetAmount = 0;
+                let pName = '';
+
+                if (newTxn.type === 'CSP_SUBSCRIPTION') {
+                    deductRoinetAccount = getRoinetSub(newTxn.provider);
+                    deductRoinetAmount = newTxn.amount;
+                    pName = newTxn.provider;
+                }
+
+                if (deductRoinetAccount) {
+                    let available = window._roinetBreakdown.closing[deductRoinetAccount] || 0;
+                    if (existingTxn && existingTxn.type === 'CSP_SUBSCRIPTION' && getRoinetSub(existingTxn.provider) === deductRoinetAccount) {
+                        available += parseFloat(existingTxn.amount || 0);
+                    }
+                    if (deductRoinetAmount > available) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Insufficient CSP Balance',
+                            text: `Account ${pName} only has ₹ ${available.toLocaleString('en-IN')}. You cannot deduct ₹ ${deductRoinetAmount.toLocaleString('en-IN')}.`,
+                            confirmButtonColor: '#7c3aed'
+                        });
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                        }
+                        return;
+                    }
+                }
+            }
+
 
             // --- Summary Confirmation Popup for specific types ---
             if (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_PAY'].includes(newTxn.type)) {

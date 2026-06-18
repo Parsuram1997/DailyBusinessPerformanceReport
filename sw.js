@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v1';
+const CACHE_NAME = 'biz-report-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
