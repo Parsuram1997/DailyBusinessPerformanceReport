@@ -49,22 +49,32 @@ window._startGlobalEntriesListener();
 // every 30s. The Settings page reads this collection in real-time to display
 // how many devices are currently logged in.
 (function startSessionTracking() {
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    // Use window.authGet (localStorage-backed) so PWA restarts don't break session
+    const isLoggedIn = (window.authGet && window.authGet('isLoggedIn') === 'true')
+        || sessionStorage.getItem('isLoggedIn') === 'true';
     if (!isLoggedIn) return;
 
 
 
-    const username = sessionStorage.getItem('username') || 'Unknown';
-    const role = sessionStorage.getItem('userRole') || 'user';
+    const username = (window.authGet && window.authGet('username')) || sessionStorage.getItem('username') || 'Unknown';
+    const role = (window.authGet && window.authGet('userRole')) || sessionStorage.getItem('userRole') || 'user';
     const ua = navigator.userAgent;
 
-    // Always generate a FRESH deviceId per page load (per tab)
-    // Using sessionStorage would share ID across duplicate tabs — we don't want that.
-    const tabRandom = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-        : Math.random().toString(36).slice(2, 14);
-    const deviceId = 'tab_' + tabRandom;
-    sessionStorage.setItem('deviceId', deviceId); // update so revoke listener uses correct ID
+    // ── Stable Device ID ──────────────────────────────────────────────────────
+    // Use a STABLE device ID stored in localStorage so:
+    //   1. The same device shows as one session across page navigations
+    //   2. PWA restarts don't create a ghost session that immediately looks "revoked"
+    // A fresh random ID is ONLY generated if none exists yet.
+    let deviceId = localStorage.getItem('auth_deviceId');
+    if (!deviceId) {
+        const rand = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+            : Math.random().toString(36).slice(2, 14);
+        deviceId = 'dev_' + rand;
+        localStorage.setItem('auth_deviceId', deviceId);
+    }
+    // Keep sessionStorage in sync for any legacy code that reads it
+    sessionStorage.setItem('deviceId', deviceId);
 
     // Short unique tag (last 4 chars) for display
     const shortTag = deviceId.slice(-4).toUpperCase();
@@ -108,8 +118,10 @@ window._startGlobalEntriesListener();
     // ─── Real-time Revoke Listener ────────────────────────────────
     // Watches this device's session doc. If admin deletes it (revokes),
     // this device is immediately logged out.
-    // IMPORTANT: sessionWritten flag ensures we don't logout when the
-    // document simply doesn't exist yet (fresh page load, not yet written).
+    //
+    // FIX: sessionWritten flag + double-check delay prevents false revoke on:
+    //   - Page navigation (stable deviceId means no race condition now)
+    //   - PWA minimize/restore (visibilitychange handles cleanup, not beforeunload)
     function startRevokeListener() {
         if (!db) return;
         let sessionWritten = false; // becomes true after first heartbeat confirmed
@@ -119,33 +131,53 @@ window._startGlobalEntriesListener();
                 // Document exists — mark that our session is live
                 sessionWritten = true;
             } else if (sessionWritten) {
-                // Document was there before, now gone → admin revoked us
-                console.warn('[Session] Session revoked by admin. Logging out...');
-                sessionStorage.removeItem('isLoggedIn');
-                sessionStorage.removeItem('userRole');
-                sessionStorage.removeItem('username');
-                sessionStorage.removeItem('deviceId');
+                // Document was deleted after being confirmed live.
+                // Double-check after 1.5s to avoid race conditions (e.g. write in flight)
+                console.warn('[Session] Doc gone, verifying in 1.5s...');
+                setTimeout(async () => {
+                    try {
+                        const freshSnap = await getDoc(doc(db, 'active_sessions', deviceId));
+                        if (freshSnap.exists()) {
+                            console.log('[Session] False alarm — doc came back.');
+                            return; // back online, not a real revoke
+                        }
+                    } catch (_) {}
 
-                // Show revoke overlay then redirect
-                const overlay = document.createElement('div');
-                overlay.style.cssText = `
-                    position:fixed;inset:0;z-index:9999999;
-                    background:linear-gradient(135deg,#e11d48,#9f1239);
-                    display:flex;flex-direction:column;
-                    align-items:center;justify-content:center;
-                    animation:fadeInOverlay 0.3s ease forwards;
-                `;
-                overlay.innerHTML = `
-                    <style>@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}</style>
-                    <span class="material-symbols-outlined" style="font-size:56px;color:#fff;margin-bottom:16px;">no_accounts</span>
-                    <h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 8px;font-family:Inter,sans-serif;">Session Revoked</h2>
-                    <p style="color:rgba(255,255,255,0.7);font-size:13px;font-family:Inter,sans-serif;margin:0;">Your session was ended by an administrator.</p>
-                `;
-                document.body.appendChild(overlay);
+                    // Confirmed gone → admin revoked us
+                    console.warn('[Session] Session revoked by admin. Logging out...');
+                    if (window.authRemove) {
+                        window.authRemove('isLoggedIn');
+                        window.authRemove('userRole');
+                        window.authRemove('username');
+                    } else {
+                        sessionStorage.removeItem('isLoggedIn');
+                        sessionStorage.removeItem('userRole');
+                        sessionStorage.removeItem('username');
+                    }
+                    sessionStorage.removeItem('deviceId');
+                    // Keep auth_deviceId in localStorage so next login reuses it
 
-                setTimeout(() => {
-                    window.location.replace('index.html');
-                }, 2000);
+                    // Show revoke overlay then redirect
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `
+                        position:fixed;inset:0;z-index:9999999;
+                        background:linear-gradient(135deg,#e11d48,#9f1239);
+                        display:flex;flex-direction:column;
+                        align-items:center;justify-content:center;
+                        animation:fadeInOverlay 0.3s ease forwards;
+                    `;
+                    overlay.innerHTML = `
+                        <style>@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}</style>
+                        <span class="material-symbols-outlined" style="font-size:56px;color:#fff;margin-bottom:16px;">no_accounts</span>
+                        <h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 8px;font-family:Inter,sans-serif;">Session Revoked</h2>
+                        <p style="color:rgba(255,255,255,0.7);font-size:13px;font-family:Inter,sans-serif;margin:0;">Your session was ended by an administrator.</p>
+                    `;
+                    document.body.appendChild(overlay);
+
+                    setTimeout(() => {
+                        window.location.replace('index.html');
+                    }, 2000);
+                }, 1500);
             }
             // else: doc doesn't exist yet and hasn't been written — normal on fresh load, ignore
         }, (err) => {
@@ -153,7 +185,7 @@ window._startGlobalEntriesListener();
         });
     }
 
-    // Delay first write by 2s to let Firebase fully initialize
+    // Delay first write by 1.5s to let Firebase fully initialize
     // Also await location fetch so it's included from the very first heartbeat
     setTimeout(async () => {
         sessionLocation = await fetchLocation();
@@ -161,12 +193,33 @@ window._startGlobalEntriesListener();
         startRevokeListener();
         const heartbeatInterval = setInterval(writeHeartbeat, 30000);
 
-        // Remove session on page unload (best-effort)
-        window.addEventListener('beforeunload', () => {
-            clearInterval(heartbeatInterval);
-            try { deleteDoc(doc(db, 'active_sessions', deviceId)).catch(() => {}); } catch (e) {}
+        // ── PWA-safe cleanup ──────────────────────────────────────────────────
+        // DO NOT use beforeunload to delete the Firestore session doc on mobile PWA.
+        // On iOS/Android, the app is suspended (not unloaded) when the user switches
+        // apps — beforeunload fires prematurely, deleting the session doc, which then
+        // triggers the revoke listener on the next page load ("Session Revoked" bug).
+        //
+        // Instead: use visibilitychange. When app returns to foreground, we re-write
+        // the heartbeat. Session cleanup is handled by Firestore TTL rules or by the
+        // admin via the Settings page.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // App came back to foreground — refresh heartbeat
+                writeHeartbeat();
+            }
         });
-    }, 2000);
+
+        // Only clean up on explicit browser tab close (not PWA minimize)
+        // pagehide with persisted=false means the page is truly being destroyed
+        window.addEventListener('pagehide', (e) => {
+            clearInterval(heartbeatInterval);
+            // Only delete session if page is NOT being put in bfcache
+            // and this is a real tab close (not PWA minimize/background)
+            if (!e.persisted) {
+                try { deleteDoc(doc(db, 'active_sessions', deviceId)).catch(() => {}); } catch (_) {}
+            }
+        });
+    }, 1500);
 })();
 
 

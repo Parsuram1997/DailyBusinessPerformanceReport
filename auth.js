@@ -1,4 +1,8 @@
 // auth.js
+// ─── SESSION STORAGE: Use localStorage for PWA compatibility ──────────────────
+// PWA standalone mode creates a fresh context every time → sessionStorage resets.
+// We use localStorage so login survives app restarts and navigation between pages.
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Users & Roles ───────────────────────────────────────────
 const USERS = [
@@ -6,14 +10,30 @@ const USERS = [
     { username: 'Mybusiness',     password: 'Mamta@123',   role: 'admin' }
 ];
 
+// ─── Auth Helpers (localStorage-backed) ──────────────────────────────────────
+window.authGet = function(key) {
+    // Try localStorage first (PWA-persistent), fallback to sessionStorage (legacy)
+    return localStorage.getItem('auth_' + key) || sessionStorage.getItem(key);
+};
+window.authSet = function(key, value) {
+    localStorage.setItem('auth_' + key, value);
+    sessionStorage.setItem(key, value); // keep both in sync
+};
+window.authRemove = function(key) {
+    localStorage.removeItem('auth_' + key);
+    sessionStorage.removeItem(key);
+};
+
 (function() {
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    const role       = sessionStorage.getItem('userRole') || 'user';
-    const isIndexPage   = window.location.pathname.endsWith('/') || window.location.pathname.endsWith('index.html');
-    const isPublicTool  = window.location.pathname.endsWith('img-to-pdf.html') ||
-                          window.location.pathname.endsWith('passport-tool.html') ||
-                          window.location.pathname.endsWith('image-compressor.html');
-    const isSettingsPage = window.location.pathname.endsWith('settings-code.html');
+    const isLoggedIn = window.authGet('isLoggedIn') === 'true';
+    const role       = window.authGet('userRole') || 'user';
+
+    const path = window.location.pathname;
+    const isIndexPage    = path.endsWith('/') || path.endsWith('index.html');
+    const isPublicTool   = path.endsWith('img-to-pdf.html') ||
+                           path.endsWith('passport-tool.html') ||
+                           path.endsWith('image-compressor.html');
+    const isSettingsPage = path.endsWith('settings-code.html');
 
     // Not logged in → redirect to login (except public tools)
     if (!isLoggedIn && !isIndexPage && !isPublicTool) {
@@ -66,10 +86,22 @@ function handleLogin(event) {
     const matched = USERS.find(user => user.username === u && user.password === p);
 
     if (matched) {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('userRole', matched.role);
-        sessionStorage.setItem('username', matched.username);
-        
+        // Use authSet so both localStorage and sessionStorage are set
+        window.authSet('isLoggedIn', 'true');
+        window.authSet('userRole', matched.role);
+        window.authSet('username', matched.username);
+
+        // Generate a stable device ID tied to this device (not per-tab)
+        // This persists across page loads and PWA restarts
+        if (!localStorage.getItem('auth_deviceId')) {
+            const stableId = 'dev_' + (
+                typeof crypto !== 'undefined' && crypto.randomUUID
+                    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+                    : Math.random().toString(36).slice(2, 14)
+            );
+            localStorage.setItem('auth_deviceId', stableId);
+        }
+
         setTimeout(() => {
             window.location.href = 'dashboard-code.html';
         }, 800);
@@ -90,7 +122,7 @@ function handleLogin(event) {
 
 function handleLogout(event) {
     if (event) event.preventDefault();
-    
+
     if (document.getElementById('logout-confirm-modal')) return;
 
     const modalHTML = `
@@ -101,7 +133,7 @@ function handleLogout(event) {
             </div>
             <h3 style="margin-top:0;font-weight:bold;color:#1e293b;font-size:18px;margin-bottom:8px;" class="dark:text-white">Sign Out</h3>
             <p style="color:#64748b;font-size:13px;margin-bottom:24px;" class="dark:text-slate-400">Are you sure you want to log out of your account?</p>
-            
+
             <div style="display:flex;gap:12px;">
                 <button id="logout-cancel" style="flex:1;padding:10px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:bold;cursor:pointer;" class="dark:bg-slate-700 dark:text-white">Cancel</button>
                 <button id="logout-confirm" style="flex:1;padding:10px;border:none;background:#e11d48;color:white;border-radius:8px;font-weight:bold;cursor:pointer;line-height:1.2;" class="hover:bg-rose-600 transition-colors">Logout</button>
@@ -144,9 +176,12 @@ function handleLogout(event) {
         document.body.appendChild(overlay);
 
         setTimeout(() => {
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('userRole');
-            sessionStorage.removeItem('username');
+            // Clear auth from BOTH storages
+            window.authRemove('isLoggedIn');
+            window.authRemove('userRole');
+            window.authRemove('username');
+            // Remove stable device ID so session tracker cleans up too
+            localStorage.removeItem('auth_deviceId');
             window.location.replace('index.html');
         }, 1200);
     });
@@ -158,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutTriggers.forEach(btn => {
         btn.addEventListener('click', handleLogout);
     });
-    
+
     // Bind login form if it exists
     const form = document.getElementById('login-form');
     if (form) {
@@ -168,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Role-based global settings helper
 window.getAppSetting = function(key, defaultValue = true) {
-    const role = sessionStorage.getItem('userRole') || 'user';
+    const role = window.authGet('userRole') || 'user';
     let effectiveKey = key;
     if (role === 'user') {
         if (key === 'security_pin_enabled_add_entry') {
@@ -191,5 +226,3 @@ window.getAppSetting = function(key, defaultValue = true) {
     }
     return val !== 'false';
 };
-
-

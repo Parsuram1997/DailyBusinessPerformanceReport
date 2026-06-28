@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v5'; // Bumped version
+const CACHE_NAME = 'biz-report-v6'; // Bumped: PWA session fix (localStorage auth)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
