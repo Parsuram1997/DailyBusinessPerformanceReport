@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v17'; // Bumped: Made unlock and alert styles dynamic using App Personalization accent color
+const CACHE_NAME = 'biz-report-v20'; // Bumped: Applied divisor of 2 to report stats cards in privacy mode
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

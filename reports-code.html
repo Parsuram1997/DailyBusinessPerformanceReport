@@ -947,6 +947,7 @@
                 stopObserving();
                 applyShow();
             }
+            document.dispatchEvent(new CustomEvent('privacyModeChanged', { detail: { hide: newHide } }));
         }
 
         document.addEventListener('DOMContentLoaded', function () {

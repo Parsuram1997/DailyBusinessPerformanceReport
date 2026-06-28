@@ -4179,6 +4179,41 @@ async function initReports() {
     if (!reportContainer) return;
     const tableBody = document.getElementById('reports-table-body'); // Still kept as null if missing
 
+    let cachedEntries = null;
+    let cachedWithdrawals = null;
+    let cachedAccounts = null;
+    let cachedDailyTxns = null;
+
+    async function getEntries() {
+        if (!cachedEntries) {
+            cachedEntries = await loadEntries();
+        }
+        return cachedEntries;
+    }
+
+    async function getWithdrawals() {
+        if (!cachedWithdrawals) {
+            cachedWithdrawals = await loadBankWithdrawals();
+        }
+        return cachedWithdrawals;
+    }
+
+    async function getAccounts() {
+        if (!cachedAccounts) {
+            cachedAccounts = await loadBankAccounts();
+        }
+        return cachedAccounts;
+    }
+
+    async function getDailyTxns() {
+        if (!cachedDailyTxns) {
+            const dailyTxnCollection = collection(db, 'daily_transactions');
+            const dailyTxnSnapshot = await getDocs(dailyTxnCollection);
+            cachedDailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        return cachedDailyTxns;
+    }
+
     const tabs = document.querySelectorAll('.filter-tab');
     const searchInput = document.getElementById('report-search');
     const dateInput = document.getElementById('report-date');
@@ -4213,7 +4248,7 @@ async function initReports() {
 
     // Populate Filters
     async function populateFilters() {
-        const entries = await loadEntries();
+        const entries = await getEntries();
         if (entries.length === 0) return;
 
         // Default date to today
@@ -4295,10 +4330,22 @@ async function initReports() {
     }
 
     tabs.forEach(tab => {
-        tab.onclick = () => {
+        tab.onclick = async () => {
             currentMode = tab.dataset.mode;
             updateUI();
-            renderReport();
+            
+            const originalHTML = tab.innerHTML;
+            tab.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin mr-1 align-middle" style="font-size:13px; line-height:1;">sync</span>${originalHTML}`;
+            tab.disabled = true;
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            try {
+                await renderReport();
+            } finally {
+                tab.innerHTML = originalHTML;
+                tab.disabled = false;
+            }
         };
     });
 
@@ -4329,9 +4376,12 @@ async function initReports() {
     }
 
     async function renderReport() {
-        const entries = await loadEntries();
-        const bankWithdrawals = await loadBankWithdrawals();
-        const bankAccounts = await loadBankAccounts();
+        const isPrivacyActive = localStorage.getItem('biz_hide_values') === null ? true : localStorage.getItem('biz_hide_values') === 'true';
+        const divisor = isPrivacyActive ? 2 : 1;
+
+        const entries = await getEntries();
+        const bankWithdrawals = await getWithdrawals();
+        const bankAccounts = await getAccounts();
         const activeAccountIds = new Set(bankAccounts.map(a => String(a.id)));
 
         const searchInput = document.getElementById('report-search');
@@ -4410,37 +4460,28 @@ async function initReports() {
         });
 
         let dailyTxns = [];
-        const dailyTxnCollection = collection(db, 'daily_transactions');
-        
         try {
-            let q;
+            const allDailyTxns = await getDailyTxns();
             if (currentMode === 'date' && dateInput) {
-                q = query(dailyTxnCollection, where('date', '==', dateInput.value));
+                dailyTxns = allDailyTxns.filter(t => t.date === dateInput.value);
             } else if (currentMode === 'month' && monthSelect) {
-                // For month, we use range query on date string "YYYY-MM-DD"
                 const [selMonthName, selYearStr] = (monthSelect.value || '').split(' ');
-                // Get month index (0-11)
-                const monthIdx = new Date(`${selMonthName} 1, ${selYearStr}`).getMonth();
-                const start = `${selYearStr}-${String(monthIdx + 1).padStart(2, '0')}-01`;
-                const end = `${selYearStr}-${String(monthIdx + 1).padStart(2, '0')}-31`;
-                q = query(dailyTxnCollection, where('date', '>=', start), where('date', '<=', end));
+                const targetMonthIdx = new Date(`${selMonthName} 1, ${selYearStr}`).getMonth(); // 0-11
+                dailyTxns = allDailyTxns.filter(t => {
+                    const d = new Date(t.date);
+                    return !isNaN(d) && d.getMonth() === targetMonthIdx && d.getFullYear().toString() === selYearStr;
+                });
             } else if (currentMode === 'year' && yearSelect) {
-                const year = yearSelect.value; // e.g. "2024-25"
-                const startYear = year.split('-')[0];
-                const endYear = "20" + year.split('-')[1];
-                const start = `${startYear}-04-01`;
-                const end = `${endYear}-03-31`;
-                q = query(dailyTxnCollection, where('date', '>=', start), where('date', '<=', end));
+                dailyTxns = allDailyTxns.filter(t => {
+                    const d = new Date(t.date);
+                    return !isNaN(d) && getFinancialYear(d) === yearSelect.value;
+                });
             } else {
-                q = query(dailyTxnCollection);
+                dailyTxns = allDailyTxns;
             }
-
-            const dailyTxnSnapshot = await getDocs(q);
-            dailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } catch (error) {
-            console.error("Error fetching daily transactions for report:", error);
+        } catch (e) {
+            console.error("Error filtering daily transactions:", e);
         }
-
         const txnStats = dailyTxns.reduce((acc, t) => {
             const type = t.type;
             if (!acc[type]) acc[type] = { count: 0, amount: 0, charges: 0 };
@@ -4720,9 +4761,9 @@ async function initReports() {
             const amtEl = document.getElementById(`summary-txn-${idPrefix}-amount`);
             const cntEl = document.getElementById(`summary-txn-${idPrefix}-count`);
             const chgEl = document.getElementById(`summary-txn-${idPrefix}-charges`);
-            if (amtEl) amtEl.innerText = formatCurrency(data.amount || 0);
+            if (amtEl) amtEl.innerText = formatCurrency((data.amount || 0) / divisor);
             if (cntEl) cntEl.innerText = `${(data.count || 0)} Transactions`;
-            if (chgEl) chgEl.innerText = `F: ${formatCurrency(data.charges || 0)}`;
+            if (chgEl) chgEl.innerText = `F: ${formatCurrency((data.charges || 0) / divisor)}`;
         };
 
         updateTxnCard('total', { amount: txnStats.totalAmount, count: txnStats.totalCount, charges: txnStats.totalCharges });
@@ -4738,7 +4779,7 @@ async function initReports() {
             // Note: For services, 'amount' in txnStats is actually the fee/charge because amount was 0
             // But txnStats calculation adds t.amount to amount and t.charges to totalCharges.
             // Wait, I need to make sure txnStats aggregates charges too for individual types.
-            if (amtEl) amtEl.innerText = formatCurrency(data.charges || 0);
+            if (amtEl) amtEl.innerText = formatCurrency((data.charges || 0) / divisor);
             if (cntEl) cntEl.innerText = `${(data.count || 0)} Items`;
         };
 
@@ -4749,7 +4790,7 @@ async function initReports() {
         updateServiceCard('lamination', txnStats['LAMINATION'] || {});
         
         const totalChargesEl = document.getElementById('summary-txn-total-charges');
-        if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges);
+        if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges / divisor);
 
         // Render Category Wise Expenses Table
         const categoryBody = document.getElementById('category-expense-body');
@@ -4947,6 +4988,10 @@ async function initReports() {
         };
     });
     if (btnApply) btnApply.onclick = renderReport;
+
+    document.addEventListener('privacyModeChanged', () => {
+        renderReport();
+    });
 
     await populateFilters();
     updateUI();

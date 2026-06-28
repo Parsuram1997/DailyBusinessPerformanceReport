@@ -4552,6 +4552,41 @@ async function initReports() {
     if (!reportContainer) return;
     const tableBody = document.getElementById('reports-table-body'); // Still kept as null if missing
 
+    let cachedEntries = null;
+    let cachedWithdrawals = null;
+    let cachedAccounts = null;
+    let cachedDailyTxns = null;
+
+    async function getEntries() {
+        if (!cachedEntries) {
+            cachedEntries = await loadEntries();
+        }
+        return cachedEntries;
+    }
+
+    async function getWithdrawals() {
+        if (!cachedWithdrawals) {
+            cachedWithdrawals = await loadBankWithdrawals();
+        }
+        return cachedWithdrawals;
+    }
+
+    async function getAccounts() {
+        if (!cachedAccounts) {
+            cachedAccounts = await loadBankAccounts();
+        }
+        return cachedAccounts;
+    }
+
+    async function getDailyTxns() {
+        if (!cachedDailyTxns) {
+            const dailyTxnCollection = collection(db, 'daily_transactions');
+            const dailyTxnSnapshot = await getDocs(dailyTxnCollection);
+            cachedDailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        return cachedDailyTxns;
+    }
+
     const tabs = document.querySelectorAll('.filter-tab');
     const searchInput = document.getElementById('report-search');
     const dateInput = document.getElementById('report-date');
@@ -4586,7 +4621,7 @@ async function initReports() {
 
     // Populate Filters
     async function populateFilters() {
-        const entries = await loadEntries();
+        const entries = await getEntries();
         if (entries.length === 0) return;
 
         // Default date to today
@@ -4668,10 +4703,22 @@ async function initReports() {
     }
 
     tabs.forEach(tab => {
-        tab.onclick = () => {
+        tab.onclick = async () => {
             currentMode = tab.dataset.mode;
             updateUI();
-            renderReport();
+            
+            const originalHTML = tab.innerHTML;
+            tab.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin mr-1 align-middle" style="font-size:13px; line-height:1;">sync</span>${originalHTML}`;
+            tab.disabled = true;
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            try {
+                await renderReport();
+            } finally {
+                tab.innerHTML = originalHTML;
+                tab.disabled = false;
+            }
         };
     });
 
@@ -4702,9 +4749,12 @@ async function initReports() {
     }
 
     async function renderReport() {
-        const entries = await loadEntries();
-        const bankWithdrawals = await loadBankWithdrawals();
-        const bankAccounts = await loadBankAccounts();
+        const isPrivacyActive = localStorage.getItem('biz_hide_values') === null ? true : localStorage.getItem('biz_hide_values') === 'true';
+        const divisor = isPrivacyActive ? 2 : 1;
+
+        const entries = await getEntries();
+        const bankWithdrawals = await getWithdrawals();
+        const bankAccounts = await getAccounts();
         const activeAccountIds = new Set(bankAccounts.map(a => String(a.id)));
 
         const searchInput = document.getElementById('report-search');
@@ -4777,9 +4827,7 @@ async function initReports() {
             .filter(filterWithdrawals);
 
         // --- Daily Transaction Analytics Calculation ---
-        const dailyTxnCollection = collection(db, 'daily_transactions');
-        const dailyTxnSnapshot = await getDocs(dailyTxnCollection);
-        let dailyTxns = dailyTxnSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let dailyTxns = await getDailyTxns();
 
         // Apply same time filter as entries
         if (currentMode === 'date' && dateInput) {
@@ -4817,7 +4865,7 @@ async function initReports() {
         // --- Use same running-balance formula as Dashboard ---
         // We need ALL entries sorted ASC to compute the running balance correctly,
         // then we pick only the filtered ones for aggregation.
-        const allEntries = await loadEntries();
+        const allEntries = await getEntries();
         allEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         // Build a map of date -> dailyIncome using running balance on ALL entries
@@ -5120,8 +5168,8 @@ async function initReports() {
                                 <span class="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 leading-none shrink-0">${count}</span>
                             </div>
                             <div class="flex flex-wrap items-baseline justify-between gap-x-1 gap-y-0.5 mt-1">
-                                <span class="text-xs font-black text-slate-900 dark:text-white">${amount < 0 ? '-' : ''}₹${Math.abs(amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                                <span class="text-[9px] font-bold ${config.type === 'ALL' ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'} italic shrink-0">F: ₹${fees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                <span class="text-xs font-black text-slate-900 dark:text-white">${amount < 0 ? '-' : ''}₹${Math.round(Math.abs(amount / divisor)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                <span class="text-[9px] font-bold ${config.type === 'ALL' ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'} italic shrink-0">F: ₹${Math.round(fees / divisor).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                             </div>
                         </div>
                     </div>
@@ -5133,7 +5181,7 @@ async function initReports() {
 
 
         const totalChargesEl = document.getElementById('summary-txn-total-charges');
-        if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges);
+        if (totalChargesEl) totalChargesEl.innerText = formatCurrency(txnStats.totalCharges / divisor);
 
         // Render Income Distribution Pie Chart
         const pieCanvas = document.getElementById('incomeDistributionChart');
@@ -5935,17 +5983,17 @@ async function initReports() {
 
         // Populate Summary Cards
         const updateCard = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-        updateCard('recon-manual-cash-card', `₹${totalManualCash.toLocaleString('en-IN')}`);
-        updateCard('recon-system-cash-card', `₹${totalSysCash.toLocaleString('en-IN')}`);
-        updateCard('recon-cash-diff-card', `${finalCashDiff > 0 ? '+' : ''}${finalCashDiff.toLocaleString('en-IN')}`);
+        updateCard('recon-manual-cash-card', `₹${Math.round(totalManualCash / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-system-cash-card', `₹${Math.round(totalSysCash / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-cash-diff-card', `${finalCashDiff > 0 ? '+' : ''}${Math.round(finalCashDiff / divisor).toLocaleString('en-IN')}`);
 
-        updateCard('recon-manual-online-card', `₹${totalManualOnline.toLocaleString('en-IN')}`);
-        updateCard('recon-system-online-card', `₹${totalSysOnline.toLocaleString('en-IN')}`);
-        updateCard('recon-online-diff-card', `${finalOnlineDiff > 0 ? '+' : ''}${finalOnlineDiff.toLocaleString('en-IN')}`);
+        updateCard('recon-manual-online-card', `₹${Math.round(totalManualOnline / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-system-online-card', `₹${Math.round(totalSysOnline / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-online-diff-card', `${finalOnlineDiff > 0 ? '+' : ''}${Math.round(finalOnlineDiff / divisor).toLocaleString('en-IN')}`);
 
-        updateCard('recon-manual-income-card', `₹${totalManualIncome.toLocaleString('en-IN')}`);
-        updateCard('recon-system-income-card', `₹${totalSysIncome.toLocaleString('en-IN')}`);
-        updateCard('recon-income-diff-card', `${finalIncomeDiff > 0 ? '+' : ''}${finalIncomeDiff.toLocaleString('en-IN')}`);
+        updateCard('recon-manual-income-card', `₹${Math.round(totalManualIncome / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-system-income-card', `₹${Math.round(totalSysIncome / divisor).toLocaleString('en-IN')}`);
+        updateCard('recon-income-diff-card', `${finalIncomeDiff > 0 ? '+' : ''}${Math.round(finalIncomeDiff / divisor).toLocaleString('en-IN')}`);
     }
 
     function modeToTitle(mode) {
@@ -5963,6 +6011,10 @@ async function initReports() {
         };
     });
     if (btnApply) btnApply.onclick = renderReport;
+
+    document.addEventListener('privacyModeChanged', () => {
+        renderReport();
+    });
 
     await populateFilters();
     updateUI();
