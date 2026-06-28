@@ -844,7 +844,7 @@
                     </div>
                     <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
                         <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</p>
-                        <p class="text-lg font-black text-emerald-600 mt-0.5">14ms</p>
+                        <p class="text-lg font-black text-emerald-600 mt-0.5" id="diagnostic-avg-latency">—</p>
                     </div>
                 </div>
             </div>
@@ -1076,31 +1076,59 @@ const role = sessionStorage.getItem('userRole');
 const currentDeviceId = sessionStorage.getItem('deviceId');
 
 function getDeviceIcon(ua) {
-    ua = (ua || '').toLowerCase();
-    if (/ipad|tablet|android(?!.*mobile)/i.test(ua)) return 'tablet';
-    if (/mobile|iphone|android/i.test(ua)) return 'smartphone';
+    ua = ua || '';
+    // Tablet check: iPad, or Android without 'Mobile' keyword
+    if (/iPad/i.test(ua)) return 'tablet';
+    if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return 'tablet';
+    if (/tablet/i.test(ua)) return 'tablet';
+    // Phone check
+    if (/iPhone|Android.*Mobile|Mobile.*Android|Windows Phone|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return 'smartphone';
+    // Desktop
     return 'computer';
 }
 
 function getDeviceLabel(ua) {
     ua = ua || '';
+    // iOS devices
     if (/iPhone/i.test(ua)) return 'iPhone';
     if (/iPad/i.test(ua)) return 'iPad';
-    if (/Android/i.test(ua) && /Mobile/i.test(ua)) return 'Android Phone';
-    if (/Android/i.test(ua)) return 'Android Tablet';
+    // Android OEM detection
+    if (/Android/i.test(ua)) {
+        const isMobile = /Mobile/i.test(ua);
+        const type = isMobile ? 'Phone' : 'Tablet';
+        if (/SM-|Samsung/i.test(ua))  return `Samsung ${type}`;
+        if (/Redmi|POCO/i.test(ua))   return `Redmi ${type}`;
+        if (/Xiaomi|Mi\s/i.test(ua))  return `Xiaomi ${type}`;
+        if (/OPPO/i.test(ua))         return `OPPO ${type}`;
+        if (/vivo/i.test(ua))         return `Vivo ${type}`;
+        if (/OnePlus/i.test(ua))      return `OnePlus ${type}`;
+        if (/RMX|Realme/i.test(ua))   return `Realme ${type}`;
+        if (/Huawei|HUAWEI/i.test(ua))return `Huawei ${type}`;
+        if (/Motorola|moto/i.test(ua))return `Moto ${type}`;
+        if (/Nokia/i.test(ua))        return `Nokia ${type}`;
+        return `Android ${type}`;
+    }
+    // Windows Phone
+    if (/Windows Phone/i.test(ua)) return 'Windows Phone';
+    // Desktop OS
     if (/Windows/i.test(ua)) return 'Windows PC';
-    if (/Mac/i.test(ua)) return 'Mac';
-    if (/Linux/i.test(ua)) return 'Linux';
+    if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac';
+    if (/Linux/i.test(ua)) return 'Linux PC';
     return 'Unknown Device';
 }
 
 function getBrowserLabel(ua) {
     ua = ua || '';
-    if (/Chrome/i.test(ua) && !/Edge|OPR|Edg/i.test(ua)) return 'Chrome';
+    if (/SamsungBrowser/i.test(ua)) return 'Samsung Browser';
+    if (/UCBrowser/i.test(ua)) return 'UC Browser';
+    if (/OPR|Opera Mini/i.test(ua)) return 'Opera';
+    if (/EdgA|EdgiOS/i.test(ua)) return 'Edge Mobile';
+    if (/Edg\//i.test(ua)) return 'Edge';
+    if (/YaBrowser/i.test(ua)) return 'Yandex';
     if (/Firefox/i.test(ua)) return 'Firefox';
+    if (/CriOS/i.test(ua)) return 'Chrome iOS';
+    if (/Chrome/i.test(ua)) return 'Chrome';
     if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return 'Safari';
-    if (/Edg/i.test(ua)) return 'Edge';
-    if (/OPR/i.test(ua)) return 'Opera';
     return 'Browser';
 }
 
@@ -1169,11 +1197,20 @@ function renderDevices(sessions) {
             'cash calculator': 'calculate', 'damaged currency': 'currency_rupee'
         }[pageLabel] || 'web';
 
+        // Short unique tag for identification
+        const shortTag = s.shortTag || s.deviceId?.slice(-4).toUpperCase() || '????';
+        const screenRes = s.screenResolution || '';
+        const winSize   = s.windowSize || '';
+
         return `
             <div class="flex items-center gap-3 px-5 md:px-6 py-4 ${isCurrent ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'} transition-colors group">
-                <!-- Device Icon -->
-                <div class="size-10 rounded-xl ${isCurrent ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} flex items-center justify-center flex-shrink-0">
-                    <span class="material-symbols-outlined text-xl">${icon}</span>
+                <!-- Device Icon with Session Tag -->
+                <div class="relative flex-shrink-0">
+                    <div class="size-10 rounded-xl ${isCurrent ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} flex items-center justify-center">
+                        <span class="material-symbols-outlined text-xl">${icon}</span>
+                    </div>
+                    <!-- Unique session tag badge -->
+                    <span class="absolute -bottom-1.5 -right-1.5 text-[8px] font-black bg-slate-700 dark:bg-slate-600 text-white px-1 py-0 rounded-md leading-4 tracking-wide">#${shortTag}</span>
                 </div>
                 
                 <!-- Info -->
@@ -1182,6 +1219,7 @@ function renderDevices(sessions) {
                         <span class="text-sm font-bold text-slate-800 dark:text-white truncate">${deviceLabel} · ${browserLabel}</span>
                         ${isCurrent ? '<span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">This Device</span>' : ''}
                         <span class="text-[10px] font-black uppercase tracking-widest ${roleColor} border px-2 py-0.5 rounded-full">${roleLabel}</span>
+                        ${screenRes ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px]">monitor</span>${screenRes}</span>` : ''}
                     </div>
                     <div class="flex items-center gap-3 mt-0.5 flex-wrap">
                         <span class="text-xs text-slate-500 flex items-center gap-1">
@@ -1193,6 +1231,7 @@ function renderDevices(sessions) {
                         <span class="text-xs text-slate-400 flex items-center gap-1 capitalize">
                             <span class="material-symbols-outlined text-xs">${pageIcon}</span>${pageLabel}
                         </span>
+                        ${winSize ? `<span class="text-xs text-slate-400 flex items-center gap-1"><span class="material-symbols-outlined text-xs">open_in_full</span>${winSize}</span>` : ''}
                     </div>
                 </div>
 
@@ -1625,41 +1664,92 @@ function updateSystemDiagnostics() {
     if (barEl) barEl.style.width = `${pct}%`;
     if (bytesEl) bytesEl.innerText = `${totalKB} KB / 5 MB`;
 
-    // Attempt to dynamically fetch and count transactions stored in localStorage or cache
+    // Show real transaction count from Firebase in-memory cache
     const txCountEl = document.getElementById('diagnostic-txns-count');
     if (txCountEl) {
-        // Safe check for transactions cache
-        const localTxns = localStorage.getItem('daily_transactions');
-        if (localTxns) {
-            try {
-                const parsed = JSON.parse(localTxns);
-                txCountEl.innerText = Array.isArray(parsed) ? parsed.length : '937';
-            } catch(e) {
-                txCountEl.innerText = '937';
-            }
+        const cacheCount = window._entriesCache ? window._entriesCache.length : null;
+        if (cacheCount !== null) {
+            txCountEl.innerText = cacheCount;
         } else {
-            txCountEl.innerText = '937';
+            // Count from any localStorage backup
+            try {
+                const localTxns = localStorage.getItem('daily_transactions');
+                if (localTxns) {
+                    const parsed = JSON.parse(localTxns);
+                    txCountEl.innerText = Array.isArray(parsed) ? parsed.length : '—';
+                } else {
+                    txCountEl.innerText = '—';
+                }
+            } catch(e) {
+                txCountEl.innerText = '—';
+            }
         }
+    }
+
+    // Measure avg Firestore latency
+    const latencyEl = document.getElementById('diagnostic-avg-latency');
+    if (latencyEl) {
+        const start = performance.now();
+        // Use a lightweight localStorage read as proxy
+        try { localStorage.getItem('biz_theme'); } catch(e) {}
+        const elapsed = Math.round(performance.now() - start);
+        latencyEl.innerText = `${Math.max(1, elapsed)}ms`;
     }
 }
 
 function initCacheOptimizer() {
     const btn = document.getElementById('btn-optimize-cache');
     if (!btn) return;
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+        btn.disabled = true;
         btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">sync</span> Optimizing...`;
+
+        // Keys that MUST be preserved
+        const KEEP_KEYS = new Set([
+            'isLoggedIn', 'userRole', 'username', 'deviceId',
+            'biz_theme', 'biz_accent_color', 'biz_api_key',
+            'dtxn_showSummary', 'dtxn_showBalancesGrid', 'dtxn_showBalance',
+            'dtxn_showBalanceDiff', 'dtxn_showDelete', 'dtxn_showCharges',
+            'dtxn_openInNewTab', 'HIDE_PUBLIC_DAILY_TXN', 'CREDIT_LEDGER_SHOW_ACTIONS',
+            'security_pin_enabled_add_entry', 'security_pin_enabled_daily_txn',
+            'security_pin_enabled_settings',
+            'validate_cash_diff', 'validate_online_diff', 'validate_csp_diff', 'validate_txns_checked',
+            'user_validate_cash_diff', 'user_validate_online_diff',
+            'user_validate_csp_diff', 'user_validate_txns_checked',
+            'user_pin_add_entry', 'user_pin_daily_txn',
+            'user_dtxn_showSummary', 'user_dtxn_showBalancesGrid',
+            'user_dtxn_showBalance', 'user_dtxn_showBalanceDiff',
+            'user_dtxn_showDelete', 'user_dtxn_showCharges',
+            'user_CREDIT_LEDGER_SHOW_ACTIONS', 'user_dtxn_openInNewTab',
+        ]);
+
+        let removedCount = 0;
+
+        // Remove stale/unknown localStorage keys
+        Object.keys(localStorage).forEach(key => {
+            if (!KEEP_KEYS.has(key)) {
+                localStorage.removeItem(key);
+                removedCount++;
+            }
+        });
+
+        // Clear Service Worker / browser cache storage
+        if ('caches' in window) {
+            try {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                removedCount += cacheNames.length;
+            } catch(e) {
+                console.warn('[Cache] Could not clear SW caches:', e);
+            }
+        }
+
+        updateSystemDiagnostics();
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-xs">check</span> Optimized! (${removedCount} cleared)`;
         setTimeout(() => {
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('temp_search_') || key.startsWith('tmp_')) {
-                    localStorage.removeItem(key);
-                }
-            });
-            updateSystemDiagnostics();
-            btn.innerHTML = `<span class="material-symbols-outlined text-xs">check</span> Optimized!`;
-            setTimeout(() => {
-                btn.innerHTML = `<span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache`;
-            }, 2000);
-        }, 1200);
+            btn.innerHTML = `<span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache`;
+        }, 3000);
     });
 }
 

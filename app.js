@@ -52,25 +52,34 @@ window._startGlobalEntriesListener();
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
     if (!isLoggedIn) return;
 
-    // Generate/retrieve a stable device ID for this browser session
-    let deviceId = sessionStorage.getItem('deviceId');
-    if (!deviceId) {
-        deviceId = 'dev_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
-        sessionStorage.setItem('deviceId', deviceId);
-    }
+
 
     const username = sessionStorage.getItem('username') || 'Unknown';
     const role = sessionStorage.getItem('userRole') || 'user';
     const ua = navigator.userAgent;
+
+    // Always generate a FRESH deviceId per page load (per tab)
+    // Using sessionStorage would share ID across duplicate tabs — we don't want that.
+    const tabRandom = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+        : Math.random().toString(36).slice(2, 14);
+    const deviceId = 'tab_' + tabRandom;
+    sessionStorage.setItem('deviceId', deviceId); // update so revoke listener uses correct ID
+
+    // Short unique tag (last 4 chars) for display
+    const shortTag = deviceId.slice(-4).toUpperCase();
 
     async function writeHeartbeat() {
         if (!db) { console.warn('[Session] Firestore db not ready'); return; }
         try {
             await setDoc(doc(db, 'active_sessions', deviceId), {
                 deviceId,
+                shortTag,
                 username,
                 role,
                 userAgent: ua,
+                screenResolution: `${screen.width}×${screen.height}`,
+                windowSize: `${window.innerWidth}×${window.innerHeight}`,
                 lastSeen: serverTimestamp(),
                 lastSeenMs: Date.now(),
                 page: window.location.pathname.split('/').pop() || 'index.html'
