@@ -9355,6 +9355,9 @@ async function initDailyTxn() {
 
         tableBody.innerHTML = '';
 
+        const todayDateObj = new Date();
+        const todayStr = `${todayDateObj.getFullYear()}-${String(todayDateObj.getMonth() + 1).padStart(2, '0')}-${String(todayDateObj.getDate()).padStart(2, '0')}`;
+
         txnsToRender.forEach((txn, index) => {
             const tr = document.createElement('tr');
             tr.dataset.id = txn.id;
@@ -9365,6 +9368,7 @@ async function initDailyTxn() {
             const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
 
             const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
+            const isAdvance = txn.date && txn.date > todayStr;
 
             tr.innerHTML = `
                 <td class="checking-col-cell ${window.isCheckingMode ? '' : 'hidden'} px-3 py-1.5 text-center align-middle" data-txn-id="${txn.id}">
@@ -9384,11 +9388,12 @@ async function initDailyTxn() {
                         <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wide">${time || 'NA'}</span>
                         </div>
-                        <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
-                            <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">${txn.date || 'NA'}</span>
+                        <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${isAdvance ? 'bg-amber-100 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50'} border w-full h-[22px]" ${isAdvance ? 'title="Advance Transaction"' : ''}>
+                            <span class="text-[9px] font-bold ${isAdvance ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'} uppercase tracking-wider">${txn.date || 'NA'}</span>
                         </div>
                     </div>
                 </td>
+
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-center gap-1 mx-auto">
                         <span class="px-2 py-1 rounded text-[10px] font-bold tracking-wide flex items-center justify-center gap-1 w-[140px] whitespace-nowrap ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :

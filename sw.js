@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v4';
+const CACHE_NAME = 'biz-report-v5'; // Bumped version
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -17,7 +17,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(ASSETS_TO_CACHE))
-      .then(self.skipWaiting())
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -31,15 +31,33 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Take control of all tabs immediately
   );
 });
 
+// Network-First Strategy: Fetch from network, update cache if successful, fallback to cache if offline
 self.addEventListener('fetch', (event) => {
+  // Only handle local/GET requests
+  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then((response) => {
-        return response || fetch(event.request);
+        // If we got a valid response, clone it and save to cache
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Fallback to cache if network fails (offline)
+        return caches.match(event.request);
       })
   );
 });
+
