@@ -81,9 +81,51 @@ window._startGlobalEntriesListener();
         }
     }
 
+    // ─── Real-time Revoke Listener ────────────────────────────────
+    // Watches this device's session doc. If admin deletes it (revokes),
+    // this device is immediately logged out.
+    function startRevokeListener() {
+        if (!db) return;
+        const sessionDocRef = doc(db, 'active_sessions', deviceId);
+        onSnapshot(sessionDocRef, (docSnap) => {
+            if (!docSnap.exists()) {
+                // Session was revoked by admin — force logout
+                console.warn('[Session] Session revoked by admin. Logging out...');
+                sessionStorage.removeItem('isLoggedIn');
+                sessionStorage.removeItem('userRole');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('deviceId');
+
+                // Show revoke overlay then redirect
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position:fixed;inset:0;z-index:9999999;
+                    background:linear-gradient(135deg,#e11d48,#9f1239);
+                    display:flex;flex-direction:column;
+                    align-items:center;justify-content:center;
+                    animation:fadeInOverlay 0.3s ease forwards;
+                `;
+                overlay.innerHTML = `
+                    <style>@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}</style>
+                    <span class="material-symbols-outlined" style="font-size:56px;color:#fff;margin-bottom:16px;">no_accounts</span>
+                    <h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 8px;font-family:Inter,sans-serif;">Session Revoked</h2>
+                    <p style="color:rgba(255,255,255,0.7);font-size:13px;font-family:Inter,sans-serif;margin:0;">Your session was ended by an administrator.</p>
+                `;
+                document.body.appendChild(overlay);
+
+                setTimeout(() => {
+                    window.location.replace('index.html');
+                }, 2000);
+            }
+        }, (err) => {
+            console.error('[Session] Revoke listener error:', err);
+        });
+    }
+
     // Delay first write by 2s to let Firebase fully initialize
     setTimeout(() => {
         writeHeartbeat();
+        startRevokeListener();
         const heartbeatInterval = setInterval(writeHeartbeat, 30000);
 
         // Remove session on page unload (best-effort)
@@ -93,6 +135,7 @@ window._startGlobalEntriesListener();
         });
     }, 2000);
 })();
+
 
 
 /**
