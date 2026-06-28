@@ -69,6 +69,20 @@ window._startGlobalEntriesListener();
     // Short unique tag (last 4 chars) for display
     const shortTag = deviceId.slice(-4).toUpperCase();
 
+    // Fetch approximate location from IP (no permission needed)
+    async function fetchLocation() {
+        try {
+            const res = await fetch('https://ip-api.com/json/?fields=city,regionName,country');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.city) return `${data.city}, ${data.regionName}`;
+            }
+        } catch (e) { /* silent fail */ }
+        return '';
+    }
+
+    let sessionLocation = '';
+
     async function writeHeartbeat() {
         if (!db) { console.warn('[Session] Firestore db not ready'); return; }
         try {
@@ -80,6 +94,7 @@ window._startGlobalEntriesListener();
                 userAgent: ua,
                 screenResolution: `${screen.width}×${screen.height}`,
                 windowSize: `${window.innerWidth}×${window.innerHeight}`,
+                location: sessionLocation,
                 lastSeen: serverTimestamp(),
                 lastSeenMs: Date.now(),
                 page: window.location.pathname.split('/').pop() || 'index.html'
@@ -93,12 +108,18 @@ window._startGlobalEntriesListener();
     // ─── Real-time Revoke Listener ────────────────────────────────
     // Watches this device's session doc. If admin deletes it (revokes),
     // this device is immediately logged out.
+    // IMPORTANT: sessionWritten flag ensures we don't logout when the
+    // document simply doesn't exist yet (fresh page load, not yet written).
     function startRevokeListener() {
         if (!db) return;
+        let sessionWritten = false; // becomes true after first heartbeat confirmed
         const sessionDocRef = doc(db, 'active_sessions', deviceId);
         onSnapshot(sessionDocRef, (docSnap) => {
-            if (!docSnap.exists()) {
-                // Session was revoked by admin — force logout
+            if (docSnap.exists()) {
+                // Document exists — mark that our session is live
+                sessionWritten = true;
+            } else if (sessionWritten) {
+                // Document was there before, now gone → admin revoked us
                 console.warn('[Session] Session revoked by admin. Logging out...');
                 sessionStorage.removeItem('isLoggedIn');
                 sessionStorage.removeItem('userRole');
@@ -126,13 +147,16 @@ window._startGlobalEntriesListener();
                     window.location.replace('index.html');
                 }, 2000);
             }
+            // else: doc doesn't exist yet and hasn't been written — normal on fresh load, ignore
         }, (err) => {
             console.error('[Session] Revoke listener error:', err);
         });
     }
 
     // Delay first write by 2s to let Firebase fully initialize
-    setTimeout(() => {
+    // Also await location fetch so it's included from the very first heartbeat
+    setTimeout(async () => {
+        sessionLocation = await fetchLocation();
         writeHeartbeat();
         startRevokeListener();
         const heartbeatInterval = setInterval(writeHeartbeat, 30000);

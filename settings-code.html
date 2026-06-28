@@ -1201,6 +1201,7 @@ function renderDevices(sessions) {
         const shortTag = s.shortTag || s.deviceId?.slice(-4).toUpperCase() || '????';
         const screenRes = s.screenResolution || '';
         const winSize   = s.windowSize || '';
+        const location  = s.location || '';
 
         return `
             <div class="flex items-center gap-3 px-5 md:px-6 py-4 ${isCurrent ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'} transition-colors group">
@@ -1232,6 +1233,7 @@ function renderDevices(sessions) {
                             <span class="material-symbols-outlined text-xs">${pageIcon}</span>${pageLabel}
                         </span>
                         ${winSize ? `<span class="text-xs text-slate-400 flex items-center gap-1"><span class="material-symbols-outlined text-xs">open_in_full</span>${winSize}</span>` : ''}
+                        ${location ? `<span class="text-xs text-slate-400 flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span>${location}</span>` : ''}
                     </div>
                 </div>
 
