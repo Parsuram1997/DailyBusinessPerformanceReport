@@ -2078,15 +2078,31 @@ async function initAddEntry() {
                             });
                         }
                     });
-                    
                     if (uncheckedTxns.length > 0) {
+                        const accentColor = localStorage.getItem('biz_accent_color') || '#7f13ec';
+                        const grouped = {};
+                        uncheckedTxns.forEach(t => {
+                            const key = `${t.type}_${t.provider}`;
+                            if (!grouped[key]) {
+                                grouped[key] = {
+                                    type: t.type,
+                                    provider: t.provider,
+                                    amount: 0,
+                                    count: 0
+                                };
+                            }
+                            grouped[key].amount += Number(t.amount);
+                            grouped[key].count += 1;
+                        });
+                        const groupedList = Object.values(grouped);
+
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Alert',
-                                html: `<div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.</div><br><div class="max-h-[200px] overflow-y-auto pr-1">` + 
-                                      uncheckedTxns.map(t => `<div class="text-xs text-left mt-1.5 border-b border-primary/10 pb-1.5 flex justify-between"><span>Type: <b>${t.type}</b> (Provider: ${t.provider})</span> <span>Amount: <b>₹${t.amount}</b></span></div>`).join('') + `</div>`,
+                                html: `<div class="text-sm font-bold" style="color: inherit; opacity: 0.9; line-height: 1.5; margin-bottom: 12px;">Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.</div><br><div class="max-h-[200px] overflow-y-auto pr-1">` + 
+                                      groupedList.map(g => `<div class="text-xs text-left mt-1.5 border-b border-primary/10 pb-1.5 flex justify-between" style="color: inherit; opacity: 0.85;"><span>Type: <b style="color: ${accentColor};">${g.type}</b> (Provider: ${g.provider}) <span class="opacity-60 font-medium">x${g.count}</span></span> <span>Amount: <b>₹${g.amount}</b></span></div>`).join('') + `</div>`,
                                 icon: 'error',
-                                confirmButtonColor: '#7f13ec'
+                                confirmButtonColor: accentColor
                             });
                         } else {
                             alert('Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.');
@@ -5712,12 +5728,18 @@ function protectPrivilegedLinks() {
             e.stopImmediatePropagation();
             
             if (document.getElementById('pin-modal')) return;
-
             const targetHref = link.getAttribute('href') || link.getAttribute('data-page');
             const routeName = (targetHref && targetHref.includes('settings')) ? 'Settings' : 'Add Entry';
+            const accentColor = localStorage.getItem('biz_accent_color') || '#7f13ec';
 
             const modalHTML = `
             <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);">
+                <style>
+                    @keyframes pin-spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
                 <div style="background:white;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.2);text-align:center;width:90%;max-width:320px;" class="dark:bg-slate-800">
                     <h3 style="margin-top:0;font-weight:bold;color:#1e293b;font-size:18px;margin-bottom:8px;" class="dark:text-white">Security Check</h3>
                     <p style="color:#64748b;font-size:13px;margin-bottom:20px;" class="dark:text-slate-400">Enter the 6-digit PIN to access ${routeName}.</p>
@@ -5729,12 +5751,11 @@ function protectPrivilegedLinks() {
                     </div>
 
                     <div style="display:flex;gap:12px;">
-                        <button id="pin-cancel" style="flex:1;padding:12px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:bold;cursor:pointer;" class="dark:bg-slate-700 dark:text-white">Cancel</button>
-                        <button id="pin-submit" style="flex:1;padding:12px;border:none;background:#7f13ec;color:white;border-radius:8px;font-weight:bold;cursor:pointer;">Unlock</button>
+                        <button id="pin-cancel" style="flex:1;padding:12px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-weight:bold;cursor:pointer;" class="dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancel</button>
+                        <button id="pin-submit" style="flex:1;padding:12px;border:none;background:${accentColor};color:white;border-radius:8px;font-weight:bold;cursor:pointer;">Unlock</button>
                     </div>
                 </div>
             </div>`;
-            
             document.body.insertAdjacentHTML('beforeend', modalHTML);
             
             const inputs = document.querySelectorAll('.pin-digit');
@@ -5751,8 +5772,25 @@ function protectPrivilegedLinks() {
                 if (pin.length < 6) return; // Wait until all are filled
 
                 if (pin === "202526") {
-                    close();
-                    if(targetHref) window.location.href = targetHref;
+                    const submitBtn = document.getElementById('pin-submit');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.7';
+                        submitBtn.style.cursor = 'not-allowed';
+                        submitBtn.innerHTML = `
+                            <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                                <svg style="animation:pin-spin 1s linear infinite;width:16px;height:16px;color:white;" fill="none" viewBox="0 0 24 24">
+                                    <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Unlocking...</span>
+                            </div>
+                        `;
+                    }
+                    setTimeout(() => {
+                        close();
+                        if(targetHref) window.location.href = targetHref;
+                    }, 300);
                 } else {
                     inputs.forEach(i => { i.style.borderColor = "#ef4444"; i.value = ""; });
                     inputs[0].focus();
@@ -6036,6 +6074,29 @@ async function initDailyTxn() {
     let currentTxnFilter = 'ALL';
     let currentStartCash = 0;
     let currentStartOnline = 0;
+
+    // Last 10 Rows Filter
+    window.showOnlyLast10 = true;
+    const toggleLast10Btn = document.getElementById('toggle-last-10-btn');
+    const updateLast10BtnDisplay = () => {
+        if (!toggleLast10Btn) return;
+        if (window.showOnlyLast10) {
+            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all border border-primary/20 font-bold text-xs shadow-lg shadow-primary/10 cursor-pointer";
+        } else {
+            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all border border-slate-200 dark:border-white/5 font-bold text-xs cursor-pointer";
+        }
+    };
+    if (toggleLast10Btn) {
+        toggleLast10Btn.onclick = () => {
+            window.showOnlyLast10 = !window.showOnlyLast10;
+            updateLast10BtnDisplay();
+            renderBadgesAndTable();
+            if (typeof window.applyDailyTxnFilters === 'function') {
+                window.applyDailyTxnFilters();
+            }
+        };
+        updateLast10BtnDisplay();
+    }
 
     // All-Time Search Functionality
     window.isAllTimeSearchMode = false;
@@ -8366,6 +8427,10 @@ async function initDailyTxn() {
 
         // Now filter the table data
         let txnsToRender = currentTxnFilter === 'ALL' ? allTxnsForDate : (currentTxnFilter === 'PENDING' ? allTxnsForDate.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : allTxnsForDate.filter(t => t.type === currentTxnFilter));
+
+        if (window.showOnlyLast10 && !window.isAllTimeSearchMode) {
+            txnsToRender = txnsToRender.slice(0, 10);
+        }
 
         if (window.isAllTimeSearchMode) {
             const term = searchInput ? searchInput.value.toLowerCase().trim() : '';

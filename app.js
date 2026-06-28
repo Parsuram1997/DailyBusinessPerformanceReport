@@ -2264,15 +2264,31 @@ async function initAddEntry() {
                             });
                         }
                     });
-                    
                     if (uncheckedTxns.length > 0) {
+                        const accentColor = localStorage.getItem('biz_accent_color') || '#7f13ec';
+                        const grouped = {};
+                        uncheckedTxns.forEach(t => {
+                            const key = `${t.type}_${t.provider}`;
+                            if (!grouped[key]) {
+                                grouped[key] = {
+                                    type: t.type,
+                                    provider: t.provider,
+                                    amount: 0,
+                                    count: 0
+                                };
+                            }
+                            grouped[key].amount += Number(t.amount);
+                            grouped[key].count += 1;
+                        });
+                        const groupedList = Object.values(grouped);
+
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Alert',
-                                html: `<div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.</div><br><div class="max-h-[200px] overflow-y-auto pr-1">` + 
-                                      uncheckedTxns.map(t => `<div class="text-xs text-left mt-1.5 border-b border-primary/10 pb-1.5 flex justify-between"><span>Type: <b>${t.type}</b> (Provider: ${t.provider})</span> <span>Amount: <b>₹${t.amount}</b></span></div>`).join('') + `</div>`,
+                                html: `<div class="text-sm font-bold" style="color: inherit; opacity: 0.9; line-height: 1.5; margin-bottom: 12px;">Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.</div><br><div class="max-h-[200px] overflow-y-auto pr-1">` + 
+                                      groupedList.map(g => `<div class="text-xs text-left mt-1.5 border-b border-primary/10 pb-1.5 flex justify-between" style="color: inherit; opacity: 0.85;"><span>Type: <b style="color: ${accentColor};">${g.type}</b> (Provider: ${g.provider}) <span class="opacity-60 font-medium">x${g.count}</span></span> <span>Amount: <b>₹${g.amount}</b></span></div>`).join('') + `</div>`,
                                 icon: 'error',
-                                confirmButtonColor: '#7f13ec'
+                                confirmButtonColor: accentColor
                             });
                         } else {
                             alert('Cannot save daily record because some transaction types (AEPS, MATM, Deposit, or Withdrawal) are unchecked. Please verify all of them on the Daily Txn page first.');
@@ -6518,18 +6534,25 @@ async function initBankWithdrawals() {
 
     await renderView();
 }
-
 window.showSecurityPIN = function (routeName, onSuccess, onCancel) {
     if (document.getElementById('pin-modal')) return;
 
+    const accentColor = localStorage.getItem('biz_accent_color') || '#7f13ec';
+
     const modalHTML = `
     <div id="pin-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(10px);">
-        <div style="background:white;padding:32px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;width:90%;max-width:360px;border:1px solid rgba(127,19,236,0.2);" class="dark:bg-slate-900 dark:border-primary/30">
-            <div style="width:64px;height:64px;background:rgba(127,19,236,0.1);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#7f13ec;">
+        <style>
+            @keyframes pin-spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        </style>
+        <div style="background:white;padding:32px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);text-align:center;width:90%;max-width:360px;border:1px solid ${accentColor}33;" class="dark:bg-slate-900 dark:border-primary/30">
+            <div style="width:64px;height:64px;background:${accentColor}1a;border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:${accentColor};">
                 <span class="material-symbols-outlined" style="font-size:32px;">lock</span>
             </div>
             <h3 style="margin-top:0;font-weight:900;color:#1e293b;font-size:22px;margin-bottom:8px;letter-spacing:-0.025em;" class="dark:text-white">Security Check</h3>
-            <p style="color:#64748b;font-size:14px;margin-bottom:28px;font-weight:500;line-height:1.5;" class="dark:text-slate-400">Enter the 6-digit PIN to access <br/><span style="color:#7f13ec;font-weight:bold;">${routeName}</span>.</p>
+            <p style="color:#64748b;font-size:14px;margin-bottom:28px;font-weight:500;line-height:1.5;" class="dark:text-slate-400">Enter the 6-digit PIN to access <br/><span style="color:${accentColor};font-weight:bold;">${routeName}</span>.</p>
             
             <div style="display:flex;gap:8px;justify-content:center;margin-bottom:32px;" id="pin-container">
                 ${[1, 2, 3, 4, 5, 6].map(() => `
@@ -6539,7 +6562,7 @@ window.showSecurityPIN = function (routeName, onSuccess, onCancel) {
 
             <div style="display:flex;gap:12px;">
                 <button id="pin-cancel" style="flex:1;padding:14px;border:none;background:#f1f5f9;color:#475569;border-radius:14px;font-weight:bold;cursor:pointer;transition:all 0.2s;" class="dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200">Cancel</button>
-                <button id="pin-submit" style="flex:1;padding:14px;border:none;background:#7f13ec;color:white;border-radius:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(127,19,236,0.3);transition:all 0.2s;" class="hover:scale-[1.02] active:scale-[0.98]">Unlock</button>
+                <button id="pin-submit" style="flex:1;padding:14px;border:none;background:${accentColor};color:white;border-radius:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px ${accentColor}4d;transition:all 0.2s;" class="hover:scale-[1.02] active:scale-[0.98]">Unlock</button>
             </div>
         </div>
     </div>`;
@@ -6564,8 +6587,25 @@ window.showSecurityPIN = function (routeName, onSuccess, onCancel) {
         if (pin.length < 6) return;
 
         if (pin === "202526") {
-            close();
-            if (onSuccess) onSuccess();
+            const submitBtn = document.getElementById('pin-submit');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.7';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <svg style="animation:pin-spin 1s linear infinite;width:16px;height:16px;color:white;" fill="none" viewBox="0 0 24 24">
+                            <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Unlocking...</span>
+                    </div>
+                `;
+            }
+            setTimeout(() => {
+                close();
+                if (onSuccess) onSuccess();
+            }, 300);
         } else {
             inputs.forEach(i => {
                 i.style.borderColor = "#ef4444";
@@ -9283,6 +9323,10 @@ async function initDailyTxn() {
         // Now filter the table data
         let txnsToRender = currentTxnFilter === 'ALL' ? txns : (currentTxnFilter === 'PENDING' ? txns.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : txns.filter(t => t.type === currentTxnFilter));
 
+        if (window.showOnlyLast10 && !window.isAllTimeSearchMode) {
+            txnsToRender = txnsToRender.slice(0, 10);
+        }
+
         if (window.isAllTimeSearchMode) {
             const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const keywords = term.split(/\s+/).filter(k => k.length > 0);
@@ -10060,6 +10104,29 @@ async function initDailyTxn() {
             console.error('Error setting up daily txn listener:', e);
         }
     };
+
+    // Last 10 Rows Filter
+    window.showOnlyLast10 = true;
+    const toggleLast10Btn = document.getElementById('toggle-last-10-btn');
+    const updateLast10BtnDisplay = () => {
+        if (!toggleLast10Btn) return;
+        if (window.showOnlyLast10) {
+            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all border border-primary/20 font-bold text-xs shadow-lg shadow-primary/10 cursor-pointer";
+        } else {
+            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all border border-slate-200 dark:border-white/5 font-bold text-xs cursor-pointer";
+        }
+    };
+    if (toggleLast10Btn) {
+        toggleLast10Btn.onclick = () => {
+            window.showOnlyLast10 = !window.showOnlyLast10;
+            updateLast10BtnDisplay();
+            renderBadgesAndTable();
+            if (typeof window.applyDailyTxnFilters === 'function') {
+                window.applyDailyTxnFilters();
+            }
+        };
+        updateLast10BtnDisplay();
+    }
 
     // Checking Mode & Search Functionality
     window.isCheckingMode = false;

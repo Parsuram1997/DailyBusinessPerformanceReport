@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v6'; // Bumped: PWA session fix (localStorage auth)
+const CACHE_NAME = 'biz-report-v17'; // Bumped: Made unlock and alert styles dynamic using App Personalization accent color
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
