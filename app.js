@@ -1736,7 +1736,7 @@ async function initAddEntry() {
                 const total = updateOnlineSplitTotal();
                 
                 // Add Validation
-                const isValidate = localStorage.getItem('validate_online_diff') !== 'false';
+                const isValidate = window.getAppSetting ? window.getAppSetting('validate_online_diff', true) : (localStorage.getItem('validate_online_diff') !== 'false');
                 if (isValidate) {
                     const inputs = ['online_p1', 'online_p2', 'online_p3'];
                     let hasExceeded = false;
@@ -1846,7 +1846,7 @@ async function initAddEntry() {
                 const total = updateRoinetSplitTotal();
                 
                 // Add Validation
-                const isValidate = localStorage.getItem('validate_csp_diff') !== 'false';
+                const isValidate = window.getAppSetting ? window.getAppSetting('validate_csp_diff', true) : (localStorage.getItem('validate_csp_diff') !== 'false');
                 if (isValidate) {
                     const inputs = ['roinet_1', 'roinet_2', 'airtel_1', 'airtel_2', 'spicemoney'];
                     let hasExceeded = false;
@@ -2014,7 +2014,7 @@ async function initAddEntry() {
             let validationErrorMsg = '';
 
             const checkDifferences = (inputIds, settingKey) => {
-                if (localStorage.getItem(settingKey) === 'false') return;
+                if (window.getAppSetting ? !window.getAppSetting(settingKey, true) : (localStorage.getItem(settingKey) === 'false')) return;
                 const nameMap = {
                     'online_p1': 'Online(Parsu)',
                     'online_p2': 'Online(Shop)',
@@ -2048,7 +2048,7 @@ async function initAddEntry() {
             }
 
             const checkMainDifference = (inputId, expId, name, settingKey) => {
-                 if (localStorage.getItem(settingKey) === 'false') return;
+                 if (window.getAppSetting ? !window.getAppSetting(settingKey, true) : (localStorage.getItem(settingKey) === 'false')) return;
                  const inp = document.getElementById(inputId);
                  const exp = document.getElementById(expId);
                  if (inp && inp.value !== '' && exp && exp.dataset && exp.dataset.val != null) {
@@ -2066,7 +2066,7 @@ async function initAddEntry() {
             if (!hasValidationError) checkMainDifference('roinet', 'expected-split-total-display', 'CSP Wallet', 'validate_csp_diff');
 
             // Check TOTAL ONLINE Group Difference
-            if (!hasValidationError && localStorage.getItem('validate_online_diff') !== 'false') {
+            if (!hasValidationError && (window.getAppSetting ? window.getAppSetting('validate_online_diff', true) : (localStorage.getItem('validate_online_diff') !== 'false'))) {
                 const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
                 const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
                 if (typeof currentSystemOnline !== 'undefined') {
@@ -2079,7 +2079,7 @@ async function initAddEntry() {
             }
 
             // Check CASH Difference
-            if (!hasValidationError && localStorage.getItem('validate_cash_diff') !== 'false') {
+            if (!hasValidationError && (window.getAppSetting ? window.getAppSetting('validate_cash_diff', true) : (localStorage.getItem('validate_cash_diff') !== 'false'))) {
                 const cashInput = parseFloat(document.getElementById('cash')?.value) || 0;
                 let expectedCash = 0;
                 if (window._roinetBreakdown && window._roinetBreakdown.cash) {
@@ -3118,7 +3118,7 @@ async function initCalculator() {
             const finalAmount = parseFloat(totalText);
             if (finalAmount > 0) {
                 // Add Validation
-                const isValidate = localStorage.getItem('validate_cash_diff') !== 'false';
+                const isValidate = window.getAppSetting ? window.getAppSetting('validate_cash_diff', true) : (localStorage.getItem('validate_cash_diff') !== 'false');
                 if (isValidate && typeof currentSystemCash !== 'undefined') {
                     if (Math.abs(finalAmount - currentSystemCash) > 2000) {
                         if (typeof Swal !== 'undefined') {
