@@ -1156,6 +1156,13 @@ async function initAddEntry() {
                 } else if (t.type === 'CASH_DEPOSIT') {
                     deltas.online += amt;
                     updateOnlineSubDelta(t.depositBy, amt, true);
+                } else if (t.type === 'ONLINE_EXCHANGE') {
+                    // Source account (paymentApp) loses amount
+                    const sourceAcct = t.paymentApp || '';
+                    // Destination account (provider) gains amount
+                    const destAcct = t.provider || '';
+                    updateOnlineSubDelta(sourceAcct, amt, false); // minus from source
+                    updateOnlineSubDelta(destAcct, amt, true);    // plus to destination
                 }
             });
 
