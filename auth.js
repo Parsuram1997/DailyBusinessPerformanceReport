@@ -52,19 +52,39 @@ function handleLogin(event) {
     const err = document.getElementById('login-error');
     if (err) err.classList.add('hidden');
 
+    const btn = document.querySelector('#login-form button[type="submit"]');
+    const originalBtnContent = btn ? btn.innerHTML : '';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg> <span>Signing In...</span>`;
+    }
+
     const matched = USERS.find(user => user.username === u && user.password === p);
 
     if (matched) {
         sessionStorage.setItem('isLoggedIn', 'true');
         sessionStorage.setItem('userRole', matched.role);
         sessionStorage.setItem('username', matched.username);
-        window.location.href = 'dashboard-code.html';
+        
+        setTimeout(() => {
+            window.location.href = 'dashboard-code.html';
+        }, 800);
     } else {
-        if (err) {
-            err.classList.remove('hidden');
-        } else {
-            alert('Invalid credentials. Please try again.');
-        }
+        setTimeout(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
+            }
+            if (err) {
+                err.classList.remove('hidden');
+            } else {
+                alert('Invalid credentials. Please try again.');
+            }
+        }, 600);
     }
 }
 
