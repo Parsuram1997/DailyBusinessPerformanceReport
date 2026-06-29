@@ -135,17 +135,19 @@ setupEntriesListener();
 // Registers this device in Firestore 'active_sessions' with periodic heartbeats.
 // Used by Settings page to show real-time active devices list.
 (function startSessionTrackingV2() {
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = (window.authGet ? window.authGet('isLoggedIn') : sessionStorage.getItem('isLoggedIn')) === 'true';
     if (!isLoggedIn || !db) return;
 
-    let deviceId = sessionStorage.getItem('deviceId');
+    // Use stable deviceId from localStorage (set at login), fallback to sessionStorage
+    let deviceId = localStorage.getItem('auth_deviceId') || sessionStorage.getItem('deviceId');
     if (!deviceId) {
         deviceId = 'dev_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
+        localStorage.setItem('auth_deviceId', deviceId);
         sessionStorage.setItem('deviceId', deviceId);
     }
 
-    const username = sessionStorage.getItem('username') || 'Unknown';
-    const role = sessionStorage.getItem('userRole') || 'user';
+    const username = (window.authGet ? window.authGet('username') : sessionStorage.getItem('username')) || 'Unknown';
+    const role = (window.authGet ? window.authGet('userRole') : sessionStorage.getItem('userRole')) || 'user';
     const ua = navigator.userAgent;
 
     async function writeHeartbeatV2() {

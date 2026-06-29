@@ -1071,9 +1071,9 @@ import {
     collection, onSnapshot, deleteDoc, doc, query, where, Timestamp
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-// Only show to admin
-const role = sessionStorage.getItem('userRole');
-const currentDeviceId = sessionStorage.getItem('deviceId');
+// Only show to admin — use localStorage (auth_ prefix) for PWA compatibility
+const role = localStorage.getItem('auth_userRole') || sessionStorage.getItem('userRole');
+const currentDeviceId = localStorage.getItem('auth_deviceId') || sessionStorage.getItem('deviceId');
 
 function getDeviceIcon(ua) {
     ua = ua || '';
