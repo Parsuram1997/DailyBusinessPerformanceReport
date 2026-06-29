@@ -10190,6 +10190,57 @@ async function initDailyTxn() {
     const summaryBalancesGrid = document.getElementById('summary-balances-grid');
     const summaryBadgesArea = document.getElementById('summary-badges-area');
 
+    // Toggle Summary Visibility Logic
+    const toggleSummaryGridBtn = document.getElementById('toggle-summary-visibility-btn');
+    if (toggleSummaryGridBtn) {
+        let isSummaryVisible = localStorage.getItem('isSummaryVisible') !== 'false'; // default true
+        
+        const updateSummaryVisibility = () => {
+            const icon = toggleSummaryGridBtn.querySelector('.material-symbols-outlined');
+            const text = toggleSummaryGridBtn.querySelector('span:not(.material-symbols-outlined)');
+            
+            const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+            const adminShowGrid = getSetting('dtxn_showBalancesGrid', true);
+            const adminShowBadges = getSetting('dtxn_showSummary', true);
+
+            // Hide the toggle button if admin disabled BOTH
+            if (!adminShowGrid && !adminShowBadges) {
+                toggleSummaryGridBtn.style.display = 'none';
+                if (summaryBalancesGrid) summaryBalancesGrid.style.display = 'none';
+                if (summaryBadgesArea) summaryBadgesArea.style.display = 'none';
+                return;
+            } else {
+                toggleSummaryGridBtn.style.display = '';
+            }
+            
+            if (isSummaryVisible) {
+                if (summaryBalancesGrid) summaryBalancesGrid.style.display = adminShowGrid ? '' : 'none';
+                if (summaryBadgesArea) summaryBadgesArea.style.display = adminShowBadges ? '' : 'none';
+                if (icon) icon.innerText = 'visibility_off';
+                if (text) text.innerText = 'Hide';
+                toggleSummaryGridBtn.classList.remove('bg-amber-50', 'text-amber-600', 'dark:bg-amber-500/10', 'dark:text-amber-400');
+                toggleSummaryGridBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'hover:bg-amber-50', 'hover:text-amber-600', 'dark:hover:bg-amber-500/10', 'dark:hover:text-amber-400');
+            } else {
+                if (summaryBalancesGrid) summaryBalancesGrid.style.display = 'none';
+                if (summaryBadgesArea) summaryBadgesArea.style.display = 'none';
+                if (icon) icon.innerText = 'visibility';
+                if (text) text.innerText = 'Show';
+                toggleSummaryGridBtn.classList.add('bg-amber-50', 'text-amber-600', 'dark:bg-amber-500/10', 'dark:text-amber-400');
+                toggleSummaryGridBtn.classList.remove('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'hover:bg-amber-50', 'hover:text-amber-600', 'dark:hover:bg-amber-500/10', 'dark:hover:text-amber-400');
+            }
+        };
+        
+        updateSummaryVisibility(); // initial state
+        
+        toggleSummaryGridBtn.onclick = () => {
+            isSummaryVisible = !isSummaryVisible;
+            localStorage.setItem('isSummaryVisible', isSummaryVisible);
+            updateSummaryVisibility();
+        };
+
+        // Listen for setting changes
+        window.addEventListener('appSettingsUpdated', updateSummaryVisibility);
+    }
     const loadAllTimeTransactions = (fromDate, toDate) => {
         try {
             if (unsubscribe) unsubscribe();
