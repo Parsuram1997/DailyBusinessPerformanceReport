@@ -8280,7 +8280,7 @@ async function initDailyTxn() {
                     const isNewLogic = normalizeDate(date) >= normalizeDate('2026-05-01');
                     const isJio = provider.includes('jio');
                     
-
+                    if (!['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
                         if (t.chargesType === 'Online') currentOnline += chg;
                         else currentCash += chg;
                     }
@@ -8301,7 +8301,7 @@ async function initDailyTxn() {
                         if (!(isNewLogic && isJio)) {
                             currentOnline -= amt;
                         }
-                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(t.type)) {
+                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
                         currentOnline -= amt;
                         if (t.chargesType === 'Online') currentOnline += amt;
                         else currentCash += amt;

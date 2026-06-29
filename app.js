@@ -3087,10 +3087,8 @@ async function initCalculator() {
                     cashVal -= amt;
                 } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                     cashVal += amt;
-                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
                     if (t.chargesType !== 'Online') cashVal += amt;
-                } else if (t.type === 'PAN_CARD') {
-                    // PAN_CARD amount is ignored in updateDailyBalances, so we match it here.
                 } else if (t.type === 'JIO_RECHARGE') {
                     if (provider === 'cash') cashVal += amt;
                 } else if (t.type === 'JIO_TOPUP') {
@@ -8873,15 +8871,11 @@ async function initDailyTxn() {
                         }
                     }
 
-                    if (t.type === 'PAN_CARD') {
-                        // charges handled globally
-                    } else {
-                        if (t.chargesType === 'Online') {
-                            balances.online += amt;
-                            onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
-                        }
-                        else balances.cash += amt;
+                    if (t.chargesType === 'Online') {
+                        balances.online += amt;
+                        onlineBreakdown[getOnlineDest(t.chargesAccount || t.depositBy)] += amt;
                     }
+                    else balances.cash += amt;
                 } else if (t.type === 'JIO_RECHARGE') {
                     balances.jio -= amt;
                     if (provider === 'cash') balances.cash += amt;
@@ -10023,7 +10017,7 @@ async function initDailyTxn() {
                         else curBank += amount;
                     };
 
-                    if (!['CSP_COMMISSION'].includes(t.type)) {
+                    if (!['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
                         if (t.chargesType === 'Online') curBank += chg;
                         else currentCash += chg;
                     }
