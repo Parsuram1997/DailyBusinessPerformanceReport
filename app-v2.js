@@ -841,6 +841,36 @@ async function initAddEntry() {
             }
 
             const details = prevEntry?.details || {};
+
+            const getOnlineDest = (prov) => {
+                const lower = (prov || '').toLowerCase();
+                if (lower.includes('parsu')) return 'online_p1';
+                if (lower.includes('shop')) return 'online_p2';
+                if (lower.includes('dalai')) return 'online_p3';
+                return 'other';
+            };
+
+            // Adjust opening balances by subtracting yesterday's online share withdrawals starting from June 30, 2026
+            let yesterdayWithdrawalsOnline = 0;
+            const yesterdaySubWithdrawals = {};
+
+            const isFromJune30_2026 = selectedTime >= new Date('2026-06-30').getTime();
+
+            if (isFromJune30_2026 && prevEntry && prevEntry.date) {
+                const dateQueriesYestTxn = getPossibleDateFormats(prevEntry.date);
+                const qYestTxn = query(collection(db, "daily_transactions"), where("date", "in", dateQueriesYestTxn));
+                const yestTxnSnap = await getDocs(qYestTxn);
+                yestTxnSnap.forEach(doc => {
+                    const t = doc.data();
+                    if (t.type === 'SHARE_WITHDRAWN' && (t.provider || '').trim().toLowerCase() !== 'cash') {
+                        const amt = parseFloat(t.amount || 0);
+                        yesterdayWithdrawalsOnline += amt;
+                        const dest = getOnlineDest(t.depositBy);
+                        yesterdaySubWithdrawals[dest] = (yesterdaySubWithdrawals[dest] || 0) + amt;
+                    }
+                });
+            }
+
             const opRoinet1 = Number(details.roinet_1 || 0);
             const opRoinet2 = Number(details.roinet_2 || 0);
             const opAirtel1 = Number(details.airtel_1 || 0);
@@ -849,11 +879,11 @@ async function initAddEntry() {
             const roinetFallback = (opRoinet1 || opRoinet2 || opAirtel1 || opAirtel2 || opSpice) ? 0 : Number(details.roinet || 0);
 
             const opValues = {
-                online: Number(details.online || 0),
-                online_p1: Number(details.online_p1 || 0),
-                online_p2: Number(details.online_p2 || 0),
-                online_p3: Number(details.online_p3 || 0),
-                other: Number(details.other || 0),
+                online: Number(details.online || 0) - yesterdayWithdrawalsOnline,
+                online_p1: Number(details.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0),
+                online_p2: Number(details.online_p2 || 0) - (yesterdaySubWithdrawals['online_p2'] || 0),
+                online_p3: Number(details.online_p3 || 0) - (yesterdaySubWithdrawals['online_p3'] || 0),
+                other: Number(details.other || 0) - (yesterdaySubWithdrawals['other'] || 0),
                 roinet_1: opRoinet1,
                 roinet_2: opRoinet2,
                 airtel_1: opAirtel1,
@@ -877,13 +907,7 @@ async function initAddEntry() {
             // 3. Calculate Deltas for each online module
             const deltas = { online: 0, online_p1: 0, online_p2: 0, online_p3: 0, other: 0, roinet_1: 0, roinet_2: 0, airtel_1: 0, airtel_2: 0, spicemoney: 0, roinet_fallback: 0, jio: 0, crgb_bc: 0, pending: 0, deposit: 0, capital: 0, withdrawal: 0, expense: 0, damaged: 0, expenseDetails: {} };
 
-            const getOnlineDest = (prov) => {
-                const lower = (prov || '').toLowerCase();
-                if (lower.includes('parsu')) return 'online_p1';
-                if (lower.includes('shop')) return 'online_p2';
-                if (lower.includes('dalai')) return 'online_p3';
-                return 'other';
-            };
+
 
             const updateOnlineSubDelta = (prov, amount, isAdd) => {
                 const dest = getOnlineDest(prov);
@@ -7748,9 +7772,61 @@ async function initDailyTxn() {
         }
 
         try {
+            const getOnlineDest = (prov) => {
+                const lower = (prov || '').toLowerCase();
+                if (lower.includes('parsu')) return 'online_p1';
+                if (lower.includes('shop')) return 'online_p2';
+                if (lower.includes('dalai')) return 'online_p3';
+                return 'other';
+            };
+
+            const normalizeDate = (dStr) => {
+                if (!dStr) return 0;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                }
+                const parsed = new Date(dStr);
+                return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+            };
+
+            const selectedTime = normalizeDate(date);
+            const isFromJune30_2026 = selectedTime >= new Date('2026-06-30').getTime();
+
+            let yesterdayWithdrawalCash = 0;
+            let yesterdayWithdrawalsOnline = 0;
+            const yesterdaySubWithdrawals = {};
+
+            if (isFromJune30_2026) {
+                const current = new Date(selectedTime);
+                const yesterday = new Date(current);
+                yesterday.setDate(current.getDate() - 1);
+                const y_yyyy = yesterday.getFullYear();
+                const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+                const y_dd = String(yesterday.getDate()).padStart(2, '0');
+                const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+
+                const dateQueriesYestTxn = getPossibleDateFormats(yesterdayDateStr);
+                const qYestTxn = query(collection(db, "daily_transactions"), where("date", "in", dateQueriesYestTxn));
+                const yestTxnSnap = await getDocs(qYestTxn);
+                yestTxnSnap.forEach(doc => {
+                    const t = doc.data();
+                    if (t.type === 'SHARE_WITHDRAWN') {
+                        const amt = parseFloat(t.amount || 0);
+                        if ((t.provider || '').trim().toLowerCase() === 'cash') {
+                            yesterdayWithdrawalCash += amt;
+                        } else {
+                            yesterdayWithdrawalsOnline += amt;
+                            const dest = getOnlineDest(t.depositBy);
+                            yesterdaySubWithdrawals[dest] = (yesterdaySubWithdrawals[dest] || 0) + amt;
+                        }
+                    }
+                });
+            }
+
             const opValues = {
-                cash: parseFloat(openingBalances.cash || 0),
-                online: parseFloat(openingBalances.online || 0),
+                cash: parseFloat(openingBalances.cash || 0) - yesterdayWithdrawalCash,
+                online: parseFloat(openingBalances.online || 0) - yesterdayWithdrawalsOnline,
                 roinet: parseFloat(openingBalances.roinet || 0),
                 jio: parseFloat(openingBalances.jio || 0),
                 crgb: parseFloat(openingBalances.go2sms || 0),
@@ -7777,13 +7853,7 @@ async function initDailyTxn() {
             const lastOnlineChanges = { online_p1: 0, online_p2: 0, online_p3: 0, other: 0, total: 0, mostRecent: null };
             const expenseBreakdown = {};
 
-            const getOnlineDest = (prov) => {
-                const lower = (prov || '').toLowerCase();
-                if (lower.includes('parsu')) return 'online_p1';
-                if (lower.includes('shop')) return 'online_p2';
-                if (lower.includes('dalai')) return 'online_p3';
-                return 'other';
-            };
+
 
             const getSubAccountKey = (prov) => {
                 if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
@@ -8161,9 +8231,9 @@ async function initDailyTxn() {
                 }
             };
 
-            const opOnlineP1 = parseFloat(openingBalances.online_p1 || 0);
-            const opOnlineP2 = parseFloat(openingBalances.online_p2 || 0);
-            const opOnlineP3 = parseFloat(openingBalances.online_p3 || 0);
+            const opOnlineP1 = parseFloat(openingBalances.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0);
+            const opOnlineP2 = parseFloat(openingBalances.online_p2 || 0) - (yesterdaySubWithdrawals['online_p2'] || 0);
+            const opOnlineP3 = parseFloat(openingBalances.online_p3 || 0) - (yesterdaySubWithdrawals['online_p3'] || 0);
             const totalSplitOnline = opOnlineP1 + opOnlineP2 + opOnlineP3;
             const onlineOpeningFallback = parseFloat(opValues.online || 0);
 
@@ -8311,16 +8381,55 @@ async function initDailyTxn() {
                     }
                 }
 
+                const getOnlineDest = (prov) => {
+                    const lower = (prov || '').toLowerCase();
+                    if (lower.includes('parsu')) return 'online_p1';
+                    if (lower.includes('shop')) return 'online_p2';
+                    if (lower.includes('dalai')) return 'online_p3';
+                    return 'other';
+                };
+
+                let yesterdayWithdrawalCash = 0;
+                let yesterdayWithdrawalsOnline = 0;
+                const yesterdaySubWithdrawals = {};
+
+                const isFromJune30_2026 = selectedTime >= new Date('2026-06-30').getTime();
+
+                if (isFromJune30_2026 && entryData && entryData.date) {
+                    const dateQueriesYestTxn = getPossibleDateFormats(entryData.date);
+                    const qYestTxn = query(collection(db, "daily_transactions"), where("date", "in", dateQueriesYestTxn));
+                    const yestTxnSnap = await getDocs(qYestTxn);
+                    yestTxnSnap.forEach(doc => {
+                        const t = doc.data();
+                        if (t.type === 'SHARE_WITHDRAWN') {
+                            const amt = parseFloat(t.amount || 0);
+                            if ((t.provider || '').trim().toLowerCase() === 'cash') {
+                                yesterdayWithdrawalCash += amt;
+                            } else {
+                                yesterdayWithdrawalsOnline += amt;
+                                const dest = getOnlineDest(t.depositBy);
+                                yesterdaySubWithdrawals[dest] = (yesterdaySubWithdrawals[dest] || 0) + amt;
+                            }
+                        }
+                    });
+                }
+
                 if (entryData.details) {
                     const d = entryData.details;
-                    startCash = parseFloat(d.cash || 0);
+                    startCash = parseFloat(d.cash || 0) - yesterdayWithdrawalCash;
                     const isNewLogic = normalizeDate(date) >= normalizeDate('2026-05-01');
-                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.pending || 0) + (isNewLogic ? 0 : parseFloat(d.jio || 0));
+                    startOnline = parseFloat(d.online || 0) + parseFloat(d.roinet || 0) + parseFloat(d.go2sms || 0) + parseFloat(d.pending || 0) + (isNewLogic ? 0 : parseFloat(d.jio || 0)) - yesterdayWithdrawalsOnline;
                 }
 
                 // Update summary badges with fetched opening balances
                 const openingBalances = entryData.details ? {
                     ...entryData.details,
+                    cash: parseFloat(entryData.details.cash || 0) - yesterdayWithdrawalCash,
+                    online: parseFloat(entryData.details.online || 0) - yesterdayWithdrawalsOnline,
+                    online_p1: parseFloat(entryData.details.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0),
+                    online_p2: parseFloat(entryData.details.online_p2 || 0) - (yesterdaySubWithdrawals['online_p2'] || 0),
+                    online_p3: parseFloat(entryData.details.online_p3 || 0) - (yesterdaySubWithdrawals['online_p3'] || 0),
+                    other: parseFloat(entryData.details.other || 0) - (yesterdaySubWithdrawals['other'] || 0),
                     'credit-ledger': entryData.details.credit || 0,
                     'cust-deposit': entryData.details.deposit || 0,
                     'damaged': entryData.details.damages || 0

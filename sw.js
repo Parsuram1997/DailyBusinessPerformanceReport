@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v22'; // Bumped: Aligned scrolling layout of all pages
+const CACHE_NAME = 'biz-report-v26'; // Bumped: Fixed online sub-account breakdown modal carryforward for share withdrawals
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
