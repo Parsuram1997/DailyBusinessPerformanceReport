@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v21'; // Bumped: Fixed sidebar navigation hiding bug in app.js
+const CACHE_NAME = 'biz-report-v22'; // Bumped: Aligned scrolling layout of all pages
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
