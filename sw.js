@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v27'; // Bumped: Fixed customer deposit layout, row clicks, and action buttons
+const CACHE_NAME = 'biz-report-v28'; // Bumped: Fixed customer-deposit-code.html missing auth.js script tag
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
