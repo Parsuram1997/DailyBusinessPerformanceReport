@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v20'; // Bumped: Applied divisor of 2 to report stats cards in privacy mode
+const CACHE_NAME = 'biz-report-v21'; // Bumped: Fixed sidebar navigation hiding bug in app.js
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

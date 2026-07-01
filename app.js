@@ -6968,7 +6968,7 @@ async function initDailyTxn() {
     populateCustomerSuggestions();
 
     // Check if user is logged in
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    const isLoggedIn = (window.authGet && window.authGet('isLoggedIn') === 'true') || sessionStorage.getItem('isLoggedIn') === 'true';
     const isUnlocked = sessionStorage.getItem('dailyTxnUnlocked') === 'true';
 
     if (!isLoggedIn) {
