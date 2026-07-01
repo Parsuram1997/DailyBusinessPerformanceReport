@@ -3436,6 +3436,11 @@ async function initTransactions() {
     }
 }
 
+function safeEscape(str) {
+    if (!str) return '';
+    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 // Logic for Credit Ledger Page
 async function initCreditLedger() {
     const addCustomerForm = document.getElementById('add-customer-form');
@@ -4125,6 +4130,438 @@ window.useTotalDamages = (amount) => {
     localStorage.setItem('selected_damages_transfer', amount);
     window.location.href = 'add-entry-code.html';
 };
+
+// --- Customer Deposit Module ---
+async function initCustomerDeposit() {
+    const tableBody = document.getElementById('customer-deposit-table-body');
+    if (!tableBody) return; // Exit if not on customer deposit page
+
+    function safeSwal(titleOrOpts, text = '', icon = '') {
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire(titleOrOpts, text, icon);
+        } else {
+            if (typeof titleOrOpts === 'object') {
+                const options = titleOrOpts;
+                if (options.icon === 'warning' || options.icon === 'error') {
+                    alert(`⚠️ ${options.title || ''}\n\n${options.text || ''}`);
+                    return Promise.resolve({ isConfirmed: true });
+                } else if (options.showCancelButton) {
+                    const confirmed = confirm(`${options.title || ''}\n\n${options.text || ''}`);
+                    return Promise.resolve({ isConfirmed: confirmed });
+                } else {
+                    alert(`✅ ${options.title || ''}\n\n${options.text || ''}`);
+                    return Promise.resolve({ isConfirmed: true });
+                }
+            } else {
+                if (icon === 'warning' || icon === 'error') {
+                    alert(`⚠️ ${titleOrOpts || ''}\n\n${text || ''}`);
+                } else {
+                    alert(`✅ ${titleOrOpts || ''}\n\n${text || ''}`);
+                }
+                return Promise.resolve({ isConfirmed: true });
+            }
+        }
+    }
+
+    const addCustomerForm = document.getElementById('add-customer-form');
+    const addCustomerModal = document.getElementById('add-customer-modal');
+    const searchInput = document.getElementById('customer-search');
+
+    const summaryCustomers = document.getElementById('summary-total-customers');
+    const summaryTotalIn = document.getElementById('summary-total-in');
+    const summaryNetBalance = document.getElementById('summary-net-balance');
+
+    const ledgerTitle = document.getElementById('ledger-title');
+    const backBtn = document.getElementById('back-to-ledger');
+    const ledgerHeader = document.getElementById('ledger-header');
+    const historyHeader = document.getElementById('history-header');
+
+    let currentView = 'ledger'; // 'ledger' or 'history'
+    let activeCustomerName = '';
+
+    async function renderView() {
+        console.log("[CustDeposit] Rendering view... currentView:", currentView);
+        try {
+            const customers = await loadCustomers();
+            
+            const txnRef = collection(db, "daily_transactions");
+            const q = query(txnRef, where("type", "in", ["CUST_MONEY_IN", "CUST_MONEY_OUT"]));
+            const querySnapshot = await getDocs(q);
+            const txns = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            txns.sort((a, b) => {
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+                if (dateA !== dateB) return dateB - dateA;
+                return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+            });
+
+            let totalInSum = 0;
+            let totalOutSum = 0;
+
+            const breakdown = {};
+            txns.forEach(t => {
+                const name = (t.note || 'Unknown').trim();
+                const amt = parseFloat(t.amount || 0);
+                if (!breakdown[name]) breakdown[name] = { in: 0, out: 0, list: [] };
+                
+                if (t.type === 'CUST_MONEY_IN') {
+                    breakdown[name].in += amt;
+                    totalInSum += amt;
+                } else if (t.type === 'CUST_MONEY_OUT') {
+                    breakdown[name].out += amt;
+                    totalOutSum += amt;
+                }
+                breakdown[name].list.push(t);
+            });
+
+            const netBalanceSum = totalInSum - totalOutSum;
+
+            if (summaryCustomers) summaryCustomers.innerText = customers.length;
+            if (summaryTotalIn) summaryTotalIn.innerText = '₹' + totalInSum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            if (summaryNetBalance) summaryNetBalance.innerText = '₹' + netBalanceSum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+            tableBody.innerHTML = '';
+
+            if (currentView === 'ledger') {
+                if (ledgerTitle) ledgerTitle.innerText = "Deposit Ledger Details";
+                if (backBtn) backBtn.classList.add('hidden');
+                if (ledgerHeader) ledgerHeader.classList.remove('hidden');
+                if (historyHeader) historyHeader.classList.add('hidden');
+
+                const tableContainer = document.getElementById('table-card-container');
+                if (tableContainer) tableContainer.className = "lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
+                const summarySidebar = document.getElementById('customer-summary-sidebar');
+                if (summarySidebar) summarySidebar.classList.add('hidden');
+
+                const filterText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                const filteredCustomers = customers.filter(c => {
+                    const nameMatch = c.name && c.name.toLowerCase().includes(filterText);
+                    const phoneMatch = c.phone && c.phone.includes(filterText);
+                    return nameMatch || phoneMatch;
+                });
+
+                if (filteredCustomers.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-10 text-center text-slate-400 font-bold uppercase tracking-wider text-xs">No matching customers found</td></tr>`;
+                    return;
+                }
+
+                filteredCustomers.forEach((cust, index) => {
+                    const name = cust.name.trim();
+                    const custData = breakdown[name] || { in: 0, out: 0 };
+                    const custIn = custData.in;
+                    const custOut = custData.out;
+                    const custNet = custIn - custOut;
+
+                    const statusClass = custNet > 0 
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' 
+                        : (custNet < 0 ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20' : 'bg-slate-100 text-slate-800 dark:bg-slate-500/10 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20');
+                    const statusText = custNet > 0 ? 'Active' : (custNet < 0 ? 'Overdrawn' : 'Settled');
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors cursor-pointer group border-b border-primary/5";
+                    tr.onclick = (e) => {
+                        if (e.target.closest('button')) return;
+                        showCustomerDepositHistory(name);
+                    };
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-xs font-bold font-mono text-slate-400">${index + 1}</td>
+                        <td class="px-4 py-3 text-sm font-semibold">${name}</td>
+                        <td class="px-4 py-3 text-xs font-bold font-mono text-slate-500">${cust.phone || '-'}</td>
+                        <td class="px-4 py-3 text-sm font-bold text-right text-emerald-600 dark:text-emerald-400">₹${custIn.toLocaleString('en-IN')}</td>
+                        <td class="px-4 py-3 text-sm font-bold text-right text-rose-500 dark:text-rose-400">₹${custOut.toLocaleString('en-IN')}</td>
+                        <td class="px-4 py-3 text-sm font-black text-right ${custNet >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}">₹${custNet.toLocaleString('en-IN')}</td>
+                        <td class="px-4 py-3 text-xs font-bold text-center">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${statusClass}">${statusText}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right whitespace-nowrap">
+                            <div class="flex gap-1.5 justify-end items-center">
+                                <button onclick="event.stopPropagation(); showCustomerDepositHistory('${safeEscape(name)}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View History">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                </button>
+                                <button onclick="event.stopPropagation(); openEditDepositCustomerModal('${cust.id}', '${safeEscape(name)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteDepositCustomer('${cust.id}', ${custNet})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            } else {
+                if (ledgerTitle) ledgerTitle.innerText = `Deposit History - ${activeCustomerName}`;
+                if (backBtn) backBtn.classList.remove('hidden');
+                if (ledgerHeader) ledgerHeader.classList.add('hidden');
+                if (historyHeader) historyHeader.classList.remove('hidden');
+
+                const cust = customers.find(c => c.name.trim() === activeCustomerName);
+                const custData = breakdown[activeCustomerName] || { in: 0, out: 0, list: [] };
+                const historyList = custData.list;
+
+                const tableContainer = document.getElementById('table-card-container');
+                if (tableContainer) tableContainer.className = "lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
+                const summarySidebar = document.getElementById('customer-summary-sidebar');
+                if (summarySidebar) summarySidebar.classList.remove('hidden');
+
+                const custIn = custData.in;
+                const custOut = custData.out;
+                const custNet = custIn - custOut;
+
+                const statusStr = custNet > 0 ? 'Active' : (custNet < 0 ? 'Overdrawn' : 'Settled');
+                const statusBadgeClass = custNet > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : (custNet < 0 ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20');
+
+                const initialStr = activeCustomerName.split(' ').map(n => n[0] || '').join('').toUpperCase().substring(0, 2);
+                const summaryAvatar = document.getElementById('summary-avatar');
+                const summaryName = document.getElementById('summary-name');
+                const summaryPhone = document.getElementById('summary-phone');
+                const summaryBalance = document.getElementById('summary-balance');
+                const summaryStatusBadge = document.getElementById('summary-status-badge');
+                const summaryProgressPct = document.getElementById('summary-progress-pct');
+                const summaryProgressBar = document.getElementById('summary-progress-bar');
+                const summaryStatTotal = document.getElementById('summary-stat-total');
+                const summaryStatPaid = document.getElementById('summary-stat-paid');
+                const summaryCount = document.getElementById('summary-count');
+                const summaryLastDate = document.getElementById('summary-last-date');
+
+                if (summaryAvatar) summaryAvatar.innerText = initialStr;
+                if (summaryName) summaryName.innerText = activeCustomerName;
+                if (summaryPhone) summaryPhone.innerText = (cust && cust.phone) ? "+91 " + cust.phone : "No Contact Added";
+                if (summaryBalance) summaryBalance.innerText = '₹' + custNet.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                if (summaryStatusBadge) {
+                    summaryStatusBadge.innerText = statusStr;
+                    summaryStatusBadge.className = `mt-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-sm ${statusBadgeClass}`;
+                }
+                const progressPctVal = custIn > 0 ? Math.min(100, Math.round((custOut / custIn) * 100)) : 0;
+                if (summaryProgressPct) summaryProgressPct.innerText = `${progressPctVal}%`;
+                if (summaryProgressBar) summaryProgressBar.style.width = `${progressPctVal}%`;
+                if (summaryStatTotal) summaryStatTotal.innerText = '₹' + custIn.toLocaleString('en-IN');
+                if (summaryStatPaid) summaryStatPaid.innerText = '₹' + custOut.toLocaleString('en-IN');
+                if (summaryCount) summaryCount.innerText = historyList.length;
+                if (summaryLastDate) summaryLastDate.innerText = historyList.length > 0 ? historyList[0].date : '-';
+
+                if (historyList.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-slate-400 font-bold uppercase tracking-wider text-xs">No transactions recorded for this customer</td></tr>`;
+                    return;
+                }
+
+                historyList.forEach((txn, index) => {
+                    const amount = parseFloat(txn.amount || 0);
+                    const typeLabel = txn.type === 'CUST_MONEY_IN' 
+                        ? `<span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+ ₹${amount.toLocaleString('en-IN')}</span>` 
+                        : `-`;
+                    const outLabel = txn.type === 'CUST_MONEY_OUT' 
+                        ? `<span class="text-sm font-bold text-rose-500 dark:text-rose-400">- ₹${amount.toLocaleString('en-IN')}</span>` 
+                        : `-`;
+
+                    const modeDetails = txn.provider === 'Online' 
+                        ? `<span class="px-2 py-0.5 rounded-lg border border-indigo-200 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-[10px] font-black uppercase tracking-wider">${txn.provider} (${txn.depositBy || 'N/A'})</span>`
+                        : `<span class="px-2 py-0.5 rounded-lg border border-slate-200 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 text-[10px] font-black uppercase tracking-wider">${txn.provider || 'Cash'}</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors border-b border-primary/5";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-xs font-bold font-mono text-slate-400">${index + 1}</td>
+                        <td class="px-4 py-3 text-sm font-semibold">${txn.date}</td>
+                        <td class="px-4 py-3 text-right">${typeLabel}</td>
+                        <td class="px-4 py-3 text-right">${outLabel}</td>
+                        <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">${modeDetails}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+        } catch (e) {
+            console.error("[CustDeposit] Error rendering view:", e);
+            tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-10 text-center text-rose-500 font-bold">Error loading deposit accounts: ${e.message}</td></tr>`;
+        }
+    }
+
+    window.openAddCustomerModal = () => {
+        if (addCustomerModal) addCustomerModal.classList.remove('hidden');
+        const input = document.getElementById('new-customer-name');
+        if (input) input.focus();
+    };
+
+    window.closeAddCustomerModal = () => {
+        if (addCustomerModal) addCustomerModal.classList.add('hidden');
+        if (addCustomerForm) addCustomerForm.reset();
+        const errorEl = document.getElementById('add-phone-error');
+        if (errorEl) errorEl.classList.add('hidden');
+    };
+
+    window.showCustomerDepositHistory = (name) => {
+        currentView = 'history';
+        activeCustomerName = name;
+        renderView();
+    };
+
+    window.showMainLedger = () => {
+        currentView = 'ledger';
+        activeCustomerName = '';
+        renderView();
+    };
+
+    if (addCustomerForm) {
+        addCustomerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-customer-name')?.value?.trim();
+            const phone = document.getElementById('new-customer-phone')?.value?.trim() || '';
+            const errorEl = document.getElementById('add-phone-error');
+
+            if (phone && !/^\d{10}$/.test(phone)) {
+                if (errorEl) errorEl.classList.remove('hidden');
+                return;
+            }
+            if (errorEl) errorEl.classList.add('hidden');
+
+            try {
+                const newCust = {
+                    id: Date.now().toString(),
+                    name: name,
+                    phone: phone,
+                    address: '',
+                    date: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0')
+                };
+                await saveCustomer(newCust);
+                closeAddCustomerModal();
+                safeSwal({
+                    icon: 'success',
+                    title: 'Customer Added',
+                    text: `Customer "${name}" saved successfully!`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                renderView();
+            } catch (err) {
+                console.error("Save customer error:", err);
+                safeSwal('Error', 'Failed to save customer: ' + err.message, 'error');
+            }
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            if (currentView === 'ledger') {
+                renderView();
+            }
+        });
+    }
+
+    window.openEditDepositCustomerModal = (id, name, phone) => {
+        const modal = document.getElementById('edit-customer-modal');
+        if (modal) {
+            const idInput = document.getElementById('edit-customer-id');
+            const nameInput = document.getElementById('edit-customer-name');
+            const phoneInput = document.getElementById('edit-customer-phone');
+            const errorEl = document.getElementById('edit-phone-error');
+            
+            if (idInput) idInput.value = id;
+            if (nameInput) nameInput.value = name;
+            if (phoneInput) phoneInput.value = phone;
+            if (errorEl) errorEl.classList.add('hidden');
+            
+            modal.classList.remove('hidden');
+        }
+    };
+
+    window.closeEditCustomerModal = () => {
+        const modal = document.getElementById('edit-customer-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    const editCustomerForm = document.getElementById('edit-customer-form');
+    if (editCustomerForm) {
+        // Remove potential existing submit listener to prevent conflict (since shared HTML element)
+        const newForm = editCustomerForm.cloneNode(true);
+        editCustomerForm.parentNode.replaceChild(newForm, editCustomerForm);
+        newForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-customer-id')?.value;
+            const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
+            const errorEl = document.getElementById('edit-phone-error');
+
+            if (!/^\d{10}$/.test(phone)) {
+                if (errorEl) errorEl.classList.remove('hidden');
+                return;
+            }
+            if (errorEl) errorEl.classList.add('hidden');
+
+            try {
+                const customers = await loadCustomers();
+                const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
+                if (existingCust) {
+                    existingCust.phone = phone;
+                    const res = await saveCustomer(existingCust);
+                    if (res) {
+                        closeEditCustomerModal();
+                        safeSwal({
+                            icon: 'success',
+                            title: 'Contact Updated',
+                            text: 'Contact number saved successfully! ✅',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        await renderView();
+                    }
+                }
+            } catch (err) {
+                console.error("Save contact error:", err);
+                safeSwal('Error', 'Failed to save contact number: ' + err.message, 'error');
+            }
+        });
+    }
+
+    window.closeDeleteModal = () => {
+        const modal = document.getElementById('delete-confirm-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.deleteDepositCustomer = (id, netBalance) => {
+        if (Math.abs(netBalance) > 0.01) {
+            safeSwal({
+                icon: 'warning',
+                title: 'Action Blocked',
+                text: 'Customer deposit account cannot be deleted while they have a non-zero balance. Please settle the balance first by recording a money out/in entry.',
+                confirmButtonColor: '#7f13ec'
+            });
+            return;
+        }
+
+        const modal = document.getElementById('delete-confirm-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+            if (confirmBtn) {
+                confirmBtn.onclick = async () => {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerText = 'Deleting...';
+                    try {
+                        await deleteCustomer(id);
+                        modal.classList.add('hidden');
+                        safeSwal({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Customer deleted successfully. 🗑️',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        await renderView();
+                    } catch (err) {
+                        console.error("Delete customer error:", err);
+                        safeSwal('Error', 'Failed to delete customer: ' + err.message, 'error');
+                    } finally {
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerText = 'Delete';
+                    }
+                };
+            }
+        }
+    };
+
+    renderView();
+}
 
 async function initDamagedCurrency() {
     const tableBody = document.getElementById('damaged-denomination-rows');
@@ -7040,7 +7477,7 @@ async function initDailyTxn() {
         }
 
         if (txnNote) {
-            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
                 txnNote.setAttribute('list', 'customer-list');
                 populateCustomerSuggestions();
             } else {
@@ -7335,16 +7772,17 @@ async function initDailyTxn() {
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
             const chargesVal = parseFloat(txnCharges.value || 0);
 
-            // Strict Customer Validation for Credit Transactions
-            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnType.value)) {
+            // Strict Customer Validation for Credit and Customer Deposit Transactions
+            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
                 const customers = await loadCustomers();
                 const inputName = txnNote.value.trim().toLowerCase();
                 const exists = customers.some(c => c.name && c.name.trim().toLowerCase() === inputName);
                 if (!exists) {
+                    const isDeposit = ['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
                     Swal.fire({
                         icon: 'error',
                         title: 'Customer Not Found',
-                        text: 'Please add customer first in Credit Ledger page.',
+                        text: isDeposit ? 'Please add customer first in Customer Deposit page.' : 'Please add customer first in Credit Ledger page.',
                         confirmButtonColor: '#7c3aed'
                     });
                     if (submitBtn) {
@@ -9074,7 +9512,8 @@ async function startApp() {
         { name: 'CreditLedger', fn: initCreditLedger },
         { name: 'DailyTxn', fn: initDailyTxn },
         { name: 'DamagedCurrency', fn: initDamagedCurrency },
-        { name: 'BankWithdrawals', fn: initBankWithdrawals }
+        { name: 'BankWithdrawals', fn: initBankWithdrawals },
+        { name: 'CustomerDeposit', fn: initCustomerDeposit }
     ];
 
     for (const m of modules) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v26'; // Bumped: Fixed online sub-account breakdown modal carryforward for share withdrawals
+const CACHE_NAME = 'biz-report-v27'; // Bumped: Fixed customer deposit layout, row clicks, and action buttons
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

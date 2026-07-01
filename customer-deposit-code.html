@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d9488", // Teal color for Customer Deposits
+                        "background-light": "#f4f7f6",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <title>Customer Deposits - Business Performance</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Sidebar Hover Expansion Styles */
+        #sidebar { 
+            width: 5.5rem !important; 
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; }
+        #sidebar .sidebar-text, #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        #sidebar .profile-card { 
+            background: transparent !important; 
+            border-color: transparent !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            transition: all 0.3s;
+        }
+        #sidebar .profile-card > div { justify-content: center !important; transition: all 0.3s; }
+        
+        @media (min-width: 1024px) {
+            #sidebar:hover { width: 16rem !important; box-shadow: 4px 0 15px rgba(0,0,0,0.03); }
+            #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+            #sidebar:hover .sidebar-text, #sidebar:hover .nav-text { opacity: 1; transform: translateX(0); transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s; width: auto; margin-left: 0.75rem; }
+            #sidebar:hover .profile-card { background: rgba(13, 148, 136, 0.05) !important; border-color: rgba(13, 148, 136, 0.2) !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+            #sidebar:hover .profile-card > div { justify-content: flex-start !important; }
+        }
+        * { touch-action: manipulation; }
+        @media screen and (max-width: 767px) {
+            input, select, textarea { font-size: 16px !important; }
+        }
+    </style>
+    <script>
+        document.addEventListener('touchmove', function(event) {
+            if (event.scale !== undefined && event.scale !== 1) { event.preventDefault(); }
+        }, { passive: false });
+        
+        // Theme config
+        (function() {
+            const saved = localStorage.getItem('biz_theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            const accent = localStorage.getItem('biz_accent_color');
+            if (accent) {
+                const style = document.createElement('style');
+                style.id = 'dynamic-accent-styles';
+                style.innerHTML = `
+                    :root { --color-primary: ${accent} !important; }
+                    .text-primary { color: ${accent} !important; }
+                    .bg-primary { background-color: ${accent} !important; }
+                    .border-primary { border-color: ${accent} !important; }
+                    .bg-primary\\/5 { background-color: ${accent}0d !important; }
+                    .bg-primary\\/10 { background-color: ${accent}1a !important; }
+                    .hover\\:bg-primary\\/5:hover { background-color: ${accent}0d !important; }
+                `;
+                document.head.appendChild(style);
+            }
+        })();
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-slate-900/50 z-20 transition-all duration-300 shadow-xl">
+        <div class="px-4 py-4 flex justify-end toggle-container">
+            <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
+                <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
+            </button>
+        </div>
+        <div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container border-b border-primary/5">
+            <div class="size-10 rounded-lg bg-primary flex items-center justify-center text-white flex-shrink-0">
+                <span class="material-symbols-outlined">analytics</span>
+            </div>
+            <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+                <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html">
+                <span class="material-symbols-outlined">grid_view</span>
+                <span class="text-sm nav-text">Dashboard</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html">
+                <span class="material-symbols-outlined">add_box</span>
+                <span class="text-sm nav-text">Add Entry</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html">
+                <span class="material-symbols-outlined">point_of_sale</span>
+                <span class="text-sm nav-text">Daily Txn</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span class="text-sm nav-text">Table</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html">
+                <span class="material-symbols-outlined">bar_chart</span>
+                <span class="text-sm nav-text">Analytics</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span class="text-sm nav-text">Credit Ledger</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="customer-deposit-code.html">
+                <span class="material-symbols-outlined">savings</span>
+                <span class="text-sm nav-text">Cust. Deposit</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html">
+                <span class="material-symbols-outlined">account_balance</span>
+                <span class="text-sm nav-text">Bank Withdrawals</span>
+            </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html">
+                <span class="material-symbols-outlined">settings</span>
+                <span class="text-sm nav-text">Settings</span>
+            </a>
+            <a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="text-sm nav-text font-semibold">Logout</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto p-4 border-t border-primary/10 text-center">
+            <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/25 group hover:bg-primary/10 transition-all duration-300">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
+                    </div>
+                    <div class="sidebar-text overflow-hidden whitespace-nowrap text-left">
+                        <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
+                        <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                        <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden w-full pb-20 lg:pb-0">
+        <!-- Content Scrollable -->
+        <div class="p-3 sm:p-4 md:p-8 flex-1 overflow-y-auto space-y-4 md:space-y-8 pb-20 md:pb-6">
+            <!-- Stats Summary Row -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-lg p-3 md:p-6">
+                <div class="grid grid-cols-3 gap-2 md:gap-6 divide-x divide-primary/10">
+                    <!-- Total Customers -->
+                    <div class="flex flex-col items-center justify-center text-center px-1">
+                        <div class="size-8 md:size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 md:mb-2">
+                            <span class="material-symbols-outlined text-lg md:text-xl">group</span>
+                        </div>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Total Customers</p>
+                        <h3 id="summary-total-customers" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">0</h3>
+                    </div>
+                    
+                    <!-- Total In -->
+                    <div class="flex flex-col items-center justify-center text-center px-1">
+                        <div class="size-8 md:size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-1 md:mb-2">
+                            <span class="material-symbols-outlined text-lg md:text-xl">payments</span>
+                        </div>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Total In</p>
+                        <h3 id="summary-total-in" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+                    </div>
+                    
+                    <!-- Net Balance -->
+                    <div class="flex flex-col items-center justify-center text-center px-1">
+                        <div class="size-8 md:size-10 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1 md:mb-2">
+                            <span class="material-symbols-outlined text-lg md:text-xl">account_balance_wallet</span>
+                        </div>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Net Balance</p>
+                        <h3 id="summary-net-balance" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger View Grid -->
+            <div id="ledger-view-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Table Card Container -->
+                <div id="table-card-container" class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <button onclick="showMainLedger()" id="back-to-ledger" class="hidden p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                            </button>
+                            <h3 id="ledger-title" class="text-base font-bold">Deposit Ledger Details</h3>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 md:ml-auto">
+                            <div class="relative flex-1 md:flex-none">
+                                <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                                <input id="customer-search" class="w-full md:w-56 pl-8 pr-3 py-2 bg-background-light dark:bg-slate-800 border-none rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary/30" placeholder="Search customer..."/>
+                            </div>
+                            <button id="add-customer-btn" onclick="openAddCustomerModal()" class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                                <span class="material-symbols-outlined text-sm">person_add</span>
+                                Add Customer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left">
+                            <thead id="ledger-header" class="bg-slate-100/80 dark:bg-slate-800/80 border-b border-primary/10">
+                                <tr>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider w-14">S.No</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">Customer Name</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">Contact No</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">Total In</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap text-rose-500 dark:text-rose-400">Total Out</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap">Net Balance</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap">Action</th>
+                                </tr>
+                            </thead>
+                            <thead id="history-header" class="hidden bg-slate-100/80 dark:bg-slate-800/80 border-b border-primary/10">
+                                <tr>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider w-14">S.No</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">Date</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">Money In (+)</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap text-rose-500 dark:text-rose-400">Money Out (-)</th>
+                                    <th class="px-4 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">Mode / Provider</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-deposit-table-body" class="divide-y divide-primary/5">
+                                <tr>
+                                    <td colspan="8" class="px-6 py-10 text-center text-slate-400 font-bold">Loading customer data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-4 bg-background-light/30 dark:bg-slate-800/30 flex items-center justify-between text-xs text-slate-500 font-medium">
+                        <p id="pagination-info">Showing 0 entries</p>
+                        <div id="pagination-controls" class="flex gap-1"></div>
+                    </div>
+                </div>
+                
+                <!-- Customer Summary Sidebar Card -->
+                <div id="customer-summary-sidebar" class="hidden lg:col-span-1 bg-gradient-to-br from-white to-primary/5 dark:from-slate-900 dark:to-primary/10 rounded-2xl border border-primary/20 shadow-xl shadow-primary/5 p-6 flex flex-col space-y-6">
+                    <div class="flex items-center gap-4 border-b border-primary/10 pb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-2xl shadow-inner">
+                            <span id="summary-avatar">C</span>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h4 id="summary-name" class="font-black text-lg text-slate-800 dark:text-white truncate">Customer Name</h4>
+                            <span id="summary-phone" class="text-xs text-slate-500 font-semibold font-mono">Customer Profile</span>
+                        </div>
+                    </div>
+                    <div class="bg-primary/5 dark:bg-primary/10 p-5 rounded-2xl border border-primary/10 flex flex-col items-center justify-center space-y-1">
+                        <span class="text-xs font-bold text-primary uppercase tracking-wider font-semibold">Net Balance</span>
+                        <span id="summary-balance" class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">₹0.00</span>
+                        <span id="summary-status-badge" class="mt-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-sm bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">Active</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+                            <span>Withdrawal Ratio</span>
+                            <span id="summary-progress-pct">0%</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                            <div id="summary-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 w-0"></div>
+                        </div>
+                        <div class="flex justify-between text-[11px] font-medium text-slate-500">
+                            <span>Total Money In: <b id="summary-stat-total" class="font-bold text-slate-700 dark:text-slate-200 font-mono">₹0</b></span>
+                            <span>Total Money Out: <b id="summary-stat-paid" class="font-bold text-slate-700 dark:text-slate-200 font-mono">₹0</b></span>
+                        </div>
+                    </div>
+                    <div class="border-t border-primary/10 pt-4 space-y-3 text-xs font-medium text-slate-600 dark:text-slate-400">
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800/50">
+                            <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm text-primary">receipt_long</span> Total Transactions</span>
+                            <span id="summary-count" class="font-black text-slate-800 dark:text-white font-mono">0</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1">
+                            <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm text-primary">calendar_clock</span> Last Transaction</span>
+                            <span id="summary-last-date" class="font-bold text-slate-800 dark:text-white">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Nav -->
+        <nav id="bottom-nav" class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-primary/10 shadow-lg z-50 flex items-center justify-around px-2 pb-safe">
+            <a href="dashboard-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-slate-500 dark:text-slate-400 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">grid_view</span>
+                <span class="text-[9px] font-bold">Dash</span>
+            </a>
+            <a href="add-entry-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-slate-500 dark:text-slate-400 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">add_box</span>
+                <span class="text-[9px] font-bold">Add</span>
+            </a>
+            <a href="daily-txn.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-slate-500 dark:text-slate-400 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">point_of_sale</span>
+                <span class="text-[9px] font-bold">Daily</span>
+            </a>
+            <a href="customer-deposit-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-primary bg-primary/10 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">savings</span>
+                <span class="text-[9px] font-bold">Deposit</span>
+            </a>
+            <a href="credit-ledger-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-slate-500 dark:text-slate-400 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">menu_book</span>
+                <span class="text-[9px] font-bold">Credit</span>
+            </a>
+            <a href="settings-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-slate-500 dark:text-slate-400 shrink-0 w-[56px] h-[56px]">
+                <span class="material-symbols-outlined text-xl">settings</span>
+                <span class="text-[9px] font-bold">Settings</span>
+            </a>
+        </nav>
+    </main>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="add-customer-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div class="p-6 border-b border-primary/10 flex items-center justify-between">
+            <h3 class="text-lg font-bold">Add Deposit Customer</h3>
+            <button type="button" onclick="closeAddCustomerModal()" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form id="add-customer-form" class="p-6 space-y-4">
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Name</label>
+                <input id="new-customer-name" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm font-semibold focus:border-primary focus:ring-primary/20" placeholder="Enter full name" type="text" required/>
+            </div>
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Number (Optional)</label>
+                <input id="new-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm font-mono focus:border-primary focus:ring-primary/20" placeholder="10-digit mobile number" type="text" maxlength="10"/>
+                <p id="add-phone-error" class="text-xs text-rose-500 font-medium hidden">Please enter a valid 10-digit mobile number.</p>
+            </div>
+            <div class="pt-2">
+                <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    Save Customer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div id="edit-customer-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div class="p-6 border-b border-primary/10 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Edit Customer Contact</h3>
+            <button type="button" onclick="closeEditCustomerModal()" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form id="edit-customer-form" class="p-6 space-y-4">
+            <input type="hidden" id="edit-customer-id" />
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Name</label>
+                <input id="edit-customer-name" class="w-full rounded-xl border-primary/10 bg-slate-100 dark:bg-slate-800/80 text-sm font-semibold cursor-not-allowed text-slate-600 dark:text-slate-400" type="text" readonly />
+            </div>
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Number</label>
+                <input id="edit-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-mono font-bold text-slate-800 dark:text-white" placeholder="10-digit mobile number" type="text" maxlength="10" required />
+                <p id="edit-phone-error" class="text-xs text-rose-500 font-medium hidden">Please enter a valid 10-digit mobile number.</p>
+            </div>
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="closeEditCustomerModal()" class="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300 p-6 flex flex-col items-center text-center space-y-4">
+        <div class="size-16 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-inner">
+            <span class="material-symbols-outlined text-3xl font-black">delete_forever</span>
+        </div>
+        <h3 id="delete-modal-title" class="text-lg font-bold text-slate-800 dark:text-white">Delete Customer?</h3>
+        <p id="delete-modal-description" class="text-xs text-slate-500 font-semibold leading-relaxed">Are you sure you want to delete this customer? This action cannot be undone.</p>
+        <div class="flex gap-3 w-full pt-2">
+            <button id="cancel-delete-btn" type="button" onclick="closeDeleteModal()" class="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+            <button id="confirm-delete-btn" type="button" class="flex-1 bg-rose-500 text-white py-3 rounded-xl text-xs font-bold shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const isLocalFile = window.location.protocol === 'file:';
+        console.log('%c[PROTOCOL LOADER] Detected:', 'color: #0d9488; font-weight: bold;', window.location.protocol);
+
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('%c[GLOBAL ERROR]', 'color: white; background: red; padding: 2px 5px;', msg, '\nAt:', url, 'line:', lineNo);
+            return false;
+        };
+
+        function loadScript(src, isModule = false) {
+            console.log('%c[LOADER] Starting:', 'color: #3b82f6;', src);
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                if (isModule) script.type = 'module';
+                script.src = src;
+                script.onload = () => {
+                    console.log('%c[LOADER] Success:', 'color: #10b981;', src);
+                    resolve();
+                };
+                script.onerror = (e) => {
+                    console.error('%c[LOADER] Failed:', 'color: #ef4444;', src, e);
+                    reject(e);
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        async function initApp() {
+            try {
+                const v = Date.now();
+                if (isLocalFile) {
+                    console.log('%c[LOADER] Using File Fallback (Compat SDK)', 'color: #f59e0b; font-weight: bold;');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js');
+                    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js');
+                    await loadScript('firebase-config-v2.js?v=' + v);
+                    await loadScript('app-v2.js?v=' + v);
+                } else {
+                    console.log('%c[LOADER] Using Server Mode (Modular SDK)', 'color: #0d9488; font-weight: bold;');
+                    await loadScript('app.js?v=' + v, true);
+                }
+                console.log('%c[LOADER] All scripts loaded successfully.', 'color: #10b981; font-weight: bold;');
+            } catch (err) {
+                console.error('%c[LOADER] Initialization Failed:', 'color: white; background: red; padding: 5px;', err);
+                const tableBody = document.getElementById('customer-deposit-table-body');
+                if (tableBody) {
+                    tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-10 text-center text-rose-500 font-bold">CRITICAL ERROR: Failed to load database scripts.<br><span class="text-[10px] font-normal">Please check your internet connection or try running a local server.</span></td></tr>`;
+                }
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    })();
+</script>
+</body>
+</html>
