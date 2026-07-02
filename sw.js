@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v29'; // Bumped: Exposed window.db reference for recovery script
+const CACHE_NAME = 'biz-report-v31'; // Bumped: Switched location API to geojs
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

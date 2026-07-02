@@ -93,10 +93,10 @@ window._startGlobalEntriesListener();
     // Fetch approximate location from IP (no permission needed)
     async function fetchLocation() {
         try {
-            const res = await fetch('https://ip-api.com/json/?fields=city,regionName,country');
+            const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
             if (res.ok) {
                 const data = await res.json();
-                if (data.city) return `${data.city}, ${data.regionName}`;
+                if (data.city) return `${data.city}, ${data.region}`;
             }
         } catch (e) { /* silent fail */ }
         return '';
@@ -113,8 +113,8 @@ window._startGlobalEntriesListener();
                 username,
                 role,
                 userAgent: ua,
-                screenResolution: `${screen.width}Ã—${screen.height}`,
-                windowSize: `${window.innerWidth}Ã—${window.innerHeight}`,
+                screenResolution: `${screen.width}x${screen.height}`,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
                 location: sessionLocation,
                 lastSeen: serverTimestamp(),
                 lastSeenMs: Date.now(),

@@ -150,6 +150,18 @@ setupEntriesListener();
     const role = (window.authGet ? window.authGet('userRole') : sessionStorage.getItem('userRole')) || 'user';
     const ua = navigator.userAgent;
 
+    let sessionLocationV2 = '';
+    async function fetchLocationV2() {
+        try {
+            const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.city) return `${data.city}, ${data.region}`;
+            }
+        } catch (e) { /* silent fail */ }
+        return '';
+    }
+
     async function writeHeartbeatV2() {
         try {
             // app-v2.js uses compat SDK: db.collection().doc().set()
@@ -158,6 +170,7 @@ setupEntriesListener();
                 username,
                 role,
                 userAgent: ua,
+                location: sessionLocationV2,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
                 lastSeenMs: Date.now(),
                 page: window.location.pathname.split('/').pop() || 'index.html'
@@ -169,6 +182,7 @@ setupEntriesListener();
             try {
                 await db.collection('active_sessions').doc(deviceId).set({
                     deviceId, username, role, userAgent: ua,
+                    location: sessionLocationV2,
                     lastSeenMs: Date.now(),
                     page: window.location.pathname.split('/').pop() || 'index.html'
                 });
@@ -180,7 +194,10 @@ setupEntriesListener();
     }
 
     setTimeout(() => {
-        writeHeartbeatV2();
+        fetchLocationV2().then(loc => {
+            sessionLocationV2 = loc;
+            writeHeartbeatV2();
+        });
         const interval = setInterval(writeHeartbeatV2, 30000);
         window.addEventListener('beforeunload', () => {
             clearInterval(interval);
