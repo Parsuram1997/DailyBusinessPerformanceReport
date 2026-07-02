@@ -9326,7 +9326,7 @@ async function initDailyTxn() {
                             let d1 = 'NA';
                             let d2Arr = [];
                             if (txn.type === 'SETTLEMENT') {
-                                d1 = (txn.provider || 'Wallet') + ' ➔ ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
+                                d1 = (txn.provider || 'Wallet') + ' &rarr; ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
                                 if (accName) d2Arr.push(accName);
                                 if (accNumber) d2Arr.push(accNumber);
                                 if (txn.remark) d2Arr.push(txn.remark);

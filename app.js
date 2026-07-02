@@ -315,6 +315,7 @@ function initGlobalSettings() {
             checkAndSet('security_pin_enabled_daily_txn', data.security_pin_enabled_daily_txn !== undefined ? data.security_pin_enabled_daily_txn : data.security_pin_enabled);
             checkAndSet('security_pin_enabled_settings', data.security_pin_enabled_settings !== undefined ? data.security_pin_enabled_settings : data.security_pin_enabled);
             checkAndSet('CREDIT_LEDGER_SHOW_ACTIONS', data.CREDIT_LEDGER_SHOW_ACTIONS);
+            checkAndSet('DEPOSIT_SHOW_ACTIONS', data.DEPOSIT_SHOW_ACTIONS);
             checkAndSet('dtxn_openInNewTab', data.dtxn_openInNewTab);
             checkAndSet('HIDE_PUBLIC_DAILY_TXN', data.HIDE_PUBLIC_DAILY_TXN);
             checkAndSet('validate_cash_diff', data.validate_cash_diff);
@@ -337,6 +338,7 @@ function initGlobalSettings() {
             checkAndSet('user_dtxn_showDelete', data.user_dtxn_showDelete);
             checkAndSet('user_dtxn_showCharges', data.user_dtxn_showCharges);
             checkAndSet('user_CREDIT_LEDGER_SHOW_ACTIONS', data.user_CREDIT_LEDGER_SHOW_ACTIONS);
+            checkAndSet('user_DEPOSIT_SHOW_ACTIONS', data.user_DEPOSIT_SHOW_ACTIONS);
             checkAndSet('user_dtxn_openInNewTab', data.user_dtxn_openInNewTab);
 
             if (changed) {
@@ -10196,7 +10198,7 @@ async function initDailyTxn() {
                             let d1 = 'NA';
                             let d2Arr = [];
                             if (txn.type === 'SETTLEMENT') {
-                                d1 = (txn.provider || 'Wallet') + ' âž” ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
+                                d1 = (txn.provider || 'Wallet') + ' &rarr; ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
                                 if (accName) d2Arr.push(accName);
                                 if (accNumber) d2Arr.push(accNumber);
                                 if (txn.remark) d2Arr.push(txn.remark);
