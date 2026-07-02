@@ -8648,11 +8648,17 @@ async function initDailyTxn() {
 
             const existingTxn = editingTxnId ? allTxnsForDate.find(t => t.id === editingTxnId) : null;
 
-            // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
-            if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(txnType.value)) {
+            // Cash Sufficiency Check
+            const isCashDeduction = ['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CASH_DEPOSIT'].includes(txnType.value) || 
+                                    (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'PAN_CARD'].includes(txnType.value) && (!txnProvider || txnProvider.value !== 'Online'));
+            if (isCashDeduction) {
                 let effCash = currentAvailableCash;
-                if (existingTxn && ['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY'].includes(existingTxn.type)) {
-                    effCash += parseFloat(existingTxn.amount || 0);
+                if (existingTxn) {
+                    const wasCashDeduction = ['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CASH_DEPOSIT'].includes(existingTxn.type) || 
+                                             (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'PAN_CARD'].includes(existingTxn.type) && (!existingTxn.provider || existingTxn.provider !== 'Online'));
+                    if (wasCashDeduction) {
+                        effCash += parseFloat(existingTxn.amount || 0);
+                    }
                 }
                 if (amountVal > effCash) {
                     Swal.fire({
@@ -8669,26 +8675,6 @@ async function initDailyTxn() {
                 }
             }
 
-            // Online Sufficiency Check for DEPOSIT
-            if (txnType.value === 'DEPOSIT' || txnType.value === 'AADHAAR_DEPOSIT') {
-                let effOnline = currentAvailableOnline;
-                if (existingTxn && (existingTxn.type === 'DEPOSIT' || existingTxn.type === 'AADHAAR_DEPOSIT')) {
-                    effOnline += parseFloat(existingTxn.amount || 0);
-                }
-                if (amountVal > effOnline) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Insufficient Online Balance',
-                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
-                        confirmButtonColor: '#7c3aed'
-                    });
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
-                    }
-                    return;
-                }
-            }
 
             // Validation & Checks for Cash Movements
             if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
@@ -8909,7 +8895,7 @@ async function initDailyTxn() {
                     deductOnlineAccount = getOnlineSub(newTxn.depositBy);
                     deductOnlineAmount = newTxn.amount;
                     pName = newTxn.depositBy || 'Online';
-                } else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN'].includes(newTxn.type) && newTxn.provider === 'Online') {
+                } else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP'].includes(newTxn.type) && newTxn.provider === 'Online') {
                     deductOnlineAccount = getOnlineSub(newTxn.depositBy);
                     deductOnlineAmount = newTxn.amount;
                     pName = newTxn.depositBy || 'Online';
@@ -8917,11 +8903,24 @@ async function initDailyTxn() {
                     deductOnlineAccount = getOnlineSub(newTxn.depositBy);
                     deductOnlineAmount = newTxn.amount;
                     pName = newTxn.depositBy || 'Online';
-                } else if (newTxn.type === 'ELECTRICITY_BILL' || newTxn.type === 'DISHTV_RECHARGE') {
+                } else if (['ELECTRICITY_BILL', 'DISHTV_RECHARGE', 'PAN_CARD'].includes(newTxn.type)) {
                     if (newTxn.chargesType === 'Online') {
                         deductOnlineAccount = getOnlineSub(newTxn.provider);
                         deductOnlineAmount = newTxn.amount;
                         pName = newTxn.provider || 'Online';
+                    }
+                } else if (newTxn.type === 'ONLINE_EXCHANGE') {
+                    deductOnlineAccount = getOnlineSub(newTxn.paymentApp);
+                    deductOnlineAmount = newTxn.amount;
+                    pName = newTxn.paymentApp || 'Online';
+                } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(newTxn.type)) {
+                    const p = (newTxn.provider || '').toLowerCase();
+                    if (!p.includes('roinet') && !p.includes('airtel') && !p.includes('spice') && !p.includes('crgb') && !p.includes('jio') && p !== 'cash') {
+                        deductOnlineAccount = getOnlineSub(newTxn.depositBy);
+                        if (deductOnlineAccount !== 'other') {
+                            deductOnlineAmount = newTxn.amount;
+                            pName = newTxn.depositBy || 'Online';
+                        }
                     }
                 }
 
@@ -8929,9 +8928,16 @@ async function initDailyTxn() {
                     let available = window._onlineBreakdown.closing[deductOnlineAccount] || 0;
                     if (existingTxn) {
                         if (existingTxn.type === 'ONLINE_WORK' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
-                        else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN'].includes(existingTxn.type) && existingTxn.provider === 'Online' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP'].includes(existingTxn.type) && existingTxn.provider === 'Online' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
                         else if (existingTxn.type === 'CASH_WITHDRAWAL' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
-                        else if (['ELECTRICITY_BILL', 'DISHTV_RECHARGE'].includes(existingTxn.type) && existingTxn.chargesType === 'Online' && getOnlineSub(existingTxn.provider) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (['ELECTRICITY_BILL', 'DISHTV_RECHARGE', 'PAN_CARD'].includes(existingTxn.type) && existingTxn.chargesType === 'Online' && getOnlineSub(existingTxn.provider) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (existingTxn.type === 'ONLINE_EXCHANGE' && getOnlineSub(existingTxn.paymentApp) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(existingTxn.type)) {
+                            const ep = (existingTxn.provider || '').toLowerCase();
+                            if (!ep.includes('roinet') && !ep.includes('airtel') && !ep.includes('spice') && !ep.includes('crgb') && !ep.includes('jio') && ep !== 'cash') {
+                                if (getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                            }
+                        }
                     }
                     if (deductOnlineAmount > available) {
                         Swal.fire({
@@ -8971,12 +8977,20 @@ async function initDailyTxn() {
                     deductRoinetAccount = getRoinetSub(newTxn.provider);
                     deductRoinetAmount = newTxn.amount;
                     pName = newTxn.provider;
+                } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(newTxn.type)) {
+                    deductRoinetAccount = getRoinetSub(newTxn.provider);
+                    deductRoinetAmount = newTxn.amount;
+                    pName = newTxn.provider;
                 }
 
                 if (deductRoinetAccount) {
                     let available = window._roinetBreakdown.closing[deductRoinetAccount] || 0;
-                    if (existingTxn && existingTxn.type === 'CSP_SUBSCRIPTION' && getRoinetSub(existingTxn.provider) === deductRoinetAccount) {
-                        available += parseFloat(existingTxn.amount || 0);
+                    if (existingTxn) {
+                        if (existingTxn.type === 'CSP_SUBSCRIPTION' && getRoinetSub(existingTxn.provider) === deductRoinetAccount) {
+                            available += parseFloat(existingTxn.amount || 0);
+                        } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT'].includes(existingTxn.type) && getRoinetSub(existingTxn.provider) === deductRoinetAccount) {
+                            available += parseFloat(existingTxn.amount || 0);
+                        }
                     }
                     if (deductRoinetAmount > available) {
                         Swal.fire({
