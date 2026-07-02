@@ -653,7 +653,7 @@
         </div>
 
         <!-- Hide Daily Txn on Login -->
-        <div class="flex items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
+        <div class="hidden items-center justify-between p-4 rounded-xl border border-indigo-100 bg-indigo-50 dark:bg-indigo-500/5 dark:border-indigo-500/20">
             <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
                 <span class="material-symbols-outlined text-indigo-600 shrink-0">visibility_off</span>
                 <div>
@@ -1411,7 +1411,7 @@ try {
             resetSettingsPin();
         });
     }
-    
+
     if (unlockBtn) {
         unlockBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1431,26 +1431,37 @@ try {
     if (submitPinBtn) {
         submitPinBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (pinInput && pinInput.value === CORRECT_PIN) {
-                if (compactLockCard) compactLockCard.classList.add('hidden');
-                if (advancedContainer) {
-                    advancedContainer.classList.remove('max-h-0', 'opacity-0', 'overflow-hidden');
-                    advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
-                }
-                if (pinModal) pinModal.classList.add('hidden');
-            } else {
-                pinDigits.forEach(i => {
-                    i.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
-                    i.value = '';
-                });
-                updateHiddenPin();
-                if (pinDigits.length > 0) pinDigits[0].focus();
-                setTimeout(() => {
+            const originalText = submitPinBtn.innerHTML;
+            submitPinBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm align-middle mr-1">progress_activity</span> Verifying...';
+            submitPinBtn.disabled = true;
+            submitPinBtn.classList.add('opacity-70');
+            
+            setTimeout(() => {
+                submitPinBtn.innerHTML = originalText;
+                submitPinBtn.disabled = false;
+                submitPinBtn.classList.remove('opacity-70');
+                
+                if (pinInput && pinInput.value === CORRECT_PIN) {
+                    if (compactLockCard) compactLockCard.classList.add('hidden');
+                    if (advancedContainer) {
+                        advancedContainer.classList.remove('max-h-0', 'opacity-0', 'overflow-hidden');
+                        advancedContainer.classList.add('max-h-[3000px]', 'opacity-100');
+                    }
+                    if (pinModal) pinModal.classList.add('hidden');
+                } else {
                     pinDigits.forEach(i => {
-                        i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+                        i.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+                        i.value = '';
                     });
-                }, 1000);
-            }
+                    updateHiddenPin();
+                    if (pinDigits.length > 0) pinDigits[0].focus();
+                    setTimeout(() => {
+                        pinDigits.forEach(i => {
+                            i.classList.remove('border-rose-500', 'bg-rose-50', 'dark:bg-rose-500/10');
+                        });
+                    }, 1000);
+                }
+            }, 600);
         });
     }
 } catch (error) {
