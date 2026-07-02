@@ -4628,6 +4628,15 @@ async function initCustomerDeposit() {
                 if (ledgerHeader) ledgerHeader.classList.remove('hidden');
                 if (historyHeader) historyHeader.classList.add('hidden');
 
+                const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
+                const showActions = getSetting('DEPOSIT_SHOW_ACTIONS', true);
+                const actionTh = document.getElementById('deposit-action-th');
+                if (actionTh) {
+                    if (showActions) actionTh.classList.remove('hidden');
+                    else actionTh.classList.add('hidden');
+                }
+                const actionColClass = showActions ? '' : 'hidden';
+
                 const tableContainer = document.getElementById('table-card-container');
                 if (tableContainer) tableContainer.className = "lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden flex flex-col";
                 const summarySidebar = document.getElementById('customer-summary-sidebar');
@@ -4675,7 +4684,7 @@ async function initCustomerDeposit() {
                         <td class="px-4 py-3 text-xs font-bold text-center">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${statusClass}">${statusText}</span>
                         </td>
-                        <td class="px-4 py-3 text-sm text-right whitespace-nowrap">
+                        <td class="px-4 py-3 text-sm text-right whitespace-nowrap deposit-action-col ${actionColClass}">
                             <div class="flex gap-1.5 justify-end items-center">
                                 <button onclick="event.stopPropagation(); showCustomerDepositHistory('${safeEscape(name)}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View History">
                                     <span class="material-symbols-outlined text-base">visibility</span>

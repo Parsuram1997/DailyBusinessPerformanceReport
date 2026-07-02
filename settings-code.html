@@ -610,6 +610,27 @@
             </div>
         </div>
 
+        <!-- Deposit Action Buttons -->
+        <div class="flex items-center justify-between p-4 rounded-xl border border-sky-100 bg-sky-50 dark:bg-sky-500/5 dark:border-sky-500/20 mt-4 mb-4">
+            <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <span class="material-symbols-outlined text-sky-600 shrink-0">savings</span>
+                <div>
+                    <p class="font-bold text-sm">Customer Deposit Action Buttons</p>
+                    <p class="text-xs text-slate-500">Show/hide the View, Edit and Delete action buttons on the Customer Deposit page.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-deposit-actions" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="user-toggle-deposit-actions" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
+        </div>
+
         <!-- Open Daily Txn in New Tab -->
         <div class="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20">
             <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
@@ -1319,6 +1340,7 @@ const pinAddEntryToggle = document.getElementById('toggle-pin-add-entry');
 const pinDailyTxnToggle = document.getElementById('toggle-pin-daily-txn');
 const pinSettingsToggle = document.getElementById('toggle-pin-settings');
 const creditActionsToggle = document.getElementById('toggle-credit-actions');
+const depositActionsToggle = document.getElementById('toggle-deposit-actions');
 const dtxnNewTabToggle = document.getElementById('toggle-dtxn-new-tab');
 const hidePublicDtxnToggle = document.getElementById('toggle-hide-public-dtxn');
 
@@ -1457,6 +1479,7 @@ function applySettingsToUI() {
     pinDailyTxnToggle.checked = localStorage.getItem('security_pin_enabled_daily_txn') !== 'false';
     pinSettingsToggle.checked = localStorage.getItem('security_pin_enabled_settings') !== 'false';
     creditActionsToggle.checked = localStorage.getItem('CREDIT_LEDGER_SHOW_ACTIONS') !== 'false';
+    depositActionsToggle.checked = localStorage.getItem('DEPOSIT_SHOW_ACTIONS') !== 'false';
     dtxnNewTabToggle.checked = localStorage.getItem('dtxn_openInNewTab') === 'true';
     if (hidePublicDtxnToggle) hidePublicDtxnToggle.checked = localStorage.getItem('HIDE_PUBLIC_DAILY_TXN') === 'true';
 }
@@ -1486,6 +1509,7 @@ function saveGlobalSettings() {
         security_pin_enabled_daily_txn: pinDailyTxnToggle.checked,
         security_pin_enabled_settings: pinSettingsToggle.checked,
         CREDIT_LEDGER_SHOW_ACTIONS: creditActionsToggle.checked,
+        DEPOSIT_SHOW_ACTIONS: depositActionsToggle.checked,
         dtxn_openInNewTab: dtxnNewTabToggle.checked,
         HIDE_PUBLIC_DAILY_TXN: hidePublicDtxnToggle ? hidePublicDtxnToggle.checked : false
     };
@@ -1506,6 +1530,7 @@ function saveGlobalSettings() {
         localStorage.setItem('security_pin_enabled_daily_txn', settings.security_pin_enabled_daily_txn);
         localStorage.setItem('security_pin_enabled_settings', settings.security_pin_enabled_settings);
         localStorage.setItem('CREDIT_LEDGER_SHOW_ACTIONS', settings.CREDIT_LEDGER_SHOW_ACTIONS);
+        localStorage.setItem('DEPOSIT_SHOW_ACTIONS', settings.DEPOSIT_SHOW_ACTIONS);
         localStorage.setItem('dtxn_openInNewTab', settings.dtxn_openInNewTab);
         localStorage.setItem('HIDE_PUBLIC_DAILY_TXN', settings.HIDE_PUBLIC_DAILY_TXN);
     }
@@ -1526,6 +1551,7 @@ pinAddEntryToggle.addEventListener('change', saveGlobalSettings);
 pinDailyTxnToggle.addEventListener('change', saveGlobalSettings);
 pinSettingsToggle.addEventListener('change', saveGlobalSettings);
 creditActionsToggle.addEventListener('change', saveGlobalSettings);
+depositActionsToggle.addEventListener('change', saveGlobalSettings);
 dtxnNewTabToggle.addEventListener('change', saveGlobalSettings);
 if (hidePublicDtxnToggle) {
     hidePublicDtxnToggle.addEventListener('change', () => {
@@ -1551,6 +1577,7 @@ const USER_TOGGLE_MAP = [
     { id: 'user-toggle-delete-btn',      key: 'user_dtxn_showDelete' },
     { id: 'user-toggle-charges-col',     key: 'user_dtxn_showCharges' },
     { id: 'user-toggle-credit-actions',  key: 'user_CREDIT_LEDGER_SHOW_ACTIONS' },
+    { id: 'user-toggle-deposit-actions', key: 'user_DEPOSIT_SHOW_ACTIONS' },
     { id: 'user-toggle-dtxn-new-tab',    key: 'user_dtxn_openInNewTab' },
 ];
 
@@ -1720,7 +1747,7 @@ function initCacheOptimizer() {
             'biz_theme', 'biz_accent_color', 'biz_api_key',
             'dtxn_showSummary', 'dtxn_showBalancesGrid', 'dtxn_showBalance',
             'dtxn_showBalanceDiff', 'dtxn_showDelete', 'dtxn_showCharges',
-            'dtxn_openInNewTab', 'HIDE_PUBLIC_DAILY_TXN', 'CREDIT_LEDGER_SHOW_ACTIONS',
+            'dtxn_openInNewTab', 'HIDE_PUBLIC_DAILY_TXN', 'CREDIT_LEDGER_SHOW_ACTIONS', 'DEPOSIT_SHOW_ACTIONS',
             'security_pin_enabled_add_entry', 'security_pin_enabled_daily_txn',
             'security_pin_enabled_settings',
             'validate_cash_diff', 'validate_online_diff', 'validate_csp_diff', 'validate_txns_checked',
@@ -1730,7 +1757,7 @@ function initCacheOptimizer() {
             'user_dtxn_showSummary', 'user_dtxn_showBalancesGrid',
             'user_dtxn_showBalance', 'user_dtxn_showBalanceDiff',
             'user_dtxn_showDelete', 'user_dtxn_showCharges',
-            'user_CREDIT_LEDGER_SHOW_ACTIONS', 'user_dtxn_openInNewTab',
+            'user_CREDIT_LEDGER_SHOW_ACTIONS', 'user_DEPOSIT_SHOW_ACTIONS', 'user_dtxn_openInNewTab',
         ]);
 
         let removedCount = 0;
