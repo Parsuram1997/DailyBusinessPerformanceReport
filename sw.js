@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v28'; // Bumped: Fixed customer-deposit-code.html missing auth.js script tag
+const CACHE_NAME = 'biz-report-v29'; // Bumped: Exposed window.db reference for recovery script
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -251,10 +251,10 @@ async function updateCredits(credits) {
     }
 }
 
-async function loadCustomers() {
+async function loadCustomers(collectionName = "customers") {
     if (!db) { console.error("Firestore db not initialized in loadCustomers"); return []; }
     try {
-        const querySnapshot = await getDocs(collection(db, "customers"));
+        const querySnapshot = await getDocs(collection(db, collectionName));
         return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
     } catch (e) {
         console.error("Error loading customers: ", e);
@@ -286,24 +286,24 @@ async function updateCreditLedgerTotalPending() {
     }
 }
 
-async function saveCustomer(customer) {
+async function saveCustomer(customer, collectionName = "customers") {
     if (!db) { console.error("Firestore db not initialized in saveCustomer"); return null; }
     try {
         if (customer && customer.name) {
             customer.name = customer.name.replace(/\s+/g, ' ').trim();
-            const existing = await loadCustomers();
+            const existing = await loadCustomers(collectionName);
             const duplicate = existing.find(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === customer.name.toLowerCase() && String(c.id) !== String(customer.id));
             if (duplicate) {
                 console.warn(`[saveCustomer] Duplicate blocked: "${customer.name}"`);
-                throw new Error("Customer already exists in Credit Ledger.");
+                throw new Error("Customer already exists.");
             }
         }
         const id = String(customer.id || Date.now());
         console.log("Saving customer with doc ID:", id, "Data:", customer);
-        const docRef = doc(db, "customers", id);
+        const docRef = doc(db, collectionName, id);
         await setDoc(docRef, customer, { merge: true });
         console.log("Customer save successful!");
-        await updateCreditLedgerTotalPending();
+        if (collectionName === "customers") await updateCreditLedgerTotalPending();
         return { message: "Customer saved" };
     } catch (e) {
         console.error("Firestore save error (customer): ", e);
@@ -334,19 +334,21 @@ async function deleteCredit(id) {
     }
 }
 
-async function deleteCustomer(id) {
+async function deleteCustomer(id, collectionName = "customers") {
     try {
-        // Delete customer and their credits
+        // Delete customer and their credits (if applicable)
         const batch = writeBatch(db);
-        batch.delete(doc(db, "customers", id.toString()));
+        batch.delete(doc(db, collectionName, id.toString()));
 
-        const q = query(collection(db, "credits"), where("customerId", "==", id));
-        const snapshots = await getDocs(q);
-        snapshots.forEach(s => batch.delete(s.ref));
+        if (collectionName === "customers") {
+            const q = query(collection(db, "credits"), where("customerId", "==", id));
+            const snapshots = await getDocs(q);
+            snapshots.forEach(s => batch.delete(s.ref));
+        }
 
         await batch.commit();
-        await updateCreditLedgerTotalPending();
-        return { message: "Customer and credits deleted" };
+        if (collectionName === "customers") await updateCreditLedgerTotalPending();
+        return { message: "Customer deleted" };
     } catch (e) {
         console.error("Error deleting customer: ", e);
         return null;
@@ -3443,8 +3445,9 @@ function safeEscape(str) {
 
 // Logic for Credit Ledger Page
 async function initCreditLedger() {
+    const tableBody = document.getElementById('credit-table-body');
+    if (!tableBody) return; // Exit if not on credit ledger page
     const addCustomerForm = document.getElementById('add-customer-form');
-    if (!addCustomerForm) return;
 
     const addTransactionForm = document.getElementById('credit-transaction-form');
     const addTransactionSection = document.getElementById('add-transaction-section');
@@ -4182,7 +4185,7 @@ async function initCustomerDeposit() {
     async function renderView() {
         console.log("[CustDeposit] Rendering view... currentView:", currentView);
         try {
-            const customers = await loadCustomers();
+            const customers = await loadCustomers("deposit_customers");
             
             const txnRef = collection(db, "daily_transactions");
             const q = query(txnRef, where("type", "in", ["CUST_MONEY_IN", "CUST_MONEY_OUT"]));
@@ -4424,7 +4427,7 @@ async function initCustomerDeposit() {
                     address: '',
                     date: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0')
                 };
-                await saveCustomer(newCust);
+                await saveCustomer(newCust, "deposit_customers");
                 closeAddCustomerModal();
                 safeSwal({
                     icon: 'success',
@@ -4489,11 +4492,11 @@ async function initCustomerDeposit() {
             if (errorEl) errorEl.classList.add('hidden');
 
             try {
-                const customers = await loadCustomers();
+                const customers = await loadCustomers("deposit_customers");
                 const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
                 if (existingCust) {
                     existingCust.phone = phone;
-                    const res = await saveCustomer(existingCust);
+                    const res = await saveCustomer(existingCust, "deposit_customers");
                     if (res) {
                         closeEditCustomerModal();
                         safeSwal({
@@ -4538,7 +4541,7 @@ async function initCustomerDeposit() {
                     confirmBtn.disabled = true;
                     confirmBtn.innerText = 'Deleting...';
                     try {
-                        await deleteCustomer(id);
+                        await deleteCustomer(id, "deposit_customers");
                         modal.classList.add('hidden');
                         safeSwal({
                             icon: 'success',
@@ -7774,11 +7777,11 @@ async function initDailyTxn() {
 
             // Strict Customer Validation for Credit and Customer Deposit Transactions
             if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
-                const customers = await loadCustomers();
+                const isDeposit = ['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
+                const customers = await loadCustomers(isDeposit ? 'deposit_customers' : 'customers');
                 const inputName = txnNote.value.trim().toLowerCase();
                 const exists = customers.some(c => c.name && c.name.trim().toLowerCase() === inputName);
                 if (!exists) {
-                    const isDeposit = ['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
                     Swal.fire({
                         icon: 'error',
                         title: 'Customer Not Found',
@@ -9228,7 +9231,7 @@ async function initDailyTxn() {
             tr.innerHTML = `
                 <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}">
                     <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[30px] h-[22px]">
-                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '—' : '#' + serialPos}</span>
+                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '-' : '#' + serialPos}</span>
                     </div>
                 </td>
                 <td class="px-3 py-1.5">

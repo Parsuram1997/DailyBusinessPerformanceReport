@@ -19,6 +19,17 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Global Dashboard State for Real-Time listeners and Charts
+window.db = db;
+window.collection = collection;
+window.getDocs = getDocs;
+window.deleteDoc = deleteDoc;
+window.doc = doc;
+window.query = query;
+window.where = where;
+window.setDoc = setDoc;
+window.getDoc = getDoc;
+window.writeBatch = writeBatch;
+
 let dashboardUnsubscribe = null;
 let incomeExpenseChart = null;
 let profitGrowthChart = null;
@@ -44,7 +55,7 @@ window._startGlobalEntriesListener = function() {
 };
 window._startGlobalEntriesListener();
 
-// ─── Active Session Tracking ─────────────────────────────────────────────
+// â”€â”€â”€ Active Session Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Registers this device in Firestore 'active_sessions' and sends heartbeats
 // every 30s. The Settings page reads this collection in real-time to display
 // how many devices are currently logged in.
@@ -60,7 +71,7 @@ window._startGlobalEntriesListener();
     const role = (window.authGet && window.authGet('userRole')) || sessionStorage.getItem('userRole') || 'user';
     const ua = navigator.userAgent;
 
-    // ── Stable Device ID ──────────────────────────────────────────────────────
+    // â”€â”€ Stable Device ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Use a STABLE device ID stored in localStorage so:
     //   1. The same device shows as one session across page navigations
     //   2. PWA restarts don't create a ghost session that immediately looks "revoked"
@@ -102,8 +113,8 @@ window._startGlobalEntriesListener();
                 username,
                 role,
                 userAgent: ua,
-                screenResolution: `${screen.width}×${screen.height}`,
-                windowSize: `${window.innerWidth}×${window.innerHeight}`,
+                screenResolution: `${screen.width}Ã—${screen.height}`,
+                windowSize: `${window.innerWidth}Ã—${window.innerHeight}`,
                 location: sessionLocation,
                 lastSeen: serverTimestamp(),
                 lastSeenMs: Date.now(),
@@ -115,7 +126,7 @@ window._startGlobalEntriesListener();
         }
     }
 
-    // ─── Real-time Revoke Listener ────────────────────────────────
+    // â”€â”€â”€ Real-time Revoke Listener â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Watches this device's session doc. If admin deletes it (revokes),
     // this device is immediately logged out.
     //
@@ -128,7 +139,7 @@ window._startGlobalEntriesListener();
         const sessionDocRef = doc(db, 'active_sessions', deviceId);
         onSnapshot(sessionDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                // Document exists — mark that our session is live
+                // Document exists â€” mark that our session is live
                 sessionWritten = true;
             } else if (sessionWritten) {
                 // Document was deleted after being confirmed live.
@@ -138,12 +149,12 @@ window._startGlobalEntriesListener();
                     try {
                         const freshSnap = await getDoc(doc(db, 'active_sessions', deviceId));
                         if (freshSnap.exists()) {
-                            console.log('[Session] False alarm — doc came back.');
+                            console.log('[Session] False alarm â€” doc came back.');
                             return; // back online, not a real revoke
                         }
                     } catch (_) {}
 
-                    // Confirmed gone → admin revoked us
+                    // Confirmed gone â†’ admin revoked us
                     console.warn('[Session] Session revoked by admin. Logging out...');
                     if (window.authRemove) {
                         window.authRemove('isLoggedIn');
@@ -179,7 +190,7 @@ window._startGlobalEntriesListener();
                     }, 2000);
                 }, 1500);
             }
-            // else: doc doesn't exist yet and hasn't been written — normal on fresh load, ignore
+            // else: doc doesn't exist yet and hasn't been written â€” normal on fresh load, ignore
         }, (err) => {
             console.error('[Session] Revoke listener error:', err);
         });
@@ -193,10 +204,10 @@ window._startGlobalEntriesListener();
         startRevokeListener();
         const heartbeatInterval = setInterval(writeHeartbeat, 30000);
 
-        // ── PWA-safe cleanup ──────────────────────────────────────────────────
+        // â”€â”€ PWA-safe cleanup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // DO NOT use beforeunload to delete the Firestore session doc on mobile PWA.
         // On iOS/Android, the app is suspended (not unloaded) when the user switches
-        // apps — beforeunload fires prematurely, deleting the session doc, which then
+        // apps â€” beforeunload fires prematurely, deleting the session doc, which then
         // triggers the revoke listener on the next page load ("Session Revoked" bug).
         //
         // Instead: use visibilitychange. When app returns to foreground, we re-write
@@ -204,7 +215,7 @@ window._startGlobalEntriesListener();
         // admin via the Settings page.
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                // App came back to foreground — refresh heartbeat
+                // App came back to foreground â€” refresh heartbeat
                 writeHeartbeat();
             }
         });
@@ -420,10 +431,10 @@ async function updateCredits(credits) {
     }
 }
 
-async function loadCustomers() {
+async function loadCustomers(collectionName = "customers") {
     if (!db) { console.error("Firestore db not initialized in loadCustomers"); return []; }
     try {
-        const querySnapshot = await getDocs(collection(db, "customers"));
+        const querySnapshot = await getDocs(collection(db, collectionName));
         return querySnapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
     } catch (e) {
         console.error("Error loading customers: ", e);
@@ -455,21 +466,22 @@ async function updateCreditLedgerTotalPending() {
     }
 }
 
-async function saveCustomer(customer) {
+async function saveCustomer(customer, collectionName = "customers") {
     if (!db) { console.error("Firestore db not initialized in saveCustomer"); return null; }
     try {
         if (customer && customer.name) {
             customer.name = customer.name.replace(/\s+/g, ' ').trim();
-            const existing = await loadCustomers();
-            const duplicate = existing.find(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === customer.name.toLowerCase() && String(c.id) !== String(customer.id));
+            const existing = await loadCustomers(collectionName);
+            const duplicate = existing.find(c => c.name && c.name.replace(/\s+/g, ' ').trim().toLowerCase() === customer.name.toLowerCase() && String(c.id || c.firebaseId) !== String(customer.id || customer.firebaseId));
             if (duplicate) {
                 console.warn(`[saveCustomer] Duplicate blocked: "${customer.name}"`);
                 throw new Error("Customer already exists in Credit Ledger.");
             }
         }
-        const id = String(customer.id || Date.now());
+        const id = String(customer.id || customer.firebaseId || Date.now());
+        if (!customer.id) customer.id = id;
         console.log("Saving customer with doc ID:", id, "Data:", customer);
-        const docRef = doc(db, "customers", id);
+        const docRef = doc(db, collectionName, id);
         await setDoc(docRef, customer, { merge: true });
         console.log("Customer save successful!");
         await updateCreditLedgerTotalPending();
@@ -503,18 +515,22 @@ async function deleteCredit(id) {
     }
 }
 
-async function deleteCustomer(id) {
+async function deleteCustomer(id, collectionName = "customers") {
     try {
         // Delete customer and their credits
         const batch = writeBatch(db);
-        batch.delete(doc(db, "customers", id.toString()));
+        batch.delete(doc(db, collectionName, id.toString()));
 
-        const q = query(collection(db, "credits"), where("customerId", "==", id));
-        const snapshots = await getDocs(q);
-        snapshots.forEach(s => batch.delete(s.ref));
+        if (collectionName === "customers") {
+            const q = query(collection(db, "credits"), where("customerId", "==", id));
+            const snapshots = await getDocs(q);
+            snapshots.forEach(s => batch.delete(s.ref));
+        }
 
         await batch.commit();
-        await updateCreditLedgerTotalPending();
+        if (collectionName === "customers") {
+            await updateCreditLedgerTotalPending();
+        }
         return { message: "Customer and credits deleted" };
     } catch (e) {
         console.error("Error deleting customer: ", e);
@@ -645,9 +661,9 @@ async function populateBankAccountsDropdown(selectedVal = '') {
                 bank = parts[1] || '';
                 number = parts[2] || '';
                 type = parts[3] || 'CURRENT';
-                fullDisplayText = `${holder.toUpperCase()} — ${type.toUpperCase()} — ${number}`;
-            } else if (acc.name && acc.name.includes(' — ')) {
-                const parts = acc.name.split(' — ');
+                fullDisplayText = `${holder.toUpperCase()} â€” ${type.toUpperCase()} â€” ${number}`;
+            } else if (acc.name && acc.name.includes(' â€” ')) {
+                const parts = acc.name.split(' â€” ');
                 holder = parts[0] || '';
                 type = parts[1] || 'CURRENT';
                 number = parts[2] || '';
@@ -660,7 +676,7 @@ async function populateBankAccountsDropdown(selectedVal = '') {
             }
 
             const last4 = number.length >= 4 ? number.slice(-4) : number;
-            const singleLineDisplay = `${holder.toUpperCase()} • ${type.toUpperCase()}${last4 ? ` • ${last4}` : ''}`;
+            const singleLineDisplay = `${holder.toUpperCase()} â€¢ ${type.toUpperCase()}${last4 ? ` â€¢ ${last4}` : ''}`;
 
             const option = document.createElement('option');
             option.value = fullDisplayText;
@@ -707,9 +723,9 @@ async function populateBankAccountsDropdown(selectedVal = '') {
                     <div class="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight group-hover/item:text-primary transition-colors">${item.holder}</div>
                     <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase">
                         <span class="text-blue-600 dark:text-blue-400 font-bold">${item.bank}</span>
-                        <span>•</span>
+                        <span>â€¢</span>
                         <span class="text-slate-500 dark:text-slate-300 font-bold">${item.type}</span>
-                        ${item.last4 ? `<span>•</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
+                        ${item.last4 ? `<span>â€¢</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
                     </div>
                 `;
 
@@ -1586,7 +1602,7 @@ async function initAddEntry() {
             // Start real-time sync for the new entry
             setupRealTimeSync(datePicker.value);
 
-            // No data for this date — check if there is a local draft
+            // No data for this date â€” check if there is a local draft
             const draftStr = localStorage.getItem('add_entry_draft');
             if (draftStr) {
                 const draft = JSON.parse(draftStr);
@@ -1629,7 +1645,7 @@ async function initAddEntry() {
                     if (notesEl) { notesEl.value = ''; notesEl.dispatchEvent(new Event('input', { bubbles: true })); }
                 }
             } else {
-                // No data and no draft — clear all fields
+                // No data and no draft â€” clear all fields
                 Array.from(form.querySelectorAll('input[type="number"]')).forEach(input => {
                     input.value = '';
                     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1655,7 +1671,7 @@ async function initAddEntry() {
                 const savedDate = savedData['__entry_date__'];
                 if (savedDate && datePicker && datePicker.value !== savedDate) {
                     datePicker.value = savedDate;
-                    // Re-run checkExisting for the correct date but with session data — will be restored below
+                    // Re-run checkExisting for the correct date but with session data â€” will be restored below
                     // We do NOT re-trigger checkExisting here to avoid infinite loop;
                     // Instead we'll override fields below after database lookup resolves.
                 }
@@ -2162,7 +2178,7 @@ async function initAddEntry() {
                 return;
             }
 
-            // ─── Transaction Checked Verification Validation ───
+            // â”€â”€â”€ Transaction Checked Verification Validation â”€â”€â”€
             let hasValidationError = false;
             let validationErrorMsg = '';
 
@@ -2265,7 +2281,7 @@ async function initAddEntry() {
                 return;
             }
 
-            // ─── Transaction Checked Verification Validation ───
+            // â”€â”€â”€ Transaction Checked Verification Validation â”€â”€â”€
             const isValidateTxnsChecked = window.getAppSetting ? window.getAppSetting('validate_txns_checked', true) : (localStorage.getItem('validate_txns_checked') !== 'false');
             if (isValidateTxnsChecked) {
                 const dateVal = datePicker ? datePicker.value : null;
@@ -2407,13 +2423,13 @@ async function initAddEntry() {
                     document.body.appendChild(container);
                 }
                 const toast = document.createElement('div');
-                toast.className = 'pointer-events-auto flex flex-col items-center gap-3 p-6 sm:px-8 sm:py-7 bg-emerald-500/95 dark:bg-emerald-600/95 backdrop-blur-2xl text-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(16,185,129,0.5)] border border-white/20 transform scale-75 opacity-0 transition-all duration-500 ease-out';
+                toast.className = 'pointer-events-auto flex flex-col items-center gap-3 p-6 sm:px-8 sm:py-7 bg-emerald-500/95 dark:bg-emerald-600/95 backdrop-blur-2xl text-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(16₹85₹29,0.5)] border border-white/20 transform scale-75 opacity-0 transition-all duration-500 ease-out';
                 toast.innerHTML = `
                     <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-inner shrink-0 mb-1">
                         <span class="material-symbols-outlined text-[36px] font-black text-emerald-500">task_alt</span>
                     </div>
                     <div class="flex flex-col text-center">
-                        <span class="text-xl font-black text-white tracking-wide">Entry Saved! 🎉</span>
+                        <span class="text-xl font-black text-white tracking-wide">Entry Saved! ðŸŽ‰</span>
                         <span class="text-sm font-semibold text-emerald-50 mt-1.5 leading-snug">Your daily record has been saved<br>successfully to the ledger.</span>
                     </div>
                 `;
@@ -3488,7 +3504,7 @@ async function initSettings() {
 
                 if (count > 0) {
                     await batch.commit();
-                    alert(`Successfully repaired ${count} entries! ✅`);
+                    alert(`Successfully repaired ${count} entries! âœ…`);
                     window.location.reload();
                 } else {
                     alert('No entries found that need repair.');
@@ -3641,7 +3657,7 @@ async function initSettings() {
                             });
                             await batch.commit();
                         }
-                        alert(`Successfully imported ${entries.length} historical records! ✅`);
+                        alert(`Successfully imported ${entries.length} historical records! âœ…`);
                         window.location.reload();
                     } catch (err) {
                         console.error('Bulk Import Error:', err);
@@ -3821,13 +3837,13 @@ function safeEscape(str) {
 }
 
 async function initCreditLedger() {
+    const tableBody = document.getElementById('credit-table-body');
+    if (!tableBody) return; // Exit if not on credit ledger page
     const addCustomerForm = document.getElementById('add-customer-form');
-    if (!addCustomerForm) return;
 
     const addTransactionForm = document.getElementById('credit-transaction-form');
     const addTransactionSection = document.getElementById('add-transaction-section');
     const backBtn = document.getElementById('back-to-ledger');
-    const tableBody = document.getElementById('credit-table-body');
     const ledgerHeader = document.getElementById('ledger-header');
     const historyHeader = document.getElementById('history-header');
     const ledgerTitle = document.getElementById('ledger-title');
@@ -3962,13 +3978,13 @@ async function initCreditLedger() {
                             </td>
                             <td class="px-4 py-2.5 align-middle text-right action-col ${actionColClass}">
                                 <div class="flex gap-1 justify-end whitespace-nowrap items-center">
-                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
+                                    <button onclick="event.stopPropagation(); showCustomerDetails('${cust.id || cust.firebaseId}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View Details">
                                         <span class="material-symbols-outlined text-base">visibility</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); openEditCustomerModal('${cust.id}', '${safeEscape(custNameStr)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
+                                    <button onclick="event.stopPropagation(); openEditCustomerModal('${cust.id || cust.firebaseId}', '${safeEscape(custNameStr)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
                                         <span class="material-symbols-outlined text-base">edit</span>
                                     </button>
-                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id}', ${custBal})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
+                                    <button onclick="event.stopPropagation(); deleteLedgerCustomer('${cust.id || cust.firebaseId}', ${custBal})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
                                         <span class="material-symbols-outlined text-base">delete</span>
                                     </button>
                                 </div>
@@ -4133,7 +4149,7 @@ async function initCreditLedger() {
                 box-shadow: 0 8px 30px rgba(0,0,0,0.12);
                 font-family: Inter, sans-serif; font-size: 14px; font-weight: 600;
                 color: #1e293b; min-width: 260px;
-                transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+                transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34₹.56,0.64₹);
             `;
             document.body.appendChild(toast);
         }
@@ -4164,7 +4180,7 @@ async function initCreditLedger() {
                 box-shadow: 0 8px 30px rgba(0,0,0,0.12);
                 font-family: Inter, sans-serif; font-size: 14px; font-weight: 600;
                 color: #1e293b; min-width: 260px;
-                transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+                transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34₹.56,0.64₹);
             `;
             document.body.appendChild(toast);
         }
@@ -4214,7 +4230,9 @@ async function initCreditLedger() {
 
     const editCustomerForm = document.getElementById('edit-customer-form');
     if (editCustomerForm) {
-        editCustomerForm.addEventListener('submit', async (e) => {
+        const newForm = editCustomerForm.cloneNode(true);
+        editCustomerForm.parentNode.replaceChild(newForm, editCustomerForm);
+        newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-customer-id')?.value;
             const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
@@ -4234,7 +4252,7 @@ async function initCreditLedger() {
                     const res = await saveCustomer(existingCust);
                     if (res) {
                         closeEditCustomerModal();
-                        showSuccessToast('Contact number saved successfully! ✅');
+                        showSuccessToast('Contact number saved successfully! âœ…');
                         await renderView();
                     }
                 } else {
@@ -4274,7 +4292,7 @@ async function initCreditLedger() {
                 if (res) {
                     if (typeof closeAddCustomerModal === 'function') closeAddCustomerModal();
                     else addCustomerForm.reset();
-                    showSuccessToast('Customer added successfully! 🎉');
+                    showSuccessToast('Customer added successfully! ðŸŽ‰');
                     await renderView();
                 }
             } catch (err) {
@@ -4313,7 +4331,7 @@ async function initCreditLedger() {
                         addTransactionForm.reset();
                         const dateInput = document.getElementById('trans-date');
                         if (dateInput) dateInput.valueAsDate = new Date();
-                        showSuccessToast('Transaction saved successfully! ✅');
+                        showSuccessToast('Transaction saved successfully! âœ…');
                         await renderView();
                     }
                 }
@@ -4412,10 +4430,10 @@ async function initCreditLedger() {
                     try {
                         if (deleteType === 'customer') {
                             await deleteCustomer(deleteId);
-                            showSuccessToast('Customer deleted successfully. 🗑️');
+                            showSuccessToast('Customer deleted successfully. ðŸ—‘ï¸');
                         } else {
                             await deleteCredit(deleteId);
-                            showSuccessToast('Transaction deleted successfully. ✅');
+                            showSuccessToast('Transaction deleted successfully. âœ…');
                         }
                         
                         if (deleteModal) deleteModal.classList.add('hidden');
@@ -4521,20 +4539,20 @@ async function initCustomerDeposit() {
             if (typeof titleOrOpts === 'object') {
                 const options = titleOrOpts;
                 if (options.icon === 'warning' || options.icon === 'error') {
-                    alert(`⚠️ ${options.title || ''}\n\n${options.text || ''}`);
+                    alert(`âš ï¸ ${options.title || ''}\n\n${options.text || ''}`);
                     return Promise.resolve({ isConfirmed: true });
                 } else if (options.showCancelButton) {
                     const confirmed = confirm(`${options.title || ''}\n\n${options.text || ''}`);
                     return Promise.resolve({ isConfirmed: confirmed });
                 } else {
-                    alert(`✅ ${options.title || ''}\n\n${options.text || ''}`);
+                    alert(`âœ… ${options.title || ''}\n\n${options.text || ''}`);
                     return Promise.resolve({ isConfirmed: true });
                 }
             } else {
                 if (icon === 'warning' || icon === 'error') {
-                    alert(`⚠️ ${titleOrOpts || ''}\n\n${text || ''}`);
+                    alert(`âš ï¸ ${titleOrOpts || ''}\n\n${text || ''}`);
                 } else {
-                    alert(`✅ ${titleOrOpts || ''}\n\n${text || ''}`);
+                    alert(`âœ… ${titleOrOpts || ''}\n\n${text || ''}`);
                 }
                 return Promise.resolve({ isConfirmed: true });
             }
@@ -4547,6 +4565,7 @@ async function initCustomerDeposit() {
 
     const summaryCustomers = document.getElementById('summary-total-customers');
     const summaryTotalIn = document.getElementById('summary-total-in');
+    const summaryTotalOut = document.getElementById('summary-total-out');
     const summaryNetBalance = document.getElementById('summary-net-balance');
 
     const ledgerTitle = document.getElementById('ledger-title');
@@ -4560,7 +4579,7 @@ async function initCustomerDeposit() {
     async function renderView() {
         console.log("[CustDeposit] Rendering view... currentView:", currentView);
         try {
-            const customers = await loadCustomers();
+            const customers = await loadCustomers("deposit_customers");
             
             const txnRef = collection(db, "daily_transactions");
             const q = query(txnRef, where("type", "in", ["CUST_MONEY_IN", "CUST_MONEY_OUT"]));
@@ -4579,24 +4598,26 @@ async function initCustomerDeposit() {
 
             const breakdown = {};
             txns.forEach(t => {
-                const name = (t.note || 'Unknown').trim();
+                const rawName = (t.note || 'Unknown').trim();
+                const nameKey = rawName.toLowerCase();
                 const amt = parseFloat(t.amount || 0);
-                if (!breakdown[name]) breakdown[name] = { in: 0, out: 0, list: [] };
+                if (!breakdown[nameKey]) breakdown[nameKey] = { name: rawName, in: 0, out: 0, list: [] };
                 
                 if (t.type === 'CUST_MONEY_IN') {
-                    breakdown[name].in += amt;
+                    breakdown[nameKey].in += amt;
                     totalInSum += amt;
                 } else if (t.type === 'CUST_MONEY_OUT') {
-                    breakdown[name].out += amt;
+                    breakdown[nameKey].out += amt;
                     totalOutSum += amt;
                 }
-                breakdown[name].list.push(t);
+                breakdown[nameKey].list.push(t);
             });
 
             const netBalanceSum = totalInSum - totalOutSum;
 
             if (summaryCustomers) summaryCustomers.innerText = customers.length;
             if (summaryTotalIn) summaryTotalIn.innerText = '₹' + totalInSum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            if (summaryTotalOut) summaryTotalOut.innerText = '₹' + totalOutSum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
             if (summaryNetBalance) summaryNetBalance.innerText = '₹' + netBalanceSum.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
             tableBody.innerHTML = '';
@@ -4626,7 +4647,8 @@ async function initCustomerDeposit() {
 
                 filteredCustomers.forEach((cust, index) => {
                     const name = cust.name.trim();
-                    const custData = breakdown[name] || { in: 0, out: 0 };
+                    const nameKey = name.toLowerCase();
+                    const custData = breakdown[nameKey] || { in: 0, out: 0 };
                     const custIn = custData.in;
                     const custOut = custData.out;
                     const custNet = custIn - custOut;
@@ -4658,10 +4680,10 @@ async function initCustomerDeposit() {
                                 <button onclick="event.stopPropagation(); showCustomerDepositHistory('${safeEscape(name)}')" class="p-1.5 text-primary hover:bg-primary/10 rounded-xl transition-all" title="View History">
                                     <span class="material-symbols-outlined text-base">visibility</span>
                                 </button>
-                                <button onclick="event.stopPropagation(); openEditDepositCustomerModal('${cust.id}', '${safeEscape(name)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
+                                <button onclick="event.stopPropagation(); openEditDepositCustomerModal('${cust.id || cust.firebaseId}', '${safeEscape(name)}', '${safeEscape(cust.phone || '')}')" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all" title="Edit Contact">
                                     <span class="material-symbols-outlined text-base">edit</span>
                                 </button>
-                                <button onclick="event.stopPropagation(); deleteDepositCustomer('${cust.id}', ${custNet})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
+                                <button onclick="event.stopPropagation(); deleteDepositCustomer('${cust.id || cust.firebaseId}', ${custNet})" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all" title="Delete Customer">
                                     <span class="material-symbols-outlined text-base">delete</span>
                                 </button>
                             </div>
@@ -4676,7 +4698,8 @@ async function initCustomerDeposit() {
                 if (historyHeader) historyHeader.classList.remove('hidden');
 
                 const cust = customers.find(c => c.name.trim() === activeCustomerName);
-                const custData = breakdown[activeCustomerName] || { in: 0, out: 0, list: [] };
+                const nameKey = activeCustomerName.trim().toLowerCase();
+                const custData = breakdown[nameKey] || { in: 0, out: 0, list: [] };
                 const historyList = custData.list;
 
                 const tableContainer = document.getElementById('table-card-container');
@@ -4802,7 +4825,7 @@ async function initCustomerDeposit() {
                     address: '',
                     date: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0')
                 };
-                await saveCustomer(newCust);
+                await saveCustomer(newCust, "deposit_customers");
                 closeAddCustomerModal();
                 safeSwal({
                     icon: 'success',
@@ -4871,13 +4894,13 @@ async function initCustomerDeposit() {
                 const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
                 if (existingCust) {
                     existingCust.phone = phone;
-                    const res = await saveCustomer(existingCust);
+                    const res = await saveCustomer(existingCust, "deposit_customers");
                     if (res) {
                         closeEditCustomerModal();
                         safeSwal({
                             icon: 'success',
                             title: 'Contact Updated',
-                            text: 'Contact number saved successfully! ✅',
+                            text: 'Contact number saved successfully! âœ…',
                             timer: 1500,
                             showConfirmButton: false
                         });
@@ -4916,12 +4939,12 @@ async function initCustomerDeposit() {
                     confirmBtn.disabled = true;
                     confirmBtn.innerText = 'Deleting...';
                     try {
-                        await deleteCustomer(id);
+                        await deleteCustomer(id, "deposit_customers");
                         modal.classList.add('hidden');
                         safeSwal({
                             icon: 'success',
                             title: 'Deleted!',
-                            text: 'Customer deleted successfully. 🗑️',
+                            text: 'Customer deleted successfully. ðŸ—‘ï¸',
                             timer: 1500,
                             showConfirmButton: false
                         });
@@ -6163,7 +6186,7 @@ async function initReports() {
         }
 
 
-        // ─── Transaction Amount Distribution Pie Chart ───
+        // â”€â”€â”€ Transaction Amount Distribution Pie Chart â”€â”€â”€
         const amountDistCanvas = document.getElementById('amount-dist-chart');
         const amountDistTable = document.getElementById('amount-dist-table');
         const amountDistTotalEl = document.getElementById('amount-dist-total');
@@ -6617,7 +6640,7 @@ async function initBankWithdrawals() {
         const lastDateEl = document.getElementById('last-withdrawal-date');
         if (latestW) {
             if (lastAmountEl) lastAmountEl.innerText = formatCurrency(parseFloat(latestW.amount) || 0);
-            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` • ${latestW.method}` : '');
+            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` â€¢ ${latestW.method}` : '');
         } else {
             if (lastAmountEl) lastAmountEl.innerText = "-";
             if (lastDateEl) lastDateEl.innerText = "No entries found";
@@ -6848,7 +6871,7 @@ async function initBankWithdrawals() {
                     const parts = acc.name.split('|');
                     holder = parts[0];
                     bank = parts[1] || "Bank";
-                    accNo = parts[2] ? ` • A/c ${parts[2]}` : "";
+                    accNo = parts[2] ? ` â€¢ A/c ${parts[2]}` : "";
                 }
 
                 const tableTitle = document.getElementById('table-title-label');
@@ -7312,6 +7335,31 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     }
 }
 
+async function syncDepositCustomerFromDailyTxn(newTxn) {
+    if (!newTxn || !['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(newTxn.type)) return;
+    try {
+        const targetName = (newTxn.note || '').trim().toLowerCase();
+        if (!targetName) return;
+        
+        const depositCustomers = await loadCustomers("deposit_customers");
+        const existing = depositCustomers.find(c => c.name && c.name.trim().toLowerCase() === targetName);
+        
+        if (!existing) {
+            console.log(`[DepositSync] Auto-creating new deposit customer: ${newTxn.note.trim()}`);
+            const newCust = {
+                id: Date.now().toString(),
+                name: newTxn.note.trim(),
+                phone: '',
+                address: newTxn.address || '',
+                date: newTxn.date || new Date().toISOString().split('T')[0]
+            };
+            await saveCustomer(newCust, "deposit_customers");
+        }
+    } catch(err) {
+        console.error('[DepositSync] Failed to auto-create customer:', err);
+    }
+}
+
 async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     try {
         const existingWithdrawals = await loadBankWithdrawals();
@@ -7429,8 +7477,17 @@ async function initDailyTxn() {
     // Populate customer suggestions for Credit transactions
     const populateCustomerSuggestions = async () => {
         try {
-            const customers = await loadCustomers();
+            const txnType = document.getElementById('txn-type');
+            const typeValue = txnType ? txnType.value : '';
+            const isDeposit = typeValue === 'CUST_MONEY_IN' || typeValue === 'CUST_MONEY_OUT';
+            
             const list = document.getElementById('customer-list');
+            if (list) {
+                list.innerHTML = ''; // Clear immediately before fetch to avoid race condition visual bug
+            }
+
+            const customers = await loadCustomers(isDeposit ? 'deposit_customers' : 'customers');
+            
             if (list) {
                 list.innerHTML = '';
                 // Use a Set to avoid duplicates and ensure unique names
@@ -7440,7 +7497,7 @@ async function initDailyTxn() {
                     option.value = name;
                     list.appendChild(option);
                 });
-                console.log(`[DailyTxn] Populated ${names.length} customer suggestions.`);
+                console.log(`[DailyTxn] Populated ${names.length} customer suggestions for ${isDeposit ? 'deposit_customers' : 'customers'}.`);
             }
         } catch (e) {
             console.error("[DailyTxn] Failed to populate customer suggestions:", e);
@@ -7801,6 +7858,14 @@ async function initDailyTxn() {
                         if (txnNote) {
                             txnNote.classList.remove('hidden');
                             txnNote.placeholder = isPending ? 'Enter account name...' : 'Enter Name...';
+                            if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
+                                txnNote.setAttribute('list', 'customer-list');
+                                if (typeof populateCustomerSuggestions === 'function') {
+                                    populateCustomerSuggestions();
+                                }
+                            } else {
+                                txnNote.removeAttribute('list');
+                            }
                         }
                         if (txnExpenseType) {
                             txnExpenseType.classList.add('hidden');
@@ -8551,11 +8616,11 @@ async function initDailyTxn() {
 
             // Strict Customer Validation for Credit and Customer Deposit Transactions
             if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
-                const customers = await loadCustomers();
+                const isDeposit = ['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
+                const customers = await loadCustomers(isDeposit ? 'deposit_customers' : 'customers');
                 const inputName = txnNote.value.trim().toLowerCase();
                 const exists = customers.some(c => c.name && c.name.trim().toLowerCase() === inputName);
                 if (!exists) {
-                    const isDeposit = ['CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value);
                     Swal.fire({
                         icon: 'error',
                         title: 'Customer Not Found',
@@ -9058,11 +9123,13 @@ async function initDailyTxn() {
                 console.log('Update Success!');
                 await syncCreditFromDailyTxn(newTxn, editingTxnId, false);
                 await syncBankWithdrawalFromDailyTxn(newTxn, editingTxnId, false);
+                await syncDepositCustomerFromDailyTxn(newTxn);
             } else {
                 const docRef = await addDoc(txnCollection, newTxn);
                 console.log('Add Success! ID:', docRef.id);
                 await syncCreditFromDailyTxn(newTxn, docRef.id, false);
                 await syncBankWithdrawalFromDailyTxn(newTxn, docRef.id, false);
+                await syncDepositCustomerFromDailyTxn(newTxn);
             }
 
             resetFormState();
@@ -9283,7 +9350,7 @@ async function initDailyTxn() {
                 if (prov.includes('airtel(parsu)') || prov === 'airtel_1') return 'airtel_1';
                 if (prov.includes('airtel(dalai)') || prov === 'airtel_2') return 'airtel_2';
                 if (prov.includes('spicemoney')) return 'spicemoney';
-                // Fallback: generic roinet/airtel → default to _1
+                // Fallback: generic roinet/airtel â†’ default to _1
                 if (prov.includes('airtel')) return 'airtel_1';
                 if (prov.includes('roinet')) return 'roinet_1';
                 return null;
@@ -9944,7 +10011,7 @@ async function initDailyTxn() {
             return map[n] || name;
         };
 
-        // Serial number sirf countable txns ke liye — latest first order mein
+        // Serial number sirf countable txns ke liye â€” latest first order mein
         const countableIds = txns
             .filter(t => !excludedTypes.includes(t.type))
             .map(t => t.id); // already sorted latest-first
@@ -9976,7 +10043,7 @@ async function initDailyTxn() {
                         const h = p[0] || '';
                         const t = p[3] || 'CURRENT';
                         const n = p[2] || '';
-                        const matchStr = `${h.toUpperCase()} — ${t.toUpperCase()} — ${n}`;
+                        const matchStr = `${h.toUpperCase()} â€” ${t.toUpperCase()} â€” ${n}`;
                         if (matchStr === txn.bankName) {
                             holder = h;
                             bank = p[1] || '';
@@ -9987,8 +10054,8 @@ async function initDailyTxn() {
                     }
                 }
             }
-            if (!bank && txn.bankName.includes(' — ')) {
-                const parts = txn.bankName.split(' — ');
+            if (!bank && txn.bankName.includes(' â€” ')) {
+                const parts = txn.bankName.split(' â€” ');
                 if (parts.length >= 3) {
                     holder = parts[0];
                     type = parts[1];
@@ -10033,7 +10100,7 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}">
                     <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[30px] h-[22px]">
-                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '—' : '#' + serialPos}</span>
+                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '-' : '#' + serialPos}</span>
                     </div>
                 </td>
                 <td class="px-3 py-1.5 whitespace-nowrap">
@@ -10120,7 +10187,7 @@ async function initDailyTxn() {
                             let d1 = 'NA';
                             let d2Arr = [];
                             if (txn.type === 'SETTLEMENT') {
-                                d1 = (txn.provider || 'Wallet') + ' ➔ ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
+                                d1 = (txn.provider || 'Wallet') + ' âž” ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
                                 if (accName) d2Arr.push(accName);
                                 if (accNumber) d2Arr.push(accNumber);
                                 if (txn.remark) d2Arr.push(txn.remark);
@@ -10196,11 +10263,11 @@ async function initDailyTxn() {
                 <td class="px-3 py-1.5 balance-col-cell whitespace-nowrap">
                     <div class="flex flex-col items-center justify-center gap-1 w-[160px] mx-auto">
                         <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
-                            <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
+                            <span>C: ${window.isAllTimeSearchMode ? 'â€”' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
                         <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {}).replace(/"/g, '&quot;')})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
-                            <span>O: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
+                            <span>O: ${window.isAllTimeSearchMode ? 'â€”' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
                             ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
                         </span>
                     </div>
@@ -10789,7 +10856,7 @@ async function initDailyTxn() {
         try {
             if (unsubscribe) unsubscribe();
 
-            const rangeLabel = `${fromDate} → ${toDate}`;
+            const rangeLabel = `${fromDate} â†’ ${toDate}`;
             if (txnDateText) txnDateText.innerText = `Transactions: ${rangeLabel}`;
 
             if (tableBody) {
@@ -10862,7 +10929,7 @@ async function initDailyTxn() {
     const loadDateRangeBtn = document.getElementById('load-date-range-btn');
     const closeDateRangeBtn = document.getElementById('close-date-range-btn');
 
-    // Set default dates: first day of current month → today
+    // Set default dates: first day of current month â†’ today
     const _today = new Date();
     const _firstOfMonth = new Date(_today.getFullYear(), _today.getMonth(), 1);
     const _fmt = (d) => d.toISOString().split('T')[0];

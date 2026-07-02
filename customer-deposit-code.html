@@ -185,7 +185,7 @@
         <div class="p-3 sm:p-4 md:p-8 flex-1 overflow-y-auto space-y-4 md:space-y-8 pb-20 md:pb-6">
             <!-- Stats Summary Row -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-primary/10 shadow-lg p-3 md:p-6">
-                <div class="grid grid-cols-3 gap-2 md:gap-6 divide-x divide-primary/10">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6 divide-x divide-primary/10">
                     <!-- Total Customers -->
                     <div class="flex flex-col items-center justify-center text-center px-1">
                         <div class="size-8 md:size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-1 md:mb-2">
@@ -202,6 +202,15 @@
                         </div>
                         <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Total In</p>
                         <h3 id="summary-total-in" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
+                    </div>
+
+                    <!-- Total Out -->
+                    <div class="flex flex-col items-center justify-center text-center px-1">
+                        <div class="size-8 md:size-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-1 md:mb-2">
+                            <span class="material-symbols-outlined text-lg md:text-xl">credit_card</span>
+                        </div>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">Total Out</p>
+                        <h3 id="summary-total-out" class="text-sm md:text-2xl font-black text-slate-800 dark:text-white tracking-tight truncate w-full">₹0.00</h3>
                     </div>
                     
                     <!-- Net Balance -->
