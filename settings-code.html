@@ -1669,6 +1669,10 @@ function initAccentColorPicker() {
 
 function applyAccentColor(hex) {
     localStorage.setItem('biz_accent_color', hex);
+    if (window.saveAppSettings) {
+        window.saveAppSettings({ biz_accent_color: hex });
+    }
+    
     let styleEl = document.getElementById('dynamic-accent-styles');
     if (!styleEl) {
         styleEl = document.createElement('style');
