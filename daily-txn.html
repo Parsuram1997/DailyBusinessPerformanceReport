@@ -296,6 +296,14 @@
                     </div>
 
                     <form id="daily-txn-form" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+                        <div id="edit-date-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Date</label>
+                            <input type="date" id="txn-edit-date" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
+                        </div>
+                        <div id="edit-time-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Time</label>
+                            <input type="time" id="txn-edit-time" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
+                        </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
                             <select id="txn-type" tabindex="1" required class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
@@ -928,65 +936,65 @@
                     <!-- Dynamically populated by JS -->
                 </div>
 
-
-                <!-- Checking Mode Controls -->
-                <div id="checking-mode-controls" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20 shadow-lg shadow-emerald-500/5 p-3 mb-4 flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-4 divide-x divide-slate-200 dark:divide-slate-700">
-                        <div class="flex items-center gap-2 px-2">
-                            <span class="material-symbols-outlined text-emerald-500">fact_check</span>
-                            <span class="text-sm font-black text-slate-800 dark:text-white">Checking Mode</span>
-                        </div>
-                        <div class="flex items-center gap-3 pl-4">
-                            <div class="flex flex-col">
-                                <span class="text-[9px] font-bold text-slate-500 uppercase">Checked</span>
-                                <span id="checking-checked-count" class="text-sm font-black text-emerald-600">0</span>
+                <!-- Txn Table Container -->
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden flex flex-col">
+                    
+                    <!-- Checking Mode Controls -->
+                    <div id="checking-mode-controls" class="hidden border-b border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-900/10 p-3 flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 divide-x divide-slate-200 dark:divide-slate-700">
+                            <div class="flex items-center gap-2 px-2">
+                                <span class="material-symbols-outlined text-emerald-500">fact_check</span>
+                                <span class="text-sm font-black text-slate-800 dark:text-white">Checking Mode</span>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-[9px] font-bold text-slate-500 uppercase">Pending</span>
-                                <span id="checking-pending-count" class="text-sm font-black text-amber-500">0</span>
+                            <div class="flex items-center gap-3 pl-4">
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase">Checked</span>
+                                    <span id="checking-checked-count" class="text-sm font-black text-emerald-600">0</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase">Pending</span>
+                                    <span id="checking-pending-count" class="text-sm font-black text-amber-500">0</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase">Total</span>
+                                    <span id="checking-total-count" class="text-sm font-black text-slate-700 dark:text-slate-300">0</span>
+                                </div>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-[9px] font-bold text-slate-500 uppercase">Total</span>
-                                <span id="checking-total-count" class="text-sm font-black text-slate-700 dark:text-slate-300">0</span>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <select id="checking-filter" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-500/20 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+                                <option value="all">Show All</option>
+                                <option value="checked">Checked Only</option>
+                                <option value="pending">Pending Only</option>
+                            </select>
+                            <button id="checking-mark-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 transition-colors">
+                                <span class="material-symbols-outlined text-[14px]">done_all</span> Mark All
+                            </button>
+                            <button id="checking-uncheck-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 font-bold text-xs hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors">
+                                <span class="material-symbols-outlined text-[14px]">remove_done</span> Uncheck
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Total Bar -->
+                    <div id="txn-filter-tfoot" class="hidden px-4 py-2.5 bg-gradient-to-r from-primary/10 via-purple-500/5 to-transparent dark:from-primary/20 dark:via-purple-500/10 border-b border-primary/10 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-base">filter_alt</span>
+                            <span id="filter-total-label" class="text-[11px] font-black text-primary uppercase tracking-wider">Filtered Total</span>
+                            <span id="filter-total-count" class="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-black">0 rows</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount:</span>
+                                <span id="filter-total-amount" class="text-base font-black text-primary">₹0</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fees:</span>
+                                <span id="filter-total-charges" class="text-sm font-black text-emerald-600 dark:text-emerald-400">₹0</span>
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <select id="checking-filter" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
-                            <option value="all">Show All</option>
-                            <option value="checked">Checked Only</option>
-                            <option value="pending">Pending Only</option>
-                        </select>
-                        <button id="checking-mark-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 transition-colors">
-                            <span class="material-symbols-outlined text-[14px]">done_all</span> Mark All
-                        </button>
-                        <button id="checking-uncheck-all-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 font-bold text-xs hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors">
-                            <span class="material-symbols-outlined text-[14px]">remove_done</span> Uncheck
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Filter Total Bar (shown ABOVE table when a filter is active) -->
-                <div id="txn-filter-tfoot" class="hidden mb-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/5 to-transparent dark:from-primary/20 dark:via-purple-500/10 border border-primary/20 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary text-base">filter_alt</span>
-                        <span id="filter-total-label" class="text-[11px] font-black text-primary uppercase tracking-wider">Filtered Total</span>
-                        <span id="filter-total-count" class="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-black">0 rows</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount:</span>
-                            <span id="filter-total-amount" class="text-base font-black text-primary">₹0</span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fees:</span>
-                            <span id="filter-total-charges" class="text-sm font-black text-emerald-600 dark:text-emerald-400">₹0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Txn Table -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-primary/10 shadow-xl shadow-primary/5 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50/50 dark:bg-white/5 border-b border-primary/10">

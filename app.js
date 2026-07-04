@@ -7606,6 +7606,10 @@ async function initDailyTxn() {
     const laminationSizeContainer = document.getElementById('lamination-size-container');
     const txnDateText = document.getElementById('current-date-text');
     const txnViewDate = document.getElementById('txn-view-date');
+    const txnEditDate = document.getElementById('txn-edit-date');
+    const txnEditTime = document.getElementById('txn-edit-time');
+    const editDateContainer = document.getElementById('edit-date-container');
+    const editTimeContainer = document.getElementById('edit-time-container');
 
     const deleteModal = document.getElementById('delete-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
@@ -7762,6 +7766,8 @@ async function initDailyTxn() {
         editingTxnId = null;
         editingTxnTimestamp = null;
         form.reset();
+        if (editDateContainer) editDateContainer.classList.add('hidden');
+        if (editTimeContainer) editTimeContainer.classList.add('hidden');
         txnType.value = 'AEPS';
         txnProvider.value = '';
         if (txnExpenseType) txnExpenseType.value = '';
@@ -8874,8 +8880,8 @@ async function initDailyTxn() {
 
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnBank.value.trim() : ''),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
-                date: currentSelectedDate,
-                timestamp: editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
+                date: (editingTxnId && txnEditDate && txnEditDate.value) ? txnEditDate.value : currentSelectedDate,
+                timestamp: (editingTxnId && txnEditDate && txnEditDate.value && txnEditTime && txnEditTime.value) ? { seconds: Math.floor(new Date(`${txnEditDate.value}T${txnEditTime.value}`).getTime() / 1000), nanoseconds: 0 } : (editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 })
             };
 
             // Generic Closing Balance validations for Online Accounts
@@ -10382,6 +10388,21 @@ async function initDailyTxn() {
 
                     editingTxnId = txn.id;
                     editingTxnTimestamp = txn.timestamp || null;
+                    if (txnEditDate && editDateContainer) {
+                        txnEditDate.value = txn.date || '';
+                        editDateContainer.classList.remove('hidden');
+                    }
+                    if (txnEditTime && editTimeContainer) {
+                        if (txn.timestamp && txn.timestamp.seconds) {
+                            const d = new Date(txn.timestamp.seconds * 1000);
+                            const hh = String(d.getHours()).padStart(2, '0');
+                            const mm = String(d.getMinutes()).padStart(2, '0');
+                            txnEditTime.value = `${hh}:${mm}`;
+                        } else {
+                            txnEditTime.value = '';
+                        }
+                        editTimeContainer.classList.remove('hidden');
+                    }
                     if (txnType) txnType.value = txn.type;
                     if (typeof updateConditionalField === 'function') updateConditionalField();
                     if (txnAmount) txnAmount.value = txn.amount;
@@ -10965,8 +10986,8 @@ async function initDailyTxn() {
         toggleAllTimeSearchBtn.onclick = () => {
             window.isAllTimeSearchMode = !window.isAllTimeSearchMode;
             if (window.isAllTimeSearchMode) {
-                toggleAllTimeSearchBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
-                toggleAllTimeSearchBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                toggleAllTimeSearchBtn.classList.add('bg-indigo-500', 'text-white', 'border-indigo-500', 'shadow-lg', 'shadow-indigo-500/30');
+                toggleAllTimeSearchBtn.classList.remove('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
                 if (dateRangePanel) dateRangePanel.classList.remove('hidden');
                 if (summaryBalancesGrid) summaryBalancesGrid.classList.add('hidden');
                 if (summaryBadgesArea) summaryBadgesArea.classList.add('hidden');
@@ -10975,13 +10996,13 @@ async function initDailyTxn() {
                 document.querySelectorAll('.checking-col-cell').forEach(cell => cell.classList.add('hidden'));
                 if (checkingModeControls) checkingModeControls.classList.add('hidden');
                 if (toggleCheckingModeBtn) {
-                    toggleCheckingModeBtn.classList.remove('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
-                    toggleCheckingModeBtn.classList.add('bg-slate-100', 'text-slate-600');
+                    toggleCheckingModeBtn.classList.remove('bg-emerald-500', 'text-white', 'border-emerald-500', 'shadow-lg', 'shadow-emerald-500/30');
+                    toggleCheckingModeBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
                 }
                 window.isCheckingMode = false;
             } else {
-                toggleAllTimeSearchBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
-                toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600');
+                toggleAllTimeSearchBtn.classList.remove('bg-indigo-500', 'text-white', 'border-indigo-500', 'shadow-lg', 'shadow-indigo-500/30');
+                toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
                 if (dateRangePanel) dateRangePanel.classList.add('hidden');
                 if (allTimeSearchBanner) allTimeSearchBanner.classList.add('hidden');
 
@@ -11026,8 +11047,8 @@ async function initDailyTxn() {
     if (closeDateRangeBtn) {
         closeDateRangeBtn.onclick = () => {
             window.isAllTimeSearchMode = false;
-            toggleAllTimeSearchBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'dark:bg-indigo-500/10', 'dark:text-indigo-400');
-            toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600');
+            toggleAllTimeSearchBtn.classList.remove('bg-indigo-500', 'text-white', 'border-indigo-500', 'shadow-lg', 'shadow-indigo-500/30');
+            toggleAllTimeSearchBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
             if (dateRangePanel) dateRangePanel.classList.add('hidden');
             if (allTimeSearchBanner) allTimeSearchBanner.classList.add('hidden');
             const getSetting = window.getAppSetting || ((k, d) => localStorage.getItem(k) !== 'false');
@@ -11168,8 +11189,8 @@ async function initDailyTxn() {
             window.isCheckingMode = !window.isCheckingMode;
             
             if (window.isCheckingMode) {
-                toggleCheckingModeBtn.classList.add('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
-                toggleCheckingModeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                toggleCheckingModeBtn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-500', 'shadow-lg', 'shadow-emerald-500/30');
+                toggleCheckingModeBtn.classList.remove('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
                 if (checkingModeControls) checkingModeControls.classList.remove('hidden');
                 if (checkingModeControls) checkingModeControls.classList.add('flex');
                 if (checkingColHeader) checkingColHeader.classList.remove('hidden');
@@ -11186,8 +11207,8 @@ async function initDailyTxn() {
                     }
                 });
             } else {
-                toggleCheckingModeBtn.classList.remove('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
-                toggleCheckingModeBtn.classList.add('bg-slate-100', 'text-slate-600');
+                toggleCheckingModeBtn.classList.remove('bg-emerald-500', 'text-white', 'border-emerald-500', 'shadow-lg', 'shadow-emerald-500/30');
+                toggleCheckingModeBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800', 'dark:text-slate-300', 'border-slate-200', 'dark:border-white/5');
                 if (checkingModeControls) checkingModeControls.classList.add('hidden');
                 if (checkingModeControls) checkingModeControls.classList.remove('flex');
                 if (checkingColHeader) checkingColHeader.classList.add('hidden');
