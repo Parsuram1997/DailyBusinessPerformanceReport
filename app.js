@@ -10814,9 +10814,9 @@ async function initDailyTxn() {
     const updateLast10BtnDisplay = () => {
         if (!toggleLast10Btn) return;
         if (window.showOnlyLast10) {
-            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all border border-primary/20 font-bold text-xs shadow-lg shadow-primary/10 cursor-pointer";
+            toggleLast10Btn.className = "flex items-center justify-center sm:gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-all border border-primary/20 font-bold text-xs shadow-lg shadow-primary/10 cursor-pointer shrink-0";
         } else {
-            toggleLast10Btn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all border border-slate-200 dark:border-white/5 font-bold text-xs cursor-pointer";
+            toggleLast10Btn.className = "flex items-center justify-center sm:gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all border border-slate-200 dark:border-white/5 font-bold text-xs cursor-pointer shrink-0";
         }
     };
     if (toggleLast10Btn) {
