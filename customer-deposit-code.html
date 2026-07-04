@@ -403,38 +403,38 @@
 
 <!-- Edit Customer Modal -->
 <div id="edit-customer-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <div class="p-6 border-b border-primary/10 flex items-center justify-between">
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white">Edit Customer Contact</h3>
-            <button type="button" onclick="closeEditCustomerModal()" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div class="p-6 border-b border-primary/10 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">Edit Customer Contact</h3>
+                <button type="button" onclick="closeEditCustomerModal()" class="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="edit-customer-form" class="p-6 space-y-4">
+                <input type="hidden" id="edit-customer-id" />
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Name</label>
+                    <input id="edit-customer-name" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-semibold text-slate-800 dark:text-white" type="text" required />
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Number</label>
+                    <input id="edit-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-mono font-bold text-slate-800 dark:text-white" placeholder="10-digit mobile number" type="text" maxlength="10" />
+                    <p id="edit-phone-error" class="text-xs text-rose-500 font-medium hidden">Please enter a valid 10-digit mobile number.</p>
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeEditCustomerModal()" class="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Save
+                    </button>
+                </div>
+            </form>
         </div>
-        <form id="edit-customer-form" class="p-6 space-y-4">
-            <input type="hidden" id="edit-customer-id" />
-            <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Name</label>
-                <input id="edit-customer-name" class="w-full rounded-xl border-primary/10 bg-slate-100 dark:bg-slate-800/80 text-sm font-semibold cursor-not-allowed text-slate-600 dark:text-slate-400" type="text" readonly />
-            </div>
-            <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Number</label>
-                <input id="edit-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-mono font-bold text-slate-800 dark:text-white" placeholder="10-digit mobile number" type="text" maxlength="10" required />
-                <p id="edit-phone-error" class="text-xs text-rose-500 font-medium hidden">Please enter a valid 10-digit mobile number.</p>
-            </div>
-            <div class="pt-4 flex gap-3">
-                <button type="button" onclick="closeEditCustomerModal()" class="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    Cancel
-                </button>
-                <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">save</span>
-                    Save
-                </button>
-            </div>
-        </form>
     </div>
-</div>
-
-<!-- Delete Confirm Modal -->
+    
+    <!-- Delete Confirm Modal -->
 <div id="delete-confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
     <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300 p-6 flex flex-col items-center text-center space-y-4">
         <div class="size-16 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-inner">

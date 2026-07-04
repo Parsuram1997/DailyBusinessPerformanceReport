@@ -430,11 +430,11 @@
                 <input type="hidden" id="edit-customer-id" />
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Customer Name</label>
-                    <input id="edit-customer-name" class="w-full rounded-xl border-primary/10 bg-slate-100 dark:bg-slate-800/80 text-sm font-semibold cursor-not-allowed text-slate-600 dark:text-slate-400" type="text" readonly />
+                    <input id="edit-customer-name" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-semibold text-slate-800 dark:text-white" type="text" required />
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Contact Number</label>
-                    <input id="edit-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-mono font-bold text-slate-800 dark:text-white" placeholder="10-digit mobile number" type="text" maxlength="10" required />
+                    <input id="edit-customer-phone" class="w-full rounded-xl border-primary/10 bg-background-light dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary/20 font-mono font-bold text-slate-800 dark:text-white" placeholder="10-digit mobile number" type="text" maxlength="10" />
                     <p id="edit-phone-error" class="text-xs text-rose-500 font-medium hidden">Please enter a valid 10-digit mobile number.</p>
                 </div>
                 <div class="pt-4 flex gap-3">
@@ -449,7 +449,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Custom Delete Confirmation Modal -->
     <div id="delete-confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-primary/10 overflow-hidden animate-in zoom-in-95 duration-300">

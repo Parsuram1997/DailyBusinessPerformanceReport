@@ -4238,10 +4238,13 @@ async function initCreditLedger() {
         newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-customer-id')?.value;
+            const name = document.getElementById('edit-customer-name')?.value?.trim();
             const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
             const errorEl = document.getElementById('edit-phone-error');
 
-            if (!/^\d{10}$/.test(phone)) {
+            if (!name) return;
+
+            if (phone && !/^\d{10}$/.test(phone)) {
                 if (errorEl) errorEl.classList.remove('hidden');
                 return;
             }
@@ -4251,6 +4254,7 @@ async function initCreditLedger() {
                 const customers = await loadCustomers();
                 const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
                 if (existingCust) {
+                    existingCust.name = name;
                     existingCust.phone = phone;
                     const res = await saveCustomer(existingCust);
                     if (res) {
@@ -4892,19 +4896,23 @@ async function initCustomerDeposit() {
         newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-customer-id')?.value;
+            const name = document.getElementById('edit-customer-name')?.value?.trim();
             const phone = document.getElementById('edit-customer-phone')?.value?.trim() || '';
             const errorEl = document.getElementById('edit-phone-error');
 
-            if (!/^\d{10}$/.test(phone)) {
+            if (!name) return;
+
+            if (phone && !/^\d{10}$/.test(phone)) {
                 if (errorEl) errorEl.classList.remove('hidden');
                 return;
             }
             if (errorEl) errorEl.classList.add('hidden');
 
             try {
-                const customers = await loadCustomers();
+                const customers = await loadCustomers("deposit_customers");
                 const existingCust = customers.find(c => String(c.id) === String(id) || String(c.firebaseId) === String(id));
                 if (existingCust) {
+                    existingCust.name = name;
                     existingCust.phone = phone;
                     const res = await saveCustomer(existingCust, "deposit_customers");
                     if (res) {
