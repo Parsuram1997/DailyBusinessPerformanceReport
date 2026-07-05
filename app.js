@@ -208,6 +208,7 @@ window._startGlobalEntriesListener();
         // DO NOT use beforeunload to delete the Firestore session doc on mobile PWA.
         // On iOS/Android, the app is suspended (not unloaded) when the user switches
         // apps â€” beforeunload fires prematurely, deleting the session doc, which then
+        // apps — beforeunload fires prematurely, deleting the session doc, which then
         // triggers the revoke listener on the next page load ("Session Revoked" bug).
         //
         // Instead: use visibilitychange. When app returns to foreground, we re-write
@@ -215,7 +216,7 @@ window._startGlobalEntriesListener();
         // admin via the Settings page.
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                // App came back to foreground â€” refresh heartbeat
+                // App came back to foreground — refresh heartbeat
                 writeHeartbeat();
             }
         });
@@ -289,6 +290,75 @@ function getPossibleDateFormats(dateStr) {
         return [dateStr];
     }
 }
+
+const getTxnTypeColorClass = (type) => {
+    switch(type) {
+        // Core Services
+        case 'AEPS': return 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/10 border border-fuchsia-200 dark:border-fuchsia-500/20';
+        case 'MATM': return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20';
+        case 'DEPOSIT': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20';
+        case 'AADHAAR_DEPOSIT': return 'bg-teal-100 text-teal-700 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20';
+        case 'AADHAAR_PAY': return 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20';
+        case 'WITHDRAWAL': return 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20';
+        case 'QR_WITHDRAWAL': return 'bg-red-100 text-red-700 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20';
+        
+        // Cash Operations
+        case 'CASH_WITHDRAWAL': return 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 shadow-sm';
+        case 'CASH_DEPOSIT': return 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 shadow-sm';
+        
+        // Income & Expenses
+        case 'DAILY_EXPENSE': return 'bg-stone-100 text-stone-700 dark:bg-stone-500/10 border border-stone-200 dark:border-stone-500/20';
+        case 'OTHER_INCOME': return 'bg-lime-100 text-lime-700 dark:bg-lime-500/10 border border-lime-200 dark:border-lime-500/20';
+        case 'ONLINE_WORK': return 'bg-zinc-100 text-zinc-700 dark:bg-zinc-500/10 border border-zinc-200 dark:border-zinc-500/20';
+        
+        // Stationery & Services
+        case 'PHOTOCOPY': return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20';
+        case 'PRINTOUT': return 'bg-gray-100 text-gray-700 dark:bg-gray-500/10 border border-gray-200 dark:border-gray-500/20';
+        case 'PASSPORT': return 'bg-neutral-100 text-neutral-700 dark:bg-neutral-500/10 border border-neutral-200 dark:border-neutral-500/20';
+        case 'LAMINATION': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20';
+        
+        // Agency & Commissions
+        case 'CSP_COMMISSION': return 'bg-green-100 text-green-700 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20';
+        case 'CSP_SUBSCRIPTION': return 'bg-pink-100 text-pink-700 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/20';
+        
+        // Recharges & Bills
+        case 'JIO_TOPUP': return 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20';
+        case 'JIO_RECHARGE': return 'bg-blue-200 text-blue-800 dark:bg-blue-600/10 border border-blue-300 dark:border-blue-600/20';
+        case 'DISHTV_RECHARGE': return 'bg-sky-200 text-sky-800 dark:bg-sky-600/10 border border-sky-300 dark:border-sky-600/20';
+        case 'ELECTRICITY_BILL': return 'bg-yellow-200 text-yellow-800 dark:bg-yellow-600/10 border border-yellow-300 dark:border-yellow-600/20';
+        case 'PAN_CARD': return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20';
+        case 'GOLD_SIP': return 'bg-amber-200 text-amber-800 dark:bg-amber-600/10 border border-amber-300 dark:border-amber-600/20';
+        
+        // Free & Damages
+        case 'FREE_DEPOSIT': return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 border border-emerald-100 dark:border-emerald-400/20';
+        case 'FREE_WITHDRAWAL': return 'bg-rose-50 text-rose-600 dark:bg-rose-400/10 border border-rose-100 dark:border-rose-400/20';
+        case 'DAMAGED_CURRENCY': return 'bg-red-200 text-red-800 dark:bg-red-600/10 border border-red-300 dark:border-red-600/20';
+        case 'DAMAGED_RECOVERY': return 'bg-emerald-200 text-emerald-800 dark:bg-emerald-600/10 border border-emerald-300 dark:border-emerald-600/20';
+        
+        // Money Flows
+        case 'CUST_MONEY_IN': return 'bg-teal-200 text-teal-800 dark:bg-teal-600/10 border border-teal-300 dark:border-teal-600/20';
+        case 'CUST_MONEY_OUT': return 'bg-rose-200 text-rose-800 dark:bg-rose-600/10 border border-rose-300 dark:border-rose-600/20';
+        
+        // Credit Ledger
+        case 'CREDIT_GIVEN': return 'bg-orange-200 text-orange-800 dark:bg-orange-600/10 border border-orange-300 dark:border-orange-600/20';
+        case 'CREDIT_RECEIVED': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20';
+        
+        // Backend & Settlement
+        case 'SETTLEMENT': return 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20';
+        case 'PENDING_ADD': return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-400/20 shadow-inner';
+        case 'PENDING_REMOVE': return 'bg-rose-50 text-rose-700 dark:bg-rose-400/10 border border-rose-200 dark:border-rose-400/20 shadow-inner';
+        case 'ADD_CAPITAL': return 'bg-green-200 text-green-800 dark:bg-green-600/10 border border-green-300 dark:border-green-600/20';
+        case 'SHARE_WITHDRAWN': return 'bg-orange-300 text-orange-900 dark:bg-orange-600/10 border border-orange-400 dark:border-orange-600/20';
+        case 'ONLINE_EXCHANGE': return 'bg-purple-200 text-purple-800 dark:bg-purple-600/10 border border-purple-300 dark:border-purple-600/20';
+        case 'ADMIN_DEPOSIT': return 'bg-cyan-200 text-cyan-800 dark:bg-cyan-600/10 border border-cyan-300 dark:border-cyan-600/20';
+        case 'ADMIN_WITHDRAWAL': return 'bg-rose-300 text-rose-900 dark:bg-rose-600/10 border border-rose-400 dark:border-rose-600/20';
+        
+        default:
+            if (type.includes('RECHARGE') || type.includes('TOPUP')) return 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20';
+            if (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(type)) return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 border border-slate-200 dark:border-slate-500/20';
+            return 'bg-primary/10 text-primary border border-primary/20 dark:border-primary/30';
+    }
+};
 
 function initGlobalSettings() {
 
@@ -2426,14 +2496,14 @@ async function initAddEntry() {
                     document.body.appendChild(container);
                 }
                 const toast = document.createElement('div');
-                toast.className = 'pointer-events-auto flex flex-col items-center gap-3 p-6 sm:px-8 sm:py-7 bg-emerald-500/95 dark:bg-emerald-600/95 backdrop-blur-2xl text-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(16₹85₹29,0.5)] border border-white/20 transform scale-75 opacity-0 transition-all duration-500 ease-out';
+                toast.className = 'pointer-events-auto flex flex-col items-center gap-4 p-8 sm:px-12 sm:py-10 bg-emerald-500/95 dark:bg-emerald-600/95 backdrop-blur-2xl text-white rounded-[2.5rem] shadow-[0_25px_60px_-12px_rgba(16,185,129,0.6)] border border-white/20 transform scale-75 opacity-0 transition-all duration-500 ease-out';
                 toast.innerHTML = `
-                    <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-inner shrink-0 mb-1">
-                        <span class="material-symbols-outlined text-[36px] font-black text-emerald-500">task_alt</span>
+                    <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-inner shrink-0 mb-2">
+                        <span class="material-symbols-outlined text-[56px] font-black text-emerald-500">task_alt</span>
                     </div>
                     <div class="flex flex-col text-center">
-                        <span class="text-xl font-black text-white tracking-wide">Entry Saved! ðŸŽ‰</span>
-                        <span class="text-sm font-semibold text-emerald-50 mt-1.5 leading-snug">Your daily record has been saved<br>successfully to the ledger.</span>
+                        <span class="text-3xl font-black text-white tracking-wide mb-2">Entry Saved! 🎉</span>
+                        <span class="text-lg font-semibold text-emerald-50 leading-snug">Your daily record has been saved<br>successfully to the ledger.</span>
                     </div>
                 `;
                 container.appendChild(toast);
@@ -8020,6 +8090,8 @@ async function initDailyTxn() {
                 }
             }
 
+
+
             if (txnType.value === 'AEPS' || txnType.value === 'AADHAAR_PAY') {
                 conditionalContainer.classList.remove('hidden');
                 conditionalLabel.innerText = 'Aadhar (Last 4 Digits)';
@@ -9060,8 +9132,9 @@ async function initDailyTxn() {
                 ` : '';
 
                 const result = await Swal.fire({
-                    title: '<div class="border-b border-slate-100 dark:border-slate-700/50 pb-3 flex items-center justify-center gap-2 text-xl font-black text-slate-800 dark:text-white tracking-tight"><span class="material-symbols-outlined text-indigo-500 dark:text-indigo-400">receipt_long</span> Confirm Transaction</div>',
-                                        html: `
+                    width: '400px',
+                    padding: '1.5rem',
+                    html: `
                         <style>
                             div.swal2-actions {
                                 flex-direction: row !important;
@@ -9069,74 +9142,92 @@ async function initDailyTxn() {
                                 width: 100% !important;
                                 padding: 0 0.5rem !important;
                                 box-sizing: border-box !important;
-                                gap: 0.5rem !important;
+                                gap: 0.75rem !important;
+                                margin-top: 1.5rem !important;
                             }
                             div.swal2-actions button {
                                 flex: 1 1 0% !important;
-                                margin: 0 0.25rem !important;
+                                margin: 0 !important;
                                 width: 100% !important;
                                 white-space: nowrap !important;
-                                padding: 0.5rem 0.2rem !important;
-                                font-size: 0.85rem !important;
-                                line-height: 1 !important;
-                                min-height: 38px !important;
+                                padding: 0.75rem 0.5rem !important;
+                                font-size: 0.95rem !important;
+                                line-height: 1.2 !important;
+                                min-height: 44px !important;
                                 height: auto !important;
+                                border-radius: 0.75rem !important;
                             }
                             div.swal2-actions button span.material-symbols-outlined {
-                                font-size: 16px !important;
+                                font-size: 18px !important;
+                            }
+                            .swal2-popup.attractive-popup {
+                                border-radius: 24px !important;
+                                padding-top: 1.5rem !important;
+                                padding-bottom: 1.5rem !important;
+                            }
+                            .swal2-html-container {
+                                margin: 0 !important;
                             }
                         </style>
-                        <div class="flex flex-col gap-3 text-left mt-2">
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Transaction Type</span>
-                                <span class="text-xs font-black text-primary dark:text-indigo-400 bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 px-2 py-0.5 rounded-lg tracking-widest uppercase">${newTxn.type}</span>
+                        <div class="border-b border-slate-100 dark:border-slate-700/50 pb-4 mb-4 flex items-center justify-center gap-2 text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                            <span class="material-symbols-outlined text-indigo-500 dark:text-indigo-400 text-3xl">receipt_long</span> 
+                            Confirm Entry
+                        </div>
+                        <div class="flex flex-col gap-3.5 text-left">
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
+                                <span class="text-[15px] font-semibold text-slate-500 dark:text-slate-400">Transaction Type</span>
+                                <span class="text-sm font-black text-primary dark:text-indigo-400 bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 px-2.5 py-1 rounded-lg tracking-widest uppercase">${newTxn.type}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Customer Name</span>
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.note || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
+                                <span class="text-[15px] font-semibold text-slate-500 dark:text-slate-400">Customer Name</span>
+                                <span class="text-[15px] font-bold text-slate-800 dark:text-slate-200">${newTxn.note || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Aadhaar/Account</span>
-                                <span class="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">${newTxn.extraDetails || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
+                                <span class="text-[15px] font-semibold text-slate-500 dark:text-slate-400">Aadhaar/Account</span>
+                                <span class="text-[15px] font-mono font-bold text-slate-700 dark:text-slate-300">${newTxn.extraDetails || 'N/A'}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
-                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.depositBy || newTxn.receivedIn || 'N/A'}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
+                                <span class="text-[15px] font-semibold text-slate-500 dark:text-slate-400">Bank/Provider</span>
+                                <span class="text-[15px] font-bold text-slate-800 dark:text-slate-200">${newTxn.bankName || newTxn.depositBy || newTxn.receivedIn || 'N/A'}</span>
                             </div>
-                            ${providerHtml}
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
+                            ${providerHtml.replace(/text-sm/g, 'text-[15px]').replace(/pb-2/g, 'pb-2.5')}
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
                                 <div class="flex flex-col">
-                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">Charges</span>
-                                    ${newTxn.charges > 0 ? `<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">${newTxn.chargesType === 'Online' ? `Online (${newTxn.chargesAccount || newTxn.depositBy || newTxn.receivedIn || 'N/A'})` : 'Cash'}</span>` : ''}
+                                    <span class="text-[15px] font-semibold text-slate-500 dark:text-slate-400">Charges</span>
+                                    ${newTxn.charges > 0 ? `<span class="text-xs font-bold text-slate-400 dark:text-slate-500 mt-0.5">${newTxn.chargesType === 'Online' ? `Online (${newTxn.chargesAccount || newTxn.depositBy || newTxn.receivedIn || 'N/A'})` : 'Cash'}</span>` : ''}
                                 </div>
-                                <span class="text-sm font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                <span class="text-[15px] font-black ${newTxn.charges > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}">₹ ${parseFloat(newTxn.charges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             ${newTxn.type === 'AADHAAR_PAY' && newTxn.providerCharge > 0 ? `
-                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2">
-                                <span class="text-sm font-semibold text-rose-500 dark:text-rose-400">Provider Charge</span>
-                                <span class="text-sm font-black text-rose-500 dark:text-rose-400">₹ ${parseFloat(newTxn.providerCharge || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700/50 pb-2.5">
+                                <span class="text-[15px] font-semibold text-rose-500 dark:text-rose-400">Provider Charge</span>
+                                <span class="text-[15px] font-black text-rose-500 dark:text-rose-400">₹ ${parseFloat(newTxn.providerCharge || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>` : ''}
-                            ${remainingHtml}
-                            <div class="flex justify-between items-center bg-gradient-to-r from-primary/5 to-primary/10 dark:from-indigo-900/40 dark:to-indigo-800/20 py-2 px-3 rounded-xl border border-primary/20 dark:border-indigo-700/50 shadow-sm mt-1">
-                                <span class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap mr-2">Transaction Amount</span>
-                                <span class="text-lg sm:text-xl font-black text-primary dark:text-indigo-400 drop-shadow-sm whitespace-nowrap">${formattedAmount}</span>
+                            ${remainingHtml.replace(/text-sm/g, 'text-[15px]').replace(/pb-2/g, 'pb-2.5')}
+                            <div class="flex justify-between items-center bg-gradient-to-r from-primary/10 to-primary/20 dark:from-indigo-600/40 dark:to-purple-600/20 py-3.5 px-4 rounded-2xl border border-primary/30 dark:border-indigo-500/50 shadow-md mt-2">
+                                <span class="text-[15px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap mr-2">Net Amount</span>
+                                <span class="text-2xl font-black text-primary dark:text-indigo-400 drop-shadow-sm whitespace-nowrap">${formattedAmount}</span>
                             </div>
                         </div>
                     `,
                     showCancelButton: true,
-                    confirmButtonText: '<span class="material-symbols-outlined align-middle text-[18px] mr-1">check_circle</span> Confirm & Save',
-                    cancelButtonText: '<span class="material-symbols-outlined align-middle text-[18px] mr-1">edit</span> Cancel / Edit',
+                    confirmButtonText: '<span class="material-symbols-outlined align-middle text-[20px] mr-1.5">check_circle</span> Confirm & Save',
+                    cancelButtonText: '<span class="material-symbols-outlined align-middle text-[20px] mr-1.5">edit</span> Edit',
                     confirmButtonColor: '#7c3aed',
                     cancelButtonColor: '#64748b',
                     reverseButtons: true,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInUp animate__faster'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutDown animate__faster'
+                    },
                     customClass: {
-                        popup: 'rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 dark:bg-slate-900',
-                        title: 'pt-2',
-                        confirmButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
-                        cancelButton: 'rounded-xl px-6 py-3 font-bold transition-transform hover:scale-105 active:scale-95',
-                        actions: 'gap-3 mt-6'
+                        popup: 'attractive-popup shadow-2xl border border-slate-100 dark:border-slate-800 dark:bg-slate-900',
+                        confirmButton: 'font-bold transition-transform hover:scale-[1.02] active:scale-95 shadow-md shadow-indigo-500/30',
+                        cancelButton: 'font-bold transition-transform hover:scale-[1.02] active:scale-95 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white',
                     }
                 });
 
@@ -10007,16 +10098,24 @@ async function initDailyTxn() {
                     const provider = (txn.provider || '').toLowerCase();
 
                     const fullText = `${bankName} ${note} ${remark} ${address} ${extraDetails} ${type} ${amount} ${date} ${provider}`;
-                    return keywords.every(k => fullText.includes(k));
+                    return keywords.every(keyword => {
+                        if (!isNaN(keyword) && keyword !== '') {
+                            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            // Exclude matches preceded by :, -, or # to avoid time, date, and serial numbers.
+                            const regex = new RegExp(`(^|[^0-9:#-])${escaped}([^0-9:]|$)`);
+                            return regex.test(fullText);
+                        }
+                        return fullText.includes(keyword);
+                    });
                 });
                 txnsToRender = txnsToRender.slice(0, 500);
                 if (allTimeSearchCountBadge) {
-                    allTimeSearchCountBadge.innerText = `Found ${txnsToRender.length} matches`;
+                    allTimeSearchCountBadge.innerText = `Found ${txnsToRender.length} transactions`;
                 }
             } else {
                 txnsToRender = txnsToRender.slice(0, 100);
                 if (allTimeSearchCountBadge) {
-                    allTimeSearchCountBadge.innerText = `Showing latest 100 (Total: ${txns.length})`;
+                    allTimeSearchCountBadge.innerText = `Showing latest 100 transactions (Total: ${txns.length})`;
                 }
             }
         }
@@ -10156,15 +10255,7 @@ async function initDailyTxn() {
 
                 <td class="px-3 py-1.5">
                     <div class="flex flex-col items-center gap-1 mx-auto">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold tracking-wide flex items-center justify-center gap-1 w-[140px] whitespace-nowrap ${txn.type === 'DEPOSIT' || txn.type === 'AADHAAR_DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
-                    txn.type === 'WITHDRAWAL' || txn.type === 'QR_WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
-                        txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
-                            
-                                txn.type === 'CASH_WITHDRAWAL' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/10 border border-emerald-200 dark:border-emerald-700/20 shadow-sm' :
-                                    txn.type === 'CASH_DEPOSIT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-700/10 border border-blue-200 dark:border-blue-700/20 shadow-sm' :
-                                txn.type.includes('RECHARGE') || txn.type.includes('TOPUP') ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20' :
-                                    'bg-primary/10 text-primary border border-primary/20 dark:border-primary/30'
-                }">${
+                        <span class="px-2 py-1 rounded text-[10px] font-bold tracking-wide flex items-center justify-center gap-1 w-[140px] whitespace-nowrap ${getTxnTypeColorClass(txn.type)}">${
                     txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))
                 }</span>
@@ -10907,11 +10998,21 @@ async function initDailyTxn() {
         // Listen for setting changes
         window.addEventListener('appSettingsUpdated', updateSummaryVisibility);
     }
-    const loadAllTimeTransactions = (fromDate, toDate) => {
+    const loadAllTimeTransactions = (fromDate, toDate, customerSearch = '') => {
         try {
             if (unsubscribe) unsubscribe();
 
-            const rangeLabel = `${fromDate} â†’ ${toDate}`;
+            const term = customerSearch ? customerSearch.toLowerCase().trim() : '';
+            const isAadhaar = term && /^\d{4}$/.test(term);
+
+            let rangeLabel = "";
+            if (fromDate && toDate) {
+                rangeLabel = `${fromDate} → ${toDate}`;
+                if (customerSearch) rangeLabel += ` (${customerSearch})`;
+            } else if (customerSearch) {
+                rangeLabel = `Search: ${customerSearch}`;
+            }
+
             if (txnDateText) txnDateText.innerText = `Transactions: ${rangeLabel}`;
 
             if (tableBody) {
@@ -10939,10 +11040,45 @@ async function initDailyTxn() {
             if (dateRangeLabelText) dateRangeLabelText.innerText = rangeLabel;
 
             const txnCollection = collection(db, 'daily_transactions');
-            const q = query(txnCollection, where('date', '>=', fromDate), where('date', '<=', toDate), orderBy('date', 'desc'));
+            let q;
+            
+            if (fromDate && toDate) {
+                // Normal date range query
+                q = query(txnCollection, where('date', '>=', fromDate), where('date', '<=', toDate), orderBy('date', 'desc'));
+            } else {
+                // Fallback safe query
+                q = query(txnCollection, orderBy('date', 'desc'), limit(1000));
+            }
             
             unsubscribe = onSnapshot(q, (snapshot) => {
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Client side filtering for name and partial aadhaar
+                if (customerSearch) {
+                    const searchLower = customerSearch.toLowerCase().trim().replace(/,/g, '');
+                    txns = txns.filter(t => {
+                        const nameMatch = (t.customerName || '').toLowerCase().includes(searchLower);
+                        const aadhaarMatch = String(t.aadhaarLast4 || '').toLowerCase().includes(searchLower);
+                        // Also check extraDetails just in case they put it there
+                        const detailsMatch = (t.extraDetails || '').toLowerCase().includes(searchLower);
+                        
+                        let amountMatch = false;
+                        let chargeMatch = false;
+                        
+                        if (!isNaN(searchLower) && searchLower !== '') {
+                            amountMatch = String(t.amount || '') === searchLower;
+                            chargeMatch = String(t.providerCharge || t.systemCharge || t.charges || '') === searchLower;
+                        } else {
+                            amountMatch = String(t.amount || '').toLowerCase().includes(searchLower);
+                            chargeMatch = String(t.providerCharge || t.systemCharge || t.charges || '').toLowerCase().includes(searchLower);
+                        }
+                        
+                        const noteMatch = (t.note || '').toLowerCase().includes(searchLower);
+                        const remarkMatch = (t.remark || '').toLowerCase().includes(searchLower);
+                        
+                        return nameMatch || aadhaarMatch || detailsMatch || amountMatch || chargeMatch || noteMatch || remarkMatch;
+                    });
+                }
                 
                 txns.sort((a, b) => {
                     const dateA = a.date || "";
@@ -11032,6 +11168,12 @@ async function initDailyTxn() {
         loadDateRangeBtn.onclick = () => {
             const from = rangeFromDate ? rangeFromDate.value : '';
             const to = rangeToDate ? rangeToDate.value : '';
+            const rangeCustomerSearch = document.getElementById('range-customer-search');
+            const customerSearch = rangeCustomerSearch ? rangeCustomerSearch.value : '';
+            
+            const term = customerSearch.trim();
+            const isAadhaar = term && /^\d{4}$/.test(term);
+
             if (!from || !to) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({ title: 'Select Dates', text: 'Please select both From and To dates.', icon: 'warning', confirmButtonColor: '#7f13ec' });
@@ -11039,8 +11181,7 @@ async function initDailyTxn() {
                     alert('Please select both From and To dates.');
                 }
                 return;
-            }
-            if (from > to) {
+            } else if (from > to) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({ title: 'Invalid Range', text: 'From date cannot be after To date.', icon: 'error', confirmButtonColor: '#7f13ec' });
                 } else {
@@ -11048,8 +11189,9 @@ async function initDailyTxn() {
                 }
                 return;
             }
+            
             if (allTimeSearchBanner) allTimeSearchBanner.classList.remove('hidden');
-            loadAllTimeTransactions(from, to);
+            loadAllTimeTransactions(from, to, customerSearch);
         };
     }
 
@@ -11069,7 +11211,7 @@ async function initDailyTxn() {
 
     window.applyDailyTxnFilters = () => {
         if (!tableBody) return;
-        const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const term = searchInput ? searchInput.value.toLowerCase().trim().replace(/,/g, '') : '';
         const keywords = term.split(/\s+/).filter(k => k.length > 0);
         const filterVal = checkingFilter ? checkingFilter.value : 'all'; // all, checked, pending
         
@@ -11081,8 +11223,17 @@ async function initDailyTxn() {
         let pendingCount = 0;
 
         rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const matchesSearch = keywords.every(keyword => text.includes(keyword));
+            // Remove commas from textContent so searching "1000" matches "1,000.00"
+            const text = row.textContent.toLowerCase().replace(/,/g, '');
+            const matchesSearch = keywords.every(keyword => {
+                if (!isNaN(keyword) && keyword !== '') {
+                    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    // Exclude matches preceded by :, -, or # to avoid time, date, and serial numbers.
+                    const regex = new RegExp(`(^|[^0-9:#-])${escaped}([^0-9:]|$)`);
+                    return regex.test(text);
+                }
+                return text.includes(keyword);
+            });
             
             const btn = row.querySelector('.check-toggle-btn');
             const isChecked = btn ? btn.dataset.checked === 'true' : false;
