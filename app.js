@@ -749,7 +749,7 @@ async function populateBankAccountsDropdown(selectedVal = '') {
             }
 
             const last4 = number.length >= 4 ? number.slice(-4) : number;
-            const singleLineDisplay = `${holder.toUpperCase()} â€¢ ${type.toUpperCase()}${last4 ? ` â€¢ ${last4}` : ''}`;
+            const singleLineDisplay = `${holder.toUpperCase()} &bull; ${type.toUpperCase()}${last4 ? ` &bull; ${last4}` : ''}`;
 
             const option = document.createElement('option');
             option.value = fullDisplayText;
@@ -796,9 +796,9 @@ async function populateBankAccountsDropdown(selectedVal = '') {
                     <div class="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight group-hover/item:text-primary transition-colors">${item.holder}</div>
                     <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase">
                         <span class="text-blue-600 dark:text-blue-400 font-bold">${item.bank}</span>
-                        <span>â€¢</span>
+                        <span>&bull;</span>
                         <span class="text-slate-500 dark:text-slate-300 font-bold">${item.type}</span>
-                        ${item.last4 ? `<span>â€¢</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
+                        ${item.last4 ? `<span>&bull;</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
                     </div>
                 `;
 
@@ -6730,7 +6730,7 @@ async function initBankWithdrawals() {
         const lastDateEl = document.getElementById('last-withdrawal-date');
         if (latestW) {
             if (lastAmountEl) lastAmountEl.innerText = formatCurrency(parseFloat(latestW.amount) || 0);
-            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` â€¢ ${latestW.method}` : '');
+            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` &bull; ${latestW.method}` : '');
         } else {
             if (lastAmountEl) lastAmountEl.innerText = "-";
             if (lastDateEl) lastDateEl.innerText = "No entries found";
@@ -6961,7 +6961,7 @@ async function initBankWithdrawals() {
                     const parts = acc.name.split('|');
                     holder = parts[0];
                     bank = parts[1] || "Bank";
-                    accNo = parts[2] ? ` â€¢ A/c ${parts[2]}` : "";
+                    accNo = parts[2] ? ` &bull; A/c ${parts[2]}` : "";
                 }
 
                 const tableTitle = document.getElementById('table-title-label');

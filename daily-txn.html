@@ -260,7 +260,7 @@
 
             <div class="flex-1 overflow-y-auto p-0 sm:p-4 md:p-8 w-full space-y-4 md:space-y-8 pb-20 md:pb-6">
                 <!-- Page Title & Upcoming Banking Days -->
-                <div class="px-3 md:px-0 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div class="px-3 md:px-0 hidden md:flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                     <div class="shrink-0">
                         <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Daily Transactions</h1>
                         <p class="text-sm text-slate-500 font-medium">Manage and track your shop's daily cash flow</p>
@@ -950,23 +950,21 @@
                         <div class="p-4 relative z-10">
                             <div class="flex flex-col md:flex-row items-center gap-4">
                                 <div class="flex items-center gap-3 flex-1 w-full">
-                                    <div class="flex items-center justify-center size-10 rounded-xl bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm border border-indigo-100 dark:border-indigo-500/20">
-                                        <span class="material-symbols-outlined text-lg">calendar_month</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 flex-1 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-xl border border-indigo-50 dark:border-white/5 shadow-sm backdrop-blur-sm">
-                                        <div class="flex flex-col gap-0.5 flex-1 px-2">
-                                            <label class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">From Date</label>
-                                            <input type="date" id="range-from-date" class="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-slate-100 outline-none cursor-pointer">
+
+                                    <div class="flex items-center gap-1 sm:gap-2 flex-1 bg-white/60 dark:bg-slate-900/60 p-1 sm:p-1.5 rounded-xl border border-indigo-50 dark:border-white/5 shadow-sm backdrop-blur-sm overflow-hidden">
+                                        <div class="flex flex-col gap-0.5 flex-1 px-1 sm:px-2 min-w-0">
+                                            <label class="text-[8px] sm:text-[9px] font-black text-indigo-500 uppercase tracking-widest truncate">From Date</label>
+                                            <input type="date" id="range-from-date" class="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 outline-none cursor-pointer px-0">
                                         </div>
                                         <div class="w-px h-8 bg-indigo-200/50 dark:bg-indigo-500/20 mx-1"></div>
-                                        <div class="flex flex-col gap-0.5 flex-1 px-2">
-                                            <label class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">To Date</label>
-                                            <input type="date" id="range-to-date" class="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-slate-100 outline-none cursor-pointer">
+                                        <div class="flex flex-col gap-0.5 flex-1 px-1 sm:px-2 min-w-0">
+                                            <label class="text-[8px] sm:text-[9px] font-black text-indigo-500 uppercase tracking-widest truncate">To Date</label>
+                                            <input type="date" id="range-to-date" class="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 outline-none cursor-pointer px-0">
                                         </div>
                                         <div class="w-px h-8 bg-indigo-200/50 dark:bg-indigo-500/20 mx-1 hidden sm:block"></div>
-                                        <div class="flex flex-col gap-0.5 flex-1 min-w-[140px] px-2 relative group">
-                                            <label class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Customer</label>
-                                            <input type="text" id="range-customer-search" placeholder="Name or Aadhaar" class="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400/70">
+                                        <div class="flex flex-col gap-0.5 flex-1 min-w-[90px] sm:min-w-[140px] px-1 sm:px-2 relative group">
+                                            <label class="text-[8px] sm:text-[9px] font-black text-indigo-500 uppercase tracking-widest truncate">Customer</label>
+                                            <input type="text" id="range-customer-search" placeholder="Name or Aadhaar" class="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400/70 px-0">
                                         </div>
                                     </div>
                                 </div>
