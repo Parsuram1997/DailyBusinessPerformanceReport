@@ -328,14 +328,7 @@
                     </div>
 
                     <form id="daily-txn-form" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-                        <div id="edit-date-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Date</label>
-                            <input type="date" id="txn-edit-date" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
-                        </div>
-                        <div id="edit-time-container" class="flex flex-col gap-2 hidden">
-                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Time</label>
-                            <input type="time" id="txn-edit-time" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
-                        </div>
+
                         <div class="flex flex-col gap-2">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Txn Type</label>
                             <select id="txn-type" tabindex="1" required class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
@@ -599,6 +592,14 @@
                                 <option value="online(dalai)">online(dalai)</option>
                                 <option value="online(shop)">online(shop)</option>
                             </select>
+                        </div>
+                        <div id="edit-date-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Date</label>
+                            <input type="date" id="txn-edit-date" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
+                        </div>
+                        <div id="edit-time-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Time</label>
+                            <input type="time" id="txn-edit-time" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
                         </div>
                         <div class="col-span-full order-last flex flex-col sm:flex-row justify-end pt-1">
                             <button type="submit" tabindex="9" class="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-lg shadow-primary/20 hover:shadow-xl transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
