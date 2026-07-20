@@ -393,6 +393,9 @@ function initGlobalSettings() {
             checkAndSet('validate_online_diff', data.validate_online_diff);
             checkAndSet('validate_csp_diff', data.validate_csp_diff);
             checkAndSet('validate_txns_checked', data.validate_txns_checked);
+            checkAndSet('validate_cash_diff_limit', data.validate_cash_diff_limit);
+            checkAndSet('validate_online_diff_limit', data.validate_online_diff_limit);
+            checkAndSet('validate_csp_diff_limit', data.validate_csp_diff_limit);
 
             // User-specific access controls
             checkAndSet('user_pin_add_entry', data.user_pin_add_entry);
@@ -431,6 +434,14 @@ window.saveAppSettings = async function (settings) {
 
 // Call right away to keep localStorage synced
 initGlobalSettings();
+
+// Helper: get validation diff limit for a given type (cash/online/csp), defaulting to 2000
+function getValidationLimit(type) {
+    const key = `validate_${type}_diff_limit`;
+    const stored = localStorage.getItem(key);
+    const val = stored !== null ? parseInt(stored) : NaN;
+    return (!isNaN(val) && val > 0) ? val : 2000;
+}
 // Helper for Firestore calls (maintaining naming for compatibility where possible)
 async function loadEntries() {
     if (!db) { console.error("Firestore db not initialized in loadEntries"); return []; }
@@ -663,6 +674,130 @@ async function saveCashCalculator(counts, date) {
     } catch (e) {
         console.error("Error saving cash calculator: ", e);
         return null;
+    }
+}
+
+// Fetch expected system cash for a given date (used by Cash Calculator Modal)
+async function fetchSystemCashForModal(dateStr) {
+    if (!db || !dateStr) return 0;
+    try {
+        const [yr, mo, dy] = dateStr.split('-');
+        const current = new Date(yr, mo - 1, dy);
+        const yesterday = new Date(current);
+        yesterday.setDate(current.getDate() - 1);
+        const y_yyyy = yesterday.getFullYear();
+        const y_mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+        const y_dd = String(yesterday.getDate()).padStart(2, '0');
+        const yesterdayDateStr = `${y_yyyy}-${y_mm}-${y_dd}`;
+
+        const entriesRef = collection(db, "entries");
+        const normDate = (dStr) => {
+            if (!dStr) return 0;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+                const [y, m, d] = dStr.split('-').map(Number);
+                return new Date(y, m - 1, d).getTime();
+            }
+            const parsed = new Date(dStr);
+            return isNaN(parsed) ? 0 : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
+        };
+
+        let cashVal = 0;
+        const allEntries = [...(window._entriesCache || [])];
+        let foundEntry = null;
+        if (allEntries.length > 0) {
+            const selectedTime = normDate(dateStr);
+            allEntries.sort((a, b) => normDate(b.date) - normDate(a.date));
+            foundEntry = allEntries.find(e => normDate(e.date) < selectedTime);
+        }
+        if (!foundEntry) {
+            const yesterdayDateQueries = getPossibleDateFormats(yesterdayDateStr);
+            const qEntry = query(entriesRef, where("date", "in", yesterdayDateQueries));
+            const entrySnap = await getDocs(qEntry);
+            if (!entrySnap.empty) {
+                foundEntry = entrySnap.docs[0].data();
+            } else {
+                let lbDate = new Date(current);
+                for (let i = 1; i <= 7; i++) {
+                    lbDate.setDate(lbDate.getDate() - 1);
+                    const lbStr = lbDate.getFullYear() + '-' + String(lbDate.getMonth() + 1).padStart(2, '0') + '-' + String(lbDate.getDate()).padStart(2, '0');
+                    const lbQueries = getPossibleDateFormats(lbStr);
+                    const lbSnap = await getDocs(query(entriesRef, where("date", "in", lbQueries)));
+                    if (!lbSnap.empty) { foundEntry = lbSnap.docs[0].data(); break; }
+                }
+            }
+        }
+        const txnRef = collection(db, "daily_transactions");
+        let yesterdayWithdrawalCash = 0;
+        const selectedTime = normDate(dateStr);
+        const isFromJune30_2026 = selectedTime >= new Date('2026-06-30').getTime();
+        if (isFromJune30_2026 && foundEntry && foundEntry.date) {
+            const dateQueriesYestTxn = getPossibleDateFormats(foundEntry.date);
+            const qYestTxn = query(txnRef, where("date", "in", dateQueriesYestTxn));
+            const yestTxnSnap = await getDocs(qYestTxn);
+            yestTxnSnap.forEach(doc => {
+                const t = doc.data();
+                if (t.type === 'SHARE_WITHDRAWN' && (t.provider || '').trim().toLowerCase() === 'cash') {
+                    yesterdayWithdrawalCash += parseFloat(t.amount || 0);
+                }
+            });
+        }
+        if (foundEntry) cashVal = parseFloat(foundEntry.details?.cash || 0) - yesterdayWithdrawalCash;
+
+        const dateQueriesTxn = getPossibleDateFormats(dateStr);
+        const qTxn = query(txnRef, where("date", "in", dateQueriesTxn));
+        const txnSnap = await getDocs(qTxn);
+        txnSnap.forEach(doc => {
+            const t = doc.data();
+            const amt = parseFloat(t.amount || 0);
+            const chg = parseFloat(t.charges || 0);
+            const provider = (t.provider || "").trim().toLowerCase();
+            if (!['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
+                if (t.chargesType !== 'Online') cashVal += chg;
+            }
+            if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL', 'AADHAAR_PAY'].includes(t.type)) {
+                cashVal -= amt;
+            } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
+                cashVal += amt;
+            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                if (t.chargesType !== 'Online') cashVal += amt;
+            } else if (t.type === 'JIO_RECHARGE') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'JIO_TOPUP') {
+                if (t.chargesType !== 'Online') cashVal -= chg;
+            } else if (t.type === 'CREDIT_GIVEN') {
+                if (provider === 'cash') cashVal -= amt;
+            } else if (t.type === 'CREDIT_RECEIVED') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'CUST_MONEY_IN') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'CUST_MONEY_OUT') {
+                if (provider === 'cash') cashVal -= amt;
+            } else if (t.type === 'DAILY_EXPENSE') {
+                if (provider === 'cash') cashVal -= amt;
+            } else if (t.type === 'DAMAGED_CURRENCY') {
+                cashVal -= amt;
+            } else if (t.type === 'DAMAGED_RECOVERY') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'OTHER_INCOME') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'SETTLEMENT') {
+                if (t.chargesType !== 'Online') cashVal -= chg;
+            } else if (t.type === 'ONLINE_WORK') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'ADD_CAPITAL') {
+                if (provider === 'cash') cashVal += amt;
+            } else if (t.type === 'SHARE_WITHDRAWN') {
+                if (provider === 'cash') cashVal -= amt;
+            } else if (t.type === 'CASH_WITHDRAWAL') {
+                cashVal += amt;
+            } else if (t.type === 'CASH_DEPOSIT') {
+                cashVal -= amt;
+            }
+        });
+        return cashVal;
+    } catch (e) {
+        console.error("Error in fetchSystemCashForModal:", e);
+        return 0;
     }
 }
 
@@ -1988,7 +2123,7 @@ async function initAddEntry() {
                         if (input && input.value !== '' && expectedEl && expectedEl.dataset.val !== undefined) {
                             const entered = parseFloat(input.value) || 0;
                             const expected = parseFloat(expectedEl.dataset.val) || 0;
-                            if (Math.abs(entered - expected) > 2000) {
+                            if (Math.abs(entered - expected) > getValidationLimit('online')) {
                                 hasExceeded = true;
                                 break;
                             }
@@ -1998,12 +2133,12 @@ async function initAddEntry() {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference for one of the individual Online accounts exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: `The difference for one of the individual Online accounts exceeds ₹${getValidationLimit('online').toLocaleString('en-IN')}. Please verify and correct your transactions on the Daily Txn page.`,
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference for one of the individual Online accounts exceeds ₹2,000. Please verify and correct your transactions.');
+                            alert(`The difference for one of the individual Online accounts exceeds ₹${getValidationLimit('online').toLocaleString('en-IN')}. Please verify and correct your transactions.`);
                         }
                         return;
                     }
@@ -2098,7 +2233,7 @@ async function initAddEntry() {
                         if (input && input.value !== '' && expectedEl && expectedEl.dataset.val !== undefined) {
                             const entered = parseFloat(input.value) || 0;
                             const expected = parseFloat(expectedEl.dataset.val) || 0;
-                            if (Math.abs(entered - expected) > 2000) {
+                            if (Math.abs(entered - expected) > getValidationLimit('csp')) {
                                 hasExceeded = true;
                                 break;
                             }
@@ -2108,12 +2243,12 @@ async function initAddEntry() {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference for one of the individual CSP Wallet accounts exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: `The difference for one of the individual CSP Wallet accounts exceeds ₹${getValidationLimit('csp').toLocaleString('en-IN')}. Please verify and correct your transactions on the Daily Txn page.`,
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference for one of the individual CSP Wallet accounts exceeds ₹2,000. Please verify and correct your transactions.');
+                            alert(`The difference for one of the individual CSP Wallet accounts exceeds ₹${getValidationLimit('csp').toLocaleString('en-IN')}. Please verify and correct your transactions.`);
                         }
                         return;
                     }
@@ -2127,6 +2262,170 @@ async function initAddEntry() {
             });
         }
     }
+
+    // --- Cash Calculator Modal Logic (inline, no page redirect) ---
+    (() => {
+        const cashCalcModal = document.getElementById('cash-calculator-modal');
+        const cashCalcPanel = document.getElementById('cash-calculator-panel');
+        const openCashCalcBtn = document.getElementById('open-cash-calculator-btn');
+        const closeCashCalcBtn = document.getElementById('close-cash-calculator-btn');
+        const cashCalcBackdrop = document.getElementById('cash-calculator-backdrop');
+        const modalTableBody = document.getElementById('modal-cash-denomination-rows');
+        const modalTotalVal = document.getElementById('modal-cash-total-val-display');
+        const modalTotalNotes = document.getElementById('modal-cash-total-notes-count');
+        const modalResetBtn = document.getElementById('modal-btn-reset');
+        const modalUseCashBtn = document.getElementById('modal-btn-use-cash');
+        const modalDatePicker = document.getElementById('modal-calc-date-picker');
+        const cashInput = document.getElementById('cash');
+
+        if (!cashCalcModal || !modalTableBody) return;
+
+        const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+        let modalCurrentSystemCash = 0;
+
+        const closeCashCalcModal = () => {
+            cashCalcPanel.classList.remove('scale-100', 'opacity-100');
+            cashCalcPanel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                cashCalcModal.classList.add('hidden');
+                cashCalcModal.classList.remove('flex');
+            }, 300);
+        };
+
+        const openCashCalcModal = () => {
+            const entryDate = document.getElementById('entry-date-picker');
+            if (entryDate && entryDate.value && modalDatePicker) {
+                modalDatePicker.value = entryDate.value;
+            } else if (modalDatePicker && !modalDatePicker.value) {
+                const today = new Date();
+                modalDatePicker.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            }
+            cashCalcModal.classList.remove('hidden');
+            cashCalcModal.classList.add('flex');
+            void cashCalcModal.offsetWidth;
+            cashCalcPanel.classList.remove('scale-95', 'opacity-0');
+            cashCalcPanel.classList.add('scale-100', 'opacity-100');
+            if (modalDatePicker) modalLoadForDate(modalDatePicker.value);
+        };
+
+        const modalUpdateSystemComparison = (physicalTotal) => {
+            const sysCashEl = document.getElementById('modal-system-cash-val');
+            const diffEl = document.getElementById('modal-cash-diff-val');
+            if (sysCashEl) sysCashEl.innerText = formatCurrency(modalCurrentSystemCash);
+            if (diffEl) {
+                const diff = (physicalTotal || 0) - modalCurrentSystemCash;
+                diffEl.innerText = formatCurrency(diff);
+                if (Math.abs(diff) < 0.01) {
+                    diffEl.className = 'font-bold italic text-white font-mono px-2 py-0.5 rounded-lg bg-black/20 border border-white/10';
+                } else if (diff > 0) {
+                    diffEl.className = 'font-bold italic text-emerald-300 font-mono px-2 py-0.5 rounded-lg bg-black/20 border border-white/10';
+                } else {
+                    diffEl.className = 'font-bold italic text-rose-300 font-mono px-2 py-0.5 rounded-lg bg-black/20 border border-white/10';
+                }
+            }
+        };
+
+        const modalUpdateTotals = () => {
+            let grandTotal = 0;
+            let totalNotes = 0;
+            const counts = {};
+            modalTableBody.querySelectorAll('input[data-denom]').forEach(input => {
+                const denom = parseInt(input.dataset.denom);
+                const count = parseInt(input.value) || 0;
+                const subtotal = denom * count;
+                const subtotalEl = input.closest('tr').querySelector('.modal-subtotal');
+                if (subtotalEl) {
+                    subtotalEl.innerText = formatCurrency(subtotal);
+                    subtotalEl.classList.toggle('text-slate-400', subtotal === 0);
+                    subtotalEl.classList.toggle('text-primary', subtotal > 0);
+                }
+                grandTotal += subtotal;
+                totalNotes += count;
+                counts[denom] = input.value;
+            });
+            if (modalTotalVal) modalTotalVal.innerText = formatCurrency(grandTotal);
+            if (modalTotalNotes) modalTotalNotes.innerText = `${totalNotes} notes`;
+            modalUpdateSystemComparison(grandTotal);
+            localStorage.setItem('cash_calculator_counts', JSON.stringify(counts));
+            if (modalDatePicker && modalDatePicker.value) saveCashCalculator(counts, modalDatePicker.value);
+        };
+
+        const modalGenerateRows = (savedCounts) => {
+            modalTableBody.innerHTML = '';
+            denominations.forEach(denom => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-primary/[0.04] dark:hover:bg-primary/10 transition-all duration-300 group';
+                tr.innerHTML = `
+                    <td class="px-3 py-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="size-7 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-xs border border-primary/20 shadow-inner group-hover:scale-105 transition-transform flex-shrink-0">₹</div>
+                            <span class="text-sm font-black tracking-tight text-slate-800 dark:text-slate-100">${denom}</span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-1.5">
+                        <div class="relative max-w-[110px] mx-auto">
+                            <input type="number" data-denom="${denom}" value="${savedCounts[denom] || ''}"
+                                class="w-full bg-slate-50 dark:bg-slate-900/90 border border-primary/20 px-3 py-1 rounded-xl text-center focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all font-black text-sm text-slate-800 dark:text-slate-100 shadow-inner"
+                                placeholder="0" min="0">
+                        </div>
+                    </td>
+                    <td class="px-3 py-1.5 text-right">
+                        <span class="modal-subtotal font-mono font-black text-slate-400 group-hover:text-primary transition-colors text-sm tracking-tight select-all">₹0</span>
+                    </td>
+                `;
+                modalTableBody.appendChild(tr);
+            });
+            modalTableBody.removeEventListener('input', modalUpdateTotals);
+            modalTableBody.addEventListener('input', modalUpdateTotals);
+            modalUpdateTotals();
+        };
+
+        const modalLoadForDate = async (dateStr) => {
+            modalCurrentSystemCash = await fetchSystemCashForModal(dateStr);
+            let savedCounts = {};
+            try { savedCounts = await loadCashCalculator(dateStr); delete savedCounts.date; } catch(e) {}
+            modalGenerateRows(savedCounts);
+        };
+
+        if (openCashCalcBtn) openCashCalcBtn.addEventListener('click', openCashCalcModal);
+        if (closeCashCalcBtn) closeCashCalcBtn.addEventListener('click', closeCashCalcModal);
+        if (cashCalcBackdrop) cashCalcBackdrop.addEventListener('click', closeCashCalcModal);
+        if (modalDatePicker) modalDatePicker.addEventListener('change', () => modalLoadForDate(modalDatePicker.value));
+
+        if (modalResetBtn) {
+            modalResetBtn.addEventListener('click', () => {
+                modalTableBody.querySelectorAll('input[data-denom]').forEach(i => i.value = '');
+                modalUpdateTotals();
+            });
+        }
+
+        if (modalUseCashBtn) {
+            modalUseCashBtn.addEventListener('click', () => {
+                const totalText = modalTotalVal ? modalTotalVal.innerText.replace(/[₹,]/g, '') : '0';
+                const finalAmount = parseFloat(totalText);
+                if (finalAmount > 0) {
+                    const isValidate = window.getAppSetting ? window.getAppSetting('validate_cash_diff', true) : (localStorage.getItem('validate_cash_diff') !== 'false');
+                    if (isValidate && Math.abs(finalAmount - modalCurrentSystemCash) > getValidationLimit('cash')) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ title: 'Validation Error', text: `The difference between Expected Cash and your manual physical total exceeds ₹${getValidationLimit('cash').toLocaleString('en-IN')}. Please verify your Daily Txn transactions.`, icon: 'error', confirmButtonColor: '#e11d48' });
+                        } else { alert(`Cash difference exceeds ₹${getValidationLimit('cash').toLocaleString('en-IN')}.`); }
+                        return;
+                    }
+                    if (cashInput) {
+                        cashInput.value = finalAmount;
+                        cashInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    closeCashCalcModal();
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please calculate an amount greater than 0.', confirmButtonColor: '#7f13ec' });
+                    } else { alert('Please calculate an amount greater than 0.'); }
+                }
+            });
+        }
+
+        window._openCashCalculatorModal = openCashCalcModal;
+    })();
 
     // --- Daily Expense Split Modal Logic ---
     const expenseSplitModal = document.getElementById('expense-split-modal');
@@ -2274,10 +2573,11 @@ async function initAddEntry() {
                         const entered = parseFloat(inp.value) || 0;
                         const expected = parseFloat(exp.dataset.val) || 0;
                         const diff = Math.abs(entered - expected);
-                        if (diff > 2000) {
+                        if (diff > getValidationLimit(settingKey === 'validate_online_diff' ? 'online' : 'csp')) {
                             hasValidationError = true;
                             const name = nameMap[inputIds[i]] || inputIds[i].replace(/_/g, ' ');
-                            validationErrorMsg = name + ' individual difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                            const lim = getValidationLimit(settingKey === 'validate_online_diff' ? 'online' : 'csp');
+                            validationErrorMsg = name + ' individual difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs ' + lim.toLocaleString('en-IN') + ' limit.';
                             break;
                         }
                     }
@@ -2297,9 +2597,10 @@ async function initAddEntry() {
                         const entered = parseFloat(inp.value) || 0;
                         const expected = parseFloat(exp.dataset.val) || 0;
                         const diff = Math.abs(entered - expected);
-                        if (diff > 2000) {
+                        const limType = settingKey === 'validate_online_diff' ? 'online' : 'csp';
+                        if (diff > getValidationLimit(limType)) {
                             hasValidationError = true;
-                            validationErrorMsg = name + ' manual total and Expected ' + name + ' difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                            validationErrorMsg = name + ' manual total and Expected ' + name + ' difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs ' + getValidationLimit(limType).toLocaleString('en-IN') + ' limit.';
                         }
                  }
             };
@@ -2313,9 +2614,9 @@ async function initAddEntry() {
                 const manualTotal = v('online') + v('roinet') + v('jio') + v('go2sms') + v('pending');
                 if (typeof currentSystemOnline !== 'undefined') {
                     const diff = Math.abs(manualTotal - currentSystemOnline);
-                    if (diff > 2000) {
+                    if (diff > getValidationLimit('online')) {
                         hasValidationError = true;
-                        validationErrorMsg = 'Overall Online Accounts (Online+CSP+Jio+CRGB+Pending) total difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                        validationErrorMsg = 'Overall Online Accounts (Online+CSP+Jio+CRGB+Pending) total difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs ' + getValidationLimit('online').toLocaleString('en-IN') + ' limit.';
                     }
                 }
             }
@@ -2327,9 +2628,9 @@ async function initAddEntry() {
                 if (window._roinetBreakdown && window._roinetBreakdown.cash) {
                     expectedCash = window._roinetBreakdown.cash.closing || 0;
                     const diff = Math.abs(cashInput - expectedCash);
-                    if (diff > 2000) {
+                    if (diff > getValidationLimit('cash')) {
                         hasValidationError = true;
-                        validationErrorMsg = 'Cash difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs 2,000 limit.';
+                        validationErrorMsg = 'Cash difference is Rs ' + diff.toLocaleString('en-IN') + ' which exceeds the Rs ' + getValidationLimit('cash').toLocaleString('en-IN') + ' limit.';
                     }
                 }
             }
@@ -3401,16 +3702,16 @@ async function initCalculator() {
                 // Add Validation
                 const isValidate = window.getAppSetting ? window.getAppSetting('validate_cash_diff', true) : (localStorage.getItem('validate_cash_diff') !== 'false');
                 if (isValidate && typeof currentSystemCash !== 'undefined') {
-                    if (Math.abs(finalAmount - currentSystemCash) > 2000) {
+                    if (Math.abs(finalAmount - currentSystemCash) > getValidationLimit('cash')) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Validation Error',
-                                text: 'The difference between Expected Cash and your manual physical total exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.',
+                                text: `The difference between Expected Cash and your manual physical total exceeds ₹${getValidationLimit('cash').toLocaleString('en-IN')}. Please verify and correct your transactions on the Daily Txn page.`,
                                 icon: 'error',
                                 confirmButtonColor: '#e11d48'
                             });
                         } else {
-                            alert('The difference between Expected Cash and your manual physical total exceeds ₹2,000. Please verify and correct your transactions on the Daily Txn page.');
+                            alert(`The difference between Expected Cash and your manual physical total exceeds ₹${getValidationLimit('cash').toLocaleString('en-IN')}. Please verify and correct your transactions on the Daily Txn page.`);
                         }
                         return;
                     }
@@ -4574,16 +4875,20 @@ async function initCreditLedger() {
 }
 
 window.goToCashCalculator = () => {
-    const form = document.getElementById('add-entry-form');
-    const datePicker = document.getElementById('entry-date-picker');
-    if (form) {
-        const formData = {};
-        new FormData(form).forEach((value, key) => formData[key] = value);
-        // Also save the date since date picker is outside the <form> tag
-        if (datePicker) formData['__entry_date__'] = datePicker.value;
-        sessionStorage.setItem('add_entry_form_data', JSON.stringify(formData));
+    // Open the cash calculator modal instead of navigating away
+    if (window._openCashCalculatorModal) {
+        window._openCashCalculatorModal();
+    } else {
+        const modal = document.getElementById('cash-calculator-modal');
+        const panel = document.getElementById('cash-calculator-panel');
+        if (modal && panel) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            panel.classList.remove('scale-95', 'opacity-0');
+            panel.classList.add('scale-100', 'opacity-100');
+        }
     }
-    window.location.href = 'cash-calculator-code.html';
 };
 
 window.goToDamagesToSelect = () => {

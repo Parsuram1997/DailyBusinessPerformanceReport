@@ -689,9 +689,15 @@
         <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
             <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
                 <span class="material-symbols-outlined text-rose-600 shrink-0">rule</span>
-                <div>
+                <div class="flex-1 min-w-0">
                     <p class="font-bold text-sm">Validate Cash Diff Limit</p>
-                    <p class="text-xs text-slate-500">Prevent saving if Cash difference is > 5000.</p>
+                    <p class="text-xs text-slate-500">Prevent saving if Cash difference exceeds limit.</p>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Limit ₹</span>
+                        <input type="number" id="input-cash-diff-limit" min="0" step="100"
+                            class="w-24 px-2 py-1 text-xs font-bold rounded-lg border border-rose-200 dark:border-rose-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-400 outline-none transition-all"
+                            placeholder="e.g. 2000">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
@@ -710,9 +716,15 @@
         <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
             <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
                 <span class="material-symbols-outlined text-rose-600 shrink-0">rule</span>
-                <div>
+                <div class="flex-1 min-w-0">
                     <p class="font-bold text-sm">Validate Online Diff Limit</p>
-                    <p class="text-xs text-slate-500">Prevent saving if Online difference is > 5000.</p>
+                    <p class="text-xs text-slate-500">Prevent saving if Online difference exceeds limit.</p>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Limit ₹</span>
+                        <input type="number" id="input-online-diff-limit" min="0" step="100"
+                            class="w-24 px-2 py-1 text-xs font-bold rounded-lg border border-rose-200 dark:border-rose-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-400 outline-none transition-all"
+                            placeholder="e.g. 2000">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
@@ -731,9 +743,15 @@
         <div class="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-rose-50 dark:bg-rose-500/5 dark:border-rose-500/20">
             <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
                 <span class="material-symbols-outlined text-rose-600 shrink-0">rule</span>
-                <div>
+                <div class="flex-1 min-w-0">
                     <p class="font-bold text-sm">Validate CSP Diff Limit</p>
-                    <p class="text-xs text-slate-500">Prevent saving if CSP Wallet difference is > 5000.</p>
+                    <p class="text-xs text-slate-500">Prevent saving if CSP Wallet difference exceeds limit.</p>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Limit ₹</span>
+                        <input type="number" id="input-csp-diff-limit" min="0" step="100"
+                            class="w-24 px-2 py-1 text-xs font-bold rounded-lg border border-rose-200 dark:border-rose-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-400 outline-none transition-all"
+                            placeholder="e.g. 2000">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
@@ -1482,10 +1500,17 @@ function applySettingsToUI() {
     if (localStorage.getItem('dtxn_showBalanceDiff') === null) balanceDiffToggle.checked = true;
     deleteToggle.checked = localStorage.getItem('dtxn_showDelete') !== 'false';
     chargesToggle.checked = localStorage.getItem('dtxn_showCharges') !== 'false';
-        if (toggleValidateCashDiff) toggleValidateCashDiff.checked = localStorage.getItem('validate_cash_diff') !== 'false';
+    if (toggleValidateCashDiff) toggleValidateCashDiff.checked = localStorage.getItem('validate_cash_diff') !== 'false';
     if (toggleValidateOnlineDiff) toggleValidateOnlineDiff.checked = localStorage.getItem('validate_online_diff') !== 'false';
     if (toggleValidateCspDiff) toggleValidateCspDiff.checked = localStorage.getItem('validate_csp_diff') !== 'false';
     if (toggleValidateTxnsChecked) toggleValidateTxnsChecked.checked = localStorage.getItem('validate_txns_checked') !== 'false';
+    // Load dynamic limits (default 2000)
+    const cashLimitInput = document.getElementById('input-cash-diff-limit');
+    const onlineLimitInput = document.getElementById('input-online-diff-limit');
+    const cspLimitInput = document.getElementById('input-csp-diff-limit');
+    if (cashLimitInput) cashLimitInput.value = localStorage.getItem('validate_cash_diff_limit') || '2000';
+    if (onlineLimitInput) onlineLimitInput.value = localStorage.getItem('validate_online_diff_limit') || '2000';
+    if (cspLimitInput) cspLimitInput.value = localStorage.getItem('validate_csp_diff_limit') || '2000';
     pinAddEntryToggle.checked = localStorage.getItem('security_pin_enabled_add_entry') !== 'false';
     pinDailyTxnToggle.checked = localStorage.getItem('security_pin_enabled_daily_txn') !== 'false';
     pinSettingsToggle.checked = localStorage.getItem('security_pin_enabled_settings') !== 'false';
@@ -1516,6 +1541,9 @@ function saveGlobalSettings() {
         validate_online_diff: toggleValidateOnlineDiff ? toggleValidateOnlineDiff.checked : true,
         validate_csp_diff: toggleValidateCspDiff ? toggleValidateCspDiff.checked : true,
         validate_txns_checked: toggleValidateTxnsChecked ? toggleValidateTxnsChecked.checked : true,
+        validate_cash_diff_limit: parseInt(document.getElementById('input-cash-diff-limit')?.value) || 2000,
+        validate_online_diff_limit: parseInt(document.getElementById('input-online-diff-limit')?.value) || 2000,
+        validate_csp_diff_limit: parseInt(document.getElementById('input-csp-diff-limit')?.value) || 2000,
         security_pin_enabled_add_entry: pinAddEntryToggle.checked,
         security_pin_enabled_daily_txn: pinDailyTxnToggle.checked,
         security_pin_enabled_settings: pinSettingsToggle.checked,
@@ -1537,6 +1565,9 @@ function saveGlobalSettings() {
         if (toggleValidateOnlineDiff) localStorage.setItem('validate_online_diff', settings.validate_online_diff);
         if (toggleValidateCspDiff) localStorage.setItem('validate_csp_diff', settings.validate_csp_diff);
         if (toggleValidateTxnsChecked) localStorage.setItem('validate_txns_checked', settings.validate_txns_checked);
+        localStorage.setItem('validate_cash_diff_limit', settings.validate_cash_diff_limit);
+        localStorage.setItem('validate_online_diff_limit', settings.validate_online_diff_limit);
+        localStorage.setItem('validate_csp_diff_limit', settings.validate_csp_diff_limit);
         localStorage.setItem('security_pin_enabled_add_entry', settings.security_pin_enabled_add_entry);
         localStorage.setItem('security_pin_enabled_daily_txn', settings.security_pin_enabled_daily_txn);
         localStorage.setItem('security_pin_enabled_settings', settings.security_pin_enabled_settings);
@@ -1558,6 +1589,13 @@ if (toggleValidateCashDiff) toggleValidateCashDiff.addEventListener('change', sa
 if (toggleValidateOnlineDiff) toggleValidateOnlineDiff.addEventListener('change', saveGlobalSettings);
 if (toggleValidateCspDiff) toggleValidateCspDiff.addEventListener('change', saveGlobalSettings);
 if (toggleValidateTxnsChecked) toggleValidateTxnsChecked.addEventListener('change', saveGlobalSettings);
+// Save limit inputs when value changes (on blur or Enter)
+const _cashLimitEl = document.getElementById('input-cash-diff-limit');
+const _onlineLimitEl = document.getElementById('input-online-diff-limit');
+const _cspLimitEl = document.getElementById('input-csp-diff-limit');
+if (_cashLimitEl) _cashLimitEl.addEventListener('change', saveGlobalSettings);
+if (_onlineLimitEl) _onlineLimitEl.addEventListener('change', saveGlobalSettings);
+if (_cspLimitEl) _cspLimitEl.addEventListener('change', saveGlobalSettings);
 pinAddEntryToggle.addEventListener('change', saveGlobalSettings);
 pinDailyTxnToggle.addEventListener('change', saveGlobalSettings);
 pinSettingsToggle.addEventListener('change', saveGlobalSettings);
