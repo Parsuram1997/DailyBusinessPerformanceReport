@@ -7943,6 +7943,36 @@ async function initDailyTxn() {
         return;
     }
 
+    // --- Branch Selector ---
+    (() => {
+        const branchBtns = document.querySelectorAll('.branch-btn');
+        const savedBranch = localStorage.getItem('selected_branch') || 'Branch-1';
+
+        const updateBranchUI = (activeBranch) => {
+            branchBtns.forEach(btn => {
+                const isActive = btn.dataset.branch === activeBranch;
+                btn.className = `branch-btn px-4 py-1.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-200 focus:outline-none ${
+                    isActive
+                        ? (activeBranch === 'Branch-2'
+                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
+                            : 'bg-primary text-white shadow-md shadow-primary/30')
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-primary/10'
+                }`;
+            });
+        };
+
+        updateBranchUI(savedBranch);
+
+        branchBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const branch = btn.dataset.branch;
+                localStorage.setItem('selected_branch', branch);
+                updateBranchUI(branch);
+            });
+        });
+    })();
+    // --- End Branch Selector ---
+
     const tableBody = document.getElementById('daily-txn-table-body');
     let currentTxnsForDownload = []; // For export
     const txnAmount = document.getElementById('txn-amount');
@@ -9246,6 +9276,7 @@ async function initDailyTxn() {
             const newTxn = {
                 type: txnType.value,
                 amount: amountVal,
+                branch: localStorage.getItem('selected_branch') || 'Branch-1',
                 method: txnType.value === 'CASH_WITHDRAWAL' ? (txnMethod ? txnMethod.value : 'ATM') : '',
                 charges: isNaN(chargesVal) ? 0 : chargesVal,
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
@@ -10553,7 +10584,7 @@ async function initDailyTxn() {
                             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wide">${time || 'NA'}</span>
                         </div>
                         <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${isAdvance ? 'bg-amber-100 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50'} border w-full h-[22px]" ${isAdvance ? 'title="Advance Transaction"' : ''}>
-                            <span class="text-[9px] font-bold ${isAdvance ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'} uppercase tracking-wider">${txn.date || 'NA'}</span>
+                            <span class="text-[9px] font-bold ${isAdvance ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'} tracking-wide">${txn.date || 'NA'}</span>
                         </div>
                     </div>
                 </td>
@@ -10564,6 +10595,7 @@ async function initDailyTxn() {
                     txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl <span class="material-symbols-outlined text-[12px]">arrow_downward</span>' :
                     (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep <span class="material-symbols-outlined text-[12px]">arrow_upward</span>' : txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))
                 }</span>
+                        ${txn.branch ? `<span class="px-2 py-0.5 rounded text-[9px] font-black tracking-wide w-[140px] text-center whitespace-nowrap ${txn.branch === 'Branch-2' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/50 dark:border-amber-500/30' : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-300/50 dark:border-indigo-500/30'}">${txn.branch}</span>` : ''}
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
