@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Account Register - BizPerform</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Sidebar Hover Expansion Styles */
+        #sidebar { 
+            width: 5.5rem !important; /* Default collapsed */
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Center icons when collapsed */
+        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
+        
+        /* Fade texts in/out */
+        #sidebar .sidebar-text, 
+        #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+
+        /* Profile Card Rectangle Toggle */
+        #sidebar .profile-card { 
+            background: transparent !important; 
+            border-color: transparent !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            transition: all 0.3s;
+        }
+        #sidebar .profile-card > div {
+            justify-content: center !important;
+            transition: all 0.3s;
+        }
+        
+        @media (min-width: 1024px) {
+            #sidebar:hover { 
+                width: 16rem !important; /* Expanded w-64 */
+                box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+            }
+            
+            /* Restore alignment on hover */
+            #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+            
+            #sidebar:hover .sidebar-text, 
+            #sidebar:hover .nav-text { 
+                opacity: 1; 
+                transform: translateX(0);
+                transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+                width: auto;
+                margin-left: 0.75rem;
+            }
+
+            #sidebar:hover .profile-card { 
+                background: rgba(127, 19, 236, 0.05) !important; 
+                border-color: rgba(127, 19, 236, 0.2) !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            #sidebar:hover .profile-card > div {
+                justify-content: flex-start !important;
+            }
+        }
+    
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Ghost Privacy Toggle Button */
+        #privacy-toggle-btn {
+            background: transparent !important;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 10px;
+            transition: background 0.25s ease, opacity 0.25s ease;
+            opacity: 0;
+            pointer-events: auto;
+        }
+        #privacy-toggle-btn .mat-icon {
+            font-size: 20px;
+            color: transparent;
+            transition: color 0.25s ease;
+            user-select: none;
+        }
+        #privacy-toggle-btn:hover {
+            opacity: 1;
+            background: rgba(127, 19, 236, 0.07) !important;
+        }
+        #privacy-toggle-btn:hover .mat-icon {
+            color: rgba(127, 19, 236, 0.55);
+        }
+        /* When values are hidden (mode ON), subtle indicator on hover */
+        #privacy-toggle-btn.hide-mode:hover {
+            background: rgba(244, 63, 94, 0.08) !important;
+        }
+        #privacy-toggle-btn.hide-mode:hover .mat-icon {
+            color: rgba(244, 63, 94, 0.55);
+        }
+        /* Dark mode variants */
+        .dark #privacy-toggle-btn:hover {
+            background: rgba(127, 19, 236, 0.1) !important;
+        }
+        .dark #privacy-toggle-btn:hover .mat-icon {
+            color: rgba(167, 100, 255, 0.5);
+        }
+        .dark #privacy-toggle-btn.hide-mode:hover .mat-icon {
+            color: rgba(253, 100, 120, 0.5);
+        }
+    </style>
+    <script src="auth.js"></script>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+
+    <style>
+        /* Prevent double-tap to zoom */
+        * { touch-action: manipulation; }
+        /* Prevent input focus zoom on iOS */
+        @media screen and (max-width: 767px) {
+            input, select, textarea { font-size: 16px !important; }
+        }
+    </style>
+    <script>
+        // Prevent pinch-zoom on iOS
+        document.addEventListener('touchmove', function(event) {
+            if (event.scale !== undefined && event.scale !== 1) { 
+                event.preventDefault(); 
+            }
+        }, { passive: false });
+    </script>
+
+    <script>
+        // Theme: apply saved preference before render to avoid flash
+        (function() {
+            const saved = localStorage.getItem('biz_theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            // Apply custom accent color if any
+            const accent = localStorage.getItem('biz_accent_color');
+            if (accent) {
+                const style = document.createElement('style');
+                style.id = 'dynamic-accent-styles';
+                style.innerHTML = `
+                    :root {
+                        --color-primary: ${accent} !important;
+                    }
+                    .text-primary { color: ${accent} !important; }
+                    .bg-primary { background-color: ${accent} !important; }
+                    .border-primary { border-color: ${accent} !important; }
+                    .border-primary\\/10 { border-color: ${accent}1a !important; }
+                    .border-primary\\/20 { border-color: ${accent}33 !important; }
+                    .bg-primary\\/5 { background-color: ${accent}0d !important; }
+                    .bg-primary\\/10 { background-color: ${accent}1a !important; }
+                    .hover\\:bg-primary\\/5:hover { background-color: ${accent}0d !important; }
+                    .hover\\:bg-primary\\/10:hover { background-color: ${accent}1a !important; }
+                    .peer-checked\\:bg-purple-600:checked ~ div, .peer-checked\\:bg-purple-600:peer-checked { background-color: ${accent} !important; }
+                    .shadow-primary\\/20 { --tw-shadow-color: ${accent}33 !important; }
+                `;
+                document.head.appendChild(style);
+            }
+        })();
+    </script>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300">
+            <div class="px-4 py-4 flex justify-end toggle-container">
+                <button id="sidebar-toggle"
+                    class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
+                </button>
+            </div>
+            <div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
+                
+                <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
+                    <img src="favicon.png" class="w-full h-full object-cover">
+                </div>
+                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                    <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+                    <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+                </div>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold"
+                    href="dashboard-code.html" data-page="dashboard-code.html">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="text-sm nav-text">Dashboard</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="add-entry-code.html" data-page="add-entry-code.html">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <span class="text-sm nav-text">Add Entry</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="daily-txn.html" data-page="daily-txn.html">
+                    <span class="material-symbols-outlined">point_of_sale</span>
+                    <span class="text-sm nav-text">Daily Txn</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="transactions-code.html" data-page="transactions-code.html">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="text-sm nav-text">Table</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="reports-code.html" data-page="reports-code.html">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                    <span class="text-sm nav-text">Analytics</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span class="text-sm nav-text">Credit Ledger</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="account-register-code.html" data-page="account-register-code.html">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span class="text-sm nav-text">Account Register</span>
+                </a>
+            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html">
+                <span class="material-symbols-outlined">savings</span>
+                <span class="text-sm nav-text">Cust. Deposit</span>
+            </a>
+
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+                    <span class="material-symbols-outlined">account_balance</span>
+                    <span class="text-sm nav-text">Bank Withdrawals</span>
+                </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
+                    href="settings-code.html" data-page="settings-code.html">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="text-sm nav-text">Settings</span>
+                </a>
+
+                <a id="logout-btn" href="#"
+                    class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="text-sm nav-text font-semibold">Logout</span>
+                </a>
+            </nav>
+            
+                <!-- Theme Toggle -->
+                <div class="px-4 pb-2 theme-toggle-container">
+                    <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
+                        <span id="theme-icon" class="material-symbols-outlined">dark_mode</span>
+                        <span id="theme-label" class="text-sm nav-text font-semibold">Dark Mode</span>
+                    </button>
+                </div>
+                <div class="mt-auto p-4 border-t border-primary/10">
+                <div
+                    class="profile-card bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
+                            <img src="assets/parsuram.png" alt="Parsuram Naik"
+                                class="size-full rounded-lg object-cover">
+                        </div>
+                        <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                            <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
+                            <h6
+                                class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">
+                                PARSURAM NAIK</h6>
+                            <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <!-- Main Content (Account Register) -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 transition-all duration-300 min-h-screen">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                <span class="material-symbols-outlined text-3xl text-primary drop-shadow-sm">menu_book</span>
+                Account Register
+            </h1>
+            <p class="text-slate-500 text-sm mt-1">Manage and track digital account openings</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div class="relative flex-1 md:w-64">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                <input type="text" id="searchInput" placeholder="Search accounts..." 
+                    class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm dark:text-white transition-all shadow-sm">
+            </div>
+            <select id="statusFilter" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white shadow-sm">
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Closed">Closed</option>
+            </select>
+            <button onclick="window.openModal()" class="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all shadow-lg shadow-primary/30 active:scale-95">
+                <span class="material-symbols-outlined text-[20px]">add</span>
+                Open New Account
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5 shadow-xl shadow-slate-200/20 dark:shadow-none overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+        <div class="overflow-x-auto flex-1 p-0 custom-scrollbar">
+            <table class="w-full text-sm text-left relative">
+                <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10 backdrop-blur-md shadow-sm">
+                    <tr>
+                        <th class="px-5 py-4 font-semibold">Date</th>
+                        <th class="px-5 py-4 font-semibold">DOB</th>
+                        <th class="px-5 py-4 font-semibold">Acc No.</th>
+                        <th class="px-5 py-4 font-semibold">Holder Name</th>
+                        <th class="px-5 py-4 font-semibold">Type</th>
+                        <th class="px-5 py-4 font-semibold">Mobile</th>
+                        <th class="px-5 py-4 font-semibold">Aadhar</th>
+                        <th class="px-5 py-4 font-semibold">ID/Ref</th>
+                        <th class="px-5 py-4 font-semibold">Status</th>
+                        <th class="px-5 py-4 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="accountsTableBody" class="divide-y divide-slate-100 dark:divide-white/5 text-slate-600 dark:text-slate-300">
+                </tbody>
+            </table>
+        </div>
+        <div class="px-5 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30 flex justify-between items-center text-xs text-slate-500 shrink-0">
+            <span id="recordCount">Loading records...</span>
+        </div>
+    </div>
+
+    <div id="accountModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden justify-end opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-2xl h-full overflow-y-auto shadow-2xl translate-x-full transition-transform duration-300 p-6 md:p-8 custom-scrollbar border-l border-slate-100 dark:border-white/10" id="modalContent">
+            
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 id="modalTitle" class="text-xl font-bold text-slate-900 dark:text-white">Open New Account</h2>
+                    <p class="text-sm text-slate-500 mt-1">Fill in the details to register a new account.</p>
+                </div>
+                <button type="button" onclick="window.closeModal()" class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <form id="accountForm" class="space-y-6">
+                <input type="hidden" id="accountId">
+                <!-- Row 1: Account Number & Opening Date -->
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Number</label>
+                        <input type="text" id="accountNumber" required
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Opening Date</label>
+                        <input type="date" id="openingDate" required
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                </div>
+
+                <!-- Row 2: Account Holder Name & DOB -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Holder Name</label>
+                        <input type="text" id="accountHolderName" required placeholder="Enter full name"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">DOB</label>
+                        <input type="date" id="dob"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                </div>
+
+                <!-- Row 3: Account Type & Mobile Number -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Type</label>
+                        <select id="accountType" required
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                            <option value="">Select Type</option>
+                            <option value="Savings">Savings</option>
+                            <option value="Current">Current</option>
+                            <option value="Fixed Deposit">Fixed Deposit</option>
+                            <option value="Recurring Deposit">Recurring Deposit</option>
+                            <option value="Loan">Loan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mobile Number</label>
+                        <input type="tel" id="mobileNumber" required placeholder="Enter mobile number" pattern="[0-9]{10}"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                </div>
+
+                <!-- Row 4: Address -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Address</label>
+                    <input type="text" id="address" required placeholder="Enter address details"
+                        class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                </div>
+
+                <!-- Row 5: Aadhar & Reference Number -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Aadhar Number</label>
+                        <input type="text" id="aadhar" placeholder="Enter Aadhar number"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Reference Number</label>
+                        <input type="text" id="idReference" placeholder="Enter reference number"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                </div>
+
+                <!-- Row 6: Nominee Name & Status -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nominee Name</label>
+                        <input type="text" id="nomineeName" placeholder="Enter nominee name"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                        <select id="status" required
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                            <option value="Active">Active</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Row 7: Remarks -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Remarks</label>
+                    <textarea id="remarks" rows="2" placeholder="Any additional notes..."
+                        class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-3">
+                    <button type="button" onclick="window.closeModal()"
+                        class="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveAccountBtn"
+                        class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:ring-4 focus:ring-primary/20 transition-all shadow-lg shadow-primary/30">
+                        Save Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+    </div>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav id="bottom-nav"
+        class="lg:hidden fixed bottom-2 left-0 right-0 z-50 flex items-center gap-2.5 px-4 py-3 overflow-x-auto no-scrollbar scroll-smooth bg-transparent">
+        <a href="dashboard-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary text-white shadow-lg shadow-primary/30 shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">dashboard</span>
+            <span class="text-[10px] font-bold">Dashboard</span>
+        </a>
+        <a href="add-entry-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">add_circle</span>
+            <span class="text-[10px] font-bold">Add Entry</span>
+        </a>
+        <a href="daily-txn.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">point_of_sale</span>
+            <span class="text-[10px] font-bold">Daily Txn</span>
+        </a>
+        <a href="transactions-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">receipt_long</span>
+            <span class="text-[10px] font-bold">Table</span>
+        </a>
+        <a href="reports-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">bar_chart</span>
+            <span class="text-[10px] font-bold">Analytics</span>
+        </a>
+        <a href="credit-ledger-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">menu_book</span>
+            <span class="text-[10px] font-bold">Credits</span>
+        </a>
+        <a href="customer-deposit-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">savings</span>
+            <span class="text-[10px] font-bold">Deposit</span>
+        </a>
+        <a href="bank-withdrawals-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">account_balance</span>
+            <span class="text-[10px] font-bold">Bank</span>
+        </a>
+        <a href="settings-code.html"
+            class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-primary/10 text-slate-500 dark:text-slate-400 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95">
+            <span class="material-symbols-outlined text-xl">settings</span>
+            <span class="text-[10px] font-bold">Settings</span>
+        </a>
+        <a href="#" class="logout-trigger flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-rose-500/20 text-rose-500 shadow-md shrink-0 w-[72px] h-[72px] transition-all hover:scale-105 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-xl">logout</span>
+            <span class="text-[10px] font-bold">Logout</span>
+        </a>
+    </nav>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+
+    <script type="module" src="app.js"></script>
+    <script>
+        window.toggleFullscreenChart = async function (btn) {
+            const container = btn.closest('.chart-card-container');
+            if (!container) return;
+
+            const isFullscreen = container.classList.contains('fixed');
+            const iconSpan = btn.querySelector('.material-symbols-outlined');
+
+            if (!isFullscreen) {
+                // Enter Fullscreen
+                container.classList.add('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'm-0', 'rounded-none', 'overflow-auto');
+                container.classList.remove('lg:col-span-3', 'rounded-xl');
+                iconSpan.innerText = 'close_fullscreen';
+
+                // Try HTML5 Fullscreen to hide browser UI
+                try {
+                    if (container.requestFullscreen) {
+                        await container.requestFullscreen();
+                    } else if (container.webkitRequestFullscreen) { /* Safari */
+                        await container.webkitRequestFullscreen();
+                    } else if (container.msRequestFullscreen) { /* IE11 */
+                        await container.msRequestFullscreen();
+                    }
+                } catch (err) {
+                    console.warn("Fullscreen API failed: ", err);
+                }
+
+                // Try to force landscape orientation on mobile
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                    }
+                } catch (err) {
+                    console.warn("Orientation lock failed or not supported: ", err);
+                }
+
+                // Adjust canvas height for fullscreen
+                const canvasContainer = container.querySelector('.h-64');
+                if (canvasContainer) {
+                    canvasContainer.classList.remove('h-64');
+                    canvasContainer.classList.add('h-[80vh]'); // Make canvas take most of the height
+                }
+
+            } else {
+                // Exit Fullscreen
+                container.classList.remove('fixed', 'inset-0', 'z-[100]', 'w-screen', 'h-screen', 'm-0', 'rounded-none', 'overflow-auto');
+                container.classList.add('lg:col-span-3', 'rounded-xl');
+                iconSpan.innerText = 'fullscreen';
+
+                try {
+                    if (document.fullscreenElement) {
+                        if (document.exitFullscreen) {
+                            await document.exitFullscreen();
+                        } else if (document.webkitExitFullscreen) { /* Safari */
+                            await document.webkitExitFullscreen();
+                        } else if (document.msExitFullscreen) { /* IE11 */
+                            await document.msExitFullscreen();
+                        }
+                    }
+                } catch (err) { }
+
+                try {
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } catch (err) { }
+
+                // Restore canvas height
+                const canvasContainer = container.querySelector('.h-\\[80vh\\]');
+                if (canvasContainer) {
+                    canvasContainer.classList.remove('h-[80vh]');
+                    canvasContainer.classList.add('h-64');
+                }
+            }
+
+            // Dispatch resize to fix chart dimensions after CSS change
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
+        };
+
+        // Also handle when user exits fullscreen via ESC key or browser back button
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                const activeFullscreenContainers = document.querySelectorAll('.chart-card-container.fixed');
+                activeFullscreenContainers.forEach(container => {
+                    const btn = container.querySelector('.expand-chart-btn');
+                    if (btn) btn.click(); // Trigger exit logic
+                });
+            }
+        });
+    </script>
+
+    <script>
+        // Sync theme toggle icon/label with current theme
+        (function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = document.getElementById('theme-icon');
+            const lbl = document.getElementById('theme-label');
+            if (icon) icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        })();
+    </script>
+
+    <!-- ====== Global Privacy / Value-Hide Toggle ====== -->
+    <script>
+    (function() {
+        const LS_KEY  = 'biz_hide_values';
+        const DIVISOR = 2;
+
+        const VALUE_IDS = [
+            'total-income-top', 'total-expense-top', 'total-profit-top',
+            'closing-balance-top', 'total-capital-top', 'total-withdrawals-top',
+            'today-income-top', 'today-expense-top', 'today-profit-top',
+            'this-month-income-top', 'this-month-expense-top', 'this-month-profit-top',
+            'mom-today-income', 'mom-today-expense', 'mom-today-profit',
+            'mom-last-income', 'mom-last-expense', 'mom-last-profit',
+            'mtd-current-income', 'mtd-current-expense', 'mtd-current-profit',
+            'mtd-last-income', 'mtd-last-expense', 'mtd-last-profit',
+            'proj-monthly', 'proj-quarterly', 'proj-yearly',
+            'proj-monthly-exp', 'proj-quarterly-exp', 'proj-yearly-exp',
+            'proj-monthly-profit', 'proj-quarterly-profit', 'proj-yearly-profit'
+        ];
+
+        // Raw numeric originals - NEVER cleared, persist across all toggles
+        const _raw = {};
+        let _observing = false;
+
+        function isHideModeOn() {
+            const v = localStorage.getItem(LS_KEY);
+            return v === null ? true : v === 'true';
+        }
+
+        function parseCurrency(text) {
+            if (!text || text === '...') return null;
+            const n = parseFloat(text.replace(/[₹,\s]/g, ''));
+            return isNaN(n) ? null : n;
+        }
+
+        function fmt(val) {
+            if (typeof formatCurrency === 'function') return formatCurrency(val);
+            return '₹' + Math.round(val).toLocaleString('en-IN');
+        }
+
+        // MutationObserver intercepts fresh values written by app.js
+        const observer = new MutationObserver((mutations) => {
+            if (!isHideModeOn()) return;
+            observer.disconnect();
+            _observing = false;
+            mutations.forEach(m => {
+                const el = m.target.nodeType === Node.TEXT_NODE
+                    ? m.target.parentElement : m.target;
+                if (!el || !VALUE_IDS.includes(el.id)) return;
+                const text = (el.innerText || '').trim();
+                if (!text || text === '...' || !text.includes('₹')) return;
+                const num = parseCurrency(text);
+                if (num === null) return;
+                _raw[el.id] = num;           // save real value
+                el.innerText = fmt(num / DIVISOR);
+            });
+            startObserving();
+        });
+
+        function startObserving() {
+            if (_observing) return;
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) observer.observe(el, { childList: true, subtree: true, characterData: true });
+            });
+            _observing = true;
+        }
+
+        function stopObserving() {
+            observer.disconnect();
+            _observing = false;
+        }
+
+        function applyHide() {
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const text = (el.innerText || '').trim();
+                if (!text || text === '...' || !text.includes('₹')) return;
+                const num = parseCurrency(text);
+                if (num === null) return;
+                _raw[id] = num;
+                el.innerText = fmt(num / DIVISOR);
+            });
+        }
+
+        function applyShow() {
+            VALUE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el || _raw[id] === undefined) return;
+                el.innerText = fmt(_raw[id]);
+            });
+        }
+
+        function updateButtonUI(hideOn) {
+            const btn  = document.getElementById('privacy-toggle-btn');
+            const icon = document.getElementById('privacy-toggle-icon');
+            if (!btn || !icon) return;
+            if (hideOn) {
+                btn.classList.add('hide-mode');
+                icon.textContent = 'visibility_off';
+                btn.title = 'Values hidden (÷2) — Click to show real values';
+            } else {
+                btn.classList.remove('hide-mode');
+                icon.textContent = 'visibility';
+                btn.title = 'Values visible — Click to hide';
+            }
+        }
+
+        // ONE click = hide, NEXT click = unhide (simple flip)
+        function togglePrivacy() {
+            const newHide = !isHideModeOn();
+            localStorage.setItem(LS_KEY, String(newHide));
+            updateButtonUI(newHide);
+            if (newHide) {
+                applyHide();
+                startObserving();
+            } else {
+                stopObserving();
+                applyShow();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('privacy-toggle-btn');
+            if (btn) btn.addEventListener('click', togglePrivacy);
+            const hideOn = isHideModeOn();
+            updateButtonUI(hideOn);
+            if (hideOn) startObserving();
+        });
+    })();
+    </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script type="module">
+    import { db } from './firebase-config.js';
+    import {
+        collection, getDocs, addDoc, updateDoc, deleteDoc, doc
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    window.allAccounts = [];
+
+    window.loadAccounts = async function() {
+        try {
+            const snap = await getDocs(collection(db, "accounts"));
+            window.allAccounts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            window.renderAccounts();
+        } catch (err) {
+            console.error('Load failed', err);
+            document.getElementById('recordCount').innerText = 'Error loading data';
+        }
+    };
+
+    window.renderAccounts = function() {
+        const tbody = document.getElementById('accountsTableBody');
+        const search = (document.getElementById('searchInput').value || '').toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const filtered = window.allAccounts.filter(acc => {
+            const m = (acc.accountHolderName||'').toLowerCase().includes(search) ||
+                      (acc.accountNumber||'').toLowerCase().includes(search) ||
+                      (acc.mobileNumber||'').toLowerCase().includes(search);
+            const s = statusFilter === 'All' || acc.status === statusFilter;
+            return m && s;
+        });
+        tbody.innerHTML = '';
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="px-5 py-8 text-center text-slate-500">No accounts found.</td></tr>';
+        } else {
+            filtered.forEach(acc => {
+                const sc = acc.status === 'Active'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                    : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400';
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group';
+                tr.innerHTML = `
+                    <td class="px-5 py-3 whitespace-nowrap">${acc.openingDate||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap">${acc.dob||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-900 dark:text-white">${acc.accountNumber||'-'}</td>
+                    <td class="px-5 py-3">${acc.accountHolderName||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap"><span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md text-xs font-medium">${acc.accountType||'-'}</span></td>
+                    <td class="px-5 py-3 whitespace-nowrap">${acc.mobileNumber||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap">${acc.aadhar||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap text-xs">${acc.idReference||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap">
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${sc}">${acc.status||'-'}</span>
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="window.openModal('${acc.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors" title="Edit">
+                                <span class="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                            <button onclick="window.deleteAccount('${acc.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        document.getElementById('recordCount').innerText =
+            `Showing ${filtered.length} of ${window.allAccounts.length} accounts`;
+    };
+
+    window.generateAccountNumber = function() {
+        const d = new Date().toISOString().slice(0,10).replace(/-/g,'');
+        const r = Math.floor(1000 + Math.random() * 9000);
+        return `ACC-${d}-${r}`;
+    };
+
+    window.openModal = function(id) {
+        const modal   = document.getElementById('accountModal');
+        const content = document.getElementById('modalContent');
+        const form    = document.getElementById('accountForm');
+        form.reset();
+        if (id) {
+            const acc = window.allAccounts.find(a => a.id === id);
+            if (acc) {
+                document.getElementById('modalTitle').innerText    = 'Edit Account';
+                document.getElementById('accountId').value         = acc.id;
+                document.getElementById('accountNumber').value     = acc.accountNumber || '';
+                document.getElementById('accountHolderName').value = acc.accountHolderName || '';
+                document.getElementById('accountType').value       = acc.accountType || '';
+                document.getElementById('openingDate').value       = acc.openingDate || '';
+                document.getElementById('mobileNumber').value      = acc.mobileNumber || '';
+                document.getElementById('dob').value               = acc.dob || '';
+                document.getElementById('aadhar').value            = acc.aadhar || '';
+                document.getElementById('address').value           = acc.address || '';
+                document.getElementById('idReference').value       = acc.idReference || '';
+                document.getElementById('nomineeName').value       = acc.nomineeName || '';
+                document.getElementById('status').value            = acc.status || 'Active';
+                document.getElementById('remarks').value           = acc.remarks || '';
+            }
+        } else {
+            document.getElementById('modalTitle').innerText    = 'Open New Account';
+            document.getElementById('accountId').value         = '';
+            document.getElementById('accountNumber').value     = window.generateAccountNumber();
+            document.getElementById('openingDate').valueAsDate = new Date();
+            document.getElementById('dob').value               = '';
+            document.getElementById('aadhar').value            = '';
+            document.getElementById('status').value            = 'Active';
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('translate-x-full');
+            content.classList.add('translate-x-0');
+        });
+    };
+
+    window.closeModal = function() {
+        const modal   = document.getElementById('accountModal');
+        const content = document.getElementById('modalContent');
+        modal.classList.add('opacity-0');
+        content.classList.remove('translate-x-0');
+        content.classList.add('translate-x-full');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    };
+
+    window.saveAccount = async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('accountId').value;
+        const data = {
+            accountNumber:     document.getElementById('accountNumber').value,
+            accountHolderName: document.getElementById('accountHolderName').value,
+            accountType:       document.getElementById('accountType').value,
+            openingDate:       document.getElementById('openingDate').value,
+            mobileNumber:      document.getElementById('mobileNumber').value,
+            dob:               document.getElementById('dob').value,
+            aadhar:            document.getElementById('aadhar').value,
+            address:           document.getElementById('address').value,
+            idReference:       document.getElementById('idReference').value,
+            nomineeName:       document.getElementById('nomineeName').value,
+            status:            document.getElementById('status').value,
+            remarks:           document.getElementById('remarks').value,
+            updated_at:        new Date().toISOString()
+        };
+        try {
+            if (id) {
+                await updateDoc(doc(db, "accounts", id), data);
+            } else {
+                data.created_at = new Date().toISOString();
+                await addDoc(collection(db, "accounts"), data);
+            }
+            Swal.fire({ icon:'success', title:'Saved!', toast:true, position:'top-end', showConfirmButton:false, timer:2500 });
+            window.closeModal();
+            window.loadAccounts();
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'Failed to save: ' + err.message, 'error');
+        }
+    };
+
+    window.deleteAccount = async function(id) {
+        const res = await Swal.fire({
+            title:'Delete Account?', text:'This cannot be undone.', icon:'warning',
+            showCancelButton:true, confirmButtonColor:'#ef4444',
+            cancelButtonColor:'#64748b', confirmButtonText:'Yes, delete!'
+        });
+        if (res.isConfirmed) {
+            try {
+                await deleteDoc(doc(db, "accounts", id));
+                Swal.fire({ icon:'success', title:'Deleted!', toast:true, position:'top-end', showConfirmButton:false, timer:2500 });
+                window.loadAccounts();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Failed to delete: ' + err.message, 'error');
+            }
+        }
+    };
+
+    // Init
+    document.getElementById('searchInput').addEventListener('input', window.renderAccounts);
+    document.getElementById('statusFilter').addEventListener('change', window.renderAccounts);
+    document.getElementById('accountForm').addEventListener('submit', window.saveAccount);
+    window.loadAccounts();
+
+</script>
+
+</body>
+</html>

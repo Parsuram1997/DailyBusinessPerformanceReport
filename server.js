@@ -146,12 +146,47 @@ app.delete('/api/customers/:id', (req, res) => {
     });
 });
 
+// 4. Accounts
+app.get('/api/accounts', (req, res) => {
+    db.all('SELECT * FROM accounts ORDER BY created_at DESC', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/api/accounts', (req, res) => {
+    const { accountNumber, accountHolderName, accountType, openingDate, mobileNumber, address, idReference, nomineeName, status, remarks } = req.body;
+    const query = `INSERT INTO accounts (accountNumber, accountHolderName, accountType, openingDate, mobileNumber, address, idReference, nomineeName, status, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    db.run(query, [accountNumber, accountHolderName, accountType, openingDate, mobileNumber, address, idReference, nomineeName, status, remarks], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Account added successfully', id: this.lastID });
+    });
+});
+
+app.put('/api/accounts/:id', (req, res) => {
+    const accountId = req.params.id;
+    const { accountNumber, accountHolderName, accountType, openingDate, mobileNumber, address, idReference, nomineeName, status, remarks } = req.body;
+    const query = `UPDATE accounts SET accountNumber = ?, accountHolderName = ?, accountType = ?, openingDate = ?, mobileNumber = ?, address = ?, idReference = ?, nomineeName = ?, status = ?, remarks = ? WHERE id = ?`;
+    db.run(query, [accountNumber, accountHolderName, accountType, openingDate, mobileNumber, address, idReference, nomineeName, status, remarks, accountId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Account updated successfully', changes: this.changes });
+    });
+});
+
+app.delete('/api/accounts/:id', (req, res) => {
+    db.run('DELETE FROM accounts WHERE id = ?', [req.params.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Account deleted successfully', changes: this.changes });
+    });
+});
+
 // Wipe All Data
 app.delete('/api/all', (req, res) => {
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
         db.run('DELETE FROM entries');
         db.run('DELETE FROM credits');
+        db.run('DELETE FROM accounts');
         db.run('DELETE FROM customers', function(err) {
             if (err) {
                 db.run('ROLLBACK');

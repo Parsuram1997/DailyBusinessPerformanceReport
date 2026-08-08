@@ -53,6 +53,24 @@ function createTables() {
         )`, (err) => {
             if (err) console.error('Error creating customers table:', err.message);
         });
+
+        // Accounts table
+        db.run(`CREATE TABLE IF NOT EXISTS accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            accountNumber TEXT UNIQUE NOT NULL,
+            accountHolderName TEXT NOT NULL,
+            accountType TEXT,
+            openingDate TEXT,
+            mobileNumber TEXT,
+            address TEXT,
+            idReference TEXT,
+            nomineeName TEXT,
+            status TEXT DEFAULT 'Active',
+            remarks TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`, (err) => {
+            if (err) console.error('Error creating accounts table:', err.message);
+        });
     });
 }
 
