@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v31'; // Bumped: Switched location API to geojs
+const CACHE_NAME = 'biz-report-v32'; // Bumped: Cache-First to prevent 429 rate limit
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,21 +31,42 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim()) // Take control of all tabs immediately
+    }).then(() => self.clients.claim())
   );
 });
 
-// Network-First Strategy: Fetch from network, update cache if successful, fallback to cache if offline
+// Cache-First Strategy: Serve from cache instantly, update cache in background
+// This prevents excessive network requests (429 Too Many Requests on Firebase Hosting)
 self.addEventListener('fetch', (event) => {
-  // Only handle local/GET requests
+  // Only handle GET requests from same origin
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
+  // Skip API calls - always go to network for fresh data
+  if (event.request.url.includes('/api/')) {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If we got a valid response, clone it and save to cache
+    caches.match(event.request).then((cachedResponse) => {
+      // Return cached version immediately if available
+      if (cachedResponse) {
+        // In background, fetch and update cache (stale-while-revalidate)
+        fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, networkResponse.clone());
+              });
+            }
+          })
+          .catch(() => {}); // Silently fail background update
+        return cachedResponse;
+      }
+
+      // Not in cache → fetch from network and cache it
+      return fetch(event.request).then((response) => {
         if (response && response.status === 200) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -53,11 +74,10 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return response;
-      })
-      .catch(() => {
-        // Fallback to cache if network fails (offline)
-        return caches.match(event.request);
-      })
+      }).catch(() => {
+        // Fallback for HTML pages when offline
+        return caches.match('./index.html');
+      });
+    })
   );
 });
-

@@ -49,7 +49,7 @@
                         // Check for updates periodically
                         setInterval(() => {
                             reg.update();
-                        }, 60 * 1000); // Check every 1 minute
+                        }, 10 * 60 * 1000); // Check every 10 minutes (reduced to prevent 429 rate limits)
                     })
                     .catch(err => console.error('Service Worker registration failed', err));
             });
