@@ -885,7 +885,7 @@ async function populateBankAccountsDropdown(selectedVal = '') {
             }
 
             const last4 = number.length >= 4 ? number.slice(-4) : number;
-            const singleLineDisplay = `${holder.toUpperCase()} &bull; ${type.toUpperCase()}${last4 ? ` &bull; ${last4}` : ''}`;
+            const singleLineDisplay = `${holder.toUpperCase()} • ${type.toUpperCase()}${last4 ? ` • ${last4}` : ''}`;
 
             const option = document.createElement('option');
             option.value = fullDisplayText;
@@ -912,12 +912,20 @@ async function populateBankAccountsDropdown(selectedVal = '') {
 
         const renderDropdownItems = (filterText = '') => {
             customDropdown.innerHTML = '';
+            const trimmed = (filterText || '').trim();
+            const isFullMatch = allItemsData.some(item => 
+                item.singleLine.toLowerCase() === trimmed.toLowerCase() || 
+                item.fullValue.toLowerCase() === trimmed.toLowerCase()
+            );
+
+            const keywords = (isFullMatch || !trimmed) 
+                ? [] 
+                : trimmed.toLowerCase().split(/\s+/).filter(k => k.length > 0 && k !== '•' && k !== '&bull;' && k !== '-');
+
             const filtered = allItemsData.filter(item => {
-                const query = filterText.toLowerCase();
-                return item.holder.toLowerCase().includes(query) ||
-                       item.bank.toLowerCase().includes(query) ||
-                       item.type.toLowerCase().includes(query) ||
-                       item.number.toLowerCase().includes(query);
+                if (keywords.length === 0) return true;
+                const fullText = `${item.holder} ${item.bank} ${item.type} ${item.number} ${item.last4}`.toLowerCase();
+                return keywords.every(kw => fullText.includes(kw));
             });
 
             if (filtered.length === 0) {
@@ -932,9 +940,9 @@ async function populateBankAccountsDropdown(selectedVal = '') {
                     <div class="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight group-hover/item:text-primary transition-colors">${item.holder}</div>
                     <div class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase">
                         <span class="text-blue-600 dark:text-blue-400 font-bold">${item.bank}</span>
-                        <span>&bull;</span>
+                        <span>•</span>
                         <span class="text-slate-500 dark:text-slate-300 font-bold">${item.type}</span>
-                        ${item.last4 ? `<span>&bull;</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
+                        ${item.last4 ? `<span>•</span><span class="font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider">${item.last4}</span>` : ''}
                     </div>
                 `;
 
@@ -948,6 +956,7 @@ async function populateBankAccountsDropdown(selectedVal = '') {
                     customSearch.value = item.singleLine;
                     customDropdown.classList.add('hidden');
                     document.getElementById('custom-bank-arrow')?.classList.remove('rotate-180');
+                    selectEl.dispatchEvent(new Event('change'));
                 };
 
                 customDropdown.appendChild(div);
@@ -7036,7 +7045,7 @@ async function initBankWithdrawals() {
         const lastDateEl = document.getElementById('last-withdrawal-date');
         if (latestW) {
             if (lastAmountEl) lastAmountEl.innerText = formatCurrency(parseFloat(latestW.amount) || 0);
-            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` &bull; ${latestW.method}` : '');
+            if (lastDateEl) lastDateEl.innerText = new Date(latestW.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + (latestW.method ? ` • ${latestW.method}` : '');
         } else {
             if (lastAmountEl) lastAmountEl.innerText = "-";
             if (lastDateEl) lastDateEl.innerText = "No entries found";
@@ -7267,7 +7276,7 @@ async function initBankWithdrawals() {
                     const parts = acc.name.split('|');
                     holder = parts[0];
                     bank = parts[1] || "Bank";
-                    accNo = parts[2] ? ` &bull; A/c ${parts[2]}` : "";
+                    accNo = parts[2] ? ` • A/c ${parts[2]}` : "";
                 }
 
                 const tableTitle = document.getElementById('table-title-label');
@@ -8038,6 +8047,14 @@ async function initDailyTxn() {
     let currentSelectedDate = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
     let allTxnsForDate = [];
     let currentTxnFilter = 'ALL';
+    let currentAccountFilter = 'ALL';
+    window.currentAccountFilter = 'ALL';
+
+    const accDisplayNames = {
+        'online_p1': 'online(parsu)',
+        'online_p2': 'online(shop)',
+        'online_p3': 'online(dalai)'
+    };
     let currentStartCash = 0;
     let currentStartOnline = 0;
     let currentAvailableCash = 0; // Tracks live cash for validation
@@ -10139,6 +10156,25 @@ async function initDailyTxn() {
                 });
 
                 // Calculate exact deltas for Online breakdown if there was online movement
+                const d1 = onlineBreakdown.online_p1 - prevOnlineBreakdown.online_p1;
+                const d2 = onlineBreakdown.online_p2 - prevOnlineBreakdown.online_p2;
+                const d3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
+                const dother = onlineBreakdown.other - prevOnlineBreakdown.other;
+
+                t.subAccountDeltas = {
+                    online_p1: d1,
+                    online_p2: d2,
+                    online_p3: d3,
+                    other: dother
+                };
+
+                t.subAccountBalances = {
+                    online_p1: parseFloat(opValues.online_p1 || 0) + onlineBreakdown.online_p1,
+                    online_p2: parseFloat(opValues.online_p2 || 0) + onlineBreakdown.online_p2,
+                    online_p3: parseFloat(opValues.online_p3 || 0) + onlineBreakdown.online_p3,
+                    other: parseFloat(opValues.other || 0) + onlineBreakdown.other
+                };
+
                 const hasOnlineMovement = 
                     (balances.online !== prevBals.online) ||
                     (onlineBreakdown.online_p1 !== prevOnlineBreakdown.online_p1) ||
@@ -10147,11 +10183,6 @@ async function initDailyTxn() {
                     (onlineBreakdown.other !== prevOnlineBreakdown.other);
 
                 if (hasOnlineMovement) {
-                    const d1 = onlineBreakdown.online_p1 - prevOnlineBreakdown.online_p1;
-                    const d2 = onlineBreakdown.online_p2 - prevOnlineBreakdown.online_p2;
-                    const d3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
-                    const dother = onlineBreakdown.other - prevOnlineBreakdown.other;
-                    
                     if (d1 !== 0) { lastOnlineChanges.online_p1 = d1; lastOnlineChanges.mostRecent = 'p1'; }
                     if (d2 !== 0) { lastOnlineChanges.online_p2 = d2; lastOnlineChanges.mostRecent = 'p2'; }
                     if (d3 !== 0) { lastOnlineChanges.online_p3 = d3; lastOnlineChanges.mostRecent = 'p3'; }
@@ -10300,6 +10331,7 @@ async function initDailyTxn() {
             
             window._expenseBreakdown = expenseBreakdown;
             window._custDepositBreakdown = custDepositBreakdown;
+            renderBadgesAndTable();
         } catch (err) {
             console.error('Error updating daily balances:', err);
         }
@@ -10425,7 +10457,12 @@ async function initDailyTxn() {
         // Now filter the table data
         let txnsToRender = currentTxnFilter === 'ALL' ? txns : (currentTxnFilter === 'PENDING' ? txns.filter(t => ['PENDING_ADD', 'PENDING_REMOVE'].includes(t.type)) : txns.filter(t => t.type === currentTxnFilter));
 
-        if (window.showOnlyLast10 && !window.isAllTimeSearchMode) {
+        const isAccFilter = currentAccountFilter && currentAccountFilter !== 'ALL';
+        if (isAccFilter) {
+            txnsToRender = txnsToRender.filter(t => t.subAccountDeltas && Math.abs(t.subAccountDeltas[currentAccountFilter] || 0) > 0);
+        }
+
+        if (!isAccFilter && window.showOnlyLast10 && !window.isAllTimeSearchMode) {
             txnsToRender = txnsToRender.slice(0, 10);
         }
 
@@ -10572,7 +10609,7 @@ async function initDailyTxn() {
 
             const time = txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
             const isExcluded = excludedTypes.includes(txn.type);
-            const serialPos = isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id));
+            const serialPos = isAccFilter ? (txnsToRender.length - index) : (isExcluded ? null : (countableIds.length - countableIds.indexOf(txn.id)));
 
             const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
             const isAdvance = txn.date && txn.date > todayStr;
@@ -10585,9 +10622,9 @@ async function initDailyTxn() {
                         </button>
                     </div>
                 </td>
-                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isExcluded}">
+                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isAccFilter ? false : isExcluded}">
                     <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[30px] h-[22px]">
-                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isExcluded ? '-' : '#' + serialPos}</span>
+                        <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isAccFilter ? ('#' + serialPos) : (isExcluded ? '-' : '#' + serialPos)}</span>
                     </div>
                 </td>
                 <td class="px-3 py-1.5 whitespace-nowrap">
@@ -10701,7 +10738,37 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5 text-right">
                     <div class="flex flex-col gap-1 w-[90px] mx-auto">
-                        ${(['CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
+                        ${isAccFilter ? (() => {
+                            const delta = (txn.subAccountDeltas && txn.subAccountDeltas[currentAccountFilter]) || 0;
+                            if (delta > 0) {
+                                return `
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 w-full h-[22px]">
+                                        <span class="text-[11px] font-black tracking-wide">+₹${delta.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-emerald-100/60 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 w-full h-[22px]">
+                                        <span class="text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><span class="material-symbols-outlined text-[11px]">arrow_downward</span> Credit In</span>
+                                    </div>
+                                `;
+                            } else if (delta < 0) {
+                                return `
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-500/15 border border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 w-full h-[22px]">
+                                        <span class="text-[11px] font-black tracking-wide">-₹${Math.abs(delta).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-rose-100/60 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 w-full h-[22px]">
+                                        <span class="text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><span class="material-symbols-outlined text-[11px]">arrow_upward</span> Debit Out</span>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
+                                        <span class="text-[10px] font-bold text-slate-400">₹0</span>
+                                    </div>
+                                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">No Chg</span>
+                                    </div>
+                                `;
+                            }
+                        })() : ((['CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
                             </div>
@@ -10709,16 +10776,16 @@ async function initDailyTxn() {
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md ${txn.type === 'DAILY_EXPENSE' ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400'} border w-full h-[22px]">
                                 <span class="text-[11px] font-black tracking-wide">₹${parseFloat(txn.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
-                        `}
-                        ${txn.remainingAmount ? `
+                        `)}
+                        ${!isAccFilter && txn.remainingAmount ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 w-full h-[22px]">
                                 <span class="text-[9px] font-bold text-amber-700 dark:text-amber-400 tracking-wide">Rem: ₹${parseFloat(txn.remainingAmount).toLocaleString('en-IN')}</span>
                             </div>
-                        ` : `
+                        ` : (!isAccFilter ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 w-full h-[22px]">
                                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
                             </div>
-                        `}
+                        ` : '')}
                     </div>
                 </td>
                 <td class="px-3 py-1.5 text-right charges-col-cell">
@@ -10742,14 +10809,25 @@ async function initDailyTxn() {
                 </td>
                 <td class="px-3 py-1.5 balance-col-cell whitespace-nowrap">
                     <div class="flex flex-col items-center justify-center gap-1 w-[160px] mx-auto">
-                        <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
-                            <span>C: ${window.isAllTimeSearchMode ? 'â€”' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
-                            ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
-                        </span>
-                        <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {}).replace(/"/g, '&quot;')})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
-                            <span>O: ${window.isAllTimeSearchMode ? 'â€”' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
-                            ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
-                        </span>
+                        ${isAccFilter ? (() => {
+                            const delta = (txn.subAccountDeltas && txn.subAccountDeltas[currentAccountFilter]) || 0;
+                            const accBal = (txn.subAccountBalances && txn.subAccountBalances[currentAccountFilter]) !== undefined ? txn.subAccountBalances[currentAccountFilter] : 0;
+                            return `
+                                <span class="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-500/20 w-full flex justify-between items-center">
+                                    <span>Bal: ₹${accBal.toLocaleString('en-IN')}</span>
+                                    ${delta !== 0 ? `<span class="text-[9px] font-bold ${delta > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${delta > 0 ? '+' : ''}${delta.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                                </span>
+                            `;
+                        })() : `
+                            <span class="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20 w-full flex justify-between items-center">
+                                <span>C: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningCash || 0).toLocaleString('en-IN')}</span>
+                                ${!window.isAllTimeSearchMode && showBalanceDiff && txn.cashDiff !== undefined && txn.cashDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.cashDiff > 0 ? 'text-emerald-500' : 'text-rose-500'}">(${txn.cashDiff > 0 ? '+' : ''}${txn.cashDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                            </span>
+                            <span onclick="${window.isAllTimeSearchMode ? '' : `window.showOnlineBreakdown(${JSON.stringify(txn.breakdown || {}).replace(/"/g, '&quot;')})`}" class="text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-500/20 w-full flex justify-between items-center ${window.isAllTimeSearchMode ? '' : 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors'}" title="${window.isAllTimeSearchMode ? '' : 'Click to view breakdown'}">
+                                <span>O: ${window.isAllTimeSearchMode ? '—' : '₹' + (txn.runningOnline || 0).toLocaleString('en-IN')}</span>
+                                ${!window.isAllTimeSearchMode && showBalanceDiff && txn.onlineDiff !== undefined && txn.onlineDiff !== 0 ? `<span class="text-[9px] font-bold ${txn.onlineDiff > 0 ? 'text-blue-500' : 'text-rose-500'}">(${txn.onlineDiff > 0 ? '+' : ''}${txn.onlineDiff.toLocaleString('en-IN')})</span>` : '<span></span>'}
+                            </span>
+                        `}
                     </div>
                 </td>
                 <td class="px-3 py-1.5">
@@ -10770,22 +10848,40 @@ async function initDailyTxn() {
             // Add Opening Balance Row at the bottom
             const opRow = document.createElement('tr');
             opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
-            opRow.innerHTML = `
-                <td class="checking-col-cell ${window.isCheckingMode ? '' : 'hidden'}"></td>
-                <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
-                <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
-                <td class="px-3 py-2 text-right">
-                    <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
-                        <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full flex justify-between items-center">
-                            <span>C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
-                        </span>
-                        <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full flex justify-between items-center">
-                            <span>O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
-                        </span>
-                    </div>
-                </td>
-                <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
-            `;
+            if (isAccFilter) {
+                const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter]) || 0;
+                const accLabel = accDisplayNames[currentAccountFilter] || currentAccountFilter;
+                opRow.innerHTML = `
+                    <td class="checking-col-cell ${window.isCheckingMode ? '' : 'hidden'}"></td>
+                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${accLabel} on ${currentSelectedDate}</span></td>
+                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balance:</td>
+                    <td class="px-3 py-2 text-right">
+                        <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                            <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 w-full flex justify-between items-center bg-blue-50/50 dark:bg-blue-500/10">
+                                <span>${accLabel}: ₹${accOp.toLocaleString('en-IN')}</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+                `;
+            } else {
+                opRow.innerHTML = `
+                    <td class="checking-col-cell ${window.isCheckingMode ? '' : 'hidden'}"></td>
+                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
+                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
+                    <td class="px-3 py-2 text-right">
+                        <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
+                            <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full flex justify-between items-center">
+                                <span>C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
+                            </span>
+                            <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full flex justify-between items-center">
+                                <span>O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+                `;
+            }
             tableBody.appendChild(opRow);
         }
 
@@ -10811,6 +10907,49 @@ async function initDailyTxn() {
                 filterTfoot.classList.remove('hidden');
             } else {
                 filterTfoot.classList.add('hidden');
+            }
+        }
+
+        // Update account ledger summary bar & balance column header
+        const balColHeader = document.getElementById('balance-col-header');
+        if (balColHeader) {
+            if (isAccFilter) {
+                balColHeader.textContent = (accDisplayNames[currentAccountFilter] || 'Account') + ' Bal';
+                balColHeader.style.removeProperty('display');
+            } else {
+                balColHeader.textContent = 'Balance (C/O)';
+            }
+        }
+
+        const accLedgerBar = document.getElementById('account-ledger-summary-bar');
+        const accLedgerTitle = document.getElementById('acc-ledger-title');
+        const accLedgerCount = document.getElementById('acc-ledger-count');
+        const accLedgerOpening = document.getElementById('acc-ledger-opening');
+        const accLedgerCredit = document.getElementById('acc-ledger-credit');
+        const accLedgerDebit = document.getElementById('acc-ledger-debit');
+        const accLedgerClosing = document.getElementById('acc-ledger-closing');
+
+        if (accLedgerBar) {
+            if (isAccFilter) {
+                const accDayTxns = txns.filter(t => t.subAccountDeltas && Math.abs(t.subAccountDeltas[currentAccountFilter] || 0) > 0);
+                const totalCredit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] > 0) ? t.subAccountDeltas[currentAccountFilter] : 0), 0);
+                const totalDebit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] < 0) ? Math.abs(t.subAccountDeltas[currentAccountFilter]) : 0), 0);
+                const opBal = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter]) || 0;
+                const clBal = (window._onlineBreakdown && window._onlineBreakdown.closing && window._onlineBreakdown.closing[currentAccountFilter]) !== undefined 
+                    ? window._onlineBreakdown.closing[currentAccountFilter] 
+                    : (opBal + totalCredit - totalDebit);
+
+                const accName = accDisplayNames[currentAccountFilter] || currentAccountFilter;
+                if (accLedgerTitle) accLedgerTitle.textContent = `${accName} Ledger`;
+                if (accLedgerCount) accLedgerCount.textContent = `${txnsToRender.length} rows`;
+                if (accLedgerOpening) accLedgerOpening.textContent = `₹ ${opBal.toLocaleString('en-IN')}`;
+                if (accLedgerCredit) accLedgerCredit.textContent = `+₹ ${totalCredit.toLocaleString('en-IN')}`;
+                if (accLedgerDebit) accLedgerDebit.textContent = `-₹ ${totalDebit.toLocaleString('en-IN')}`;
+                if (accLedgerClosing) accLedgerClosing.textContent = `₹ ${clBal.toLocaleString('en-IN')}`;
+
+                accLedgerBar.classList.remove('hidden');
+            } else {
+                accLedgerBar.classList.add('hidden');
             }
         }
 
@@ -11077,6 +11216,11 @@ async function initDailyTxn() {
                     });
                 }
 
+                let startOnlineP1 = 0;
+                let startOnlineP2 = 0;
+                let startOnlineP3 = 0;
+                let startOther = 0;
+
                 if (entryData.details) {
                     const d = entryData.details;
                     startCash = parseFloat(d.cash || 0) - yesterdayWithdrawalCash;
@@ -11087,10 +11231,14 @@ async function initDailyTxn() {
                     startCurCrgb = parseFloat(d.go2sms || 0); // CRGB saved in go2sms historically
                     startCurPending = parseFloat(d.pending || 0);
                     startOnline = startCurBank + startCurRoinet + startCurCrgb + startCurJio + startCurPending;
-                }
 
-                // Update daily summary badges
-                updateDailyBalances(date, txns);
+                    startOnlineP1 = parseFloat(d.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0);
+                    startOnlineP2 = parseFloat(d.online_p2 || 0) - (yesterdaySubWithdrawals['online_p2'] || 0);
+                    startOnlineP3 = parseFloat(d.online_p3 || 0) - (yesterdaySubWithdrawals['online_p3'] || 0);
+                    const totalSplitOnline = startOnlineP1 + startOnlineP2 + startOnlineP3;
+                    const onlineOpeningFallback = parseFloat(d.online || 0) - yesterdayWithdrawalsOnline;
+                    startOther = totalSplitOnline > 0 ? (onlineOpeningFallback - totalSplitOnline) : onlineOpeningFallback;
+                }
 
                 // Calculate running balances: Sort chronologically (Oldest first)
                 txns.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
@@ -11103,6 +11251,11 @@ async function initDailyTxn() {
                 let curCrgb = startCurCrgb;
                 let curPending = startCurPending;
 
+                let curOnlineP1 = startOnlineP1;
+                let curOnlineP2 = startOnlineP2;
+                let curOnlineP3 = startOnlineP3;
+                let curOther = startOther;
+
                 txns = txns.map(t => {
                     const prevCash = currentCash;
                     const prevOnline = currentOnline;
@@ -11111,6 +11264,11 @@ async function initDailyTxn() {
                     const prevJio = curJio;
                     const prevCrgb = curCrgb;
                     const prevPending = curPending;
+
+                    const prevOnlineP1 = curOnlineP1;
+                    const prevOnlineP2 = curOnlineP2;
+                    const prevOnlineP3 = curOnlineP3;
+                    const prevOther = curOther;
 
                     const amt = parseFloat(t.amount || 0);
                     const chg = parseFloat(t.charges || 0);
@@ -11123,93 +11281,199 @@ async function initDailyTxn() {
                         else curBank += amount;
                     };
 
+                    const modifyOnlineSub = (dest, val) => {
+                        if (dest === 'online_p1') curOnlineP1 += val;
+                        else if (dest === 'online_p2') curOnlineP2 += val;
+                        else if (dest === 'online_p3') curOnlineP3 += val;
+                        else curOther += val;
+                    };
+
                     if (!['CSP_COMMISSION', 'CSP_SUBSCRIPTION'].includes(t.type)) {
-                        if (t.chargesType === 'Online') curBank += chg;
-                        else currentCash += chg;
+                        if (t.chargesType === 'Online') {
+                            curBank += chg;
+                            const dest = getOnlineDest(t.chargesAccount || t.receivedIn || t.depositBy || provider);
+                            modifyOnlineSub(dest, chg);
+                        } else {
+                            currentCash += chg;
+                        }
                     }
 
                     if (['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'ADMIN_WITHDRAWAL'].includes(t.type)) {
                         currentCash -= amt;
                         addAmt(provider, amt);
+                        if (!provider.includes('roinet') && !provider.includes('airtel') && !provider.includes('spicemoney') && !provider.includes('crgb') && !provider.includes('jio')) {
+                            const dest = getOnlineDest(t.depositBy || t.paymentApp || provider);
+                            modifyOnlineSub(dest, amt);
+                        }
                     } else if (t.type === 'AADHAAR_PAY') {
                         const provCharge = parseFloat(t.providerCharge || 0);
                         currentCash -= amt;
-                        addAmt(provider, amt - provCharge);
+                        const walletCredit = amt - provCharge;
+                        addAmt(provider, walletCredit);
+                        if (!provider.includes('roinet') && !provider.includes('airtel') && !provider.includes('spicemoney') && !provider.includes('crgb') && !provider.includes('jio')) {
+                            const dest = getOnlineDest(t.depositBy || t.paymentApp || provider);
+                            modifyOnlineSub(dest, walletCredit);
+                        }
                     } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
-                        currentCash += amt;
+                        currentCash -= amt;
                         addAmt(provider, -amt);
+                        if (!provider.includes('roinet') && !provider.includes('airtel') && !provider.includes('spicemoney') && !provider.includes('crgb') && !provider.includes('jio')) {
+                            const dest = getOnlineDest(t.depositBy || provider);
+                            modifyOnlineSub(dest, -amt);
+                        }
                     } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(t.type)) {
-                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) curRoinet -= amt;
-                        else curBank -= amt;
-                        if (t.chargesType === 'Online') curBank += amt;
-                        else currentCash += amt;
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                            curRoinet -= amt;
+                        } else {
+                            curBank -= amt;
+                            const dest = getOnlineDest(provider.includes('online') ? provider : t.depositBy);
+                            modifyOnlineSub(dest, -amt);
+                        }
+                        if (t.chargesType === 'Online') {
+                            curBank += amt;
+                            const dest = getOnlineDest(t.chargesAccount || t.depositBy);
+                            modifyOnlineSub(dest, amt);
+                        } else {
+                            currentCash += amt;
+                        }
                     } else if (t.type === 'JIO_RECHARGE') {
                         curJio -= amt; // Jio wallet decreases
-                        if (t.provider === 'Online') curBank += amt; // Paid via online bank, net zero
-                        else currentCash += amt;
+                        if (t.provider === 'Online' || provider !== 'cash') {
+                            curBank += amt; // Paid via online bank, net zero
+                            const dest = getOnlineDest(t.receivedIn || t.depositBy || provider);
+                            modifyOnlineSub(dest, amt);
+                        } else {
+                            currentCash += amt;
+                        }
                     } else if (t.type === 'JIO_TOPUP') {
                         curJio += (amt + chg);
                         curBank -= amt;
-                        if (t.chargesType === 'Online') curBank -= chg;
-                        else currentCash -= chg;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
+                        if (t.chargesType === 'Online') {
+                            curBank -= chg;
+                            modifyOnlineSub(getOnlineDest(t.chargesAccount || t.depositBy), -chg);
+                        } else {
+                            currentCash -= chg;
+                        }
                     } else if (['CSP_COMMISSION', 'OTHER_INCOME'].includes(t.type)) {
-                        if (t.provider === 'Cash') currentCash += (amt + chg);
-                        else {
-                            if (t.type === 'OTHER_INCOME') addAmt(provider, amt + chg);
-                            else addAmt(provider, chg);
+                        if (t.provider === 'Cash' || provider === 'cash') {
+                            currentCash += (amt + chg);
+                        } else {
+                            if (t.type === 'OTHER_INCOME') {
+                                addAmt(provider, amt + chg);
+                                if (!provider.includes('roinet') && !provider.includes('airtel') && !provider.includes('spicemoney') && !provider.includes('crgb') && !provider.includes('jio')) {
+                                    modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt + chg);
+                                }
+                            } else {
+                                addAmt(provider, chg);
+                            }
+                        }
+                    } else if (t.type === 'CSP_SUBSCRIPTION') {
+                        const cspProv = provider;
+                        if (cspProv.includes('roinet') || cspProv.includes('airtel') || cspProv.includes('spicemoney')) {
+                            curRoinet -= amt;
+                        } else if (cspProv.includes('crgb')) {
+                            curCrgb -= amt;
+                        } else {
+                            curBank -= amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
                         }
                     } else if (t.type === 'GOLD_SIP') {
                         if (t.depositBy) addAmt(t.depositBy, -amt);
                         else addAmt('shop', -amt);
+                        modifyOnlineSub(getOnlineDest(t.depositBy || 'shop'), -amt);
                     } else if (t.type === 'CREDIT_GIVEN') {
-                        if (t.provider === 'Cash') currentCash -= amt;
-                        else curBank -= amt;
+                        if (provider === 'cash') currentCash -= amt;
+                        else {
+                            curBank -= amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
+                        }
                     } else if (['CREDIT_RECEIVED', 'CUST_MONEY_IN'].includes(t.type)) {
-                        if (t.provider === 'Cash') currentCash += amt;
-                        else curBank += amt;
+                        if (provider === 'cash') currentCash += amt;
+                        else {
+                            curBank -= amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
+                        }
                     } else if (['CUST_MONEY_OUT', 'DAILY_EXPENSE'].includes(t.type)) {
-                        if (t.provider === 'Cash') currentCash -= amt;
-                        else curBank -= amt;
+                        if (provider === 'cash') currentCash -= amt;
+                        else {
+                            curBank -= amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
+                        }
                     } else if (t.type === 'DAMAGED_CURRENCY') {
                         currentCash -= amt;
                     } else if (t.type === 'DAMAGED_RECOVERY') {
-                        if (t.provider === 'Cash') currentCash += amt;
+                        if (provider === 'cash') currentCash += amt;
                         else {
                             curBank += amt;
                             addAmt(provider, amt);
+                            if (!provider.includes('roinet') && !provider.includes('airtel') && !provider.includes('spicemoney') && !provider.includes('crgb') && !provider.includes('jio')) {
+                                modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
+                            }
                         }
                     } else if (t.type === 'CASH_WITHDRAWAL') {
                         curBank -= amt;
                         currentCash += amt;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
                     } else if (t.type === 'CASH_DEPOSIT') {
                         currentCash -= amt;
                         curBank += amt;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
                     } else if (t.type === 'SETTLEMENT') {
                         curBank += amt;
-                        if (t.chargesType === 'Online') curBank -= chg;
-                        else currentCash -= chg;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
+                        if (t.chargesType === 'Online') {
+                            curBank -= chg;
+                            modifyOnlineSub(getOnlineDest(t.chargesAccount || t.depositBy || provider), -chg);
+                        } else {
+                            currentCash -= chg;
+                        }
                         
                         const totalDeduction = amt + chg;
-                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) curRoinet -= totalDeduction;
-                        else if (provider.includes('crgb')) curCrgb -= totalDeduction;
-                        else if (provider.includes('jio')) curJio -= totalDeduction;
-                        else curBank -= totalDeduction;
+                        if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                            curRoinet -= totalDeduction;
+                        } else if (provider.includes('crgb')) {
+                            curCrgb -= totalDeduction;
+                        } else if (provider.includes('jio')) {
+                            curJio -= totalDeduction;
+                        } else {
+                            curBank -= totalDeduction;
+                            modifyOnlineSub(getOnlineDest(t.depositBy), -totalDeduction);
+                        }
                     } else if (t.type === 'ONLINE_WORK') {
                         curBank -= amt;
-                        if (t.provider === 'Cash') currentCash += amt;
-                        else curBank += amt;
+                        modifyOnlineSub(getOnlineDest(t.depositBy), -amt);
+                        if (provider === 'cash') {
+                            currentCash += amt;
+                        } else {
+                            curBank += amt;
+                            modifyOnlineSub(getOnlineDest(t.receivedIn), amt);
+                        }
                     } else if (t.type === 'ADD_CAPITAL') {
-                        if (t.provider === 'Cash') currentCash += amt;
-                        else curBank += amt;
+                        if (provider === 'cash') currentCash += amt;
+                        else {
+                            curBank += amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
+                        }
                     } else if (t.type === 'SHARE_WITHDRAWN') {
-                        if (t.provider === 'Cash') currentCash -= amt;
-                        else curBank -= amt;
+                        if (provider === 'cash') currentCash -= amt;
+                        else {
+                            curBank += amt;
+                            modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
+                        }
                     } else if (t.type === 'PENDING_ADD') {
                         curPending += amt;
                         curBank -= amt;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), -amt);
                     } else if (t.type === 'PENDING_REMOVE') {
                         curPending -= amt;
-                        curBank += amt;
+                        curBank -= amt;
+                        modifyOnlineSub(getOnlineDest(t.depositBy || provider), amt);
+                    } else if (t.type === 'ONLINE_EXCHANGE') {
+                        let sourceDest = getOnlineDest(t.paymentApp || t.depositBy);
+                        let targetDest = getOnlineDest(t.provider || t.receivedIn);
+                        modifyOnlineSub(sourceDest, -amt);
+                        modifyOnlineSub(targetDest, amt);
                     }
                     
                     // Always perfectly sync currentOnline with its components
@@ -11227,9 +11491,37 @@ async function initDailyTxn() {
                             jio: curJio, diffJio: curJio - prevJio,
                             crgb: curCrgb, diffCrgb: curCrgb - prevCrgb,
                             pending: curPending, diffPending: curPending - prevPending
+                        },
+                        subAccountDeltas: {
+                            online_p1: curOnlineP1 - prevOnlineP1,
+                            online_p2: curOnlineP2 - prevOnlineP2,
+                            online_p3: curOnlineP3 - prevOnlineP3,
+                            other: curOther - prevOther
+                        },
+                        subAccountBalances: {
+                            online_p1: curOnlineP1,
+                            online_p2: curOnlineP2,
+                            online_p3: curOnlineP3,
+                            other: curOther
                         }
                     };
                 });
+
+                if (!window._onlineBreakdown) window._onlineBreakdown = { opening: {}, closing: {} };
+                window._onlineBreakdown.opening = {
+                    online_p1: startOnlineP1,
+                    online_p2: startOnlineP2,
+                    online_p3: startOnlineP3,
+                    other: startOther,
+                    total: startOnlineP1 + startOnlineP2 + startOnlineP3 + startOther
+                };
+                window._onlineBreakdown.closing = {
+                    online_p1: curOnlineP1,
+                    online_p2: curOnlineP2,
+                    online_p3: curOnlineP3,
+                    other: curOther,
+                    total: curOnlineP1 + curOnlineP2 + curOnlineP3 + curOther
+                };
 
                 allTxnsForDate = txns;
                 window.allTxnsForDate = txns;
@@ -11237,6 +11529,9 @@ async function initDailyTxn() {
                 currentStartCash = startCash;
                 currentStartOnline = startOnline;
                 renderBadgesAndTable();
+
+                // Update daily summary badges
+                updateDailyBalances(date, txns);
             }, (error) => {
                 console.error('Daily Transactions Listener Error:', error);
                 if (tableBody) {
@@ -11279,6 +11574,33 @@ async function initDailyTxn() {
         };
         updateLast10BtnDisplay();
     }
+
+    // Account Filter Functionality (Option A)
+    const accFilterSelect = document.getElementById('account-filter-select');
+    if (accFilterSelect) {
+        accFilterSelect.value = currentAccountFilter;
+        accFilterSelect.onchange = (e) => {
+            currentAccountFilter = e.target.value;
+            window.currentAccountFilter = currentAccountFilter;
+            renderBadgesAndTable();
+        };
+    }
+    const accResetBtn = document.getElementById('acc-ledger-reset-btn');
+    if (accResetBtn) {
+        accResetBtn.onclick = () => {
+            currentAccountFilter = 'ALL';
+            window.currentAccountFilter = 'ALL';
+            if (accFilterSelect) accFilterSelect.value = 'ALL';
+            renderBadgesAndTable();
+        };
+    }
+    window.selectAccountFilter = (accKey) => {
+        currentAccountFilter = accKey || 'ALL';
+        window.currentAccountFilter = currentAccountFilter;
+        const sel = document.getElementById('account-filter-select');
+        if (sel) sel.value = currentAccountFilter;
+        renderBadgesAndTable();
+    };
 
     // Checking Mode & Search Functionality
     window.isCheckingMode = false;
@@ -11831,20 +12153,30 @@ async function initDailyTxn() {
             }
             try {
                 const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+                const isAccExp = currentAccountFilter && currentAccountFilter !== 'ALL';
+                const accNameExp = isAccExp ? (accDisplayNames[currentAccountFilter] || currentAccountFilter) : '';
 
                 doc.setFontSize(18);
-                doc.text(`Daily Transaction Report - ${currentSelectedDate}`, 14, 15);
+                doc.text(isAccExp ? `${accNameExp} Ledger Report - ${currentSelectedDate}` : `Daily Transaction Report - ${currentSelectedDate}`, 14, 15);
                 doc.setFontSize(10);
                 doc.setTextColor(100);
                 doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
 
-                const head = ['Sl No', 'Time', 'Type', 'Bank & Prov', 'Name/Note', 'Address/Aadhaar', 'Amount'];
+                const head = ['Sl No', 'Time', 'Type', 'Bank & Prov', 'Name/Note', 'Address/Aadhaar', isAccExp ? 'Debit / Credit' : 'Amount'];
                 if (!isChargesHidden) head.push('Charges');
-                if (!isBalanceHidden) head.push('Balance (C/O)');
+                if (!isBalanceHidden || isAccExp) head.push(isAccExp ? 'Acc Balance' : 'Balance (C/O)');
 
                 const tableData = filteredTxns.map((t, index) => {
                     const bankProv = [t.bankName ? `B: ${t.bankName}` : null, t.provider ? `P: ${t.provider}` : null].filter(Boolean).join('\n');
                     const addressAadhaar = [t.address ? `Add: ${t.address}` : null, t.extraDetails ? `UID: ${t.extraDetails}` : null].filter(Boolean).join('\n');
+
+                    let amtDisplay = '-';
+                    if (isAccExp) {
+                        const delta = (t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter]) || 0;
+                        amtDisplay = delta > 0 ? `+Rs. ${delta.toLocaleString('en-IN')}\n(Credit)` : (delta < 0 ? `-Rs. ${Math.abs(delta).toLocaleString('en-IN')}\n(Debit)` : 'Rs. 0');
+                    } else {
+                        amtDisplay = t.amount ? `Rs. ${parseFloat(t.amount).toLocaleString('en-IN')}${t.remainingAmount ? '\nRem: Rs. ' + parseFloat(t.remainingAmount).toLocaleString('en-IN') : ''}` : '-';
+                    }
 
                     const row = [
                         filteredTxns.length - index,
@@ -11853,10 +12185,17 @@ async function initDailyTxn() {
                         bankProv || 'N/A',
                         t.note || 'N/A',
                         addressAadhaar || '-',
-                        t.amount ? `Rs. ${parseFloat(t.amount).toLocaleString('en-IN')}${t.remainingAmount ? '\nRem: Rs. ' + parseFloat(t.remainingAmount).toLocaleString('en-IN') : ''}` : '-'
+                        amtDisplay
                     ];
                     if (!isChargesHidden) row.push(t.charges ? `Rs. ${parseFloat(t.charges).toLocaleString('en-IN')}` : '-');
-                    if (!isBalanceHidden) row.push(`C: ${t.runningCash?.toLocaleString('en-IN') || 0}\nO: ${t.runningOnline?.toLocaleString('en-IN') || 0}`);
+                    if (!isBalanceHidden || isAccExp) {
+                        if (isAccExp) {
+                            const accBal = (t.subAccountBalances && t.subAccountBalances[currentAccountFilter]) !== undefined ? t.subAccountBalances[currentAccountFilter] : 0;
+                            row.push(`Rs. ${accBal.toLocaleString('en-IN')}`);
+                        } else {
+                            row.push(`C: ${t.runningCash?.toLocaleString('en-IN') || 0}\nO: ${t.runningOnline?.toLocaleString('en-IN') || 0}`);
+                        }
+                    }
                     return row;
                 });
 
@@ -11868,7 +12207,7 @@ async function initDailyTxn() {
                 };
                 let colIdx = 7;
                 if (!isChargesHidden) { columnStyles[colIdx++] = { halign: 'right', font: 'courier', fontStyle: 'bold', cellWidth: 22 }; }
-                if (!isBalanceHidden) { columnStyles[colIdx] = { halign: 'right', fontSize: 6, font: 'courier', cellWidth: 32 }; }
+                if (!isBalanceHidden || isAccExp) { columnStyles[colIdx] = { halign: 'right', fontSize: 6, font: 'courier', cellWidth: 32 }; }
 
                 doc.autoTable({
                     startY: 30,
@@ -11881,7 +12220,8 @@ async function initDailyTxn() {
                 });
 
                 const fileNameDate = window.isAllTimeSearchMode ? "All_Time" : currentSelectedDate;
-                doc.save(`Transactions_${fileNameDate}.pdf`);
+                const fileNamePrefix = isAccExp ? `Ledger_${accNameExp}_` : 'Transactions_';
+                doc.save(`${fileNamePrefix}${fileNameDate}.pdf`);
             } catch (err) {
                 console.error('PDF Generation Error:', err);
                 alert('Error generating PDF: ' + err.message);
@@ -11899,9 +12239,18 @@ async function initDailyTxn() {
                 return;
             }
             try {
+                const isAccExp = currentAccountFilter && currentAccountFilter !== 'ALL';
+                const accNameExp = isAccExp ? (accDisplayNames[currentAccountFilter] || currentAccountFilter) : '';
+
                 const data = filteredTxns.map((t, index) => {
                     const bankProv = [t.bankName ? `B: ${t.bankName}` : null, t.provider ? `P: ${t.provider}` : null].filter(Boolean).join('\n');
                     const addressAadhaar = [t.address ? `Add: ${t.address}` : null, t.extraDetails ? `UID: ${t.extraDetails}` : null].filter(Boolean).join('\n');
+
+                    let amtVal = t.amount ? `${t.amount}${t.remainingAmount ? ` (Rem: ${t.remainingAmount})` : ''}` : 0;
+                    if (isAccExp) {
+                        const delta = (t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter]) || 0;
+                        amtVal = delta > 0 ? `+${delta} (Credit)` : (delta < 0 ? `-${Math.abs(delta)} (Debit)` : 0);
+                    }
 
                     const rowObj = {
                         'Sl No': filteredTxns.length - index,
@@ -11910,10 +12259,17 @@ async function initDailyTxn() {
                         'Bank & Prov': bankProv || 'N/A',
                         'Name/Note': t.note || 'N/A',
                         'Address/Aadhaar': addressAadhaar || '-',
-                        'Amount': t.amount ? `${t.amount}${t.remainingAmount ? ` (Rem: ${t.remainingAmount})` : ''}` : 0
+                        [isAccExp ? 'Debit / Credit' : 'Amount']: amtVal
                     };
                     if (!isChargesHidden) rowObj['Charges'] = t.charges || 0;
-                    if (!isBalanceHidden) rowObj['Balance (C/O)'] = `C: ${t.runningCash?.toLocaleString('en-IN') || 0}\nO: ${t.runningOnline?.toLocaleString('en-IN') || 0}`;
+                    if (!isBalanceHidden || isAccExp) {
+                        if (isAccExp) {
+                            const accBal = (t.subAccountBalances && t.subAccountBalances[currentAccountFilter]) !== undefined ? t.subAccountBalances[currentAccountFilter] : 0;
+                            rowObj['Acc Balance'] = accBal;
+                        } else {
+                            rowObj['Balance (C/O)'] = `C: ${t.runningCash?.toLocaleString('en-IN') || 0}\nO: ${t.runningOnline?.toLocaleString('en-IN') || 0}`;
+                        }
+                    }
                     
                     return rowObj;
                 });
@@ -11922,7 +12278,8 @@ async function initDailyTxn() {
                 const wb = window.XLSX.utils.book_new();
                 window.XLSX.utils.book_append_sheet(wb, ws, "Daily Transactions");
                 const fileNameDate = window.isAllTimeSearchMode ? "All_Time" : currentSelectedDate;
-                window.XLSX.writeFile(wb, `Transactions_${fileNameDate}.xlsx`);
+                const fileNamePrefix = isAccExp ? `Ledger_${accNameExp}_` : 'Transactions_';
+                window.XLSX.writeFile(wb, `${fileNamePrefix}${fileNameDate}.xlsx`);
             } catch (err) {
                 console.error('Excel Generation Error:', err);
                 alert('Error generating Excel: ' + err.message);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v35'; // Bumped for Loan Repayment transaction type
+const CACHE_NAME = 'biz-report-v38'; // Clean Unicode bullet & enhanced bank dropdown search
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
