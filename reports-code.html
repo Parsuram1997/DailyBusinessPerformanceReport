@@ -150,6 +150,103 @@
         .dark #privacy-toggle-btn.hide-mode:hover .mat-icon {
             color: rgba(253, 100, 120, 0.5);
         }
+
+        /* ─── Premium Fintech Glassmorphic Card Styles ─── */
+        .fintech-card {
+            position: relative;
+            border-radius: 1.25rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        .light .fintech-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.85) 100%);
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+        .dark .fintech-card {
+            background: linear-gradient(145deg, rgba(28, 22, 43, 0.85) 0%, rgba(18, 14, 29, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        .fintech-card:hover {
+            transform: translateY(-3px);
+        }
+        .light .fintech-card:hover {
+            box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.02);
+            border-color: rgba(127, 19, 236, 0.25);
+        }
+        .dark .fintech-card:hover {
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.6), 0 0 25px rgba(127, 19, 236, 0.15);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        /* Top Accent Glow Bar */
+        .fintech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            opacity: 0.85;
+            transition: opacity 0.3s ease, height 0.3s ease;
+        }
+        .fintech-card:hover::before {
+            opacity: 1;
+            height: 4px;
+        }
+        .accent-emerald::before { background: linear-gradient(90deg, #10b981, #059669); }
+        .accent-indigo::before  { background: linear-gradient(90deg, #6366f1, #3b82f6); }
+        .accent-rose::before    { background: linear-gradient(90deg, #f43f5e, #e11d48); }
+        .accent-purple::before  { background: linear-gradient(90deg, #a855f7, #7c3aed); }
+        .accent-cyan::before    { background: linear-gradient(90deg, #06b6d4, #0284c7); }
+        .accent-amber::before   { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .accent-teal::before    { background: linear-gradient(90deg, #14b8a6, #0d9488); }
+        .accent-violet::before  { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+        .accent-blue::before    { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+        .accent-orange::before  { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .accent-slate::before   { background: linear-gradient(90deg, #94a3b8, #64748b); }
+        .accent-pink::before    { background: linear-gradient(90deg, #ec4899, #db2777); }
+        .accent-fuchsia::before { background: linear-gradient(90deg, #d946ef, #c026d3); }
+
+        /* Luminous Icon Badge */
+        .fintech-icon-chip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: 0.85rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fintech-card:hover .fintech-icon-chip {
+            transform: scale(1.1) rotate(4deg);
+        }
+
+        /* Ambient subtle radial glow */
+        .fintech-ambient {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            filter: blur(35px);
+            opacity: 0.12;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .fintech-card:hover .fintech-ambient {
+            opacity: 0.28;
+        }
+
+        /* Value Typography */
+        .fintech-val {
+            letter-spacing: -0.025em;
+            line-height: 1.15;
+        }
     </style>
     <script src="auth.js"></script>
     <link rel="icon" type="image/png" href="favicon.png"/>
@@ -325,210 +422,404 @@
         </header>
         <div class="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-6 pb-20 md:pb-6">
 
-            <!-- Summary Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
-                <!-- Row 1 -->
-                <div class="bg-gradient-to-br from-emerald-400 to-green-500 dark:from-emerald-800/80 dark:to-green-900/80 border border-transparent dark:border-emerald-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Income</h4>
-                    <p id="summary-avg-income" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">payments</span>
+            <!-- ═════════════════ FINANCIAL ANALYTICS DASHBOARD ═════════════════ -->
+
+            <!-- Section 1: Core Financial Performance (Hero KPIs) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            Key Financial Performance
+                        </h3>
                     </div>
-                </div>
-                <div class="bg-gradient-to-br from-orange-400 to-red-500 dark:from-orange-800/80 dark:to-red-900/80 border border-transparent dark:border-red-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Expense</h4>
-                    <p id="summary-avg-expense" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">shopping_cart</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-cyan-500 to-blue-500 dark:from-cyan-800/80 dark:to-blue-900/80 border border-transparent dark:border-blue-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Avg Daily Profit</h4>
-                    <p id="summary-avg-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">trending_up</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-purple-500 to-pink-500 dark:from-purple-800/80 dark:to-pink-900/80 border border-transparent dark:border-pink-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Return on Invest (ROI)</h4>
-                    <p id="summary-roi" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0%</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance</span>
-                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                        Core Indicators
+                    </span>
                 </div>
 
-                <!-- Row 2 -->
-                <div class="bg-gradient-to-br from-violet-500 to-fuchsia-500 dark:from-violet-800/80 dark:to-fuchsia-900/80 border border-transparent dark:border-fuchsia-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Day</h4>
-                    <p id="summary-peak-day" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">event_available</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                    <!-- Total Net Profit Card -->
+                    <div class="fintech-card accent-emerald p-4 md:p-5 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Net Profit</h4>
+                            </div>
+                            <div class="fintech-icon-chip bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
+                                <span class="material-symbols-outlined text-xl">trending_up</span>
+                            </div>
+                        </div>
+                        <p id="summary-total-profit" class="fintech-val text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 mb-1">₹0</p>
+                        <span id="summary-net-profit" class="hidden">₹0</span>
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span class="material-symbols-outlined text-xs">savings</span>
+                            <span>Net Business Profit</span>
+                        </div>
+                        <div class="fintech-ambient bg-emerald-500"></div>
                     </div>
-                </div>
-                <div class="bg-gradient-to-br from-fuchsia-500 to-rose-500 dark:from-fuchsia-800/80 dark:to-rose-900/80 border border-transparent dark:border-rose-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Month</h4>
-                    <p id="summary-peak-month" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">calendar_month</span>
+
+                    <!-- Total Income Card -->
+                    <div class="fintech-card accent-indigo p-4 md:p-5 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="size-1.5 rounded-full bg-indigo-500"></span>
+                                <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Income</h4>
+                            </div>
+                            <div class="fintech-icon-chip bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20">
+                                <span class="material-symbols-outlined text-xl">payments</span>
+                            </div>
+                        </div>
+                        <p id="summary-total-income" class="fintech-val text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 mb-1">₹0</p>
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                            <span class="material-symbols-outlined text-xs">account_balance_wallet</span>
+                            <span>Total Gross Inflow</span>
+                        </div>
+                        <div class="fintech-ambient bg-indigo-500"></div>
                     </div>
-                </div>
-                <div class="bg-gradient-to-br from-teal-400 to-teal-600 dark:from-teal-800/80 dark:to-teal-900/80 border border-transparent dark:border-teal-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Growth Rate (MoM)</h4>
-                    <p id="summary-growth-rate" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0%</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">show_chart</span>
+
+                    <!-- Total Expense Card -->
+                    <div class="fintech-card accent-rose p-4 md:p-5 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="size-1.5 rounded-full bg-rose-500"></span>
+                                <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Expense</h4>
+                            </div>
+                            <div class="fintech-icon-chip bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-500/20">
+                                <span class="material-symbols-outlined text-xl">receipt_long</span>
+                            </div>
+                        </div>
+                        <p id="summary-total-expense" class="fintech-val text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 mb-1">₹0</p>
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                            <span class="material-symbols-outlined text-xs">shopping_cart</span>
+                            <span>Total Outflow & Costs</span>
+                        </div>
+                        <div class="fintech-ambient bg-rose-500"></div>
                     </div>
-                </div>
-                <div class="bg-gradient-to-br from-indigo-400 to-blue-600 dark:from-indigo-800/80 dark:to-blue-900/80 border border-transparent dark:border-blue-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Net Profit</h4>
-                    <p id="summary-net-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">savings</span>
-                    </div>
-                </div>
-                <!-- Row 3: Totals -->
-                <div class="bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-800/80 dark:to-emerald-900/80 border border-transparent dark:border-emerald-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Income</h4>
-                    <p id="summary-total-income" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance_wallet</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-rose-500 to-red-600 dark:from-rose-800/80 dark:to-red-900/80 border border-transparent dark:border-red-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Expense</h4>
-                    <p id="summary-total-expense" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">receipt_long</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-primary to-blue-600 dark:from-primary/60 dark:to-blue-900/80 border border-transparent dark:border-blue-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Net Profit</h4>
-                    <p id="summary-total-profit" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">trending_up</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-slate-500 to-slate-700 dark:from-slate-800/80 dark:to-slate-900/80 border border-transparent dark:border-slate-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Entries Analyzed</h4>
-                    <p id="summary-entries-count" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">list_alt</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-indigo-400 to-cyan-500 dark:from-indigo-800/80 dark:to-cyan-900/80 border border-transparent dark:border-cyan-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Period Capital Add</h4>
-                    <p id="summary-period-capital" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">add_card</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-800/80 dark:to-purple-900/80 border border-transparent dark:border-purple-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Capital</h4>
-                    <p id="summary-total-capital" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-pink-500 to-orange-400 dark:from-pink-800/80 dark:to-orange-900/80 border border-transparent dark:border-orange-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Peak Income Year</h4>
-                    <p id="summary-peak-year" class="text-xl font-black italic tracking-tighter text-white">N/A</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">calendar_today</span>
-                    </div>
-                </div>
-                <div class="bg-gradient-to-br from-amber-500 to-orange-500 dark:from-amber-800/80 dark:to-orange-900/80 border border-transparent dark:border-orange-700/50 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group">
-                    <h4 class="text-[9px] md:text-[10px] font-black text-white/70 uppercase tracking-widest mb-1 md:mb-2">Total Withdrawals</h4>
-                    <p id="summary-total-withdrawal" class="text-lg sm:text-xl md:text-2xl font-black italic tracking-tighter text-white">₹0</p>
-                    <div class="absolute -right-2 -bottom-2 opacity-20 transition-transform group-hover:scale-110">
-                        <span class="material-symbols-outlined text-4xl md:text-6xl text-white">account_balance_wallet</span>
+
+                    <!-- Return on Investment (ROI) Card -->
+                    <div class="fintech-card accent-purple p-4 md:p-5 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="size-1.5 rounded-full bg-purple-500"></span>
+                                <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Return on Invest (ROI)</h4>
+                            </div>
+                            <div class="fintech-icon-chip bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-500/20">
+                                <span class="material-symbols-outlined text-xl">percent</span>
+                            </div>
+                        </div>
+                        <p id="summary-roi" class="fintech-val text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2 mb-1">0%</p>
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+                            <span class="material-symbols-outlined text-xs">account_balance</span>
+                            <span>Profitability Efficiency</span>
+                        </div>
+                        <div class="fintech-ambient bg-purple-500"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Daily Transaction Analytics Section -->
-            <div class="space-y-4 pt-4 border-t border-primary/5">
-                
-                <!-- Daily Reconciliation Summary Cards -->
-                <div id="reconciliation-cards-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    <!-- Cash Section -->
-                    <div class="bg-gradient-to-br from-slate-600 to-slate-800 dark:from-slate-800/80 dark:to-slate-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-slate-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Manual Cash</h4>
-                        <p id="recon-manual-cash-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">payments</span>
-                        </div>
+            <!-- Section 2: Daily Operations & Velocity -->
+            <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="size-2 rounded-full bg-cyan-500"></span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            Daily Operations & Velocity
+                        </h3>
                     </div>
-                    <div class="bg-gradient-to-br from-primary to-primary-dark dark:from-primary/60 dark:to-purple-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-primary/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">System Cash</h4>
-                        <p id="recon-system-cash-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">computer</span>
+                    <span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                        Run-rates & Pace
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <!-- Avg Daily Profit -->
+                    <div class="fintech-card accent-cyan p-3.5 md:p-4 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Daily Profit</h4>
+                            <div class="fintech-icon-chip bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400 border border-cyan-500/20 w-8 h-8 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">query_stats</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-800/80 dark:to-orange-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-orange-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Cash Difference</h4>
-                        <p id="recon-cash-diff-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">balance</span>
+                        <p id="summary-avg-profit" class="fintech-val text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1.5 mb-0.5">₹0</p>
+                        <div class="text-[10px] font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">trending_up</span>
+                            <span>Net Run-Rate / Day</span>
                         </div>
+                        <div class="fintech-ambient bg-cyan-500"></div>
                     </div>
 
-                    <!-- Online Section -->
-                    <div class="bg-gradient-to-br from-slate-600 to-slate-800 dark:from-slate-800/80 dark:to-slate-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-slate-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Manual Online</h4>
-                        <p id="recon-manual-online-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">account_balance_wallet</span>
+                    <!-- Avg Daily Income -->
+                    <div class="fintech-card accent-teal p-3.5 md:p-4 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Daily Income</h4>
+                            <div class="fintech-icon-chip bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400 border border-teal-500/20 w-8 h-8 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">payments</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-indigo-500 to-blue-700 dark:from-indigo-800/80 dark:to-blue-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-blue-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">System Online</h4>
-                        <p id="recon-system-online-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">dns</span>
+                        <p id="summary-avg-income" class="fintech-val text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1.5 mb-0.5">₹0</p>
+                        <div class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">arrow_upward</span>
+                            <span>Avg Inflow / Day</span>
                         </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-800/80 dark:to-indigo-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-indigo-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Online Difference</h4>
-                        <p id="recon-online-diff-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">balance</span>
-                        </div>
+                        <div class="fintech-ambient bg-teal-500"></div>
                     </div>
 
-                    <!-- Income Section -->
-                    <div class="bg-gradient-to-br from-slate-600 to-slate-800 dark:from-slate-800/80 dark:to-slate-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-slate-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Manual Income</h4>
-                        <p id="recon-manual-income-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">monitoring</span>
+                    <!-- Avg Daily Expense -->
+                    <div class="fintech-card accent-amber p-3.5 md:p-4 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Daily Expense</h4>
+                            <div class="fintech-icon-chip bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20 w-8 h-8 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">shopping_cart</span>
+                            </div>
                         </div>
+                        <p id="summary-avg-expense" class="fintech-val text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1.5 mb-0.5">₹0</p>
+                        <div class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">arrow_downward</span>
+                            <span>Avg Spend / Day</span>
+                        </div>
+                        <div class="fintech-ambient bg-amber-500"></div>
                     </div>
-                    <div class="bg-gradient-to-br from-emerald-500 to-teal-700 dark:from-emerald-800/80 dark:to-teal-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-teal-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">System Income</h4>
-                        <p id="recon-system-income-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">leaderboard</span>
+
+                    <!-- Growth Rate (MoM) -->
+                    <div class="fintech-card accent-blue p-3.5 md:p-4 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Growth Rate (MoM)</h4>
+                            <div class="fintech-icon-chip bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20 w-8 h-8 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">show_chart</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-teal-400 to-emerald-600 dark:from-teal-800/80 dark:to-emerald-900/80 p-4 md:p-6 rounded-2xl shadow-lg relative overflow-hidden group border border-white/10 dark:border-emerald-700/50">
-                        <h4 class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-2">Income Difference</h4>
-                        <p id="recon-income-diff-card" class="text-2xl font-black italic text-white tracking-tight">₹0</p>
-                        <div class="absolute -right-4 -bottom-4 opacity-10 transition-transform group-hover:scale-110">
-                            <span class="material-symbols-outlined text-8xl text-white">balance</span>
+                        <p id="summary-growth-rate" class="fintech-val text-lg sm:text-2xl font-black text-slate-900 dark:text-white mt-1.5 mb-0.5">0%</p>
+                        <div class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">monitoring</span>
+                            <span>Month-over-Month Pace</span>
                         </div>
+                        <div class="fintech-ambient bg-blue-500"></div>
                     </div>
                 </div>
-                <h3 class="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+            </div>
+
+            <!-- Section 3: Capital Management & Milestones -->
+            <div class="space-y-3 pt-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="size-2 rounded-full bg-violet-500"></span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            Capital & Peak Records
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                        Liquidity & Milestones
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <!-- Total Capital -->
+                    <div class="fintech-card accent-violet p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Total Capital</h4>
+                            <div class="fintech-icon-chip bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border border-violet-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">account_balance</span>
+                            </div>
+                        </div>
+                        <p id="summary-total-capital" class="fintech-val text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1">₹0</p>
+                        <span class="text-[9px] font-semibold text-violet-600 dark:text-violet-400 block mt-0.5">Capital Base</span>
+                        <div class="fintech-ambient bg-violet-500"></div>
+                    </div>
+
+                    <!-- Period Capital Add -->
+                    <div class="fintech-card accent-indigo p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Capital Added</h4>
+                            <div class="fintech-icon-chip bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">add_card</span>
+                            </div>
+                        </div>
+                        <p id="summary-period-capital" class="fintech-val text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1">₹0</p>
+                        <span class="text-[9px] font-semibold text-indigo-600 dark:text-indigo-400 block mt-0.5">Period Added</span>
+                        <div class="fintech-ambient bg-indigo-500"></div>
+                    </div>
+
+                    <!-- Total Withdrawals -->
+                    <div class="fintech-card accent-orange p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Total Withdrawn</h4>
+                            <div class="fintech-icon-chip bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border border-orange-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">wallet</span>
+                            </div>
+                        </div>
+                        <p id="summary-total-withdrawal" class="fintech-val text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1">₹0</p>
+                        <span class="text-[9px] font-semibold text-orange-600 dark:text-orange-400 block mt-0.5">Drawings</span>
+                        <div class="fintech-ambient bg-orange-500"></div>
+                    </div>
+
+                    <!-- Entries Analyzed -->
+                    <div class="fintech-card accent-slate p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Entries</h4>
+                            <div class="fintech-icon-chip bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400 border border-slate-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">list_alt</span>
+                            </div>
+                        </div>
+                        <p id="summary-entries-count" class="fintech-val text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1">0</p>
+                        <span class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 block mt-0.5">Days Logged</span>
+                        <div class="fintech-ambient bg-slate-500"></div>
+                    </div>
+
+                    <!-- Peak Income Day -->
+                    <div class="fintech-card accent-pink p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Peak Day</h4>
+                            <div class="fintech-icon-chip bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400 border border-pink-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">event_available</span>
+                            </div>
+                        </div>
+                        <p id="summary-peak-day" class="fintech-val text-sm sm:text-base font-black text-slate-900 dark:text-white mt-1 truncate">N/A</p>
+                        <span class="text-[9px] font-semibold text-pink-600 dark:text-pink-400 block mt-0.5">Best Single Day</span>
+                        <div class="fintech-ambient bg-pink-500"></div>
+                    </div>
+
+                    <!-- Peak Income Month & Year -->
+                    <div class="fintech-card accent-fuchsia p-3 md:p-3.5 group">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">Peak Period</h4>
+                            <div class="fintech-icon-chip bg-fuchsia-500/10 text-fuchsia-600 dark:bg-fuchsia-500/20 dark:text-fuchsia-400 border border-fuchsia-500/20 w-7 h-7 rounded-lg">
+                                <span class="material-symbols-outlined text-sm">calendar_month</span>
+                            </div>
+                        </div>
+                        <p id="summary-peak-month" class="fintech-val text-sm sm:text-base font-black text-slate-900 dark:text-white mt-1 truncate">N/A</p>
+                        <span class="text-[9px] font-semibold text-fuchsia-600 dark:text-fuchsia-400 block mt-0.5">Year: <span id="summary-peak-year">N/A</span></span>
+                        <div class="fintech-ambient bg-fuchsia-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Daily Channel Reconciliation & Audit Verification -->
+            <div class="space-y-3 pt-4 border-t border-slate-200/60 dark:border-white/5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="size-2 rounded-full bg-amber-500"></span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            Channel Reconciliation & Audit
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                        Manual vs System Audit
+                    </span>
+                </div>
+
+                <!-- Daily Reconciliation Summary Cards Grid (Maintains id for compatibility) -->
+                <div id="reconciliation-cards-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- Cash Channel Module -->
+                    <div class="fintech-card accent-amber p-4 md:p-5 group">
+                        <div class="flex items-center justify-between mb-3.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="fintech-icon-chip bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20">
+                                    <span class="material-symbols-outlined text-xl">payments</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Cash Channel</h4>
+                                    <p class="text-[10px] font-medium text-slate-400">Physical Cash Drawer Audit</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">balance</span> Cash Audit
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-100/80 dark:bg-white/[0.03] p-2.5 rounded-xl border border-slate-200/60 dark:border-white/5">
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Manual</span>
+                                <p id="recon-manual-cash-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center border-x border-slate-200/60 dark:border-white/10">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">System</span>
+                                <p id="recon-system-cash-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Difference</span>
+                                <p id="recon-cash-diff-card" class="fintech-val text-sm sm:text-base font-black text-amber-600 dark:text-amber-400 mt-0.5">₹0</p>
+                            </div>
+                        </div>
+                        <div class="fintech-ambient bg-amber-500"></div>
+                    </div>
+
+                    <!-- Online Channel Module -->
+                    <div class="fintech-card accent-blue p-4 md:p-5 group">
+                        <div class="flex items-center justify-between mb-3.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="fintech-icon-chip bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20">
+                                    <span class="material-symbols-outlined text-xl">dns</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Online Channel</h4>
+                                    <p class="text-[10px] font-medium text-slate-400">Digital Gateway / UPI Audit</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">balance</span> Online Audit
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-100/80 dark:bg-white/[0.03] p-2.5 rounded-xl border border-slate-200/60 dark:border-white/5">
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Manual</span>
+                                <p id="recon-manual-online-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center border-x border-slate-200/60 dark:border-white/10">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">System</span>
+                                <p id="recon-system-online-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Difference</span>
+                                <p id="recon-online-diff-card" class="fintech-val text-sm sm:text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">₹0</p>
+                            </div>
+                        </div>
+                        <div class="fintech-ambient bg-blue-500"></div>
+                    </div>
+
+                    <!-- Total Income Match Module -->
+                    <div class="fintech-card accent-emerald p-4 md:p-5 group">
+                        <div class="flex items-center justify-between mb-3.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="fintech-icon-chip bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20">
+                                    <span class="material-symbols-outlined text-xl">leaderboard</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Total Income Match</h4>
+                                    <p class="text-[10px] font-medium text-slate-400">Aggregate Intake Verification</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">balance</span> Income Audit
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-100/80 dark:bg-white/[0.03] p-2.5 rounded-xl border border-slate-200/60 dark:border-white/5">
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Manual</span>
+                                <p id="recon-manual-income-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center border-x border-slate-200/60 dark:border-white/10">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">System</span>
+                                <p id="recon-system-income-card" class="fintech-val text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">₹0</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Difference</span>
+                                <p id="recon-income-diff-card" class="fintech-val text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">₹0</p>
+                            </div>
+                        </div>
+                        <div class="fintech-ambient bg-emerald-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Transaction Stats Section -->
+            <div class="space-y-3 pt-4 border-t border-slate-200/60 dark:border-white/5">
+                <h3 class="text-base font-black text-slate-800 dark:text-white flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary">analytics</span>
                     Daily Transaction Stats
                 </h3>
                 <div id="reports-summary-badges-area" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3">
                     <!-- Dynamically populated by JS (identical cards as Daily Txn page) -->
                 </div>
-
-                <!-- Additional card for Total Fees -->
-
             </div>
 
             <!-- Income Distribution Chart Section -->

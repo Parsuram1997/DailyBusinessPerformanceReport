@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v32'; // Bumped: Cache-First to prevent 429 rate limit
+const CACHE_NAME = 'biz-report-v35'; // Bumped for Loan Repayment transaction type
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

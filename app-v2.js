@@ -508,7 +508,7 @@ async function fetchSystemCashForModal(dateStr) {
                 cashVal -= amt;
             } else if (['DEPOSIT', 'AADHAAR_DEPOSIT', 'FREE_DEPOSIT', 'ADMIN_DEPOSIT'].includes(t.type)) {
                 cashVal += amt;
-            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(t.type)) {
                 if (t.chargesType !== 'Online') cashVal += amt;
             } else if (t.type === 'JIO_RECHARGE') {
                 if (provider === 'cash') cashVal += amt;
@@ -1122,7 +1122,7 @@ async function initAddEntry() {
                         deltas.online -= amt;
                         updateOnlineSubDelta(t.depositBy, amt, false);
                     }
-                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(t.type)) {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         updateSubAccountDelta(provider, amt, false);
                     } else {
@@ -3786,7 +3786,6 @@ async function initCreditLedger() {
     const addTransactionForm = document.getElementById('credit-transaction-form');
     const addTransactionSection = document.getElementById('add-transaction-section');
     const backBtn = document.getElementById('back-to-ledger');
-    const tableBody = document.getElementById('credit-table-body');
     const ledgerHeader = document.getElementById('ledger-header');
     const historyHeader = document.getElementById('history-header');
     const ledgerTitle = document.getElementById('ledger-title');
@@ -6844,6 +6843,7 @@ const MASTER_TXN_TYPES = [
     { type: 'JIO_TOPUP', label: 'Jio Topup', icon: 'cell_tower', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'JIO_RECHARGE', label: 'Jio Recharge', icon: 'phone_iphone', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'DISHTV_RECHARGE', label: 'Dish TV', icon: 'tv', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
+    { type: 'LOAN_REPAYMENT', label: 'Loan Repay', icon: 'payments', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'ELECTRICITY_BILL', label: 'Electricity Bill', icon: 'bolt', bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', borderLeft: 'bg-blue-500' },
     { type: 'GOLD_SIP', label: 'Gold SIP', icon: 'savings', bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', borderLeft: 'bg-amber-500' },
     { type: 'CSP_COMMISSION', label: 'CSP Comm', icon: 'account_balance', bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', borderLeft: 'bg-purple-500' },
@@ -7403,7 +7403,7 @@ async function initDailyTxn() {
         if (!txnType || !conditionalContainer) return;
         
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'OTHER_INCOME'];
-        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT'];
+        const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT', 'LOAN_REPAYMENT'];
         const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
         const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'];
@@ -7492,7 +7492,7 @@ async function initDailyTxn() {
                     if (chargesModeContainer) {
                         chargesModeContainer.classList.remove('hidden');
                         const label = chargesModeContainer.querySelector('label');
-                        if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value) ? 'CUST PAID IN' : 'CHARGES MODE');
+                        if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(txnType.value) ? 'CUST PAID IN' : 'CHARGES MODE');
                     }
                 }
             }
@@ -7565,7 +7565,7 @@ async function initDailyTxn() {
                 } else {
                     chargesModeContainer.classList.remove('hidden');
                     const label = chargesModeContainer.querySelector('label');
-                    if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
+                    if (label) label.innerText = (['DISHTV_RECHARGE', 'JIO_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(txnType.value)) ? 'CUST PAID IN' : 'CHARGES MODE';
                 }
             }
             
@@ -7648,7 +7648,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ONLINE_EXCHANGE', 'AADHAAR_PAY'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ONLINE_EXCHANGE', 'AADHAAR_PAY', 'LOAN_REPAYMENT'];
         const remainingTypes = ['AEPS', 'MATM', 'AADHAAR_PAY'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -7664,10 +7664,10 @@ async function initDailyTxn() {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
                 if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...');
                 if (amountLabel) amountLabel.innerText = txnType.value === 'ONLINE_WORK' ? 'Txn Amount' : (txnType.value === 'JIO_RECHARGE' ? 'Recharge Amount' : 'Amount');
-            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
+            } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
                 if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
-                if (amountLabel) amountLabel.innerText = txnType.value === 'ELECTRICITY_BILL' ? 'Bill Amount' : 'Recharge Amount';
+                if (amountLabel) amountLabel.innerText = txnType.value === 'ELECTRICITY_BILL' ? 'Bill Amount' : (txnType.value === 'LOAN_REPAYMENT' ? 'Repayment Amount' : 'Recharge Amount');
             } else {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
                 if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
@@ -7753,7 +7753,7 @@ async function initDailyTxn() {
                     opt.style.display = aepsMatmProviders.includes(opt.value) ? '' : 'none';
                 } else if (isDepositWithdraw) {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
-                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(txnType.value)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(txnType.value)) {
                     opt.style.display = ['online(parsu)', 'online(shop)', 'online(dalai)', 'Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'].includes(opt.value) ? '' : 'none';
                 } else if (isCredit || ['JIO_RECHARGE', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
                     opt.style.display = ['Cash', 'Online'].includes(opt.value) ? '' : 'none';
@@ -8366,7 +8366,7 @@ async function initDailyTxn() {
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
-                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY'].includes(txnType.value)) ? txnProvider.value : ''),
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT'].includes(txnType.value)) ? txnProvider.value : ''),
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -8720,7 +8720,7 @@ async function initDailyTxn() {
                         balances.online -= amt;
                         onlineBreakdown[getOnlineDest(t.depositBy)] -= amt;
                     }
-                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(t.type)) {
                     if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
                         balances.roinet -= amt;
                         updateRoinetDelta(provider, -amt);
@@ -9262,7 +9262,7 @@ async function initDailyTxn() {
                         if (!(isNewLogic && isJio)) {
                             currentOnline -= amt;
                         }
-                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD'].includes(t.type)) {
+                    } else if (['DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(t.type)) {
                         currentOnline -= amt;
                         if (t.chargesType === 'Online') currentOnline += amt;
                         else currentCash += amt;
