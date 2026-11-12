@@ -1,13 +1,19 @@
-const CACHE_NAME = 'biz-report-v38'; // Clean Unicode bullet & enhanced bank dropdown search
+const CACHE_NAME = 'biz-report-v53'; // Add CRGB BC and fix all 9 sub-account ledger filters
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './auth.js',
   './app.js',
   './firebase-config.js',
   './dashboard-code.html',
   './reports-code.html',
   './add-entry-code.html',
   './transactions-code.html',
+  './daily-txn.html',
+  './credit-ledger-code.html',
+  './customer-deposit-code.html',
+  './pending-code.html',
+  './settings-code.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap'

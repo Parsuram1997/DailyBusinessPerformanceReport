@@ -218,6 +218,10 @@
                     <span class="material-symbols-outlined">savings</span>
                     <span class="text-sm nav-text">Cust. Deposit</span>
                 </a>
+                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html">
+                    <span class="material-symbols-outlined">pending_actions</span>
+                    <span class="text-sm nav-text">Pending Txns</span>
+                </a>
                 <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html">
                     <span class="material-symbols-outlined">account_balance</span>
                     <span class="text-sm nav-text">Bank Withdrawals</span>
@@ -391,6 +395,7 @@
                                 <option value="ADD_CAPITAL">Add Capital</option>
                                 <option value="SHARE_WITHDRAWN">Share Withdrawn</option>
                                 <option value="ONLINE_EXCHANGE">Online Exchange</option>
+                                <option value="CSP_WALLET_LOAD">CSP Wallet Load</option>
                             </select>
                         </div>
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
@@ -478,6 +483,7 @@
                                 <option value="Roinet(Parsu)">Roinet(Parsu)</option>
                                 <option value="Roinet(Dalai)">Roinet(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
+                                <option value="Crgb Bc">Crgb Bc</option>
                                 <option value="online(parsu)">online(parsu)</option>
                                 <option value="online(dalai)">online(dalai)</option>
                                 <option value="online(shop)">online(shop)</option>
@@ -646,17 +652,22 @@
                             <input type="text" id="txn-search-input" placeholder="Search transactions..." 
                                 class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-md outline-none text-sm font-bold transition-all shadow-sm">
                         </div>
-                        <div class="w-full sm:w-auto relative group">
-                            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-md shadow-sm h-[38px]">
-                                <span class="material-symbols-outlined text-primary text-base shrink-0">account_balance_wallet</span>
-                                <select id="account-filter-select" class="bg-transparent text-xs font-black text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-1" title="Filter by Account Ledger">
-                                    <option value="ALL">All Accounts</option>
-                                    <option value="online_p1">online(parsu)</option>
-                                    <option value="online_p2">online(shop)</option>
-                                    <option value="online_p3">online(dalai)</option>
-                                </select>
-                            </div>
-                        </div>
+                        <label id="account-filter-btn" for="account-filter-select" class="flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs shrink-0 cursor-pointer" title="Filter by Account Ledger">
+                            <span class="material-symbols-outlined text-base text-primary shrink-0">account_balance_wallet</span>
+                            <select id="account-filter-select" class="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 border-none p-0 focus:ring-0 outline-none cursor-pointer pr-3 appearance-none" style="border: none !important; outline: none !important; box-shadow: none !important;" title="Filter by Account Ledger">
+                                <option value="ALL" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Accounts</option>
+                                <option value="online_p1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">online(parsu)</option>
+                                <option value="online_p2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">online(shop)</option>
+                                <option value="online_p3" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">online(dalai)</option>
+                                <option value="airtel_1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Airtel(parsu)</option>
+                                <option value="airtel_2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Airtel(dalai)</option>
+                                <option value="roinet_1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Roinet(parsu)</option>
+                                <option value="roinet_2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Roinet(dalai)</option>
+                                <option value="spicemoney" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">SpiceMoney</option>
+                                <option value="crgb" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CRGB BC</option>
+                            </select>
+                            <span class="material-symbols-outlined text-xs text-slate-400 -ml-2 pointer-events-none shrink-0">expand_more</span>
+                        </label>
                         <div class="flex justify-between items-center w-full sm:w-auto sm:gap-1.5">
                             <button id="toggle-all-time-search-btn" class="flex items-center justify-center sm:gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs shrink-0" title="Search by Date Range">
                                 <span class="material-symbols-outlined text-xl sm:text-sm">date_range</span>
@@ -713,7 +724,7 @@
                     </div>
                     
                     <!-- Online -->
-                    <div onclick="openOnlineBreakdown()" class="relative cursor-pointer overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-500/10 dark:to-slate-900/90 border border-blue-100 dark:border-blue-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <div id="online-card" onclick="openOnlineBreakdown()" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-blue-50/80 to-white dark:from-blue-500/10 dark:to-slate-900/90 border border-blue-100 dark:border-blue-500/20 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99] group cursor-pointer select-none flex flex-col min-h-[96px] justify-between transition-all duration-200" title="Click to view Online breakdown">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
                             <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider leading-none">Online</span>
@@ -828,7 +839,7 @@
                     </div>
 
                     <!-- Pending -->
-                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-500/10 dark:to-slate-900/90 border border-amber-100 dark:border-amber-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <div id="pending-card" onclick="window.location.href='pending-code.html'" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-500/10 dark:to-slate-900/90 border border-amber-100 dark:border-amber-500/20 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99] group cursor-pointer select-none flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
                             <span class="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider leading-none">Pending</span>
@@ -897,7 +908,7 @@
                     </div>
 
                     <!-- Credit Ledger -->
-                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-orange-50/80 to-white dark:from-orange-500/10 dark:to-slate-900/90 border border-orange-100 dark:border-orange-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <div id="credit-ledger-card" onclick="window.location.href='credit-ledger-code.html'" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-orange-50/80 to-white dark:from-orange-500/10 dark:to-slate-900/90 border border-orange-100 dark:border-orange-500/20 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99] group cursor-pointer select-none flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
                             <span class="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-wider leading-none">Credit Ledger</span>
@@ -1105,16 +1116,16 @@
                         <table class="w-full text-left">
                             <thead class="bg-slate-50/50 dark:bg-white/5 border-b border-primary/10">
                                 <tr>
-                                    <th id="checking-col-header" class="hidden px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-12">Chk</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Sl No.</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Time/Date</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Txn Type</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Provider/Bank</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Details</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Amount</th>
-                                    <th id="charges-col-header" class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Charges</th>
-                                    <th id="balance-col-header" class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center whitespace-nowrap">Balance (C/O)</th>
-                                    <th class="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Action</th>
+                                    <th id="checking-col-header" class="hidden px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-8">Chk</th>
+                                    <th class="px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-10">Sl No.</th>
+                                    <th class="px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-[78px]">Time/Date</th>
+                                    <th class="px-1.5 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-[130px]">Txn Type</th>
+                                    <th class="px-1.5 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Provider/Bank</th>
+                                    <th class="px-1.5 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Details</th>
+                                    <th class="px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-[95px]">Amount</th>
+                                    <th id="charges-col-header" class="px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-[85px]">Charges</th>
+                                    <th id="balance-col-header" class="px-1.5 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center whitespace-nowrap w-[155px]">Balance (C/O)</th>
+                                    <th class="px-1 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-[70px]">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="daily-txn-table-body" class="divide-y divide-slate-200 dark:divide-slate-700/60">

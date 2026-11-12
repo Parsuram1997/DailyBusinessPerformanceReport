@@ -846,6 +846,47 @@
                         <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-primary" id="accent-hex-value">#7f13ec</span>
                     </div>
                 </div>
+
+                <!-- Navigation Sidebar Mode Control -->
+                <div class="pt-4 border-t border-primary/10 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Side Navigation Bar Mode</label>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Control sidebar hover, expand, or contract behavior</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2" id="sidebar-mode-selector">
+                        <!-- Option 1: Hover -->
+                        <button type="button" data-mode="hover" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                            <span class="material-symbols-outlined text-xl text-primary">swipe</span>
+                            <span class="text-xs font-black leading-none">Hover</span>
+                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Auto Expand</span>
+                        </button>
+
+                        <!-- Option 2: Expand -->
+                        <button type="button" data-mode="expand" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                            <span class="material-symbols-outlined text-xl text-primary">dock_to_right</span>
+                            <span class="text-xs font-black leading-none">Expand</span>
+                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Open</span>
+                        </button>
+
+                        <!-- Option 3: Contract -->
+                        <button type="button" data-mode="contract" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                            <span class="material-symbols-outlined text-xl text-primary">view_sidebar</span>
+                            <span class="text-xs font-black leading-none">Contract</span>
+                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Mini</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1">
+                        <span class="flex items-center gap-1.5">
+                            <span class="size-2 rounded-full bg-emerald-500"></span>
+                            <span>Active Mode:</span>
+                        </span>
+                        <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-primary font-bold uppercase" id="sidebar-mode-label">Hover</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1740,6 +1781,74 @@ function applyAccentColor(hex) {
     `;
 }
 
+// ─── SIDEBAR MODE SELECTOR LOGIC ─────────────────────────────────
+function initSidebarModeSelector() {
+    const container = document.getElementById('sidebar-mode-selector');
+    const labelEl = document.getElementById('sidebar-mode-label');
+    if (!container) return;
+
+    function updateSelectorUI(currentMode) {
+        const mode = ['hover', 'expand', 'contract'].includes(currentMode) ? currentMode : 'hover';
+        if (labelEl) labelEl.textContent = mode.toUpperCase();
+
+        const btns = container.querySelectorAll('.sidebar-mode-btn');
+        btns.forEach(btn => {
+            const btnMode = btn.getAttribute('data-mode');
+            if (btnMode === mode) {
+                btn.className = 'sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-primary/10 border-primary text-primary shadow-sm scale-[1.02] ring-2 ring-primary/20';
+            } else {
+                btn.className = 'sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50';
+            }
+        });
+    }
+
+    // Initialize with current mode
+    const initialMode = localStorage.getItem('biz_sidebar_mode') || 'hover';
+    updateSelectorUI(initialMode);
+
+    // Click handler for mode buttons
+    const btns = container.querySelectorAll('.sidebar-mode-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const selectedMode = btn.getAttribute('data-mode');
+            updateSelectorUI(selectedMode);
+            if (typeof window.applySidebarMode === 'function') {
+                window.applySidebarMode(selectedMode);
+            }
+            if (window.saveAppSettings) {
+                await window.saveAppSettings({ sidebar_mode: selectedMode });
+            } else {
+                localStorage.setItem('biz_sidebar_mode', selectedMode);
+            }
+
+            if (typeof Swal !== 'undefined') {
+                const toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                const modeNames = {
+                    hover: 'Hover (Auto-Expand)',
+                    expand: 'Always Expanded',
+                    contract: 'Always Contracted (Mini)'
+                };
+                toast.fire({
+                    icon: 'success',
+                    title: `Sidebar mode: ${modeNames[selectedMode] || selectedMode}`
+                });
+            }
+        });
+    });
+
+    // Re-apply if Firestore syncs from another device/browser
+    window.addEventListener('appSettingsUpdated', () => {
+        const syncedMode = localStorage.getItem('biz_sidebar_mode') || 'hover';
+        updateSelectorUI(syncedMode);
+    });
+}
+
 // ─── SYSTEM DIAGNOSTICS & CACHE LOGIC ─────────────────────────
 function updateSystemDiagnostics() {
     let totalBytes = 0;
@@ -1931,6 +2040,7 @@ function initApiKeyManager() {
 
 // Initialize right side widgets on load
 initAccentColorPicker();
+initSidebarModeSelector();
 updateSystemDiagnostics();
 initCacheOptimizer();
 initApiKeyManager();

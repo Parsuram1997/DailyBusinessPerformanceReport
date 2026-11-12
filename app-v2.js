@@ -1287,6 +1287,25 @@ async function initAddEntry() {
                 } else if (t.type === 'CASH_DEPOSIT') {
                     deltas.online += amt;
                     updateOnlineSubDelta(t.depositBy, amt, true);
+                } else if (t.type === 'ONLINE_EXCHANGE') {
+                    // Source account (paymentApp) loses amount
+                    const sourceAcct = t.paymentApp || '';
+                    // Destination account (provider) gains amount
+                    const destAcct = t.provider || '';
+                    updateOnlineSubDelta(sourceAcct, amt, false); // minus from source
+                    updateOnlineSubDelta(destAcct, amt, true);    // plus to destination
+                } else if (t.type === 'CSP_WALLET_LOAD') {
+                    // Debited account (paymentApp / depositBy) loses amount
+                    const sourceAcct = t.paymentApp || t.depositBy || '';
+                    // Credited wallet (provider) gains amount
+                    const destWallet = (t.provider || '').trim().toLowerCase();
+                    deltas.online -= amt;
+                    updateOnlineSubDelta(sourceAcct, amt, false);
+                    if (destWallet.includes('crgb')) {
+                        deltas.crgb_bc += amt;
+                    } else {
+                        updateSubAccountDelta(destWallet, amt, true);
+                    }
                 }
             });
 
@@ -6871,7 +6890,9 @@ const MASTER_TXN_TYPES = [
     { type: 'DAMAGED_CURRENCY', label: 'Damaged Curr', icon: 'money_off', bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', borderLeft: 'bg-rose-500' },
     { type: 'DAMAGED_RECOVERY', label: 'Damaged Recov', icon: 'attach_money', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', borderLeft: 'bg-emerald-500' },
     { type: 'ADD_CAPITAL', label: 'Add Capital', icon: 'account_balance', bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', borderLeft: 'bg-cyan-500' },
-    { type: 'SHARE_WITHDRAWN', label: 'Share Wdrl', icon: 'exit_to_app', bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', borderLeft: 'bg-cyan-500' }
+    { type: 'SHARE_WITHDRAWN', label: 'Share Wdrl', icon: 'exit_to_app', bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', borderLeft: 'bg-cyan-500' },
+    { type: 'ONLINE_EXCHANGE', label: 'Online Exchange', icon: 'currency_exchange', bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', borderLeft: 'bg-indigo-500' },
+    { type: 'CSP_WALLET_LOAD', label: 'CSP Wallet Load', icon: 'account_balance_wallet', bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', borderLeft: 'bg-teal-500' }
 ];
 
 // Logic for Daily Transactions
@@ -6899,6 +6920,7 @@ async function initDailyTxn() {
     const txnExpenseType = document.getElementById('txn-expense-type');
     const txnConditional = document.getElementById('txn-conditional');
     const txnProvider = document.getElementById('txn-provider');
+    const txnQrWallet = document.getElementById('txn-qr-wallet');
     const txnDepositBy = document.getElementById('txn-depositby');
     const depositByContainer = document.getElementById('depositby-field-container');
     const txnReceivedIn = document.getElementById('txn-receivedin');
@@ -6908,6 +6930,7 @@ async function initDailyTxn() {
     const conditionalLabel = document.getElementById('conditional-label');
     const conditionalContainer = document.getElementById('conditional-field-container');
     const providerContainer = document.getElementById('provider-field-container');
+    const qrWalletContainer = document.getElementById('qr-wallet-field-container');
     const amountFieldContainer = document.getElementById('amount-field-container');
     const noteFieldContainer = document.getElementById('note-field-container');
     const remarkFieldContainer = document.getElementById('remark-field-container');
@@ -6942,7 +6965,13 @@ async function initDailyTxn() {
     const accDisplayNames = {
         'online_p1': 'online(parsu)',
         'online_p2': 'online(shop)',
-        'online_p3': 'online(dalai)'
+        'online_p3': 'online(dalai)',
+        'airtel_1': 'Airtel(parsu)',
+        'airtel_2': 'Airtel(dalai)',
+        'roinet_1': 'Roinet(parsu)',
+        'roinet_2': 'Roinet(dalai)',
+        'spicemoney': 'SpiceMoney',
+        'crgb': 'CRGB BC'
     };
     let currentStartCash = 0;
     let currentStartOnline = 0;
@@ -7421,7 +7450,7 @@ async function initDailyTxn() {
         
         const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'OTHER_INCOME'];
         const simplifiedTypes = ['JIO_TOPUP', 'DISHTV_RECHARGE', 'ELECTRICITY_BILL', 'SETTLEMENT', 'LOAN_REPAYMENT'];
-        const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY'];
+        const amountOnlyTypes = ['JIO_RECHARGE', 'GOLD_SIP', 'DAMAGED_CURRENCY', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'];
         const noteAndAmountTypes = ['ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL'];
         const creditTypes = ['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'CSP_SUBSCRIPTION'];
         const isDamagedRecovery = txnType.value === 'DAMAGED_RECOVERY';
@@ -7665,7 +7694,7 @@ async function initDailyTxn() {
         }
 
         // Service Provider & Remaining Amount Visibility
-        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ONLINE_EXCHANGE', 'AADHAAR_PAY', 'LOAN_REPAYMENT'];
+        const providerTypes = ['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'ONLINE_EXCHANGE', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'CSP_WALLET_LOAD'];
         const remainingTypes = ['AEPS', 'MATM', 'AADHAAR_PAY'];
         
         const providerLabel = document.querySelector('#provider-field-container label');
@@ -7677,6 +7706,14 @@ async function initDailyTxn() {
                 if (providerLabel) providerLabel.innerText = 'Service Provider';
                 if (providerFirstOpt) providerFirstOpt.innerText = 'Select Provider...';
                 if (amountLabel) amountLabel.innerText = 'Amount';
+            } else if (txnType.value === 'ONLINE_EXCHANGE') {
+                if (providerLabel) providerLabel.innerText = 'Source Account';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Source...';
+                if (amountLabel) amountLabel.innerText = 'Amount';
+            } else if (txnType.value === 'CSP_WALLET_LOAD') {
+                if (providerLabel) providerLabel.innerText = 'Debited Account';
+                if (providerFirstOpt) providerFirstOpt.innerText = 'Select Account...';
+                if (amountLabel) amountLabel.innerText = 'Load Amount';
             } else if (isCredit || ['DAMAGED_RECOVERY', 'ONLINE_WORK', 'JIO_RECHARGE', 'ADD_CAPITAL', 'SHARE_WITHDRAWN'].includes(txnType.value)) {
                 if (providerLabel) providerLabel.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Exp Mode' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Recovered To' : 'Pay Mode');
                 if (providerFirstOpt) providerFirstOpt.innerText = txnType.value === 'DAILY_EXPENSE' ? 'Select Exp Mode...' : (txnType.value === 'DAMAGED_RECOVERY' ? 'Select Option...' : 'Select Pay Mode...');
@@ -7694,6 +7731,21 @@ async function initDailyTxn() {
             providerContainer.classList.add('hidden');
             txnProvider.value = '';
             if (amountLabel) amountLabel.innerText = 'Amount';
+        }
+
+        if (qrWalletContainer) {
+            if (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) {
+                qrWalletContainer.classList.remove('hidden');
+                const qrLabel = document.getElementById('qrwallet-label');
+                if (qrLabel) {
+                    if (txnType.value === 'ONLINE_EXCHANGE') qrLabel.innerText = 'Destination Account';
+                    else if (txnType.value === 'CSP_WALLET_LOAD') qrLabel.innerText = 'Credited Wallet';
+                    else qrLabel.innerText = 'QR Wallet';
+                }
+            } else {
+                qrWalletContainer.classList.add('hidden');
+                if (txnQrWallet) txnQrWallet.value = '';
+            }
         }
 
         // Deposit By / Received By field visibility (DEPOSIT & WITHDRAWAL only)
@@ -7764,6 +7816,8 @@ async function initDailyTxn() {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
                 } else if (txnType.value === 'FREE_WITHDRAWAL') {
                     opt.style.display = depositWithdrawProviders.includes(opt.value) ? '' : 'none';
+                } else if (['ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) {
+                    opt.style.display = ['online(parsu)', 'online(shop)', 'online(dalai)'].includes(opt.value) ? '' : 'none';
                 } else if (txnType.value === 'AADHAAR_DEPOSIT') {
                     opt.style.display = aadhaarDepositProviders.includes(opt.value) ? '' : 'none';
                 } else if (isAepsMatm) {
@@ -7782,6 +7836,25 @@ async function initDailyTxn() {
             // If current selected option is now hidden, reset to empty
             if (txnProvider.selectedOptions[0] && txnProvider.selectedOptions[0].style.display === 'none') {
                 txnProvider.value = '';
+            }
+        }
+
+        if (txnQrWallet && ['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) {
+            const qrWallets = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney'];
+            const cspWallets = ['Airtel(Parsu)', 'Airtel(Dalai)', 'Roinet(Parsu)', 'Roinet(Dalai)', 'SpiceMoney', 'Crgb Bc'];
+            const onlineWallets = ['online(parsu)', 'online(shop)', 'online(dalai)'];
+            Array.from(txnQrWallet.options).forEach(opt => {
+                if (!opt.value) return;
+                if (txnType.value === 'ONLINE_EXCHANGE') {
+                    opt.style.display = onlineWallets.includes(opt.value) ? '' : 'none';
+                } else if (txnType.value === 'CSP_WALLET_LOAD') {
+                    opt.style.display = cspWallets.includes(opt.value) ? '' : 'none';
+                } else if (txnType.value === 'QR_WITHDRAWAL') {
+                    opt.style.display = qrWallets.includes(opt.value) ? '' : 'none';
+                }
+            });
+            if (txnQrWallet.selectedOptions[0] && txnQrWallet.selectedOptions[0].style.display === 'none') {
+                txnQrWallet.value = '';
             }
         }
 
@@ -8381,9 +8454,10 @@ async function initDailyTxn() {
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnConditional.value.trim() : '',
                 chargesAccount: typeof txnChargesAccount !== 'undefined' && txnChargesAccount ? txnChargesAccount.value : '',
-                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : '') : '',
+                depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP', 'CSP_WALLET_LOAD'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : (txnType.value === 'CSP_WALLET_LOAD' ? txnProvider.value : '')) : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
-                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT'].includes(txnType.value)) ? txnProvider.value : ''),
+                paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? txnProvider.value : '',
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? (document.getElementById('txn-qr-wallet') ? document.getElementById('txn-qr-wallet').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT'].includes(txnType.value)) ? txnProvider.value : '')),
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -8638,11 +8712,27 @@ async function initDailyTxn() {
                 'cust-deposit': parseFloat(openingBalances['cust-deposit'] || 0),
                 capital: parseFloat(openingBalances.capital || 0),
                 withdrawal: parseFloat(openingBalances.withdrawal || 0),
+                roinet_1: parseFloat(openingBalances.roinet_1 || 0),
+                roinet_2: parseFloat(openingBalances.roinet_2 || 0),
+                airtel_1: parseFloat(openingBalances.airtel_1 || 0),
+                airtel_2: parseFloat(openingBalances.airtel_2 || 0),
+                spicemoney: parseFloat(openingBalances.spicemoney || 0),
                 online_p1: parseFloat(openingBalances.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0),
                 online_p2: parseFloat(openingBalances.online_p2 || 0) - (yesterdaySubWithdrawals['online_p2'] || 0),
                 online_p3: parseFloat(openingBalances.online_p3 || 0) - (yesterdaySubWithdrawals['online_p3'] || 0),
                 other: parseFloat(openingBalances.other || 0) - (yesterdaySubWithdrawals['other'] || 0)
             };
+
+            // ID Specific breakdown for validation, Modal & Sub-account Ledger
+            const opRoinet1 = parseFloat(openingBalances.roinet_1 || 0);
+            const opRoinet2 = parseFloat(openingBalances.roinet_2 || 0);
+            const opAirtel1 = parseFloat(openingBalances.airtel_1 || 0);
+            const opAirtel2 = parseFloat(openingBalances.airtel_2 || 0);
+            const opSpiceMoney = parseFloat(openingBalances.spicemoney || 0);
+            const opRoinet = opRoinet1 + opRoinet2;
+            const opAirtel = opAirtel1 + opAirtel2;
+            const totalSplitOpening = opRoinet + opAirtel + opSpiceMoney;
+            const roinetOpeningFallback = totalSplitOpening > 0 ? totalSplitOpening : parseFloat(opValues.roinet || 0);
 
             const ids = ['cash', 'online', 'roinet', 'jio', 'crgb', 'pending', 'expense', 'damaged', 'credit-ledger', 'cust-deposit', 'capital', 'withdrawal'];
             let balances = {
@@ -8912,6 +9002,18 @@ async function initDailyTxn() {
 
                     onlineBreakdown[sourceDest] -= amt;
                     onlineBreakdown[targetDest] += amt;
+                } else if (t.type === 'CSP_WALLET_LOAD') {
+                    balances.online -= amt;
+                    const sourceDest = getOnlineDest(t.paymentApp || t.depositBy);
+                    onlineBreakdown[sourceDest] -= amt;
+
+                    const walletProv = (t.provider || '').trim().toLowerCase();
+                    if (walletProv.includes('crgb')) {
+                        balances.crgb += amt;
+                    } else {
+                        balances.roinet += amt;
+                        updateRoinetDelta(t.provider, amt);
+                    }
                 } else if (t.type === 'ADD_CAPITAL') {
                     if (provider === 'cash') balances.cash += amt;
                     else {
@@ -8934,18 +9036,37 @@ async function initDailyTxn() {
                 const d3 = onlineBreakdown.online_p3 - prevOnlineBreakdown.online_p3;
                 const dother = onlineBreakdown.other - prevOnlineBreakdown.other;
 
+                const d_r1 = roinetBreakdown.roinet_1 - prevRoinetBreakdown.roinet_1;
+                const d_r2 = roinetBreakdown.roinet_2 - prevRoinetBreakdown.roinet_2;
+                const d_a1 = roinetBreakdown.airtel_1 - prevRoinetBreakdown.airtel_1;
+                const d_a2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
+                const d_sm = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
+                const d_crgb = (balances.crgb || 0) - (prevBals.crgb || 0);
+
                 t.subAccountDeltas = {
                     online_p1: d1,
                     online_p2: d2,
                     online_p3: d3,
-                    other: dother
+                    other: dother,
+                    roinet_1: d_r1,
+                    roinet_2: d_r2,
+                    airtel_1: d_a1,
+                    airtel_2: d_a2,
+                    spicemoney: d_sm,
+                    crgb: d_crgb
                 };
 
                 t.subAccountBalances = {
                     online_p1: parseFloat(opValues.online_p1 || 0) + onlineBreakdown.online_p1,
                     online_p2: parseFloat(opValues.online_p2 || 0) + onlineBreakdown.online_p2,
                     online_p3: parseFloat(opValues.online_p3 || 0) + onlineBreakdown.online_p3,
-                    other: parseFloat(opValues.other || 0) + onlineBreakdown.other
+                    other: parseFloat(opValues.other || 0) + onlineBreakdown.other,
+                    roinet_1: (totalSplitOpening > 0 ? opRoinet1 : roinetOpeningFallback) + roinetBreakdown.roinet_1,
+                    roinet_2: opRoinet2 + roinetBreakdown.roinet_2,
+                    airtel_1: opAirtel1 + roinetBreakdown.airtel_1,
+                    airtel_2: opAirtel2 + roinetBreakdown.airtel_2,
+                    spicemoney: opSpiceMoney + roinetBreakdown.spicemoney,
+                    crgb: parseFloat(opValues.crgb || 0) + (balances.crgb || 0)
                 };
 
                 const hasOnlineMovement = 
@@ -8975,12 +9096,6 @@ async function initDailyTxn() {
                     (roinetBreakdown.spicemoney !== prevRoinetBreakdown.spicemoney);
 
                 if (hasRoinetMovement) {
-                    const d_r1 = roinetBreakdown.roinet_1 - prevRoinetBreakdown.roinet_1;
-                    const d_r2 = roinetBreakdown.roinet_2 - prevRoinetBreakdown.roinet_2;
-                    const d_a1 = roinetBreakdown.airtel_1 - prevRoinetBreakdown.airtel_1;
-                    const d_a2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
-                    const d_sm = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
-                    
                     if (d_r1 !== 0) { lastRoinetChanges.roinet_1 = d_r1; lastRoinetChanges.mostRecent = 'roinet_1'; }
                     if (d_r2 !== 0) { lastRoinetChanges.roinet_2 = d_r2; lastRoinetChanges.mostRecent = 'roinet_2'; }
                     if (d_a1 !== 0) { lastRoinetChanges.airtel_1 = d_a1; lastRoinetChanges.mostRecent = 'airtel_1'; }
@@ -9009,13 +9124,6 @@ async function initDailyTxn() {
             currentAvailableDamaged = (parseFloat(opValues.damaged || 0) + (balances.damaged || 0));
             currentAvailableCrgb = (parseFloat(opValues.crgb || 0) + (balances.crgb || 0));
             
-            // ID Specific breakdown for validation & Modal
-            const opRoinet = parseFloat(openingBalances.roinet_1 || 0) + parseFloat(openingBalances.roinet_2 || 0);
-            const opAirtel = parseFloat(openingBalances.airtel_1 || 0) + parseFloat(openingBalances.airtel_2 || 0);
-            const opSpiceMoney = parseFloat(openingBalances.spicemoney || 0);
-            const totalSplitOpening = opRoinet + opAirtel + opSpiceMoney;
-            const roinetOpeningFallback = totalSplitOpening > 0 ? totalSplitOpening : parseFloat(opValues.roinet || 0);
-
             currentAvailableRoinet1 = parseFloat(openingBalances.roinet_1 || 0) + roinetBreakdown.roinet_1;
             currentAvailableRoinet2 = parseFloat(openingBalances.roinet_2 || 0) + roinetBreakdown.roinet_2;
             currentAvailableAirtel1 = parseFloat(openingBalances.airtel_1 || 0) + roinetBreakdown.airtel_1;
@@ -9048,6 +9156,12 @@ async function initDailyTxn() {
                     total: lastRoinetChanges.total,
                     mostRecent: lastRoinetChanges.mostRecent
                 }
+            };
+
+            window._crgbBreakdown = {
+                opening: parseFloat(opValues.crgb || 0),
+                closing: parseFloat(opValues.crgb || 0) + (balances.crgb || 0),
+                lastChange: lastChanges.crgb || 0
             };
 
             const opOnlineP1 = parseFloat(openingBalances.online_p1 || 0) - (yesterdaySubWithdrawals['online_p1'] || 0);
@@ -9460,6 +9574,9 @@ async function initDailyTxn() {
                         let targetDest = getOnlineDest(t.provider || t.receivedIn);
                         modifyOnlineSub(sourceDest, -amt);
                         modifyOnlineSub(targetDest, amt);
+                    } else if (t.type === 'CSP_WALLET_LOAD') {
+                        const sourceDest = getOnlineDest(t.paymentApp || t.depositBy);
+                        modifyOnlineSub(sourceDest, -amt);
                     }
                     return { 
                         ...t, 
@@ -9467,6 +9584,22 @@ async function initDailyTxn() {
                         runningOnline: currentOnline, 
                         cashDiff: currentCash - prevCash, 
                         onlineDiff: currentOnline - prevOnline,
+                        breakdown: {
+                            bank: curOnlineP1 + curOnlineP2 + curOnlineP3 + curOther,
+                            diffBank: (curOnlineP1 - prevOnlineP1) + (curOnlineP2 - prevOnlineP2) + (curOnlineP3 - prevOnlineP3) + (curOther - prevOther),
+                            subAccounts: {
+                                online_p1: curOnlineP1,
+                                online_p2: curOnlineP2,
+                                online_p3: curOnlineP3,
+                                other: curOther
+                            },
+                            subAccountDeltas: {
+                                online_p1: curOnlineP1 - prevOnlineP1,
+                                online_p2: curOnlineP2 - prevOnlineP2,
+                                online_p3: curOnlineP3 - prevOnlineP3,
+                                other: curOther - prevOther
+                            }
+                        },
                         subAccountDeltas: {
                             online_p1: curOnlineP1 - prevOnlineP1,
                             online_p2: curOnlineP2 - prevOnlineP2,
@@ -9736,13 +9869,13 @@ async function initDailyTxn() {
             const { accName, accNumber, bankDisplay, typeDisplay } = parseBankUrn(txn);
 
             tr.innerHTML = `
-                <td class="px-3 py-1.5 serial-cell" data-original="${serialPos}" data-excluded="${isAccFilter ? false : isExcluded}">
-                    <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[30px] h-[22px]">
+                <td class="px-1 py-1 serial-cell" data-original="${serialPos}" data-excluded="${isAccFilter ? false : isExcluded}">
+                    <div class="flex items-center justify-center px-1 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 min-w-[28px] h-[22px] mx-auto">
                         <span class="serial-text text-[10px] font-bold text-slate-500 dark:text-slate-400">${isAccFilter ? ('#' + serialPos) : (isExcluded ? '-' : '#' + serialPos)}</span>
                     </div>
                 </td>
-                <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[80px] mx-auto">
+                <td class="px-1 py-1 whitespace-nowrap">
+                    <div class="flex flex-col gap-0.5 w-[76px] mx-auto">
                         <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wide">${time || 'NA'}</span>
                         </div>
@@ -9751,9 +9884,9 @@ async function initDailyTxn() {
                         </div>
                     </div>
                 </td>
-                <td class="px-3 py-1.5">
-                    <div class="flex flex-col items-center gap-1 mx-auto">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-[125px] ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' || txn.type === 'AADHAAR_DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
+                <td class="px-1.5 py-1">
+                    <div class="flex flex-col items-center gap-0.5 mx-auto w-full max-w-[130px]">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 w-full h-[22px] whitespace-nowrap ${txn.type === 'DEPOSIT' || txn.type === 'FREE_DEPOSIT' || txn.type === 'ADMIN_DEPOSIT' || txn.type === 'CREDIT_RECEIVED' || txn.type === 'CUST_MONEY_IN' || txn.type === 'OTHER_INCOME' || txn.type === 'PENDING_ADD' || txn.type === 'AADHAAR_DEPOSIT' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' :
                     txn.type === 'WITHDRAWAL' || txn.type === 'FREE_WITHDRAWAL' || txn.type === 'ADMIN_WITHDRAWAL' || txn.type === 'CREDIT_GIVEN' || txn.type === 'DAMAGED_CURRENCY' || txn.type === 'CUST_MONEY_OUT' || txn.type === 'DAILY_EXPENSE' || txn.type === 'PENDING_REMOVE' ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20' :
                         txn.type === 'GOLD_SIP' ? 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20' :
                             
@@ -9767,8 +9900,8 @@ async function initDailyTxn() {
                 }</span>
                     </div>
                 </td>
-                 <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[160px] mx-auto">
+                 <td class="px-1.5 py-1">
+                    <div class="flex flex-col gap-0.5 w-full min-w-[125px] max-w-[170px] mx-auto">
                         ${(() => {
                             let infoList = [];
                             if (bankDisplay) infoList.push(getShortBankName(bankDisplay) + (typeDisplay ? ' ' + typeDisplay : ''));
@@ -9802,6 +9935,8 @@ async function initDailyTxn() {
                                 }
                             } else if (txn.type === 'GOLD_SIP') {
                                 infoList = ['Phonepe', txn.depositBy || 'Online(shop)'];
+                            } else if (txn.type === 'CSP_WALLET_LOAD') {
+                                infoList = ['Debit: ' + (txn.paymentApp || txn.depositBy || 'Online'), 'Credit: ' + (txn.provider || 'Wallet')];
                             }
 
                             let b1 = infoList[0] || 'NA';
@@ -9818,8 +9953,8 @@ async function initDailyTxn() {
                         })()}
                     </div>
                 </td>
-                <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[160px] mx-auto">
+                <td class="px-1.5 py-1">
+                    <div class="flex flex-col gap-0.5 w-full min-w-[135px] max-w-[210px] mx-auto">
                         ${(() => {
                             let d1 = 'NA';
                             let d2Arr = [];
@@ -9827,6 +9962,9 @@ async function initDailyTxn() {
                                 d1 = (txn.provider || 'Wallet') + ' &rarr; ' + (getShortBankName(bankDisplay) || txn.bankName || 'Bank');
                                 if (accName) d2Arr.push(accName);
                                 if (accNumber) d2Arr.push(accNumber);
+                                if (txn.remark) d2Arr.push(txn.remark);
+                            } else if (txn.type === 'CSP_WALLET_LOAD') {
+                                d1 = (txn.paymentApp || txn.depositBy || 'Online') + ' &rarr; ' + (txn.provider || 'Wallet');
                                 if (txn.remark) d2Arr.push(txn.remark);
                             } else if (['CSP_COMMISSION'].includes(txn.type)) {
                                 d1 = txn.provider || 'CSP Wallet';
@@ -9856,8 +9994,8 @@ async function initDailyTxn() {
                         })()}
                     </div>
                 </td>
-                <td class="px-3 py-1.5 text-right">
-                    <div class="flex flex-col gap-1 w-[90px] mx-auto">
+                <td class="px-1 py-1 text-center">
+                    <div class="flex flex-col gap-0.5 w-full min-w-[80px] max-w-[95px] mx-auto">
                         ${isAccFilter ? (() => {
                             const delta = (txn.subAccountDeltas && txn.subAccountDeltas[currentAccountFilter]) || 0;
                             if (delta > 0) {
@@ -9908,8 +10046,8 @@ async function initDailyTxn() {
                         ` : '')}
                     </div>
                 </td>
-                <td class="px-3 py-1.5 text-right charges-col-cell">
-                    <div class="flex flex-col gap-1 w-[110px] mx-auto">
+                <td class="px-1 py-1 text-center charges-col-cell">
+                    <div class="flex flex-col gap-0.5 w-full min-w-[65px] max-w-[85px] mx-auto">
                         ${(['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0) ? `
                             <div class="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full h-[22px]">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NA</span>
@@ -9927,8 +10065,8 @@ async function initDailyTxn() {
                         `}
                     </div>
                 </td>
-                <td class="px-3 py-1.5 balance-col-cell">
-                    <div class="flex flex-col items-center justify-center gap-1 w-[160px] mx-auto">
+                <td class="px-1.5 py-1 balance-col-cell whitespace-nowrap">
+                    <div class="flex flex-col items-center justify-center gap-0.5 w-full min-w-[145px] max-w-[165px] mx-auto">
                         ${isAccFilter ? (() => {
                             const delta = (txn.subAccountDeltas && txn.subAccountDeltas[currentAccountFilter]) || 0;
                             const accBal = (txn.subAccountBalances && txn.subAccountBalances[currentAccountFilter]) !== undefined ? txn.subAccountBalances[currentAccountFilter] : 0;
@@ -9950,12 +10088,12 @@ async function initDailyTxn() {
                         `}
                     </div>
                 </td>
-                <td class="px-3 py-1.5">
-                    <div class="flex flex-col gap-1 w-[80px] mx-auto opacity-100 lg:opacity-20 lg:group-hover:opacity-100 transition-opacity">
-                        <button class="edit-txn-btn flex items-center justify-center px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 w-full h-[22px] hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
+                <td class="px-1 py-1">
+                    <div class="flex flex-col gap-0.5 w-[66px] mx-auto opacity-100 lg:opacity-20 lg:group-hover:opacity-100 transition-opacity">
+                        <button class="edit-txn-btn flex items-center justify-center px-1 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 w-full h-[22px] hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
                             <span class="text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">edit</span> Edit</span>
                         </button>
-                        <button class="delete-txn-btn flex items-center justify-center px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 w-full h-[22px] hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
+                        <button class="delete-txn-btn flex items-center justify-center px-1 py-0.5 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 w-full h-[22px] hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white transition-colors" data-id="${txn.id}">
                             <span class="text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">delete</span> Delete</span>
                         </button>
                     </div>
@@ -9969,31 +10107,33 @@ async function initDailyTxn() {
             const opRow = document.createElement('tr');
             opRow.className = 'bg-slate-50/50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10';
             if (isAccFilter) {
-                const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter]) || 0;
+                const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter] !== undefined ? window._onlineBreakdown.opening[currentAccountFilter] : null) ??
+                              (window._roinetBreakdown && window._roinetBreakdown.opening && window._roinetBreakdown.opening[currentAccountFilter] !== undefined ? window._roinetBreakdown.opening[currentAccountFilter] : null) ??
+                              (currentAccountFilter === 'crgb' && window._crgbBreakdown?.opening !== undefined ? window._crgbBreakdown.opening : null) ?? 0;
                 const accLabel = accDisplayNames[currentAccountFilter] || currentAccountFilter;
                 opRow.innerHTML = `
-                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${accLabel} on ${currentSelectedDate}</span></td>
-                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balance:</td>
-                    <td class="px-3 py-2 text-right">
+                    <td class="px-1.5 py-1.5 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${accLabel} on ${currentSelectedDate}</span></td>
+                    <td class="px-1.5 py-1.5 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balance:</td>
+                    <td class="px-1.5 py-1.5 text-right">
                         <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
                             <span class="text-[10px] font-black text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 w-full text-center bg-blue-50/50 dark:bg-blue-500/10">
                                 <span>${accLabel}: ₹${accOp.toLocaleString('en-IN')}</span>
                             </span>
                         </div>
                     </td>
-                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+                    <td class="px-1.5 py-1.5 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
                 `;
             } else {
                 opRow.innerHTML = `
-                    <td class="px-3 py-2 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
-                    <td class="px-3 py-2 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
-                    <td class="px-3 py-2 text-right">
+                    <td class="px-1.5 py-1.5 text-center" colspan="5"><span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Balance for ${currentSelectedDate}</span></td>
+                    <td class="px-1.5 py-1.5 text-right font-black text-slate-400 text-[10px]" colspan="2">Starting Balances:</td>
+                    <td class="px-1.5 py-1.5 text-right">
                         <div class="flex flex-col items-center justify-center gap-1 min-w-[100px]">
                             <span class="text-[10px] font-black text-emerald-500/70 px-2 py-0.5 rounded border border-emerald-500/10 w-full text-center">C: ₹${currentStartCash.toLocaleString('en-IN')}</span>
                             <span class="text-[10px] font-black text-blue-500/70 px-2 py-0.5 rounded border border-blue-500/10 w-full text-center">O: ₹${currentStartOnline.toLocaleString('en-IN')}</span>
                         </div>
                     </td>
-                    <td class="px-3 py-2 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
+                    <td class="px-1.5 py-1.5 text-center"><span class="material-symbols-outlined text-slate-300 text-sm">start</span></td>
                 `;
             }
             tableBody.appendChild(opRow);
@@ -10023,10 +10163,13 @@ async function initDailyTxn() {
                 const accDayTxns = allTxnsForDate.filter(t => t.subAccountDeltas && Math.abs(t.subAccountDeltas[currentAccountFilter] || 0) > 0);
                 const totalCredit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] > 0) ? t.subAccountDeltas[currentAccountFilter] : 0), 0);
                 const totalDebit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] < 0) ? Math.abs(t.subAccountDeltas[currentAccountFilter]) : 0), 0);
-                const opBal = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter]) || 0;
-                const clBal = (window._onlineBreakdown && window._onlineBreakdown.closing && window._onlineBreakdown.closing[currentAccountFilter]) !== undefined 
-                    ? window._onlineBreakdown.closing[currentAccountFilter] 
-                    : (opBal + totalCredit - totalDebit);
+                const opBal = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter] !== undefined ? window._onlineBreakdown.opening[currentAccountFilter] : null) ??
+                              (window._roinetBreakdown && window._roinetBreakdown.opening && window._roinetBreakdown.opening[currentAccountFilter] !== undefined ? window._roinetBreakdown.opening[currentAccountFilter] : null) ??
+                              (currentAccountFilter === 'crgb' && window._crgbBreakdown?.opening !== undefined ? window._crgbBreakdown.opening : null) ?? 0;
+                const clBal = (window._onlineBreakdown && window._onlineBreakdown.closing && window._onlineBreakdown.closing[currentAccountFilter] !== undefined ? window._onlineBreakdown.closing[currentAccountFilter] : null) ??
+                              (window._roinetBreakdown && window._roinetBreakdown.closing && window._roinetBreakdown.closing[currentAccountFilter] !== undefined ? window._roinetBreakdown.closing[currentAccountFilter] : null) ??
+                              (currentAccountFilter === 'crgb' && window._crgbBreakdown?.closing !== undefined ? window._crgbBreakdown.closing : null) ??
+                              (opBal + totalCredit - totalDebit);
 
                 const accName = accDisplayNames[currentAccountFilter] || currentAccountFilter;
                 if (accLedgerTitle) accLedgerTitle.textContent = `${accName} Ledger`;
@@ -10062,7 +10205,13 @@ async function initDailyTxn() {
                     if (txn.method && txnMethod) txnMethod.value = txn.method;
                     txnAddress.value = txn.address;
                     txnConditional.value = txn.extraDetails || '';
-                    txnProvider.value = txn.provider || '';
+                    if (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txn.type)) {
+                        if (txnProvider) txnProvider.value = txn.paymentApp || txn.depositBy || '';
+                        const txnQrWallet = document.getElementById('txn-qr-wallet');
+                        if (txnQrWallet) txnQrWallet.value = txn.provider || '';
+                    } else {
+                        if (txnProvider) txnProvider.value = txn.provider || '';
+                    }
                     if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
                     if (txnReceivedIn) txnReceivedIn.value = txn.receivedIn || '';
                     if (txnChargesAccount) txnChargesAccount.value = txn.chargesAccount || '';
@@ -10093,12 +10242,23 @@ async function initDailyTxn() {
     };
 
     // Account Filter Functionality (Option A)
+    const accFilterBtn = document.getElementById('account-filter-btn');
+    const updateAccountFilterBtnDisplay = () => {
+        if (!accFilterBtn) return;
+        if (currentAccountFilter && currentAccountFilter !== 'ALL') {
+            accFilterBtn.className = "flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-2 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 transition-all border border-blue-500/30 font-bold text-xs shrink-0 cursor-pointer";
+        } else {
+            accFilterBtn.className = "flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs shrink-0 cursor-pointer";
+        }
+    };
+
     const accFilterSelect = document.getElementById('account-filter-select');
     if (accFilterSelect) {
         accFilterSelect.value = currentAccountFilter;
         accFilterSelect.onchange = (e) => {
             currentAccountFilter = e.target.value;
             window.currentAccountFilter = currentAccountFilter;
+            updateAccountFilterBtnDisplay();
             renderBadgesAndTable();
         };
     }
@@ -10108,6 +10268,7 @@ async function initDailyTxn() {
             currentAccountFilter = 'ALL';
             window.currentAccountFilter = 'ALL';
             if (accFilterSelect) accFilterSelect.value = 'ALL';
+            updateAccountFilterBtnDisplay();
             renderBadgesAndTable();
         };
     }
@@ -10116,10 +10277,609 @@ async function initDailyTxn() {
         window.currentAccountFilter = currentAccountFilter;
         const sel = document.getElementById('account-filter-select');
         if (sel) sel.value = currentAccountFilter;
+        updateAccountFilterBtnDisplay();
         renderBadgesAndTable();
     };
+    updateAccountFilterBtnDisplay();
 
     // Dynamic cards manage their own filter clicks
+
+// ==========================================
+    // Unified Daily Txn PDF & Excel Export
+    // ==========================================
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const downloadExcelBtn = document.getElementById('download-excel-btn');
+
+    const getShortBankNameHelper = (name) => {
+        if (!name) return '';
+        const n = name.toUpperCase().trim();
+        const map = {
+            'CHHATTISGARH GRAMEEN BANK': 'CRGB',
+            'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+            'STATE BANK OF INDIA': 'SBI',
+            'INDIA POST PAYMENT BANK': 'IPPB',
+            'BANK OF BARODA': 'BOB',
+            'UCO BANK': 'UCO',
+            'UNION BANK': 'UBI',
+            'AIRTEL BANK': 'AIRTEL',
+            'FINO BANK': 'FINO',
+            'INDIAN BANK': 'INDIAN',
+            'JILLA SAKAHARI BANK': 'JSB',
+            'CHHATTISGARH GRAMIN BANK': 'CRGB',
+            'PUNJAB NATIONAL BANK': 'PNB',
+            'HDFC BANK': 'HDFC',
+            'ICICI BANK': 'ICICI',
+            'AXIS BANK': 'AXIS',
+            'CANARA BANK': 'CANARA',
+            'BANK OF INDIA': 'BOI',
+            'CENTRAL BANK OF INDIA': 'CBI',
+            'IDBI BANK': 'IDBI',
+            'KOTAK MAHINDRA BANK': 'KOTAK',
+            'PAYTM PAYMENTS BANK': 'PAYTM'
+        };
+        return map[n] || name;
+    };
+
+    const parseBankUrnHelper = (txn) => {
+        if (!txn.bankName) return { accName: '', accNumber: '', bankDisplay: '', typeDisplay: '' };
+        let holder = '';
+        let bank = '';
+        let type = '';
+        let number = '';
+
+        if (txn.accountId && window.cachedBankAccountsMap && window.cachedBankAccountsMap.has(String(txn.accountId))) {
+            const acc = window.cachedBankAccountsMap.get(String(txn.accountId));
+            if (acc && acc.name && acc.name.includes('|')) {
+                const p = acc.name.split('|');
+                holder = p[0] || '';
+                bank = p[1] || '';
+                number = p[2] || '';
+                type = p[3] || 'CURRENT';
+            }
+        }
+        if (!bank && window.cachedBankAccountsMap) {
+            for (let acc of window.cachedBankAccountsMap.values()) {
+                if (acc.name && acc.name.includes(txn.bankName)) {
+                    const p = acc.name.split('|');
+                    holder = p[0] || '';
+                    bank = p[1] || '';
+                    number = p[2] || '';
+                    type = p[3] || 'CURRENT';
+                    break;
+                }
+            }
+        }
+        if (!bank) {
+            bank = txn.bankName;
+        }
+        return { accName: holder, accNumber: number, bankDisplay: bank, typeDisplay: type };
+    };
+
+    const formatProviderBankHelper = (txn) => {
+        const { bankDisplay, typeDisplay } = parseBankUrnHelper(txn);
+        let infoList = [];
+        if (bankDisplay) infoList.push(getShortBankNameHelper(bankDisplay) + (typeDisplay ? ' ' + typeDisplay : ''));
+        if (txn.paymentApp) infoList.push(txn.paymentApp);
+        if (txn.provider && txn.type !== 'SETTLEMENT') {
+            if (!infoList.includes(txn.provider)) infoList.push(txn.provider);
+        }
+        if (txn.depositBy) {
+            let prefix = '';
+            if (['WITHDRAWAL', 'QR_WITHDRAWAL', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CUST_MONEY_IN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'PENDING_REMOVE', 'DAMAGED_RECOVERY'].includes(txn.type)) prefix = 'Recv: ';
+            else if (['CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'CASH_WITHDRAWAL', 'PENDING_ADD'].includes(txn.type)) prefix = 'Debit: ';
+            else if (txn.type === 'CASH_DEPOSIT') prefix = 'Credit: ';
+            else if (txn.type === 'ONLINE_WORK') prefix = 'Debit: ';
+            else prefix = 'Dep: ';
+            infoList.push(prefix + txn.depositBy);
+        }
+        if (txn.receivedIn) {
+            let rPrefix = 'Recv: ';
+            if (!infoList.includes(rPrefix + txn.receivedIn)) {
+                infoList.push(rPrefix + txn.receivedIn);
+            }
+        }
+        if (['OTHER_INCOME', 'CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type)) {
+            if ((['OTHER_INCOME', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type) && txn.chargesType === 'Online' && txn.chargesAccount) || (txn.type === 'CSP_COMMISSION' && txn.provider && txn.provider !== 'Cash')) {
+                let acc = txn.type === 'CSP_COMMISSION' ? txn.provider : txn.chargesAccount;
+                infoList = ['Online', acc];
+            } else {
+                infoList = ['Cash'];
+            }
+        } else if (txn.type === 'GOLD_SIP') {
+            infoList = ['Phonepe', txn.depositBy || 'Online(shop)'];
+        } else if (txn.type === 'CSP_WALLET_LOAD') {
+            infoList = ['Debit: ' + (txn.paymentApp || txn.depositBy || 'Online'), 'Credit: ' + (txn.provider || 'Wallet')];
+        }
+
+        const formatB = (str) => (!str || str === 'NA') ? 'NA' : String(str).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        let b1 = formatB(infoList[0] || 'NA');
+        let b2 = formatB(infoList.length > 1 ? infoList.slice(1).join(' | ') : 'NA');
+        return { line1: b1, line2: b2, display: b2 !== 'NA' ? (b1 + '\n' + b2) : b1 };
+    };
+
+    const formatDetailsHelper = (txn) => {
+        const { accName, accNumber, bankDisplay } = parseBankUrnHelper(txn);
+        let d1 = 'NA';
+        let d2Arr = [];
+        if (txn.type === 'SETTLEMENT') {
+            d1 = (txn.provider || 'Wallet') + ' -> ' + (getShortBankNameHelper(bankDisplay) || txn.bankName || 'Bank');
+            if (accName) d2Arr.push(accName);
+            if (accNumber) d2Arr.push(accNumber);
+            if (txn.remark) d2Arr.push(txn.remark);
+        } else if (txn.type === 'CSP_WALLET_LOAD') {
+            d1 = (txn.paymentApp || txn.depositBy || 'Online') + ' -> ' + (txn.provider || 'Wallet');
+            if (txn.remark) d2Arr.push(txn.remark);
+        } else if (['CSP_COMMISSION'].includes(txn.type)) {
+            d1 = txn.provider || 'CSP Wallet';
+            d2Arr.push(txn.remark || 'CSP Commission');
+        } else if (accName) {
+            d1 = accName;
+            if (accNumber) d2Arr.push(accNumber);
+            if (txn.extraDetails) d2Arr.push(txn.extraDetails);
+            if (txn.address) d2Arr.push(txn.address);
+        } else if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DAILY_EXPENSE'].includes(txn.type)) {
+            d1 = txn.note || (txn.type === 'DAILY_EXPENSE' ? 'Daily Expense' : 'No Name');
+            if (txn.remark) d2Arr.push(txn.remark);
+        } else {
+            d1 = txn.remark || txn.note || (txn.pages ? (txn.type === 'PHOTOCOPY' ? 'Photocopy' : (txn.type === 'PRINTOUT' ? 'Printout' : (txn.type === 'PASSPORT' ? 'Passport Photos' : 'Lamination'))) : (txn.type === 'QR_WITHDRAWAL' ? 'QR Withdrawal' : 'No Details'));
+            if (txn.pages) d2Arr.push(txn.type === 'LAMINATION' && txn.laminationSize ? txn.laminationSize + ' (' + txn.pages + ')' : txn.pages + ' ' + (txn.type === 'PASSPORT' ? (txn.pages === 1 ? 'Piece' : 'Pieces') : (txn.type === 'LAMINATION' ? (txn.pages === 1 ? 'Item' : 'Items') : (txn.pages === 1 ? 'Page' : 'Pages'))));
+            if (txn.extraDetails) d2Arr.push(txn.extraDetails);
+            if (txn.address) d2Arr.push(txn.address);
+        }
+        const formatD = (str) => (!str || str === 'NA') ? 'NA' : String(str).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        const d1Formatted = formatD(d1);
+        const d2Formatted = d2Arr.length > 0 ? formatD(d2Arr.join(' | ')) : 'NA';
+        return { line1: d1Formatted, line2: d2Formatted, display: d2Formatted !== 'NA' ? (d1Formatted + '\n' + d2Formatted) : d1Formatted };
+    };
+
+    const formatAmountHelper = (txn, isAccExp, filterKey) => {
+        if (isAccExp) {
+            const delta = (txn.subAccountDeltas && txn.subAccountDeltas[filterKey]) || 0;
+            if (delta > 0) {
+                return {
+                    pdfDisplay: '+Rs. ' + delta.toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '\nCredit In',
+                    excelDebit: null,
+                    excelCredit: delta,
+                    display: '+Rs. ' + delta.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                };
+            } else if (delta < 0) {
+                return {
+                    pdfDisplay: '-Rs. ' + Math.abs(delta).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '\nDebit Out',
+                    excelDebit: Math.abs(delta),
+                    excelCredit: null,
+                    display: '-Rs. ' + Math.abs(delta).toLocaleString('en-IN', { minimumFractionDigits: 2 })
+                };
+            } else {
+                return {
+                    pdfDisplay: 'Rs. 0.00\nNo Chg',
+                    excelDebit: null,
+                    excelCredit: null,
+                    display: 'Rs. 0.00'
+                };
+            }
+        } else {
+            const isNA = ['CSP_COMMISSION', 'PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txn.type);
+            if (isNA) {
+                return {
+                    pdfDisplay: 'NA',
+                    excelAmount: null,
+                    excelRemaining: null,
+                    display: 'NA'
+                };
+            }
+            const amt = parseFloat(txn.amount || 0);
+            const rem = txn.remainingAmount ? parseFloat(txn.remainingAmount) : null;
+            let pdf = 'Rs. ' + amt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            if (rem) pdf += '\nRem: Rs. ' + rem.toLocaleString('en-IN');
+            return {
+                pdfDisplay: pdf,
+                excelAmount: amt,
+                excelRemaining: rem,
+                display: 'Rs. ' + amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+            };
+        }
+    };
+
+    const formatChargesHelper = (txn) => {
+        const isNA = (['PENDING_ADD', 'PENDING_REMOVE'].includes(txn.type)) || 
+            ((['GOLD_SIP', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'DAMAGED_CURRENCY', 'DAMAGED_RECOVERY', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'JIO_RECHARGE', 'DISH_TV', 'JIO_TOPUP', 'SETTLEMENT', 'CSP_COMMISSION', 'OTHER_INCOME', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txn.type)) && parseFloat(txn.charges || 0) === 0);
+        
+        if (isNA || parseFloat(txn.charges || 0) === 0) {
+            return {
+                pdfDisplay: 'NA',
+                excelCharges: 0,
+                excelMode: 'NA',
+                display: 'NA'
+            };
+        }
+
+        const chgVal = parseFloat(txn.charges || 0);
+        const chgMode = (['SETTLEMENT', 'CSP_COMMISSION'].includes(txn.type)) ? 'Wallet' : 
+                        (txn.chargesType === 'Online' && (txn.chargesAccount || txn.depositBy) ? (txn.chargesAccount || txn.depositBy) : (txn.chargesType || 'Cash'));
+        
+        return {
+            pdfDisplay: 'Rs. ' + chgVal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '\n(' + chgMode + ')',
+            excelCharges: chgVal,
+            excelMode: chgMode,
+            display: 'Rs. ' + chgVal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) + ' (' + chgMode + ')'
+        };
+    };
+
+    const formatBalanceHelper = (txn, isAccExp, filterKey) => {
+        if (isAccExp) {
+            const delta = (txn.subAccountDeltas && txn.subAccountDeltas[filterKey]) || 0;
+            const accBal = (txn.subAccountBalances && txn.subAccountBalances[filterKey]) !== undefined ? txn.subAccountBalances[filterKey] : 0;
+            const diffStr = delta !== 0 ? (' (' + (delta > 0 ? '+' : '') + delta.toLocaleString('en-IN') + ')') : '';
+            return {
+                pdfDisplay: 'Bal: Rs. ' + accBal.toLocaleString('en-IN') + diffStr,
+                excelBal: accBal,
+                excelDiff: delta,
+                display: 'Bal: Rs. ' + accBal.toLocaleString('en-IN') + diffStr
+            };
+        } else {
+            const cBal = txn.runningCash !== undefined ? txn.runningCash : 0;
+            const cDiff = (txn.cashDiff !== undefined && txn.cashDiff !== 0) ? (' (' + (txn.cashDiff > 0 ? '+' : '') + txn.cashDiff.toLocaleString('en-IN') + ')') : '';
+            
+            const oBal = txn.runningOnline !== undefined ? txn.runningOnline : 0;
+            const oDiff = (txn.onlineDiff !== undefined && txn.onlineDiff !== 0) ? (' (' + (txn.onlineDiff > 0 ? '+' : '') + txn.onlineDiff.toLocaleString('en-IN') + ')') : '';
+
+            return {
+                pdfDisplay: 'C: Rs. ' + cBal.toLocaleString('en-IN') + cDiff + '\nO: Rs. ' + oBal.toLocaleString('en-IN') + oDiff,
+                excelCashBal: cBal,
+                excelCashDiff: txn.cashDiff || 0,
+                excelOnlineBal: oBal,
+                excelOnlineDiff: txn.onlineDiff || 0,
+                display: 'C: Rs. ' + cBal.toLocaleString('en-IN') + cDiff + ' | O: Rs. ' + oBal.toLocaleString('en-IN') + oDiff
+            };
+        }
+    };
+
+    const getExportData = () => {
+        const tableBody = document.getElementById('daily-txn-table-body');
+        const rows = tableBody ? Array.from(tableBody.querySelectorAll('tr.group')).filter(r => r.style.display !== 'none' && r.dataset.id) : [];
+        
+        const isAccExp = currentAccountFilter && currentAccountFilter !== 'ALL';
+        const accNameExp = isAccExp ? (accDisplayNames[currentAccountFilter] || currentAccountFilter) : '';
+
+        const visibleData = rows.map((r, idx) => {
+            const id = String(r.dataset.id);
+            const txn = (window.allTxnsForDate || allTxnsForDate || []).find(t => String(t.id) === id) || 
+                        (window.currentTxnsForDownload || currentTxnsForDownload || []).find(t => String(t.id) === id) || { id };
+            
+            const serialText = r.querySelector('.serial-text')?.textContent.trim() || r.dataset.original || (isAccExp ? ('#' + (rows.length - idx)) : '-');
+            return { rowElem: r, txn, serialText };
+        });
+
+        const isChargesHidden = window.getAppSetting ? !window.getAppSetting('dtxn_showCharges', true) : (document.getElementById('charges-col-header')?.style.display === 'none');
+        const isBalanceHidden = window.getAppSetting ? !window.getAppSetting('dtxn_showBalance', true) : (document.getElementById('balance-col-header')?.style.display === 'none');
+
+        return { visibleData, isAccExp, accNameExp, isChargesHidden, isBalanceHidden };
+    };
+
+    if (downloadPdfBtn) {
+        downloadPdfBtn.onclick = () => {
+            const { visibleData, isAccExp, accNameExp, isChargesHidden, isBalanceHidden } = getExportData();
+            
+            if (visibleData.length === 0) {
+                if (window.Swal) {
+                    window.Swal.fire({ icon: 'info', title: 'No Transactions', text: 'There are no visible transactions to download.' });
+                } else {
+                    alert('No visible transactions to download.');
+                }
+                return;
+            }
+
+            try {
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    alert('PDF library not loaded. Please check your internet connection.');
+                    return;
+                }
+
+                const doc = new window.jspdf.jsPDF('l', 'mm', 'a4');
+
+                // Header Title
+                doc.setFontSize(15);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(30, 41, 59);
+                const titleText = isAccExp ? (accNameExp.toUpperCase() + ' LEDGER REPORT - ' + currentSelectedDate) : ('DAILY TRANSACTIONS REPORT - ' + currentSelectedDate);
+                doc.text(titleText, 10, 13);
+
+                doc.setFontSize(8.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(100, 116, 139);
+                doc.text('Generated on: ' + new Date().toLocaleString('en-IN') + '   |   Visible Rows: ' + visibleData.length, 10, 18);
+
+                // Summary Banner
+                if (isAccExp) {
+                    const accDayTxns = (window.allTxnsForDate || allTxnsForDate || []).filter(t => t.subAccountDeltas && Math.abs(t.subAccountDeltas[currentAccountFilter] || 0) > 0);
+                    const totalCredit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] > 0) ? t.subAccountDeltas[currentAccountFilter] : 0), 0);
+                    const totalDebit = accDayTxns.reduce((sum, t) => sum + ((t.subAccountDeltas && t.subAccountDeltas[currentAccountFilter] < 0) ? Math.abs(t.subAccountDeltas[currentAccountFilter]) : 0), 0);
+                    const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter] !== undefined ? window._onlineBreakdown.opening[currentAccountFilter] : null) ??
+                                  (window._roinetBreakdown && window._roinetBreakdown.opening && window._roinetBreakdown.opening[currentAccountFilter] !== undefined ? window._roinetBreakdown.opening[currentAccountFilter] : null) ??
+                                  (currentAccountFilter === 'crgb' && window._crgbBreakdown?.opening !== undefined ? window._crgbBreakdown.opening : null) ?? 0;
+                    const clBal = (window._onlineBreakdown && window._onlineBreakdown.closing && window._onlineBreakdown.closing[currentAccountFilter] !== undefined ? window._onlineBreakdown.closing[currentAccountFilter] : null) ??
+                                  (window._roinetBreakdown && window._roinetBreakdown.closing && window._roinetBreakdown.closing[currentAccountFilter] !== undefined ? window._roinetBreakdown.closing[currentAccountFilter] : null) ??
+                                  (currentAccountFilter === 'crgb' && window._crgbBreakdown?.closing !== undefined ? window._crgbBreakdown.closing : null) ??
+                                  (accOp + totalCredit - totalDebit);
+
+                    doc.setFillColor(238, 242, 255);
+                    doc.roundedRect(10, 21, 277, 8, 1.5, 1.5, 'F');
+                    doc.setFontSize(8.5);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(67, 56, 202);
+                    doc.text('OPENING: Rs. ' + accOp.toLocaleString('en-IN') + '     |     CREDIT (+): +Rs. ' + totalCredit.toLocaleString('en-IN') + '     |     DEBIT (-): -Rs. ' + totalDebit.toLocaleString('en-IN') + '     |     CLOSING: Rs. ' + clBal.toLocaleString('en-IN'), 14, 26);
+                } else {
+                    doc.setFillColor(241, 245, 249);
+                    doc.roundedRect(10, 21, 277, 8, 1.5, 1.5, 'F');
+                    doc.setFontSize(8.5);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(51, 65, 85);
+                    const cashClEl = document.getElementById('cl-cash')?.textContent.replace(/[^0-9,.-]/g, '') || '';
+                    const onlineClEl = document.getElementById('cl-online')?.textContent.replace(/[^0-9,.-]/g, '') || '';
+                    const cashClStr = cashClEl ? ('  ->  Closing: Rs. ' + cashClEl) : '';
+                    const onlineClStr = onlineClEl ? ('  ->  Closing: Rs. ' + onlineClEl) : '';
+                    doc.text('CASH: Opening Rs. ' + currentStartCash.toLocaleString('en-IN') + cashClStr + '       |       ONLINE: Opening Rs. ' + currentStartOnline.toLocaleString('en-IN') + onlineClStr, 14, 26);
+                }
+
+                // Table Columns
+                const head = ['SL NO.', 'TIME / DATE', 'TXN TYPE', 'PROVIDER / BANK', 'DETAILS', isAccExp ? 'CREDIT / DEBIT' : 'AMOUNT'];
+                if (!isChargesHidden) head.push('CHARGES');
+                if (!isBalanceHidden || isAccExp) head.push(isAccExp ? (accNameExp.toUpperCase() + ' BAL') : 'BALANCE (C/O)');
+
+                const columnStyles = {};
+                let colIdx = 0;
+                columnStyles[colIdx++] = { halign: 'center', cellWidth: 14 };
+                columnStyles[colIdx++] = { halign: 'center', cellWidth: 24 };
+                columnStyles[colIdx++] = { halign: 'center', cellWidth: 28 };
+                columnStyles[colIdx++] = { halign: 'left', cellWidth: (!isChargesHidden && (!isBalanceHidden || isAccExp)) ? 46 : 56 };
+                columnStyles[colIdx++] = { halign: 'left', cellWidth: (!isChargesHidden && (!isBalanceHidden || isAccExp)) ? 56 : 70 };
+                columnStyles[colIdx++] = { halign: 'right', fontStyle: 'bold', cellWidth: 32 };
+                if (!isChargesHidden) {
+                    columnStyles[colIdx++] = { halign: 'right', cellWidth: 27 };
+                }
+                if (!isBalanceHidden || isAccExp) {
+                    columnStyles[colIdx++] = { halign: 'right', cellWidth: 50 };
+                }
+
+                const tableData = visibleData.map(({ rowElem, txn, serialText }) => {
+                    const timeStr = txn.time || (txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--');
+                    const dateStr = txn.date || currentSelectedDate || '';
+                    const formattedType = txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl' :
+                                         (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep' : (txn.type ? txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown'));
+                    const typeDisplay = formattedType + (txn.branch ? ('\n' + txn.branch) : '');
+                    const pb = formatProviderBankHelper(txn);
+                    const det = formatDetailsHelper(txn);
+                    const amtInfo = formatAmountHelper(txn, isAccExp, currentAccountFilter);
+                    const chgInfo = formatChargesHelper(txn);
+                    const balInfo = formatBalanceHelper(txn, isAccExp, currentAccountFilter);
+
+                    const r = [
+                        serialText,
+                        timeStr + '\n' + dateStr,
+                        typeDisplay,
+                        pb.display,
+                        det.display,
+                        amtInfo.pdfDisplay
+                    ];
+                    if (!isChargesHidden) r.push(chgInfo.pdfDisplay);
+                    if (!isBalanceHidden || isAccExp) r.push(balInfo.pdfDisplay);
+                    return r;
+                });
+
+                // Add Opening Balance Row at the bottom
+                if (!window.isAllTimeSearchMode) {
+                    if (isAccExp) {
+                        const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter] !== undefined ? window._onlineBreakdown.opening[currentAccountFilter] : null) ??
+                                      (window._roinetBreakdown && window._roinetBreakdown.opening && window._roinetBreakdown.opening[currentAccountFilter] !== undefined ? window._roinetBreakdown.opening[currentAccountFilter] : null) ??
+                                      (currentAccountFilter === 'crgb' && window._crgbBreakdown?.opening !== undefined ? window._crgbBreakdown.opening : null) ?? 0;
+                        const opRowPdf = [
+                            '-',
+                            '--:--\n' + currentSelectedDate,
+                            'Opening Bal',
+                            'Starting Balance',
+                            'Opening Balance for ' + accNameExp,
+                            '-'
+                        ];
+                        if (!isChargesHidden) opRowPdf.push('-');
+                        opRowPdf.push('Bal: Rs. ' + accOp.toLocaleString('en-IN'));
+                        tableData.push(opRowPdf);
+                    } else {
+                        const opRowPdf = [
+                            '-',
+                            '--:--\n' + currentSelectedDate,
+                            'Opening Bal',
+                            'Starting Balances',
+                            'Opening Balance for ' + currentSelectedDate,
+                            '-'
+                        ];
+                        if (!isChargesHidden) opRowPdf.push('-');
+                        if (!isBalanceHidden) opRowPdf.push('C: Rs. ' + currentStartCash.toLocaleString('en-IN') + '\nO: Rs. ' + currentStartOnline.toLocaleString('en-IN'));
+                        tableData.push(opRowPdf);
+                    }
+                }
+
+                doc.autoTable({
+                    startY: 32,
+                    margin: { left: 10, right: 10, top: 10, bottom: 10 },
+                    head: [head],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontSize: 7.5, fontStyle: 'bold', halign: 'center', valign: 'middle' },
+                    alternateRowStyles: { fillColor: [248, 250, 252] },
+                    styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', font: 'helvetica', valign: 'middle', textColor: [30, 41, 59] },
+                    columnStyles: columnStyles
+                });
+
+                const fileNameDate = window.isAllTimeSearchMode ? 'All_Time' : currentSelectedDate;
+                const fileNamePrefix = isAccExp ? ('Ledger_' + accNameExp.replace(/[^a-zA-Z0-9_-]/g, '_') + '_') : 'DailyTxn_';
+                doc.save(fileNamePrefix + fileNameDate + '.pdf');
+            } catch (err) {
+                console.error('PDF Generation Error:', err);
+                alert('Error generating PDF: ' + err.message);
+            }
+        };
+    }
+
+    if (downloadExcelBtn) {
+        downloadExcelBtn.onclick = () => {
+            const { visibleData, isAccExp, accNameExp, isChargesHidden, isBalanceHidden } = getExportData();
+            
+            if (visibleData.length === 0) {
+                if (window.Swal) {
+                    window.Swal.fire({ icon: 'info', title: 'No Transactions', text: 'There are no visible transactions to download.' });
+                } else {
+                    alert('No visible transactions to download.');
+                }
+                return;
+            }
+
+            try {
+                if (!window.XLSX) {
+                    alert('Excel library not loaded. Please check your internet connection.');
+                    return;
+                }
+
+                const excelData = visibleData.map(({ rowElem, txn, serialText }) => {
+                    const timeStr = txn.time || (txn.timestamp ? new Date(txn.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--');
+                    const dateStr = txn.date || currentSelectedDate || '';
+                    const formattedType = txn.type === 'CASH_WITHDRAWAL' ? 'Cash Wdrl' :
+                                         (txn.type === 'CASH_DEPOSIT' ? 'Cash Dep' : (txn.type ? txn.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown'));
+                    const pb = formatProviderBankHelper(txn);
+                    const det = formatDetailsHelper(txn);
+                    const amtInfo = formatAmountHelper(txn, isAccExp, currentAccountFilter);
+                    const chgInfo = formatChargesHelper(txn);
+                    const balInfo = formatBalanceHelper(txn, isAccExp, currentAccountFilter);
+
+                    if (isAccExp) {
+                        const rowObj = {
+                            'Sl No': serialText,
+                            'Time': timeStr,
+                            'Date': dateStr,
+                            'Txn Type': formattedType,
+                            'Branch': txn.branch || '',
+                            'Provider / Bank': pb.line1,
+                            'Account Details': pb.line2 !== 'NA' ? pb.line2 : '',
+                            'Customer Name / Note': det.line1 !== 'NA' ? det.line1 : '',
+                            'Details / Remark': det.line2 !== 'NA' ? det.line2 : '',
+                            'Debit (-) (Rs)': amtInfo.excelDebit !== null ? amtInfo.excelDebit : '',
+                            'Credit (+) (Rs)': amtInfo.excelCredit !== null ? amtInfo.excelCredit : ''
+                        };
+                        if (!isChargesHidden) {
+                            rowObj['Charges (Rs)'] = chgInfo.excelCharges || 0;
+                            rowObj['Charges Mode'] = chgInfo.excelMode !== 'NA' ? chgInfo.excelMode : '';
+                        }
+                        rowObj[accNameExp + ' Balance (Rs)'] = balInfo.excelBal;
+                        rowObj['Balance Change (Rs)'] = balInfo.excelDiff || 0;
+                        return rowObj;
+                    } else {
+                        const rowObj = {
+                            'Sl No': serialText,
+                            'Time': timeStr,
+                            'Date': dateStr,
+                            'Txn Type': formattedType,
+                            'Branch': txn.branch || '',
+                            'Provider / Bank': pb.line1,
+                            'Account Info (Dep/Recv)': pb.line2 !== 'NA' ? pb.line2 : '',
+                            'Customer Name / Note': det.line1 !== 'NA' ? det.line1 : '',
+                            'Details / Remark': det.line2 !== 'NA' ? det.line2 : '',
+                            'Amount (Rs)': amtInfo.excelAmount !== null ? amtInfo.excelAmount : (amtInfo.pdfDisplay === 'NA' ? 'NA' : 0)
+                        };
+                        if (amtInfo.excelRemaining !== null) {
+                            rowObj['Remaining Amount (Rs)'] = amtInfo.excelRemaining;
+                        }
+                        if (!isChargesHidden) {
+                            rowObj['Charges (Rs)'] = chgInfo.excelCharges || 0;
+                            rowObj['Charges Mode'] = chgInfo.excelMode !== 'NA' ? chgInfo.excelMode : '';
+                        }
+                        if (!isBalanceHidden) {
+                            rowObj['Cash Balance (Rs)'] = balInfo.excelCashBal;
+                            rowObj['Cash Change (Rs)'] = balInfo.excelCashDiff || 0;
+                            rowObj['Online Balance (Rs)'] = balInfo.excelOnlineBal;
+                            rowObj['Online Change (Rs)'] = balInfo.excelOnlineDiff || 0;
+                        }
+                        return rowObj;
+                    }
+                });
+
+                // Add Opening Balance Row at the bottom
+                if (!window.isAllTimeSearchMode) {
+                    if (isAccExp) {
+                        const accOp = (window._onlineBreakdown && window._onlineBreakdown.opening && window._onlineBreakdown.opening[currentAccountFilter] !== undefined ? window._onlineBreakdown.opening[currentAccountFilter] : null) ??
+                                      (window._roinetBreakdown && window._roinetBreakdown.opening && window._roinetBreakdown.opening[currentAccountFilter] !== undefined ? window._roinetBreakdown.opening[currentAccountFilter] : null) ??
+                                      (currentAccountFilter === 'crgb' && window._crgbBreakdown?.opening !== undefined ? window._crgbBreakdown.opening : null) ?? 0;
+                        const opRowExcel = {
+                            'Sl No': '-',
+                            'Time': '--:--',
+                            'Date': currentSelectedDate,
+                            'Txn Type': 'Opening Balance',
+                            'Branch': '',
+                            'Provider / Bank': 'Starting Balance',
+                            'Account Details': '',
+                            'Customer Name / Note': 'Opening Balance for ' + accNameExp,
+                            'Details / Remark': '',
+                            'Debit (-) (Rs)': '',
+                            'Credit (+) (Rs)': ''
+                        };
+                        if (!isChargesHidden) {
+                            opRowExcel['Charges (Rs)'] = '';
+                            opRowExcel['Charges Mode'] = '';
+                        }
+                        opRowExcel[accNameExp + ' Balance (Rs)'] = accOp;
+                        opRowExcel['Balance Change (Rs)'] = '';
+                        excelData.push(opRowExcel);
+                    } else {
+                        const opRowExcel = {
+                            'Sl No': '-',
+                            'Time': '--:--',
+                            'Date': currentSelectedDate,
+                            'Txn Type': 'Opening Balance',
+                            'Branch': '',
+                            'Provider / Bank': 'Starting Balances',
+                            'Account Info (Dep/Recv)': '',
+                            'Customer Name / Note': 'Opening Balance for ' + currentSelectedDate,
+                            'Details / Remark': '',
+                            'Amount (Rs)': ''
+                        };
+                        if (!isChargesHidden) {
+                            opRowExcel['Charges (Rs)'] = '';
+                            opRowExcel['Charges Mode'] = '';
+                        }
+                        if (!isBalanceHidden) {
+                            opRowExcel['Cash Balance (Rs)'] = currentStartCash;
+                            opRowExcel['Cash Change (Rs)'] = '';
+                            opRowExcel['Online Balance (Rs)'] = currentStartOnline;
+                            opRowExcel['Online Change (Rs)'] = '';
+                        }
+                        excelData.push(opRowExcel);
+                    }
+                }
+
+                const ws = window.XLSX.utils.json_to_sheet(excelData);
+
+                // Auto-fit column widths
+                const colKeys = Object.keys(excelData[0] || {});
+                ws['!cols'] = colKeys.map(k => {
+                    let maxLen = k.length;
+                    excelData.forEach(row => {
+                        const v = row[k];
+                        const len = v !== null && v !== undefined ? String(v).length : 0;
+                        if (len > maxLen) maxLen = len;
+                    });
+                    return { wch: Math.min(Math.max(maxLen + 2, 10), 40) };
+                });
+
+                const wb = window.XLSX.utils.book_new();
+                const sheetName = isAccExp ? (accNameExp.substring(0, 28)) : 'Daily Transactions';
+                window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                const fileNameDate = window.isAllTimeSearchMode ? 'All_Time' : currentSelectedDate;
+                const fileNamePrefix = isAccExp ? ('Ledger_' + accNameExp.replace(/[^a-zA-Z0-9_-]/g, '_') + '_') : 'DailyTxn_';
+                window.XLSX.writeFile(wb, fileNamePrefix + fileNameDate + '.xlsx');
+            } catch (err) {
+                console.error('Excel Generation Error:', err);
+                alert('Error generating Excel: ' + err.message);
+            }
+        };
+    }
 
     // Initial load
     if (window.populateBankAccountsDropdown) await populateBankAccountsDropdown();
@@ -10170,3 +10930,421 @@ if (document.readyState === 'loading') {
     startApp();
 }
 
+
+
+window.showOnlineBreakdown = (data) => {
+    if (!data) return;
+
+    const existing = document.getElementById('dynamic-online-breakdown-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'dynamic-online-breakdown-modal';
+    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-150';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+    const fmtDiff = (diff) => {
+        if (!diff || diff === 0) return '';
+        const sign = diff > 0 ? '+' : '';
+        const color = diff > 0 
+            ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' 
+            : 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30';
+        return '<span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ' + color + '">' + sign + '₹' + Math.abs(diff).toLocaleString('en-IN') + '</span>';
+    };
+
+    // Bank Sub-accounts
+    const subAccs = data.subAccounts || (window._onlineBreakdown && window._onlineBreakdown.closing) || {};
+    const subDeltas = data.subAccountDeltas || (window._onlineBreakdown && window._onlineBreakdown.lastChange) || {};
+
+    const p1Bal = subAccs.online_p1 !== undefined ? subAccs.online_p1 : 0;
+    const p2Bal = subAccs.online_p2 !== undefined ? subAccs.online_p2 : 0;
+    const p3Bal = subAccs.online_p3 !== undefined ? subAccs.online_p3 : 0;
+    const otherBal = subAccs.other || 0;
+
+    const p1Diff = subDeltas.online_p1 || 0;
+    const p2Diff = subDeltas.online_p2 || 0;
+    const p3Diff = subDeltas.online_p3 || 0;
+
+    const totalBank = (data.bank !== undefined) ? data.bank : (p1Bal + p2Bal + p3Bal + otherBal);
+
+    // CSP Wallets (5 Wallets)
+    const cspWallets = data.cspWallets || (window._roinetBreakdown && window._roinetBreakdown.closing) || {};
+    const cspDeltas = data.cspWalletDeltas || (window._roinetBreakdown && window._roinetBreakdown.lastChange) || {};
+
+    const airtel1Bal = cspWallets.airtel_1 !== undefined ? cspWallets.airtel_1 : 0;
+    const airtel2Bal = cspWallets.airtel_2 !== undefined ? cspWallets.airtel_2 : 0;
+    const roinet1Bal = cspWallets.roinet_1 !== undefined ? cspWallets.roinet_1 : 0;
+    const roinet2Bal = cspWallets.roinet_2 !== undefined ? cspWallets.roinet_2 : 0;
+    const spiceBal = cspWallets.spicemoney !== undefined ? cspWallets.spicemoney : 0;
+
+    const airtel1Diff = cspDeltas.airtel_1 || 0;
+    const airtel2Diff = cspDeltas.airtel_2 || 0;
+    const roinet1Diff = cspDeltas.roinet_1 || 0;
+    const roinet2Diff = cspDeltas.roinet_2 || 0;
+    const spiceDiff = cspDeltas.spicemoney || 0;
+
+    const totalCsp = (data.roinet !== undefined) ? data.roinet : (airtel1Bal + airtel2Bal + roinet1Bal + roinet2Bal + spiceBal);
+    const totalOnline = ((totalBank || 0) + (totalCsp || 0) + (data.jio || 0) + (data.crgb || 0) + (data.pending || 0));
+
+    const renderMainView = () => {
+        return '<div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">' +
+            '<div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/80">' +
+                '<div class="flex items-center gap-2.5">' +
+                    '<div class="size-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">' +
+                        '<span class="material-symbols-outlined text-lg">account_balance_wallet</span>' +
+                    '</div>' +
+                    '<div>' +
+                        '<h3 class="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">Online Breakdown</h3>' +
+                        '<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Transaction Snapshot</p>' +
+                    '</div>' +
+                '</div>' +
+                '<button onclick="document.getElementById(\'dynamic-online-breakdown-modal\')?.remove()" class="size-8 flex items-center justify-center rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">' +
+                    '<span class="material-symbols-outlined text-lg">close</span>' +
+                '</button>' +
+            '</div>' +
+            
+            '<div class="p-4 flex flex-col gap-2">' +
+                '<!-- Bank Account Button (Clickable to open 3 accounts detail) -->' +
+                '<div id="open-bank-accounts-btn" class="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/15 border-2 border-blue-300/80 dark:border-blue-500/40 group hover:border-blue-500 hover:shadow-md cursor-pointer transition-all duration-200" title="Click to view online(parsu), online(dalai), online(shop) accounts">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-100/90 dark:bg-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">account_balance</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<span class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5 leading-none">' +
+                                'Bank Account' +
+                                '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">3 Accounts</span>' +
+                            '</span>' +
+                            '<span class="text-[10px] font-bold text-blue-500 dark:text-blue-400 flex items-center gap-0.5 mt-1 group-hover:underline">' +
+                                '<span>View Parsu, Dalai, Shop</span>' +
+                                '<span class="material-symbols-outlined text-[13px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>' +
+                            '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + (totalBank || 0).toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(data.diffBank) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- CSP Wallet Button (Clickable to open 5 wallets detail) -->' +
+                '<div id="open-csp-wallets-btn" class="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-orange-50/80 to-amber-50/50 dark:from-orange-900/20 dark:to-amber-900/15 border-2 border-orange-300/80 dark:border-orange-500/40 group hover:border-orange-500 hover:shadow-md cursor-pointer transition-all duration-200" title="Click to view Airtel, Roinet, SpiceMoney wallets">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl text-orange-600 dark:text-orange-400 bg-orange-100/90 dark:bg-orange-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">account_balance_wallet</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<span class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5 leading-none">' +
+                                'CSP Wallet' +
+                                '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">5 Wallets</span>' +
+                            '</span>' +
+                            '<span class="text-[10px] font-bold text-orange-500 dark:text-orange-400 flex items-center gap-0.5 mt-1 group-hover:underline">' +
+                                '<span>View Airtel, Roinet, Spice</span>' +
+                                '<span class="material-symbols-outlined text-[13px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>' +
+                            '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + (totalCsp || 0).toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(data.diffRoinet) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- Jio POS -->' +
+                '<div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-8 rounded-lg text-rose-600 bg-rose-100/50 dark:bg-rose-500/20 flex items-center justify-center shrink-0">' +
+                            '<span class="material-symbols-outlined text-base">phone_iphone</span>' +
+                        '</div>' +
+                        '<span class="text-sm font-bold text-slate-700 dark:text-slate-200">Jio POS</span>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + (data.jio || 0).toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(data.diffJio) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- CRGB BC -->' +
+                '<div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-8 rounded-lg text-indigo-600 bg-indigo-100/50 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">' +
+                            '<span class="material-symbols-outlined text-base">store</span>' +
+                        '</div>' +
+                        '<span class="text-sm font-bold text-slate-700 dark:text-slate-200">CRGB BC</span>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + (data.crgb || 0).toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(data.diffCrgb) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- Pending Txns -->' +
+                '<div onclick="window.location.href=\'pending-code.html\'" class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/20 hover:border-amber-300 dark:hover:border-amber-700/50 transition-all group" title="Click to open Pending page">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-8 rounded-lg text-amber-600 bg-amber-100/50 dark:bg-amber-500/20 flex items-center justify-center shrink-0">' +
+                            '<span class="material-symbols-outlined text-base">pending_actions</span>' +
+                        '</div>' +
+                        '<span class="text-sm font-bold text-slate-700 dark:text-slate-200">Pending Txns</span>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + (data.pending || 0).toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(data.diffPending) +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-center justify-between">' +
+                '<span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Online</span>' +
+                '<span class="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">₹' + totalOnline.toLocaleString('en-IN') + '</span>' +
+            '</div>' +
+        '</div>';
+    };
+
+    const renderBankAccountsView = () => {
+        return '<div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">' +
+            '<div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600 text-white">' +
+                '<div class="flex items-center gap-2">' +
+                    '<button id="back-to-online-bd-btn" class="size-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="Back to Online Breakdown">' +
+                        '<span class="material-symbols-outlined text-lg">arrow_back</span>' +
+                    '</button>' +
+                    '<div>' +
+                        '<h3 class="text-white font-black text-base leading-none">Bank Accounts</h3>' +
+                        '<p class="text-white/70 text-[10px] font-bold uppercase tracking-widest mt-1">3 Accounts Detail</p>' +
+                    '</div>' +
+                '</div>' +
+                '<button onclick="document.getElementById(\'dynamic-online-breakdown-modal\')?.remove()" class="size-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">' +
+                    '<span class="material-symbols-outlined text-lg">close</span>' +
+                '</button>' +
+            '</div>' +
+
+            '<div class="p-4 flex flex-col gap-2.5">' +
+                '<!-- 1. online(parsu) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'online_p1\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 cursor-pointer transition-all duration-150 group" title="Click to view online(parsu) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">person</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">online(parsu)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Parsu Bank Account</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + p1Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(p1Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 2. online(dalai) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'online_p3\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 cursor-pointer transition-all duration-150 group" title="Click to view online(dalai) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">badge</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">online(dalai)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Dalai Bank Account</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + p3Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(p3Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 3. online(shop) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'online_p2\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 cursor-pointer transition-all duration-150 group" title="Click to view online(shop) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">storefront</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">online(shop)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Shop Bank Account</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + p2Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(p2Diff) +
+                    '</div>' +
+                '</div>' +
+
+                (otherBal !== 0 ? (
+                '<!-- Other Account -->' +
+                '<div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs">' +
+                    '<span class="text-slate-500 font-bold">Other Online</span>' +
+                    '<span class="font-bold text-slate-700 dark:text-slate-300 font-mono">₹' + otherBal.toLocaleString('en-IN') + '</span>' +
+                '</div>'
+                ) : '') +
+            '</div>' +
+
+            '<div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-center justify-between">' +
+                '<span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Bank Balance</span>' +
+                '<span class="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">₹' + (totalBank || 0).toLocaleString('en-IN') + '</span>' +
+            '</div>' +
+        '</div>';
+    };
+
+    const renderCspWalletsView = () => {
+        return '<div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 border border-slate-200 dark:border-slate-800">' +
+            '<div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white">' +
+                '<div class="flex items-center gap-2">' +
+                    '<button id="back-to-online-bd-btn" class="size-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="Back to Online Breakdown">' +
+                        '<span class="material-symbols-outlined text-lg">arrow_back</span>' +
+                    '</button>' +
+                    '<div>' +
+                        '<h3 class="text-white font-black text-base leading-none">CSP Wallets</h3>' +
+                        '<p class="text-white/80 text-[10px] font-bold uppercase tracking-widest mt-1">5 Wallets Detail</p>' +
+                    '</div>' +
+                '</div>' +
+                '<button onclick="document.getElementById(\'dynamic-online-breakdown-modal\')?.remove()" class="size-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors">' +
+                    '<span class="material-symbols-outlined text-lg">close</span>' +
+                '</button>' +
+            '</div>' +
+
+            '<div class="p-4 flex flex-col gap-2">' +
+                '<!-- 1. Airtel(parsu) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'airtel_1\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10 cursor-pointer transition-all duration-150 group" title="Click to view Airtel(parsu) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">sim_card</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Airtel(parsu)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Parsu Airtel Wallet</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + airtel1Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(airtel1Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 2. Airtel(dalai) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'airtel_2\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10 cursor-pointer transition-all duration-150 group" title="Click to view Airtel(dalai) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">sim_card</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Airtel(dalai)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Dalai Airtel Wallet</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + airtel2Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(airtel2Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 3. Roinet(parsu) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'roinet_1\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-500/10 cursor-pointer transition-all duration-150 group" title="Click to view Roinet(parsu) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">payments</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Roinet(parsu)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Parsu Roinet Wallet</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + roinet1Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(roinet1Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 4. Roinet(dalai) -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'roinet_2\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-500/10 cursor-pointer transition-all duration-150 group" title="Click to view Roinet(dalai) ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">payments</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Roinet(dalai)</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Dalai Roinet Wallet</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + roinet2Bal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(roinet2Diff) +
+                    '</div>' +
+                '</div>' +
+
+                '<!-- 5. SpiceMoney -->' +
+                '<div onclick="if (window.selectAccountFilter) { window.selectAccountFilter(\'spicemoney\'); document.getElementById(\'dynamic-online-breakdown-modal\')?.remove(); }" class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-500/10 cursor-pointer transition-all duration-150 group" title="Click to view SpiceMoney ledger">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="size-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">' +
+                            '<span class="material-symbols-outlined text-lg">account_balance_wallet</span>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="flex items-center gap-1.5">' +
+                                '<span class="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">SpiceMoney</span>' +
+                                '<span class="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>' +
+                            '</div>' +
+                            '<span class="text-[10px] font-bold text-slate-400">Spice Money Wallet</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="flex flex-col items-end gap-1">' +
+                        '<span class="text-sm font-black text-slate-900 dark:text-white font-mono">₹' + spiceBal.toLocaleString('en-IN') + '</span>' +
+                        fmtDiff(spiceDiff) +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-center justify-between">' +
+                '<span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total CSP Balance</span>' +
+                '<span class="text-lg font-black text-orange-600 dark:text-orange-400 font-mono">₹' + (totalCsp || 0).toLocaleString('en-IN') + '</span>' +
+            '</div>' +
+        '</div>';
+    };
+
+    const attachListeners = () => {
+        const bankBtn = modal.querySelector('#open-bank-accounts-btn');
+        if (bankBtn) {
+            bankBtn.onclick = () => {
+                modal.innerHTML = renderBankAccountsView();
+                attachListeners();
+            };
+        }
+        const cspBtn = modal.querySelector('#open-csp-wallets-btn');
+        if (cspBtn) {
+            cspBtn.onclick = () => {
+                modal.innerHTML = renderCspWalletsView();
+                attachListeners();
+            };
+        }
+        const backBtn = modal.querySelector('#back-to-online-bd-btn');
+        if (backBtn) {
+            backBtn.onclick = () => {
+                modal.innerHTML = renderMainView();
+                attachListeners();
+            };
+        }
+    };
+
+    modal.innerHTML = renderMainView();
+    attachListeners();
+    document.body.appendChild(modal);
+};

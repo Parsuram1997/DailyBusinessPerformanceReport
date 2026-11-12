@@ -1,4 +1,108 @@
 // auth.js
+// ─── Global Sidebar Mode (Hover, Expand, Contract) ───────────────────
+(function() {
+    try {
+        const mode = localStorage.getItem('biz_sidebar_mode') || 'hover';
+        document.documentElement.setAttribute('data-sidebar-mode', mode);
+    } catch(e) {}
+
+    const style = document.createElement('style');
+    style.id = 'sidebar-mode-styles';
+    style.textContent = `
+        @media (min-width: 1024px) {
+            /* ─── Expand Mode: Always Expanded (Full 16rem width, labels visible) ─── */
+            html[data-sidebar-mode="expand"] #sidebar {
+                width: 16rem !important;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.03) !important;
+            }
+            html[data-sidebar-mode="expand"] #sidebar .sidebar-logo-container {
+                justify-content: flex-start !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+            html[data-sidebar-mode="expand"] #sidebar .nav-link {
+                justify-content: flex-start !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            html[data-sidebar-mode="expand"] #sidebar .sidebar-text,
+            html[data-sidebar-mode="expand"] #sidebar .nav-text {
+                opacity: 1 !important;
+                transform: translateX(0) !important;
+                width: auto !important;
+                margin-left: 0.75rem !important;
+                display: inline-block !important;
+                overflow: visible !important;
+            }
+            html[data-sidebar-mode="expand"] #sidebar .profile-card {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            html[data-sidebar-mode="expand"] #sidebar .profile-card > div {
+                justify-content: flex-start !important;
+            }
+
+            /* ─── Contract Mode: Always Collapsed (Mini 5.5rem width, no expand on hover) ─── */
+            html[data-sidebar-mode="contract"] #sidebar,
+            html[data-sidebar-mode="contract"] #sidebar:hover {
+                width: 5.5rem !important;
+                box-shadow: none !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar:hover .sidebar-logo-container {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar:hover .nav-link {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar .sidebar-text,
+            html[data-sidebar-mode="contract"] #sidebar .nav-text,
+            html[data-sidebar-mode="contract"] #sidebar:hover .sidebar-text,
+            html[data-sidebar-mode="contract"] #sidebar:hover .nav-text {
+                opacity: 0 !important;
+                transform: translateX(-10px) !important;
+                width: 0 !important;
+                margin-left: 0 !important;
+                display: none !important;
+                overflow: hidden !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar:hover .profile-card {
+                background: transparent !important;
+                border-color: transparent !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar:hover .profile-card > div {
+                justify-content: center !important;
+            }
+        }
+    `;
+    if (document.head) {
+        document.head.appendChild(style);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!document.getElementById('sidebar-mode-styles')) {
+                document.head.appendChild(style);
+            }
+        });
+    }
+})();
+
+window.applySidebarMode = function(mode) {
+    const validMode = ['hover', 'expand', 'contract'].includes(mode) ? mode : 'hover';
+    document.documentElement.setAttribute('data-sidebar-mode', validMode);
+    try {
+        localStorage.setItem('biz_sidebar_mode', validMode);
+    } catch(e) {}
+    window.dispatchEvent(new CustomEvent('sidebarModeChanged', { detail: { mode: validMode } }));
+};
 // ─── SESSION STORAGE: Use localStorage for PWA compatibility ──────────────────
 // PWA standalone mode creates a fresh context every time → sessionStorage resets.
 // We use localStorage so login survives app restarts and navigation between pages.
