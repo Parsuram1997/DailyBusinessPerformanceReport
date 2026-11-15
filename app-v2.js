@@ -1068,15 +1068,16 @@ async function initAddEntry() {
             };
 
             const updateSubAccountDelta = (providerStr, amount, isAdd) => {
-                const prov = providerStr.trim().toLowerCase();
+                if (!providerStr) return;
+                const prov = String(providerStr).trim().toLowerCase().replace(/[\s\-_]+/g, '');
                 const diff = isAdd ? amount : -amount;
-                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') deltas.roinet_1 += diff;
-                else if (prov.includes('roinet(dalai)') || prov === 'roinet_2') deltas.roinet_2 += diff;
-                else if (prov.includes('airtel(parsu)') || prov === 'airtel_1') deltas.airtel_1 += diff;
-                else if (prov.includes('airtel(dalai)') || prov === 'airtel_2') deltas.airtel_2 += diff;
-                else if (prov.includes('spicemoney')) deltas.spicemoney += diff;
-                else if (prov === 'roinet') deltas.roinet_fallback += diff; 
-                else if (prov === 'airtel') deltas.airtel_1 += diff; 
+                if (prov.includes('roinet(parsu)') || prov.includes('roinetparsu') || prov === 'roinet1') deltas.roinet_1 += diff;
+                else if (prov.includes('roinet(dalai)') || prov.includes('roinetdalai') || prov === 'roinet2') deltas.roinet_2 += diff;
+                else if (prov.includes('airtel(parsu)') || prov.includes('airtelparsu') || prov === 'airtel1') deltas.airtel_1 += diff;
+                else if (prov.includes('airtel(dalai)') || prov.includes('airteldalai') || prov === 'airtel2') deltas.airtel_2 += diff;
+                else if (prov.includes('spicemoney') || prov.includes('spice')) deltas.spicemoney += diff;
+                else if (prov.includes('airtel')) deltas.airtel_1 += diff; 
+                else if (prov.includes('roinet')) deltas.roinet_fallback += diff; 
             };
 
             txns.forEach(t => {
@@ -8751,13 +8752,15 @@ async function initDailyTxn() {
 
 
             const getSubAccountKey = (prov) => {
-                if (prov.includes('roinet(parsu)') || prov === 'roinet_1') return 'roinet_1';
-                if (prov.includes('roinet(dalai)') || prov === 'roinet_2') return 'roinet_2';
-                if (prov.includes('airtel(parsu)') || prov === 'airtel_1') return 'airtel_1';
-                if (prov.includes('airtel(dalai)') || prov === 'airtel_2') return 'airtel_2';
-                if (prov.includes('spicemoney')) return 'spicemoney';
-                if (prov.includes('airtel')) return 'airtel_1';
-                if (prov.includes('roinet')) return 'roinet_1';
+                if (!prov) return null;
+                const p = String(prov).trim().toLowerCase().replace(/[\s\-_]+/g, '');
+                if (p.includes('roinet(parsu)') || p.includes('roinetparsu') || p === 'roinet1') return 'roinet_1';
+                if (p.includes('roinet(dalai)') || p.includes('roinetdalai') || p === 'roinet2') return 'roinet_2';
+                if (p.includes('airtel(parsu)') || p.includes('airtelparsu') || p === 'airtel1') return 'airtel_1';
+                if (p.includes('airtel(dalai)') || p.includes('airteldalai') || p === 'airtel2') return 'airtel_2';
+                if (p.includes('spicemoney') || p.includes('spice')) return 'spicemoney';
+                if (p.includes('airtel')) return 'airtel_1';
+                if (p.includes('roinet')) return 'roinet_1';
                 return null;
             };
 
@@ -9007,12 +9010,12 @@ async function initDailyTxn() {
                     const sourceDest = getOnlineDest(t.paymentApp || t.depositBy);
                     onlineBreakdown[sourceDest] -= amt;
 
-                    const walletProv = (t.provider || '').trim().toLowerCase();
+                    const walletProv = (t.provider || t.receivedIn || '').trim().toLowerCase();
                     if (walletProv.includes('crgb')) {
                         balances.crgb += amt;
                     } else {
                         balances.roinet += amt;
-                        updateRoinetDelta(t.provider, amt);
+                        updateRoinetDelta(t.provider || walletProv, amt);
                     }
                 } else if (t.type === 'ADD_CAPITAL') {
                     if (provider === 'cash') balances.cash += amt;
@@ -9123,6 +9126,10 @@ async function initDailyTxn() {
             currentAvailableJio = (parseFloat(opValues.jio || 0) + (balances.jio || 0));
             currentAvailableDamaged = (parseFloat(opValues.damaged || 0) + (balances.damaged || 0));
             currentAvailableCrgb = (parseFloat(opValues.crgb || 0) + (balances.crgb || 0));
+
+            if (typeof window.checkLowCashAlert === 'function') {
+                window.checkLowCashAlert(currentAvailableCash);
+            }
             
             currentAvailableRoinet1 = parseFloat(openingBalances.roinet_1 || 0) + roinetBreakdown.roinet_1;
             currentAvailableRoinet2 = parseFloat(openingBalances.roinet_2 || 0) + roinetBreakdown.roinet_2;

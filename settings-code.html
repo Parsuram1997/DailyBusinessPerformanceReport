@@ -38,8 +38,8 @@
         }
 
         /* Center icons when collapsed */
-        #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
-        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .sidebar-logo-container { padding-top: 0.625rem !important; padding-bottom: 0.375rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; min-height: 2.125rem !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
         #sidebar .toggle-container { display: none !important; } /* Hide the toggle button permanently */
         
         /* Fade texts in/out */
@@ -73,8 +73,8 @@
             }
             
             /* Restore alignment on hover */
-            #sidebar:hover .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: flex-start !important; padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+            #sidebar:hover .sidebar-logo-container { justify-content: flex-start !important; padding-left: 1.25rem !important; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; margin-left: 0; margin-right: 0; }
             
             #sidebar:hover .sidebar-text, 
             #sidebar:hover .nav-text { 
@@ -88,8 +88,8 @@
             #sidebar:hover .profile-card { 
                 background: rgba(127, 19, 236, 0.05) !important; 
                 border-color: rgba(127, 19, 236, 0.2) !important;
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
             }
             #sidebar:hover .profile-card > div {
                 justify-content: flex-start !important;
@@ -179,96 +179,105 @@
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
 <div class="flex h-screen overflow-hidden">
-<!-- Sidebar -->
-<aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300">
-<div class="px-4 py-4 flex justify-end toggle-container">
-    <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
-        <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
-    </button>
-</div>
-<div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
-    
-                <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300 h-screen">
+            <div class="px-4 py-2 flex justify-end toggle-container flex-shrink-0">
+                <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
+                </button>
+            </div>
+            <div class="px-5 py-2.5 flex items-center gap-3 sidebar-logo-container flex-shrink-0">
+                <div class="size-8 rounded-lg overflow-hidden flex-shrink-0">
                     <img src="favicon.png" class="w-full h-full object-cover">
                 </div>
-    <div class="sidebar-text overflow-hidden whitespace-nowrap">
-        <h1 class="text-sm font-bold leading-none">BizPerform</h1>
-        <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
-    </div>
-</div>
-<nav class="flex-1 px-4 space-y-1">
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html" data-page="dashboard-code.html">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="text-sm nav-text">Dashboard</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
-<span class="material-symbols-outlined">add_circle</span>
-<span class="text-sm nav-text">Add Entry</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html" data-page="daily-txn.html">
-<span class="material-symbols-outlined">point_of_sale</span>
-<span class="text-sm nav-text">Daily Txn</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
-<span class="material-symbols-outlined">receipt_long</span>
-<span class="text-sm nav-text">Table</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
-<span class="material-symbols-outlined">bar_chart</span>
-<span class="text-sm nav-text">Analytics</span>
-</a>
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
-<span class="material-symbols-outlined">menu_book</span>
-<span class="text-sm nav-text">Credit Ledger</span>
-</a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
-                    href="account-register-code.html" data-page="account-register-code.html">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    <span class="text-sm nav-text">Account Register</span>
-                </a>
-            <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html">
-                <span class="material-symbols-outlined">savings</span>
-                <span class="text-sm nav-text">Cust. Deposit</span>
-            </a>
-
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
-<span class="material-symbols-outlined">account_balance</span>
-<span class="text-sm nav-text">Bank Withdrawals</span>
-</a>
-
-<a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="settings-code.html" data-page="settings-code.html">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-sm nav-text">Settings</span>
-</a>
-
-<a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
-<span class="material-symbols-outlined">logout</span>
-<span class="text-sm nav-text font-semibold">Logout</span>
-</a>
-</nav>
-
-                <!-- Theme Toggle -->
-                <div class="px-4 pb-2 theme-toggle-container">
-                    <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
-                        <span id="theme-icon" class="material-symbols-outlined">dark_mode</span>
-                        <span id="theme-label" class="text-sm nav-text font-semibold">Dark Mode</span>
-                    </button>
+                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                    <h1 class="text-sm font-bold leading-none">BizPerform</h1>
+                    <p class="text-[9px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
                 </div>
-                <div class="mt-auto p-4 border-t border-primary/10">
-    <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
-        <div class="flex items-center gap-3">
-            <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
-                <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
             </div>
-            <div class="sidebar-text overflow-hidden whitespace-nowrap">
-                <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
-                <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
-                <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+            <div class="sidebar-scroll-container flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-nav-scroll flex flex-col justify-between">
+                <nav class="flex-1 px-2.5 py-1 space-y-0.5">
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html" data-page="dashboard-code.html">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        <span class="text-sm nav-text">Dashboard</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
+                        <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                        <span class="text-sm nav-text">Add Entry</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html" data-page="daily-txn.html">
+                        <span class="material-symbols-outlined text-[20px]">point_of_sale</span>
+                        <span class="text-sm nav-text">Daily Txn</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
+                        <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                        <span class="text-sm nav-text">Table</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
+                        <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+                        <span class="text-sm nav-text">Analytics</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        <span class="text-sm nav-text">Credit Ledger</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="account-register-code.html" data-page="account-register-code.html">
+                        <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+                        <span class="text-sm nav-text">Account Register</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html" data-page="customer-deposit-code.html">
+                        <span class="material-symbols-outlined text-[20px]">savings</span>
+                        <span class="text-sm nav-text">Cust. Deposit</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html" data-page="pending-code.html">
+                        <span class="material-symbols-outlined text-[20px]">pending_actions</span>
+                        <span class="text-sm nav-text">Pending Txns</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+                        <span class="material-symbols-outlined text-[20px]">account_balance</span>
+                        <span class="text-sm nav-text">Bank Withdrawals</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-primary/10 text-primary font-semibold" href="settings-code.html" data-page="settings-code.html">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                        <span class="text-sm nav-text">Settings</span>
+                    </a>
+                    <a id="logout-btn" href="#" class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">logout</span>
+                        <span class="text-sm nav-text font-semibold">Logout</span>
+                    </a>
+                    <a id="back-to-login-sidebar" href="index.html" class="hidden flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-primary hover:bg-primary/5 transition-colors font-bold">
+                        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                        <span class="text-sm nav-text">Back to Login</span>
+                    </a>
+                </nav>
+                
+                <div class="flex-shrink-0 mt-auto">
+                    <!-- Theme Toggle -->
+                    <div class="px-2.5 pb-1 pt-1 theme-toggle-container">
+                        <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
+                            <span id="theme-icon" class="material-symbols-outlined text-[20px]">dark_mode</span>
+                            <span id="theme-label" class="text-xs nav-text font-semibold">Dark Mode</span>
+                        </button>
+                    </div>
+
+                    <!-- Profile Card -->
+                    <div class="p-2 border-t border-primary/10 profile-card-container">
+                        <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-xl p-1.5 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+                            <div class="flex items-center gap-2.5">
+                                <div class="size-8 rounded-lg border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-sm shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
+                                    <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-md object-cover">
+                                </div>
+                                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                                    <p class="text-[7.5px] text-primary/60 font-bold uppercase tracking-widest leading-none mb-0.5">Author</p>
+                                    <h6 class="text-[10px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                                    <p class="text-[7.5px] text-slate-500 font-medium leading-none mt-0.5">Designed and Developed By</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
-</aside>
+        </aside>
 <!-- Main Content Wrapper -->
 <main class="flex-1 flex flex-col overflow-hidden w-full pb-20 lg:pb-0">
 
@@ -280,98 +289,280 @@
 <p class="text-slate-500 text-sm">Manage your local data and application settings.</p>
 </section>
 
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
-    <!-- Left Column: Settings Content (Admin, Bulk import, etc.) -->
-    <div class="lg:col-span-7 xl:col-span-8 space-y-4 md:space-y-8">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
 
-
-<!-- Active Devices Section -->
-<div id="active-devices-section" class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center justify-between p-5 md:p-6 border-b border-primary/10">
-        <div class="flex items-center gap-3">
-            <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <span class="material-symbols-outlined text-xl">devices</span>
-            </div>
-            <div>
-                <h4 class="text-base font-bold text-slate-900 dark:text-white">Active Sessions</h4>
-                <p class="text-xs text-slate-500">Devices currently logged in to this dashboard</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2">
-            <div id="active-device-count-badge" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                <span class="size-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
-                <span id="active-device-count" class="text-xs font-black text-emerald-600 dark:text-emerald-400">—</span>
-                <span class="text-xs font-bold text-emerald-600/70 dark:text-emerald-400/70">online</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Device List -->
-    <div id="active-devices-list" class="divide-y divide-slate-100 dark:divide-slate-800 min-h-[60px]">
-        <!-- Loading state -->
-        <div id="devices-loading" class="flex items-center justify-center gap-3 py-8 text-slate-400">
-            <svg class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <span class="text-sm">Loading sessions...</span>
-        </div>
-    </div>
-    
-    <!-- Footer note -->
-    <div class="px-5 md:px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-        <span class="material-symbols-outlined text-slate-400 text-sm">info</span>
-        <p class="text-[11px] text-slate-400">Sessions auto-expire after 5 minutes of inactivity. Heartbeat updates every 30 seconds.</p>
-    </div>
-</div>
-
-<!-- Bulk Data Import (CSV) (Moved to Top) -->
-<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-8">
-    <div>
-        <div class="flex flex-col md:flex-row gap-6 items-start">
-            <div class="flex-1">
-                <h4 class="text-lg font-bold mb-2">Bulk Historical Import (CSV)</h4>
-                <p class="text-sm text-slate-500 mb-4">Have years of data in Excel? Export your file to **CSV** format and upload it here. Your dashboard will instantly update with all-time historical totals.</p>
-                <div class="inline-flex items-center gap-2 p-2 px-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-                    <span class="material-symbols-outlined text-sm">info</span>
-                    <span>Ensure your CSV follows our template headers exactly.</span>
+    <!-- Row 1, Left: Active Sessions -->
+    <div id="active-devices-section" class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-primary/10 overflow-hidden flex flex-col justify-between">
+        <div>
+            <!-- Header -->
+            <div class="flex items-center justify-between p-5 md:p-6 border-b border-primary/10">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span class="material-symbols-outlined text-xl">devices</span>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">Active Sessions</h4>
+                        <p class="text-xs text-slate-500">Devices currently logged in to this dashboard</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="active-device-count-badge" class="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        <span class="size-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                        <span id="active-device-count" class="text-xs font-black text-emerald-600 dark:text-emerald-400">—</span>
+                        <span class="text-xs font-bold text-emerald-600/70 dark:text-emerald-400/70">online</span>
+                    </div>
                 </div>
             </div>
-            <div class="w-full md:w-72 space-y-3">
-                <button id="btn-download-template" class="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary text-sm font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined">download</span> Download CSV Template
-                </button>
-                <input type="file" id="file-bulk-csv" accept=".csv" class="hidden">
-                <button id="btn-bulk-import-trigger" class="w-full bg-primary hover:bg-primary/90 text-white text-sm font-black py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3">
-                    <span class="material-symbols-outlined">publish</span> Upload Historical CSV
-                </button>
+
+            <!-- Device List -->
+            <div id="active-devices-list" class="divide-y divide-slate-100 dark:divide-slate-800 min-h-[70px]">
+                <!-- Loading state -->
+                <div id="devices-loading" class="flex items-center justify-center gap-3 py-6 text-slate-400">
+                    <svg class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm">Loading sessions...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer note -->
+        <div class="px-5 md:px-6 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <span class="material-symbols-outlined text-slate-400 text-sm">info</span>
+            <p class="text-[11px] text-slate-400">Sessions auto-expire after 5m of inactivity. Heartbeat updates every 30s.</p>
+        </div>
+    </div>
+
+    <!-- Row 1, Right: System Diagnostics -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-primary/10 shadow-sm flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between border-b border-primary/5 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span class="material-symbols-outlined font-bold text-xl">speed</span>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900 dark:text-white">System Diagnostics</h4>
+                        <p class="text-xs text-slate-500 font-medium">Real-time platform & DB health status</p>
+                    </div>
+                </div>
+                <span class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                    <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Connected
+                </span>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-semibold text-slate-500 dark:text-slate-400">Local Cache Storage</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200" id="local-storage-percentage">0% Used</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-primary h-full transition-all duration-500" id="local-storage-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span id="local-storage-bytes">0 KB / 5 MB</span>
+                        <button type="button" id="btn-optimize-cache" class="text-primary hover:underline font-bold flex items-center gap-0.5">
+                            <span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div class="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Cached Txns</p>
+                        <p class="text-base font-black text-primary mt-0.5" id="diagnostic-txns-count">—</p>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</p>
+                        <p class="text-base font-black text-emerald-600 mt-0.5" id="diagnostic-avg-latency">—</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Locked Compact Access Card -->
-<div id="compact-lock-card" class="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 border border-primary/20 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
-    <div class="flex flex-col sm:flex-row items-center gap-4">
-        <div class="size-12 rounded-2xl bg-primary/20 dark:bg-primary/30 text-primary flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform shrink-0">
-            <span class="material-symbols-outlined text-2xl animate-pulse">lock</span>
-        </div>
+    <!-- Row 2, Left: Theme Accent Color -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-primary/10 shadow-sm flex flex-col justify-between">
         <div>
-            <h4 class="text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2 justify-center sm:justify-start">
-                Advanced Settings & Controls
-            </h4>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">
-                Protected section • Security controls, UI customization & database wipe
-            </p>
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4 mb-4">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined font-bold text-xl">palette</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Theme Accent Color</h4>
+                    <p class="text-xs text-slate-500 font-medium">Choose primary color for buttons, highlights & charts</p>
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2.5">Select Primary Accent Color</label>
+                <div class="flex flex-wrap items-center gap-3" id="accent-picker-container">
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#7f13ec] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#7f13ec" title="Purple (Default)"></button>
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#10b981] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#10b981" title="Emerald Green"></button>
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#3b82f6] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#3b82f6" title="Ocean Blue"></button>
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#f43f5e] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f43f5e" title="Crimson Rose"></button>
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#f59e0b] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f59e0b" title="Amber Gold"></button>
+                    <button type="button" class="accent-btn size-9 rounded-full bg-[#06b6d4] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#06b6d4" title="Cyan Spark"></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-primary/5 pt-3 mt-4">
+            <span>Current Accent:</span>
+            <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded text-primary font-bold" id="accent-hex-value">#7f13ec</span>
         </div>
     </div>
-    <button type="button" id="btn-unlock-dtxn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wider shrink-0 group-hover:bg-primary">
-        <span class="material-symbols-outlined text-sm">key</span> Unlock Section
-    </button>
-</div>
 
-<!-- Advanced Settings Expandable Content (PIN Protected) -->
+    <!-- Row 2, Right: Side Navigation Bar Mode -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-primary/10 shadow-sm flex flex-col justify-between">
+        <div>
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4 mb-4">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined font-bold text-xl">view_sidebar</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Side Navigation Bar Mode</h4>
+                    <p class="text-xs text-slate-500 font-medium">Control sidebar hover, expand, or contract behavior</p>
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2.5">Behavior Mode</label>
+                <div class="grid grid-cols-3 gap-2" id="sidebar-mode-selector">
+                    <!-- Option 1: Hover -->
+                    <button type="button" data-mode="hover" class="sidebar-mode-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                        <span class="material-symbols-outlined text-lg text-primary">swipe</span>
+                        <span class="text-xs font-black leading-none">Hover</span>
+                        <span class="text-[9px] text-slate-400 font-medium leading-tight">Auto Expand</span>
+                    </button>
+
+                    <!-- Option 2: Expand -->
+                    <button type="button" data-mode="expand" class="sidebar-mode-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                        <span class="material-symbols-outlined text-lg text-primary">dock_to_right</span>
+                        <span class="text-xs font-black leading-none">Expand</span>
+                        <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Open</span>
+                    </button>
+
+                    <!-- Option 3: Contract -->
+                    <button type="button" data-mode="contract" class="sidebar-mode-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
+                        <span class="material-symbols-outlined text-lg text-primary">view_sidebar</span>
+                        <span class="text-xs font-black leading-none">Contract</span>
+                        <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Mini</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-primary/5 pt-3 mt-4">
+            <span class="flex items-center gap-1.5">
+                <span class="size-2 rounded-full bg-emerald-500"></span>
+                <span>Active Mode:</span>
+            </span>
+            <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded text-primary font-bold uppercase" id="sidebar-mode-label">Hover</span>
+        </div>
+    </div>
+
+    <!-- Row 3, Left: Bulk Historical Import (CSV) -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-primary/10 shadow-sm flex flex-col justify-between">
+        <div>
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4 mb-4">
+                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined font-bold text-xl">upload_file</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Bulk Historical Import (CSV)</h4>
+                    <p class="text-xs text-slate-500 font-medium">Upload legacy Excel / CSV data to populate history</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-3 leading-relaxed">
+                Export multi-year records to CSV format and upload here. Your dashboard will instantly update with all-time historical totals and charts.
+            </p>
+
+            <div class="inline-flex items-center gap-2 p-2 px-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 mb-3 w-full">
+                <span class="material-symbols-outlined text-sm shrink-0">info</span>
+                <span class="text-[11px] font-medium leading-tight">Ensure your CSV follows our template column headers exactly.</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-primary/5">
+            <button id="btn-download-template" class="flex-1 border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary text-xs font-bold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">download</span> Download Template
+            </button>
+            <input type="file" id="file-bulk-csv" accept=".csv" class="hidden">
+            <button id="btn-bulk-import-trigger" class="flex-1 bg-primary hover:bg-primary/90 text-white text-xs font-black py-2.5 px-3 rounded-xl shadow-md shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">publish</span> Upload CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Row 3, Right: Developer API Key -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-primary/10 shadow-sm flex flex-col justify-between">
+        <div>
+            <div class="flex items-center gap-3 border-b border-primary/5 pb-4 mb-4">
+                <div class="size-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                    <span class="material-symbols-outlined font-bold text-xl">token</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Developer API Key</h4>
+                    <p class="text-xs text-slate-500 font-medium">Integration keys for external systems & webhooks</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-3 leading-relaxed">
+                Programmatic access key to query transactions, check live performance, or sync with external databases.
+            </p>
+
+            <div class="space-y-1.5 mb-2">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Primary Secret Key</label>
+                <div class="flex gap-2">
+                    <div class="flex-1 bg-slate-50 dark:bg-slate-800 border border-primary/10 rounded-xl px-3 py-2 flex items-center justify-between font-mono text-[11px] overflow-hidden select-all text-slate-600 dark:text-slate-300">
+                        <span id="api-key-masked">••••••••••••••••••••••••</span>
+                        <span id="api-key-raw" class="hidden">biz_live_7a39efbc82910d54a2fe901c</span>
+                    </div>
+                    <button type="button" id="btn-toggle-api-key" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all" title="Show Key">
+                        <span class="material-symbols-outlined text-sm" id="api-key-toggle-icon">visibility</span>
+                    </button>
+                    <button type="button" id="btn-copy-api-key" class="p-2 bg-primary text-white rounded-xl hover:bg-primary/95 transition-all shadow-md active:scale-95" title="Copy Key">
+                        <span class="material-symbols-outlined text-sm">content_copy</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between font-medium text-xs border-t border-primary/5 pt-3 mt-2">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Status: <span class="text-emerald-500 font-bold">Active</span></span>
+            <button type="button" id="btn-regenerate-api-key" class="text-[10px] text-primary hover:underline font-black uppercase tracking-wider">
+                Regenerate Key
+            </button>
+        </div>
+    </div>
+
+    <!-- Row 4, Full Width: Advanced Settings Lock & Controls -->
+    <div class="col-span-1 lg:col-span-2 space-y-4">
+        <!-- Locked Compact Access Card -->
+        <div id="compact-lock-card" class="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 border border-primary/20 rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div class="size-12 rounded-2xl bg-primary/20 dark:bg-primary/30 text-primary flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform shrink-0">
+                    <span class="material-symbols-outlined text-2xl animate-pulse">lock</span>
+                </div>
+                <div>
+                    <h4 class="text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2 justify-center sm:justify-start">
+                        Advanced Settings & Controls
+                    </h4>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">
+                        Protected section • Security controls, UI customization & database wipe
+                    </p>
+                </div>
+            </div>
+            <button type="button" id="btn-unlock-dtxn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 uppercase tracking-wider shrink-0 group-hover:bg-primary">
+                <span class="material-symbols-outlined text-sm">key</span> Unlock Section
+            </button>
+        </div>
+
+        <!-- Advanced Settings Expandable Content (PIN Protected) -->
 <div id="advanced-settings-container" class="max-h-0 opacity-0 overflow-hidden transition-all duration-700 ease-in-out">
     <div id="dtxn-settings-container" class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 shadow-sm border border-primary/10 space-y-6">
         <div class="flex items-center justify-between border-b border-primary/10 pb-4">
@@ -811,174 +1002,7 @@
         </div>
     </div>
 </div>
-</div> <!-- Close Left Column -->
-
-    <!-- Right Column: Interactive Widgets & Personalization -->
-    <div class="lg:col-span-5 xl:col-span-4 space-y-6">
-        <!-- Accent Theme Customizer -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
-            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
-                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <span class="material-symbols-outlined font-bold text-xl">palette</span>
-                </div>
-                <div>
-                    <h4 class="text-base font-bold text-slate-900 dark:text-white">App Personalization</h4>
-                    <p class="text-xs text-slate-500 font-medium mt-0.5">Customize your dashboard's look & feel</p>
-                </div>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2.5">Select Primary Accent Color</label>
-                    <div class="flex flex-wrap gap-3" id="accent-picker-container">
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#7f13ec] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#7f13ec" title="Purple (Default)"></button>
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#10b981] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#10b981" title="Emerald Green"></button>
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#3b82f6] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#3b82f6" title="Ocean Blue"></button>
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#f43f5e] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f43f5e" title="Crimson Rose"></button>
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#f59e0b] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#f59e0b" title="Amber Gold"></button>
-                        <button type="button" class="accent-btn size-9 rounded-full bg-[#06b6d4] border-2 border-transparent hover:border-white dark:hover:border-slate-800 shadow-md transition-all active:scale-95" data-color="#06b6d4" title="Cyan Spark"></button>
-                    </div>
-                </div>
-                
-                <div class="pt-2">
-                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-primary/5 pt-4">
-                        <span>Current Accent:</span>
-                        <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-primary" id="accent-hex-value">#7f13ec</span>
-                    </div>
-                </div>
-
-                <!-- Navigation Sidebar Mode Control -->
-                <div class="pt-4 border-t border-primary/10 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Side Navigation Bar Mode</label>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Control sidebar hover, expand, or contract behavior</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 gap-2" id="sidebar-mode-selector">
-                        <!-- Option 1: Hover -->
-                        <button type="button" data-mode="hover" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
-                            <span class="material-symbols-outlined text-xl text-primary">swipe</span>
-                            <span class="text-xs font-black leading-none">Hover</span>
-                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Auto Expand</span>
-                        </button>
-
-                        <!-- Option 2: Expand -->
-                        <button type="button" data-mode="expand" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
-                            <span class="material-symbols-outlined text-xl text-primary">dock_to_right</span>
-                            <span class="text-xs font-black leading-none">Expand</span>
-                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Open</span>
-                        </button>
-
-                        <!-- Option 3: Contract -->
-                        <button type="button" data-mode="contract" class="sidebar-mode-btn p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer group bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-primary/50">
-                            <span class="material-symbols-outlined text-xl text-primary">view_sidebar</span>
-                            <span class="text-xs font-black leading-none">Contract</span>
-                            <span class="text-[9px] text-slate-400 font-medium leading-tight">Always Mini</span>
-                        </button>
-                    </div>
-
-                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 pt-1">
-                        <span class="flex items-center gap-1.5">
-                            <span class="size-2 rounded-full bg-emerald-500"></span>
-                            <span>Active Mode:</span>
-                        </span>
-                        <span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-primary font-bold uppercase" id="sidebar-mode-label">Hover</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- System Diagnostics Card -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
-            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
-                <div class="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                    <span class="material-symbols-outlined font-bold text-xl">speed</span>
-                </div>
-                <div>
-                    <h4 class="text-base font-bold text-slate-900 dark:text-white">System Diagnostics</h4>
-                    <p class="text-xs text-slate-500 font-medium mt-0.5">Real-time platform & DB health status</p>
-                </div>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Database Sync Connection</span>
-                    <span class="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
-                        <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Connected
-                    </span>
-                </div>
-                
-                <div class="space-y-1.5">
-                    <div class="flex justify-between text-xs">
-                        <span class="font-semibold text-slate-500 dark:text-slate-400">Local Cache Storage</span>
-                        <span class="font-bold text-slate-700 dark:text-slate-200" id="local-storage-percentage">0% Used</span>
-                    </div>
-                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-primary h-full transition-all duration-500" id="local-storage-bar" style="width: 0%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-400">
-                        <span id="local-storage-bytes">0 KB / 5 MB</span>
-                        <button type="button" id="btn-optimize-cache" class="text-primary hover:underline font-bold flex items-center gap-0.5">
-                            <span class="material-symbols-outlined text-xs">cleaning_services</span> Optimize Cache
-                        </button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-2">
-                    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Cached Txns</p>
-                        <p class="text-lg font-black text-primary mt-0.5" id="diagnostic-txns-count">—</p>
-                    </div>
-                    <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-primary/5 text-center">
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</p>
-                        <p class="text-lg font-black text-emerald-600 mt-0.5" id="diagnostic-avg-latency">—</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Developer API Access Card -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-primary/10 shadow-sm space-y-6">
-            <div class="flex items-center gap-3 border-b border-primary/5 pb-4">
-                <div class="size-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                    <span class="material-symbols-outlined font-bold text-xl">token</span>
-                </div>
-                <div>
-                    <h4 class="text-base font-bold text-slate-900 dark:text-white">Developer API Key</h4>
-                    <p class="text-xs text-slate-500 font-medium mt-0.5">Integration keys for external systems</p>
-                </div>
-            </div>
-            
-            <div class="space-y-4">
-                <p class="text-[11px] text-slate-500 leading-relaxed">Programmatic access key to query transactions, check live performance, or sync with external databases.</p>
-                
-                <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Primary Secret Key</label>
-                    <div class="flex gap-2">
-                        <div class="flex-1 bg-slate-50 dark:bg-slate-800 border border-primary/10 rounded-xl px-3 py-2.5 flex items-center justify-between font-mono text-[11px] overflow-hidden select-all text-slate-600 dark:text-slate-300">
-                            <span id="api-key-masked">••••••••••••••••••••••••</span>
-                            <span id="api-key-raw" class="hidden">biz_live_7a39efbc82910d54a2fe901c</span>
-                        </div>
-                        <button type="button" id="btn-toggle-api-key" class="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-all" title="Show Key">
-                            <span class="material-symbols-outlined text-sm" id="api-key-toggle-icon">visibility</span>
-                        </button>
-                        <button type="button" id="btn-copy-api-key" class="p-2.5 bg-primary text-white rounded-xl hover:bg-primary/95 transition-all shadow-md active:scale-95" title="Copy Key">
-                            <span class="material-symbols-outlined text-sm">content_copy</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-2 border-t border-primary/5 flex items-center justify-between font-medium">
-                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Status: <span class="text-emerald-500">Active</span></span>
-                    <button type="button" id="btn-regenerate-api-key" class="text-[10px] text-primary hover:underline font-black uppercase tracking-wider">
-                        Regenerate Key
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div> <!-- Close Right Column -->
+    </div>
 
 </div> <!-- Close Grid -->
 </div>
@@ -1285,7 +1309,7 @@ function renderDevices(sessions) {
         const pageLabel = (s.page || '').replace('.html','').replace(/-code$/,'').replace(/-/g,' ') || 'unknown';
         const pageIcon = {
             'dashboard': 'dashboard', 'add entry': 'add_circle', 'daily txn': 'point_of_sale',
-            'transactions': 'receipt_long', 'reports': 'bar_chart', 'credit ledger': 'menu_book',
+            'transactions': 'receipt_long', 'reports': 'bar_chart', 'credit ledger': 'menu_book', 'account register': 'how_to_reg',
             'bank withdrawals': 'account_balance', 'settings': 'settings',
             'cash calculator': 'calculate', 'damaged currency': 'currency_rupee'
         }[pageLabel] || 'web';

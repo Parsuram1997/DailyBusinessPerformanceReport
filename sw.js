@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v53'; // Add CRGB BC and fix all 9 sub-account ledger filters
+const CACHE_NAME = 'biz-report-v60'; // Distinct icon for Account Register (how_to_reg) vs Credit Ledger (menu_book)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

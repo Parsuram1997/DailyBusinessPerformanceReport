@@ -9,7 +9,47 @@
     const style = document.createElement('style');
     style.id = 'sidebar-mode-styles';
     style.textContent = `
+        /* ─── Compact Sidebar & Slim Scrollbar Styles ─── */
+        .sidebar-nav-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(127, 19, 236, 0.25) transparent;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(127, 19, 236, 0.25);
+            border-radius: 9999px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(127, 19, 236, 0.5);
+        }
+
         @media (min-width: 1024px) {
+            /* Compact heights and paddings for all sidebar elements */
+            #sidebar .sidebar-logo-container {
+                padding-top: 0.625rem !important;
+                padding-bottom: 0.375rem !important;
+            }
+            #sidebar .nav-link {
+                padding-top: 0.375rem !important;
+                padding-bottom: 0.375rem !important;
+                min-height: 2.125rem !important;
+            }
+
+            /* In hover mode, hide the scrollbar thumb when not hovered so collapsed 5.5rem looks pristine */
+            html:not([data-sidebar-mode="expand"]) #sidebar:not(:hover) .sidebar-nav-scroll {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            html:not([data-sidebar-mode="expand"]) #sidebar:not(:hover) .sidebar-nav-scroll::-webkit-scrollbar {
+                display: none;
+                width: 0;
+            }
+
             /* ─── Expand Mode: Always Expanded (Full 16rem width, labels visible) ─── */
             html[data-sidebar-mode="expand"] #sidebar {
                 width: 16rem !important;
@@ -17,13 +57,13 @@
             }
             html[data-sidebar-mode="expand"] #sidebar .sidebar-logo-container {
                 justify-content: flex-start !important;
-                padding-left: 1.5rem !important;
-                padding-right: 1.5rem !important;
+                padding-left: 1.25rem !important;
+                padding-right: 1.25rem !important;
             }
             html[data-sidebar-mode="expand"] #sidebar .nav-link {
                 justify-content: flex-start !important;
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
                 margin-left: 0 !important;
                 margin-right: 0 !important;
             }
@@ -32,13 +72,13 @@
                 opacity: 1 !important;
                 transform: translateX(0) !important;
                 width: auto !important;
-                margin-left: 0.75rem !important;
+                margin-left: 0.625rem !important;
                 display: inline-block !important;
                 overflow: visible !important;
             }
             html[data-sidebar-mode="expand"] #sidebar .profile-card {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
             }
             html[data-sidebar-mode="expand"] #sidebar .profile-card > div {
                 justify-content: flex-start !important;
@@ -49,6 +89,14 @@
             html[data-sidebar-mode="contract"] #sidebar:hover {
                 width: 5.5rem !important;
                 box-shadow: none !important;
+            }
+            html[data-sidebar-mode="contract"] #sidebar .sidebar-nav-scroll {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            html[data-sidebar-mode="contract"] #sidebar .sidebar-nav-scroll::-webkit-scrollbar {
+                display: none;
+                width: 0;
             }
             html[data-sidebar-mode="contract"] #sidebar:hover .sidebar-logo-container {
                 justify-content: center !important;

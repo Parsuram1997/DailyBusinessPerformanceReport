@@ -57,11 +57,11 @@
             }
             #sidebar:hover { width: 16rem !important; box-shadow: 4px 0 15px rgba(0,0,0,0.03); }
             
-            #sidebar .sidebar-logo-container { padding-top: 1.5rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
-            #sidebar:hover .sidebar-logo-container { justify-content: flex-start !important; padding-left: 1.5rem !important; }
+            #sidebar .sidebar-logo-container { padding-top: 0.625rem !important; padding-bottom: 0.375rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+            #sidebar:hover .sidebar-logo-container { justify-content: flex-start !important; padding-left: 1.25rem !important; }
 
-            #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
-            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-left: 0; margin-right: 0; }
+            #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; min-height: 2.125rem !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; margin-left: 0; margin-right: 0; }
 
             #sidebar .toggle-container { display: none !important; }
 
@@ -89,8 +89,8 @@
             #sidebar:hover .profile-card { 
                 background: rgba(127, 19, 236, 0.05) !important; 
                 border-color: rgba(127, 19, 236, 0.2) !important;
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
             }
             #sidebar:hover .profile-card > div {
                 justify-content: flex-start !important;
@@ -168,95 +168,100 @@
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased min-h-screen">
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300">
-            <div class="px-4 py-4 flex justify-end toggle-container">
+                <!-- Sidebar -->
+        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300 h-screen">
+            <div class="px-4 py-2 flex justify-end toggle-container flex-shrink-0">
                 <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
                     <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
                 </button>
             </div>
-            <div class="px-6 pb-6 flex items-center gap-3 sidebar-logo-container">
-                <div class="size-10 rounded-lg overflow-hidden flex-shrink-0">
+            <div class="px-5 py-2.5 flex items-center gap-3 sidebar-logo-container flex-shrink-0">
+                <div class="size-8 rounded-lg overflow-hidden flex-shrink-0">
                     <img src="favicon.png" class="w-full h-full object-cover">
                 </div>
                 <div class="sidebar-text overflow-hidden whitespace-nowrap">
                     <h1 class="text-sm font-bold leading-none">BizPerform</h1>
-                    <p class="text-[10px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
+                    <p class="text-[9px] text-primary/70 uppercase tracking-wider font-semibold">Management Portal</p>
                 </div>
             </div>
-            <nav class="flex-1 px-4 space-y-1">
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="text-sm nav-text">Dashboard</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html">
-                    <span class="material-symbols-outlined">add_circle</span>
-                    <span class="text-sm nav-text">Add Entry</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary font-semibold" href="daily-txn.html">
-                    <span class="material-symbols-outlined">point_of_sale</span>
-                    <span class="text-sm nav-text">Daily Txn</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html">
-                    <span class="material-symbols-outlined">receipt_long</span>
-                    <span class="text-sm nav-text">Table</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html">
-                    <span class="material-symbols-outlined">bar_chart</span>
-                    <span class="text-sm nav-text">Analytics</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    <span class="text-sm nav-text">Credit Ledger</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors"
-                    href="account-register-code.html" data-page="account-register-code.html">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    <span class="text-sm nav-text">Account Register</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html">
-                    <span class="material-symbols-outlined">savings</span>
-                    <span class="text-sm nav-text">Cust. Deposit</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html">
-                    <span class="material-symbols-outlined">pending_actions</span>
-                    <span class="text-sm nav-text">Pending Txns</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html">
-                    <span class="material-symbols-outlined">account_balance</span>
-                    <span class="text-sm nav-text">Bank Withdrawals</span>
-                </a>
-                <a class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="text-sm nav-text">Settings</span>
-                </a>
-                <a id="logout-btn" href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors mt-auto cursor-pointer">
-                    <span class="material-symbols-outlined">logout</span>
-                    <span class="text-sm nav-text font-semibold">Logout</span>
-                </a>
-                <a id="back-to-login-sidebar" href="index.html" class="hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary hover:bg-primary/5 transition-colors mt-auto font-bold">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                    <span class="text-sm nav-text">Back to Login</span>
-                </a>
-            </nav>
-            
-                <!-- Theme Toggle -->
-                <div class="px-4 pb-2 theme-toggle-container">
-                    <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
-                        <span id="theme-icon" class="material-symbols-outlined">dark_mode</span>
-                        <span id="theme-label" class="text-sm nav-text font-semibold">Dark Mode</span>
-                    </button>
-                </div>
-                <div class="mt-auto p-4 border-t border-primary/10">
-                <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
-                    <div class="flex items-center gap-3">
-                        <div class="size-10 rounded-xl border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
-                            <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-lg object-cover">
-                        </div>
-                        <div class="sidebar-text overflow-hidden whitespace-nowrap">
-                            <p class="text-[8px] text-primary/60 font-bold uppercase tracking-widest mb-1">Author</p>
-                            <h6 class="text-[11px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
-                            <p class="text-[8px] text-slate-500 font-medium mt-1">Designed and Developed By</p>
+            <div class="sidebar-scroll-container flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-nav-scroll flex flex-col justify-between">
+                <nav class="flex-1 px-2.5 py-1 space-y-0.5">
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html" data-page="dashboard-code.html">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        <span class="text-sm nav-text">Dashboard</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
+                        <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                        <span class="text-sm nav-text">Add Entry</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-primary/10 text-primary font-semibold" href="daily-txn.html" data-page="daily-txn.html">
+                        <span class="material-symbols-outlined text-[20px]">point_of_sale</span>
+                        <span class="text-sm nav-text">Daily Txn</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
+                        <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                        <span class="text-sm nav-text">Table</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
+                        <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+                        <span class="text-sm nav-text">Analytics</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        <span class="text-sm nav-text">Credit Ledger</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="account-register-code.html" data-page="account-register-code.html">
+                        <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+                        <span class="text-sm nav-text">Account Register</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html" data-page="customer-deposit-code.html">
+                        <span class="material-symbols-outlined text-[20px]">savings</span>
+                        <span class="text-sm nav-text">Cust. Deposit</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html" data-page="pending-code.html">
+                        <span class="material-symbols-outlined text-[20px]">pending_actions</span>
+                        <span class="text-sm nav-text">Pending Txns</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+                        <span class="material-symbols-outlined text-[20px]">account_balance</span>
+                        <span class="text-sm nav-text">Bank Withdrawals</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                        <span class="text-sm nav-text">Settings</span>
+                    </a>
+                    <a id="logout-btn" href="#" class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">logout</span>
+                        <span class="text-sm nav-text font-semibold">Logout</span>
+                    </a>
+                    <a id="back-to-login-sidebar" href="index.html" class="hidden flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-primary hover:bg-primary/5 transition-colors font-bold">
+                        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                        <span class="text-sm nav-text">Back to Login</span>
+                    </a>
+                </nav>
+                
+                <div class="flex-shrink-0 mt-auto">
+                    <!-- Theme Toggle -->
+                    <div class="px-2.5 pb-1 pt-1 theme-toggle-container">
+                        <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
+                            <span id="theme-icon" class="material-symbols-outlined text-[20px]">dark_mode</span>
+                            <span id="theme-label" class="text-xs nav-text font-semibold">Dark Mode</span>
+                        </button>
+                    </div>
+
+                    <!-- Profile Card -->
+                    <div class="p-2 border-t border-primary/10 profile-card-container">
+                        <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-xl p-1.5 border border-primary/20 group hover:bg-primary/10 transition-all duration-300">
+                            <div class="flex items-center gap-2.5">
+                                <div class="size-8 rounded-lg border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-sm shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
+                                    <img src="assets/parsuram.png" alt="Parsuram Naik" class="size-full rounded-md object-cover">
+                                </div>
+                                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                                    <p class="text-[7.5px] text-primary/60 font-bold uppercase tracking-widest leading-none mb-0.5">Author</p>
+                                    <h6 class="text-[10px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                                    <p class="text-[7.5px] text-slate-500 font-medium leading-none mt-0.5">Designed and Developed By</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -269,15 +274,17 @@
 
             <div class="flex-1 overflow-y-auto p-0 sm:p-4 md:p-8 w-full space-y-4 md:space-y-8 pb-20 md:pb-6">
                 <!-- Page Title & Upcoming Banking Days -->
-                <div class="px-3 md:px-0 hidden md:flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                    <div class="shrink-0">
-                        <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Daily Transactions</h1>
-                        <p class="text-sm text-slate-500 font-medium">Manage and track your shop's daily cash flow</p>
-                    </div>
-                    <div class="hidden xl:flex flex-1 items-center justify-center animate-fadeIn">
-                        <div class="flex items-center gap-3">
-                            <span id="greeting-icon" class="material-symbols-outlined text-3xl md:text-4xl drop-shadow-sm">wb_sunny</span>
-                            <span id="greeting-text" class="text-2xl md:text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-300 drop-shadow-sm">Good Morning</span>
+                <div class="px-3 md:px-0 hidden md:flex flex-col lg:flex-row lg:items-center justify-between gap-3 md:gap-4">
+                    <div class="shrink-0 flex items-center gap-3.5 flex-wrap">
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Daily Transactions</h1>
+                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm animate-fadeIn">
+                                    <span id="greeting-icon" class="material-symbols-outlined text-xl md:text-2xl drop-shadow-sm">wb_sunny</span>
+                                    <span id="greeting-text" class="text-sm md:text-base font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-300">Good Morning</span>
+                                </div>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Manage and track your shop's daily cash flow</p>
                         </div>
                         <script>
                             (function() {
@@ -299,15 +306,18 @@
                                     color = 'text-purple-500 dark:text-purple-400'; 
                                 }
                                 
-                                document.getElementById('greeting-text').innerText = text;
+                                const txtEl = document.getElementById('greeting-text');
+                                if (txtEl) txtEl.innerText = text;
                                 const iconEl = document.getElementById('greeting-icon');
-                                iconEl.innerText = icon;
-                                iconEl.className = 'material-symbols-outlined text-3xl md:text-4xl drop-shadow-sm ' + color;
+                                if (iconEl) {
+                                    iconEl.innerText = icon;
+                                    iconEl.className = 'material-symbols-outlined text-xl md:text-2xl drop-shadow-sm ' + color;
+                                }
                             })();
                         </script>
                     </div>
-                    <div class="w-full xl:w-auto">
-                        <div id="banking-days-container" class="flex items-center gap-2 overflow-x-auto py-2.5 px-3.5 no-scrollbar w-full max-w-full">
+                    <div class="w-full lg:w-auto lg:max-w-[55%] xl:max-w-[58%] shrink-0">
+                        <div id="banking-days-container" class="flex items-center gap-1 sm:gap-1.5 py-1 px-0 w-full overflow-hidden">
                             <!-- 7 day cards dynamically generated by JS -->
                         </div>
                     </div>
@@ -654,7 +664,7 @@
                         </div>
                         <label id="account-filter-btn" for="account-filter-select" class="flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs shrink-0 cursor-pointer" title="Filter by Account Ledger">
                             <span class="material-symbols-outlined text-base text-primary shrink-0">account_balance_wallet</span>
-                            <select id="account-filter-select" class="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 border-none p-0 focus:ring-0 outline-none cursor-pointer pr-3 appearance-none" style="border: none !important; outline: none !important; box-shadow: none !important;" title="Filter by Account Ledger">
+                            <select id="account-filter-select" class="bg-transparent bg-none text-xs font-bold text-slate-600 dark:text-slate-300 border-none p-0 pr-0 focus:ring-0 outline-none cursor-pointer appearance-none" style="border: none !important; outline: none !important; box-shadow: none !important; background-image: none !important; -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important;" title="Filter by Account Ledger">
                                 <option value="ALL" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Accounts</option>
                                 <option value="online_p1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">online(parsu)</option>
                                 <option value="online_p2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">online(shop)</option>
@@ -666,7 +676,7 @@
                                 <option value="spicemoney" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">SpiceMoney</option>
                                 <option value="crgb" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CRGB BC</option>
                             </select>
-                            <span class="material-symbols-outlined text-xs text-slate-400 -ml-2 pointer-events-none shrink-0">expand_more</span>
+                            <span class="material-symbols-outlined text-xs text-slate-400 pointer-events-none shrink-0">expand_more</span>
                         </label>
                         <div class="flex justify-between items-center w-full sm:w-auto sm:gap-1.5">
                             <button id="toggle-all-time-search-btn" class="flex items-center justify-center sm:gap-1.5 w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 transition-all border border-slate-200 dark:border-white/5 font-bold text-xs shrink-0" title="Search by Date Range">
@@ -701,10 +711,13 @@
                 <!-- Unified Summary Grid -->
                 <div id="summary-balances-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 mb-4 font-display">
                     <!-- Cash -->
-                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-500/10 dark:to-slate-900/90 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <div id="cash-card" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-500/10 dark:to-slate-900/90 border border-emerald-100 dark:border-emerald-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
-                            <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider leading-none">Cash</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider leading-none">Cash</span>
+                                <span id="cash-low-badge" class="hidden px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[8px] font-black uppercase tracking-wider animate-pulse">Low Cash</span>
+                            </div>
                             <svg class="w-3.5 h-3.5 text-emerald-500 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </div>
                         <div class="flex items-center justify-between mb-1.5 leading-none">
@@ -1704,6 +1717,233 @@
         </div>
     </div>
 
+    <!-- Low Cash Alarm Alert Banner (Floating Bottom-Right) -->
+    <div id="low-cash-alert-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[200] max-w-sm sm:max-w-md w-[calc(100vw-2rem)] hidden transition-all duration-300 transform translate-y-0 shadow-2xl">
+        <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-rose-500/40 p-4 sm:p-5 ring-4 ring-rose-500/15 overflow-hidden relative group">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500 animate-pulse"></div>
+            <div class="flex items-start justify-between gap-3 pl-1">
+                <div class="flex items-start gap-3">
+                    <div class="size-11 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-inner">
+                        <span class="material-symbols-outlined text-2xl animate-bounce">crisis_alert</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight flex items-center gap-1.5">
+                                <span>Low Cash Alert</span>
+                                <span class="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider animate-pulse">Urgent</span>
+                            </h4>
+                        </div>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 font-semibold mt-1">
+                            Closing Cash is <span id="low-cash-alert-amount" class="font-mono font-black text-rose-600 dark:text-rose-400 text-sm">₹ 0</span>
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                            Cash balance ₹20,000 ya usse kam ho gaya hai. Kripya counter withdrawals ke liye cash ka prabandhan karein.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="dismissLowCashAlert(false)" class="size-7 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-white/10 dark:hover:bg-rose-500/20 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center justify-center shrink-0" title="Close / Dismiss Alert">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+            <div class="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[10px] text-slate-400 pl-1">
+                <span class="flex items-center gap-1">
+                    <span class="size-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                    <span>Repeats every 5 min until cash &gt; ₹20,000</span>
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="dismissLowCashAlert(true)" class="px-2.5 py-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white font-bold rounded-lg transition-colors text-xs hover:bg-slate-100 dark:hover:bg-white/10" title="Mark as resolved / mute for this session">
+                        Close Mark
+                    </button>
+                    <button type="button" onclick="dismissLowCashAlert(false)" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-colors text-xs shadow-sm">
+                        Dismiss (5 Min)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Cash Alarm Alert Controller Script -->
+    <script>
+        (function() {
+            let _audioCtx = null;
+            function getAudioContext() {
+                if (!_audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        _audioCtx = new AudioContextClass();
+                    }
+                }
+                if (_audioCtx && _audioCtx.state === 'suspended') {
+                    _audioCtx.resume().catch(() => {});
+                }
+                return _audioCtx;
+            }
+
+            // Auto-resume audio context on first user interaction
+            ['click', 'touchstart', 'keydown'].forEach(evt => {
+                document.addEventListener(evt, () => {
+                    if (_audioCtx && _audioCtx.state === 'suspended') {
+                        _audioCtx.resume().catch(() => {});
+                    }
+                }, { passive: true });
+            });
+
+            function playLowCashAlarmSound() {
+                try {
+                    const ctx = getAudioContext();
+                    if (!ctx) return;
+                    const now = ctx.currentTime;
+                    
+                    // Pleasant but urgent multi-beep chime pattern (880Hz, 659Hz, 880Hz, 987Hz)
+                    const tones = [
+                        { f: 880, start: 0.0, dur: 0.15 },
+                        { f: 659, start: 0.18, dur: 0.15 },
+                        { f: 880, start: 0.38, dur: 0.22 },
+                        { f: 987, start: 0.65, dur: 0.28 }
+                    ];
+
+                    tones.forEach(t => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(t.f, now + t.start);
+
+                        gain.gain.setValueAtTime(0.001, now + t.start);
+                        gain.gain.exponentialRampToValueAtTime(0.2, now + t.start + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + t.start + t.dur);
+
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+
+                        osc.start(now + t.start);
+                        osc.stop(now + t.start + t.dur);
+                    });
+                } catch (e) {
+                    console.warn('Low Cash Alarm audio error:', e);
+                }
+            }
+
+            window._lowCashAlert = {
+                threshold: 20000,
+                intervalId: null,
+                intervalMs: 5 * 60 * 1000, // 5 minutes
+                dismissedUntil: 0,
+                currentCash: null,
+                isMutedToday: false,
+                isActive: false
+            };
+
+            window.checkLowCashAlert = function(cashAmount) {
+                const state = window._lowCashAlert;
+                const cash = parseFloat(cashAmount);
+                if (isNaN(cash)) return;
+                state.currentCash = cash;
+
+                const cashCard = document.getElementById('cash-card');
+                const cashBadge = document.getElementById('cash-low-badge');
+                const clCash = document.getElementById('cl-cash');
+
+                if (cash <= state.threshold) {
+                    state.isActive = true;
+
+                    // Visual indicator on summary Cash card
+                    if (cashBadge) cashBadge.classList.remove('hidden');
+                    if (cashCard) {
+                        cashCard.classList.add('ring-2', 'ring-rose-500', 'border-rose-400', 'dark:border-rose-500');
+                    }
+                    if (clCash) {
+                        clCash.classList.add('text-rose-600', 'dark:text-rose-400');
+                        clCash.classList.remove('text-emerald-600', 'dark:text-emerald-400');
+                    }
+
+                    // Trigger alarm if not muted and not dismissed in current 5-min cycle
+                    const now = Date.now();
+                    if (!state.isMutedToday && now >= state.dismissedUntil) {
+                        triggerLowCashAlarm(cash);
+                    }
+
+                    // Ensure 5-minute repeating interval is running
+                    if (!state.intervalId) {
+                        state.intervalId = setInterval(() => {
+                            if (state.isActive && state.currentCash <= state.threshold && !state.isMutedToday) {
+                                triggerLowCashAlarm(state.currentCash);
+                            }
+                        }, state.intervalMs);
+                    }
+                } else {
+                    // Cash is > 20,000: Auto-clear and stop
+                    state.isActive = false;
+                    if (state.intervalId) {
+                        clearInterval(state.intervalId);
+                        state.intervalId = null;
+                    }
+
+                    // Hide alert banner
+                    const banner = document.getElementById('low-cash-alert-container');
+                    if (banner) {
+                        banner.classList.add('hidden');
+                    }
+
+                    // Reset cash card styling
+                    if (cashBadge) cashBadge.classList.add('hidden');
+                    if (cashCard) {
+                        cashCard.classList.remove('ring-2', 'ring-rose-500', 'border-rose-400', 'dark:border-rose-500');
+                    }
+                    if (clCash) {
+                        clCash.classList.remove('text-rose-600', 'dark:text-rose-400');
+                        clCash.classList.add('text-emerald-600', 'dark:text-emerald-400');
+                    }
+                }
+            };
+
+            function triggerLowCashAlarm(cash) {
+                const banner = document.getElementById('low-cash-alert-container');
+                const amountEl = document.getElementById('low-cash-alert-amount');
+                if (amountEl) {
+                    amountEl.textContent = '₹ ' + (parseFloat(cash) || 0).toLocaleString('en-IN');
+                }
+                if (banner) {
+                    banner.classList.remove('hidden');
+                }
+                playLowCashAlarmSound();
+            }
+
+            window.dismissLowCashAlert = function(muteToday = false) {
+                const banner = document.getElementById('low-cash-alert-container');
+                if (banner) {
+                    banner.classList.add('hidden');
+                }
+                if (muteToday) {
+                    window._lowCashAlert.isMutedToday = true;
+                    if (window._lowCashAlert.intervalId) {
+                        clearInterval(window._lowCashAlert.intervalId);
+                        window._lowCashAlert.intervalId = null;
+                    }
+                } else {
+                    // Dismiss for current 5 minutes cycle
+                    window._lowCashAlert.dismissedUntil = Date.now() + window._lowCashAlert.intervalMs;
+                }
+            };
+
+            // Safety observer: Automatically re-check when #cl-cash DOM content updates
+            document.addEventListener('DOMContentLoaded', () => {
+                const clCash = document.getElementById('cl-cash');
+                if (clCash) {
+                    const observer = new MutationObserver(() => {
+                        const raw = (clCash.innerText || '').replace(/[^0-9.-]/g, '');
+                        if (raw) {
+                            const parsed = parseFloat(raw);
+                            if (!isNaN(parsed) && window._lowCashAlert.currentCash === null) {
+                                window.checkLowCashAlert(parsed);
+                            }
+                        }
+                    });
+                    observer.observe(clCash, { childList: true, characterData: true, subtree: true });
+                }
+            });
+        })();
+    </script>
+
     <!-- Upcoming Banking Days Planner Widget -->
     <script>
         function isBankingDay(dateObj) {
@@ -1825,31 +2065,32 @@
                     : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20';
                     
                 const dotColor = bankingInfo.status ? 'bg-emerald-500 shadow-emerald-500/50 animate-pulse' : 'bg-rose-500 shadow-rose-500/50';
-                const badgeLabel = bankingInfo.status ? 'Banking' : 'Non-Banking';
+                
+                // Form concise badge label that never overflows or truncates
+                let badgeLabel = 'Banking';
+                if (!bankingInfo.status) {
+                    if (bankingInfo.reason === 'Sunday') badgeLabel = 'Sunday';
+                    else if (bankingInfo.reason === '2nd Saturday') badgeLabel = '2nd Sat';
+                    else if (bankingInfo.reason === '4th Saturday') badgeLabel = '4th Sat';
+                    else if (bankingInfo.reason.length <= 8) badgeLabel = bankingInfo.reason;
+                    else badgeLabel = 'Holiday';
+                }
 
                 const yyyy = d.getFullYear();
                 const mm = String(d.getMonth() + 1).padStart(2, '0');
                 const dd = String(d.getDate()).padStart(2, '0');
                 const isoDate = `${yyyy}-${mm}-${dd}`;
 
-                let reasonHtml = '';
-                if (!bankingInfo.status) {
-                    reasonHtml = '<span class="text-[8px] font-bold text-rose-500/80 dark:text-rose-400/80 mt-0.5 uppercase tracking-tighter truncate w-full text-center leading-none" title="' + bankingInfo.reason + '">' + bankingInfo.reason + '</span>';
-                } else {
-                    reasonHtml = '<span class="text-[8px] h-[10px] block mt-0.5"></span>';
-                }
-
                 html += `
-                    <div onclick="highlightBankingDay(this)" ondblclick="confirmSelectBankingDay('${isoDate}')" tabindex="0" onkeydown="if(event.key === 'Enter') confirmSelectBankingDay('${isoDate}')" title="Double click or press Enter to switch date (${bankingInfo.reason})" class="banking-day-card flex-1 min-w-[85px] max-w-[110px] h-[66px] flex flex-col justify-between items-center px-2.5 py-1.5 rounded-[10px] ${cardClasses} transition-all duration-200 cursor-pointer select-none focus:outline-none">
+                    <div onclick="highlightBankingDay(this)" ondblclick="confirmSelectBankingDay('${isoDate}')" tabindex="0" onkeydown="if(event.key === 'Enter') confirmSelectBankingDay('${isoDate}')" title="Double click or press Enter to switch date (${bankingInfo.reason})" class="banking-day-card flex-1 min-w-0 max-w-[90px] h-[58px] flex flex-col justify-between items-center px-1.5 py-1 rounded-[9px] ${cardClasses} transition-all duration-200 cursor-pointer select-none focus:outline-none">
                         <div class="flex items-center justify-between w-full mb-0.5">
-                            <span class="text-[9px] font-extrabold ${isToday ? 'text-primary' : 'text-slate-400 dark:text-slate-500'} tracking-wider uppercase leading-none">${dayStr}</span>
+                            <span class="text-[8.5px] font-extrabold ${isToday ? 'text-primary' : 'text-slate-400 dark:text-slate-500'} tracking-wider uppercase leading-none">${dayStr}</span>
                             <span class="size-1.5 rounded-full ${dotColor}"></span>
                         </div>
-                        <span class="text-xs font-bold text-slate-800 dark:text-white tracking-tight leading-none">${dateStr}</span>
-                        <span class="w-full text-center py-0.5 px-1 rounded text-[9px] font-extrabold tracking-wider uppercase ${badgeClasses} leading-none truncate" title="${bankingInfo.reason}">
+                        <span class="text-[11px] font-bold text-slate-800 dark:text-white tracking-tight leading-none">${dateStr}</span>
+                        <span class="w-full text-center py-0.5 px-0.5 rounded text-[8px] font-extrabold tracking-wider uppercase ${badgeClasses} leading-none truncate" title="${bankingInfo.reason}">
                             ${badgeLabel}
                         </span>
-                        ${reasonHtml}
                     </div>
                 `;
             }
@@ -2011,8 +2252,8 @@
             // Handle both formats
             const getVal = (obj, splitKey, combinedKey) => {
                 if (!obj) return 0;
-                if (obj[splitKey] !== undefined && obj[splitKey] !== 0) return obj[splitKey];
-                if (obj[combinedKey] !== undefined) return obj[combinedKey];
+                if (obj[splitKey] !== undefined && obj[splitKey] !== null) return obj[splitKey];
+                if (obj[combinedKey] !== undefined && obj[combinedKey] !== null) return obj[combinedKey];
                 return 0;
             };
 
