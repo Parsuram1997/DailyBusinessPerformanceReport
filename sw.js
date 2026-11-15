@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v60'; // Distinct icon for Account Register (how_to_reg) vs Credit Ledger (menu_book)
+const CACHE_NAME = 'biz-report-v63'; // Premium executive redesign of Dashboard Overview & metric cards
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

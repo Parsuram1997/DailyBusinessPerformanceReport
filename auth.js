@@ -50,9 +50,9 @@
                 width: 0;
             }
 
-            /* ─── Expand Mode: Always Expanded (Full 16rem width, labels visible) ─── */
+            /* ─── Expand Mode: Always Expanded (Compact 13.5rem width, labels visible) ─── */
             html[data-sidebar-mode="expand"] #sidebar {
-                width: 16rem !important;
+                width: 13.5rem !important;
                 box-shadow: 4px 0 15px rgba(0,0,0,0.03) !important;
             }
             html[data-sidebar-mode="expand"] #sidebar .sidebar-logo-container {

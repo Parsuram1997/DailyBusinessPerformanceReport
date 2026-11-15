@@ -81,7 +81,7 @@
         
         @media (min-width: 1024px) {
             #sidebar:hover { 
-                width: 16rem !important; /* Expanded w-64 */
+                width: 13.5rem !important; /* Expanded w-64 */
                 box-shadow: 4px 0 15px rgba(0,0,0,0.03);
             }
             
@@ -224,7 +224,7 @@
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
     <div class="flex h-screen overflow-hidden">
                 <!-- Sidebar -->
-        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300 h-screen">
+        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-[13.5rem] flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 z-20 transition-all duration-300 h-screen">
             <div class="px-4 py-2 flex justify-end toggle-container flex-shrink-0">
                 <button id="sidebar-toggle" class="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center">
                     <span class="material-symbols-outlined" id="toggle-icon">menu_open</span>
@@ -255,7 +255,7 @@
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
                         <span class="material-symbols-outlined text-[20px]">receipt_long</span>
-                        <span class="text-sm nav-text">Table</span>
+                        <span class="text-sm nav-text">Txn Table</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
                         <span class="material-symbols-outlined text-[20px]">bar_chart</span>
@@ -263,15 +263,15 @@
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
                         <span class="material-symbols-outlined text-[20px]">menu_book</span>
-                        <span class="text-sm nav-text">Credit Ledger</span>
+                        <span class="text-sm nav-text">Credit Book</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="account-register-code.html" data-page="account-register-code.html">
                         <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
-                        <span class="text-sm nav-text">Account Register</span>
+                        <span class="text-sm nav-text">Acc Register</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html" data-page="customer-deposit-code.html">
                         <span class="material-symbols-outlined text-[20px]">savings</span>
-                        <span class="text-sm nav-text">Cust. Deposit</span>
+                        <span class="text-sm nav-text">Cust Deposit</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html" data-page="pending-code.html">
                         <span class="material-symbols-outlined text-[20px]">pending_actions</span>
@@ -279,15 +279,15 @@
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
                         <span class="material-symbols-outlined text-[20px]">account_balance</span>
-                        <span class="text-sm nav-text">Bank Withdrawals</span>
+                        <span class="text-sm nav-text">Bank Cashout</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
                         <span class="material-symbols-outlined text-[20px]">settings</span>
-                        <span class="text-sm nav-text">Settings</span>
+                        <span class="text-sm nav-text">App Settings</span>
                     </a>
                     <a id="logout-btn" href="#" class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
                         <span class="material-symbols-outlined text-[20px]">logout</span>
-                        <span class="text-sm nav-text font-semibold">Logout</span>
+                        <span class="text-sm nav-text font-semibold">Exit Portal</span>
                     </a>
                     <a id="back-to-login-sidebar" href="index.html" class="hidden flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-primary hover:bg-primary/5 transition-colors font-bold">
                         <span class="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -343,191 +343,231 @@
                 </button>
             </header>
             <div class="flex-1 overflow-y-auto p-2 sm:p-4 md:p-8 w-full space-y-4 md:space-y-8 pb-20 md:pb-6">
-                <!-- Quick Actions -->
-                <section class="flex flex-wrap gap-4 items-center justify-between">
+                                <!-- Quick Actions & Page Header -->
+                <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-white/5">
                     <div class="space-y-1">
-                        <h3 class="text-2xl font-bold tracking-tight">Business Overview</h3>
-                        <p class="text-slate-500 text-sm">Real-time performance metrics and insights.</p>
+                        <div class="flex items-center gap-2.5">
+                            <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Business Overview</h3>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-black border border-emerald-500/20 shadow-sm">
+                                <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>LIVE</span>
+                            </span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-medium">Real-time performance metrics, cash flow tracking & business insights.</p>
                     </div>
-
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 shadow-sm text-xs font-bold text-slate-600 dark:text-slate-300">
+                            <span class="material-symbols-outlined text-sm text-primary">calendar_today</span>
+                            <span id="overview-today-date">Real-Time Insights</span>
+                        </div>
+                    </div>
                 </section>
+
                 <!-- Comparison & Summary Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Comparison Highlights -->
-                    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                        <div
-                            class="bg-gradient-to-br from-emerald-400 to-green-500 dark:from-emerald-800/80 dark:to-green-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-emerald-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">payments</span>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <!-- Comparison Highlights (12 Premium Cards in 4-col responsive grid) -->
+                    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4.5">
+                        
+                        <!-- 1. All Time Income -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 text-white shadow-xl shadow-emerald-500/15 hover:shadow-2xl hover:shadow-emerald-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-emerald-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">All Time Income</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">payments</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">All Time Income</p>
-                            <h4 id="total-income-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="total-income-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-emerald-200">public</span>
                                 <span>Lifetime Accumulation</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-orange-400 to-rose-500 dark:from-orange-800/80 dark:to-rose-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-rose-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">receipt_long</span>
+
+                        <!-- 2. All Time Expense -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-orange-500 via-rose-500 to-red-600 text-white shadow-xl shadow-rose-500/15 hover:shadow-2xl hover:shadow-rose-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-rose-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">All Time Expense</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">receipt_long</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">All Time Expense</p>
-                            <h4 id="total-expense-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="total-expense-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-orange-200">public</span>
                                 <span>Lifetime Accumulation</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-cyan-400 to-blue-500 dark:from-cyan-800/80 dark:to-blue-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-blue-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">account_balance_wallet</span>
+
+                        <!-- 3. All Time Profit -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white shadow-xl shadow-blue-500/15 hover:shadow-2xl hover:shadow-blue-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-blue-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">All Time Profit</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">account_balance_wallet</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">All Time Profit</p>
-                            <h4 id="total-profit-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="total-profit-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-blue-200">public</span>
                                 <span>Lifetime Accumulation</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-800/80 dark:to-indigo-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-indigo-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">savings</span>
+
+                        <!-- 4. Closing Balance -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-700 text-white shadow-xl shadow-purple-500/15 hover:shadow-2xl hover:shadow-purple-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-purple-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Closing Balance</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">savings</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Closing Balance</p>
-                            <h4 id="closing-balance-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">shield</span>
-                                <span class="font-medium">Account Balanced</span>
+                            <h4 id="closing-balance-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-purple-200">shield</span>
+                                <span>Account Balanced</span>
                             </div>
                         </div>
-                        <!-- Capital -->
-                        <div
-                            class="bg-gradient-to-br from-blue-400 to-indigo-500 dark:from-blue-800/80 dark:to-indigo-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-indigo-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">account_balance</span>
+
+                        <!-- 5. Total Capital -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 text-white shadow-xl shadow-sky-500/15 hover:shadow-2xl hover:shadow-sky-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-sky-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Total Capital</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">account_balance</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Total Capital</p>
-                            <h4 id="total-capital-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">upgrade</span>
+                            <h4 id="total-capital-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-sky-200">upgrade</span>
                                 <span>Added</span>
                             </div>
                         </div>
-                        <!-- Withdrawal -->
-                        <div
-                            class="bg-gradient-to-br from-rose-400 to-red-500 dark:from-rose-800/80 dark:to-red-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-red-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">atm</span>
+
+                        <!-- 6. Withdrawals -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-rose-500 via-red-600 to-pink-700 text-white shadow-xl shadow-rose-500/15 hover:shadow-2xl hover:shadow-rose-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-rose-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Withdrawals</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">atm</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Withdrawals</p>
-                            <h4 id="total-withdrawals-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">money_off</span>
+                            <h4 id="total-withdrawals-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-rose-200">money_off</span>
                                 <span>Total</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-teal-400 to-emerald-500 dark:from-teal-800/80 dark:to-emerald-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-emerald-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">calendar_month</span>
+
+                        <!-- 7. This Month Income -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-teal-500 via-emerald-600 to-green-700 text-white shadow-xl shadow-teal-500/15 hover:shadow-2xl hover:shadow-teal-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-teal-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">This Month Income</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">calendar_month</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">This Month Income</p>
-                            <h4 id="this-month-income-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="this-month-income-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-teal-200">public</span>
                                 <span id="this-month-income-trend-val">...</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-amber-400 to-orange-500 dark:from-amber-800/80 dark:to-orange-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-orange-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">receipt_long</span>
+
+                        <!-- 8. This Month Expense -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 text-white shadow-xl shadow-amber-500/15 hover:shadow-2xl hover:shadow-amber-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-amber-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">This Month Expense</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">receipt_long</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">This Month Expense</p>
-                            <h4 id="this-month-expense-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="this-month-expense-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-amber-200">public</span>
                                 <span id="this-month-expense-trend-val">...</span>
                             </div>
                         </div>
-                        <div
-                            class="bg-gradient-to-br from-indigo-400 to-blue-500 dark:from-indigo-800/80 dark:to-blue-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-blue-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">trending_up</span>
+
+                        <!-- 9. This Month Profit -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-indigo-500 via-purple-600 to-fuchsia-700 text-white shadow-xl shadow-indigo-500/15 hover:shadow-2xl hover:shadow-indigo-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-indigo-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">This Month Profit</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">trending_up</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">This Month Profit</p>
-                            <h4 id="this-month-profit-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm">public</span>
+                            <h4 id="this-month-profit-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-indigo-200">public</span>
                                 <span id="this-month-profit-trend-val">...</span>
                             </div>
                         </div>
-                        <!-- Today's Income -->
-                        <div
-                            class="bg-gradient-to-br from-lime-400 to-green-500 dark:from-lime-800/80 dark:to-green-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-green-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">today</span>
+
+                        <!-- 10. Today's Income -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 text-white shadow-xl shadow-green-500/15 hover:shadow-2xl hover:shadow-green-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-green-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span id="today-income-label" class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Today's Income</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">today</span>
+                                </div>
                             </div>
-                            <p id="today-income-label" class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Today's Income</p>
-                            <h4 id="today-income-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm"
-                                    id="income-trend-icon">trending_flat</span>
+                            <h4 id="today-income-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-green-200" id="income-trend-icon">trending_flat</span>
                                 <span id="income-trend-val">...</span>
                             </div>
                         </div>
-                        <!-- Today's Expense -->
-                        <div
-                            class="bg-gradient-to-br from-red-400 to-rose-500 dark:from-red-800/80 dark:to-rose-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-rose-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">event_busy</span>
+
+                        <!-- 11. Today's Expense -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-red-500 via-rose-600 to-orange-600 text-white shadow-xl shadow-red-500/15 hover:shadow-2xl hover:shadow-red-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-red-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span id="today-expense-label" class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Today's Expense</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">event_busy</span>
+                                </div>
                             </div>
-                            <p id="today-expense-label" class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Today's Expense</p>
-                            <h4 id="today-expense-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm"
-                                    id="expense-trend-icon">trending_flat</span>
+                            <h4 id="today-expense-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-red-200" id="expense-trend-icon">trending_flat</span>
                                 <span id="expense-trend-val">...</span>
                             </div>
                         </div>
-                        <!-- Today Profit -->
-                        <div
-                            class="bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-800/80 dark:to-blue-900/80 p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden group border border-white/20 dark:border-blue-700/50 text-white">
-                            <div
-                                class="absolute right-0 top-0 size-16 bg-white/20 rounded-bl-full flex items-start justify-end p-3 text-white">
-                                <span class="material-symbols-outlined">trending_up</span>
+
+                        <!-- 12. Today's Profit -->
+                        <div class="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 text-white shadow-xl shadow-cyan-500/15 hover:shadow-2xl hover:shadow-cyan-500/25 hover:-translate-y-1 active:scale-[0.99] transition-all duration-300 group border border-white/20 dark:border-cyan-400/30 flex flex-col justify-between min-h-[140px]">
+                            <div class="absolute -right-6 -bottom-6 size-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                            <div class="flex items-center justify-between">
+                                <span id="today-profit-label" class="text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/85">Today's Profit</span>
+                                <div class="size-9 sm:size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                                    <span class="material-symbols-outlined text-lg sm:text-xl">trending_up</span>
+                                </div>
                             </div>
-                            <p id="today-profit-label" class="text-[10px] sm:text-xs md:text-sm font-bold tracking-tight text-white/80">Today's Profit</p>
-                            <h4 id="today-profit-top" class="text-lg sm:text-2xl md:text-3xl font-black mt-1 text-white">...</h4>
-                            <div class="flex items-center gap-2 mt-2 md:mt-4 text-white/90 text-xs md:text-sm font-semibold">
-                                <span class="material-symbols-outlined text-sm"
-                                    id="profit-trend-icon">trending_flat</span>
+                            <h4 id="today-profit-top" class="text-xl sm:text-2xl md:text-3xl font-black font-mono mt-2 tracking-tight drop-shadow-sm truncate">...</h4>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/15 dark:bg-black/30 backdrop-blur-md text-[10px] sm:text-[11px] font-bold text-white/95 mt-3 sm:mt-4 border border-white/10 w-fit">
+                                <span class="material-symbols-outlined text-[13px] text-cyan-200" id="profit-trend-icon">trending_flat</span>
                                 <span id="profit-trend-val">...</span>
                             </div>
                         </div>
                     </div>
                     <!-- Chart 1: Income vs Expense -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-200/30 dark:shadow-none chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
-                            <h5 class="font-bold chart-title">Income vs Expense Trend</h5>
+                            <h5 class="font-black text-slate-800 dark:text-white text-base tracking-tight flex items-center gap-2 chart-title"><span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span><span>Income vs Expense Trend</span></h5>
                             <div class="flex items-center gap-2 controls-container">
                                 <select id="chart-timeframe-select"
-                                    class="text-xs bg-slate-100 dark:bg-slate-700 border-none rounded-lg focus:ring-1 focus:ring-primary cursor-pointer outline-none font-bold text-slate-600 dark:text-slate-300 px-3 py-1.5 transition-colors">
+                                    class="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary cursor-pointer outline-none font-bold text-slate-700 dark:text-slate-200 px-3 py-1.5 transition-colors shadow-sm">
                                     <option value="30">Last 30 Days</option>
                                     <option value="7">Last 7 Days</option>
                                 </select>
@@ -544,9 +584,9 @@
                     </div>
                     <!-- Chart 2: Profit Trend -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-200/30 dark:shadow-none chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
-                            <h5 class="font-bold chart-title">Profit Growth</h5>
+                            <h5 class="font-black text-slate-800 dark:text-white text-base tracking-tight flex items-center gap-2 chart-title"><span class="size-2 rounded-full bg-blue-500 animate-pulse"></span><span>Profit Growth</span></h5>
                             <div class="flex items-center gap-2 controls-container">
                                 <button class="text-xs text-primary font-bold">View Full Report</button>
                                 <button
@@ -562,9 +602,9 @@
                     </div>
                     <!-- Chart 3: Income Growth -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-200/30 dark:shadow-none tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
-                            <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Income Growth</h5>
+                            <h5 class="font-black text-slate-800 dark:text-white text-base tracking-tight flex items-center gap-2 chart-title"><span class="size-2 rounded-full bg-teal-500 animate-pulse"></span><span>Income Growth</span></h5>
                             <div class="flex items-center gap-2 controls-container">
                                 <a href="reports-code.html"
                                     class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View
@@ -582,9 +622,9 @@
                     </div>
                     <!-- Chart 4: Expense Growth -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-200/30 dark:shadow-none tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
-                            <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Expense Growth</h5>
+                            <h5 class="font-black text-slate-800 dark:text-white text-base tracking-tight flex items-center gap-2 chart-title"><span class="size-2 rounded-full bg-rose-500 animate-pulse"></span><span>Expense Growth</span></h5>
                             <div class="flex items-center gap-2 controls-container">
                                 <a href="reports-code.html"
                                     class="text-xs text-primary hover:text-primary/80 transition-colors font-bold cursor-pointer">View
@@ -602,9 +642,9 @@
                     </div>
                     <!-- Chart 5: Monthly Income Comparison -->
                     <div
-                        class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl border border-primary/10 tracking-wide chart-card-container transition-all duration-300">
+                        class="lg:col-span-3 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-slate-200/30 dark:shadow-none tracking-wide chart-card-container transition-all duration-300">
                         <div class="flex items-center justify-between mb-6 header-container">
-                            <h5 class="font-bold text-slate-700 dark:text-slate-200 chart-title">Monthly Income Comparison</h5>
+                            <h5 class="font-black text-slate-800 dark:text-white text-base tracking-tight flex items-center gap-2 chart-title"><span class="size-2 rounded-full bg-purple-500 animate-pulse"></span><span>Monthly Income Comparison</span></h5>
                             <div class="flex items-center gap-2 controls-container">
                                 <button
                                     class="expand-chart-btn p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer"
@@ -1169,6 +1209,16 @@
             if (hideOn) startObserving();
         });
     })();
+    </script>
+
+    <script>
+        (function() {
+            const dateEl = document.getElementById('overview-today-date');
+            if (dateEl) {
+                const now = new Date();
+                dateEl.textContent = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+            }
+        })();
     </script>
 </body>
 
