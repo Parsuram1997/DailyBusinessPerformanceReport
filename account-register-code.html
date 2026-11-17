@@ -281,6 +281,10 @@
                         <span class="material-symbols-outlined text-[20px]">account_balance</span>
                         <span class="text-sm nav-text">Bank Cashout</span>
                     </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="quick-note-code.html" data-page="quick-note-code.html">
+                        <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+                        <span class="text-sm nav-text">Quick Note</span>
+                    </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
                         <span class="material-symbols-outlined text-[20px]">settings</span>
                         <span class="text-sm nav-text">App Settings</span>
@@ -959,6 +963,27 @@
         };
         try {
             if (id) {
+                const existing = window.allAccounts.find(a => a.id === id);
+                if (existing && existing.dailyTxnId) {
+                    data.dailyTxnId = existing.dailyTxnId;
+                    try {
+                        await updateDoc(doc(db, "daily_transactions", existing.dailyTxnId), {
+                            accountNumber: data.accountNumber,
+                            note: data.accountHolderName,
+                            accountType: data.accountType,
+                            date: data.openingDate,
+                            mobileNumber: data.mobileNumber,
+                            dob: data.dob,
+                            extraDetails: data.aadhar,
+                            address: data.address,
+                            idReference: data.idReference,
+                            nomineeName: data.nomineeName,
+                            remark: data.remarks
+                        });
+                    } catch (txErr) {
+                        console.warn("Could not update linked daily_transactions entry:", txErr);
+                    }
+                }
                 await updateDoc(doc(db, "accounts", id), data);
             } else {
                 data.created_at = new Date().toISOString();
@@ -981,6 +1006,14 @@
         });
         if (res.isConfirmed) {
             try {
+                const targetAcc = window.allAccounts.find(a => a.id === id);
+                if (targetAcc && targetAcc.dailyTxnId) {
+                    try {
+                        await deleteDoc(doc(db, "daily_transactions", targetAcc.dailyTxnId));
+                    } catch (txErr) {
+                        console.warn("Could not delete linked daily_transactions entry:", txErr);
+                    }
+                }
                 await deleteDoc(doc(db, "accounts", id));
                 Swal.fire({ icon:'success', title:'Deleted!', toast:true, position:'top-end', showConfirmButton:false, timer:2500 });
                 window.loadAccounts();

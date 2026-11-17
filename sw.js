@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v63'; // Premium executive redesign of Dashboard Overview & metric cards
+const CACHE_NAME = 'biz-report-v73'; // Add CSP wallet, CGB BC, and Online balance sufficiency checks for Mobile Recharge
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -14,6 +14,9 @@ const ASSETS_TO_CACHE = [
   './customer-deposit-code.html',
   './pending-code.html',
   './settings-code.html',
+  './account-register-code.html',
+  './bank-withdrawals-code.html',
+  './quick-note-code.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap'

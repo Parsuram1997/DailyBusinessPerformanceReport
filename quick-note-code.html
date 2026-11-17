@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Quick Notes - BizPerform</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Outfit", "Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, .font-heading { font-family: 'Outfit', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill-1 { font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Sidebar Hover Expansion */
+        #sidebar { 
+            width: 5.5rem !important;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar .sidebar-logo-container { padding-top: 0.625rem !important; padding-bottom: 0.375rem !important; justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .nav-link { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; min-height: 2.125rem !important; transition: all 0.3s; margin-left: auto; margin-right: auto; }
+        #sidebar .toggle-container { display: none !important; }
+        #sidebar .sidebar-text, #sidebar .nav-text { 
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            width: 0;
+            overflow: hidden;
+        }
+        #sidebar .profile-card { background: transparent !important; border-color: transparent !important; padding-left: 0 !important; padding-right: 0 !important; transition: all 0.3s; }
+        #sidebar .profile-card > div { justify-content: center !important; transition: all 0.3s; }
+        
+        @media (min-width: 1024px) {
+            #sidebar:hover { 
+                width: 13.5rem !important;
+                box-shadow: 4px 0 20px rgba(0,0,0,0.06);
+            }
+            #sidebar:hover .sidebar-logo-container { justify-content: flex-start !important; padding-left: 1.25rem !important; }
+            #sidebar:hover .nav-link { justify-content: flex-start !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; margin-left: 0; margin-right: 0; }
+            #sidebar:hover .sidebar-text, #sidebar:hover .nav-text { 
+                opacity: 1; 
+                transform: translateX(0);
+                transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+                width: auto;
+                margin-left: 0.75rem;
+            }
+        }
+        
+        /* Note card styling */
+        .note-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .note-card:hover {
+            transform: translateY(-3px);
+        }
+        .completed-note {
+            opacity: 0.65;
+        }
+        .completed-note .note-content {
+            text-decoration: line-through;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script src="auth.js"></script>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <script>
+        // Theme init
+        (function() {
+            const saved = localStorage.getItem('biz_theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            const accent = localStorage.getItem('biz_accent_color');
+            if (accent) {
+                const style = document.createElement('style');
+                style.id = 'dynamic-accent-styles';
+                style.innerHTML = `
+                    :root { --color-primary: ${accent} !important; }
+                    .text-primary { color: ${accent} !important; }
+                    .bg-primary { background-color: ${accent} !important; }
+                    .border-primary { border-color: ${accent} !important; }
+                    .border-primary\\/10 { border-color: ${accent}1a !important; }
+                    .border-primary\\/20 { border-color: ${accent}33 !important; }
+                    .bg-primary\\/5 { background-color: ${accent}0d !important; }
+                    .bg-primary\\/10 { background-color: ${accent}1a !important; }
+                    .hover\\:bg-primary\\/5:hover { background-color: ${accent}0d !important; }
+                    .hover\\:bg-primary\\/10:hover { background-color: ${accent}1a !important; }
+                `;
+                document.head.appendChild(style);
+            }
+        })();
+    </script>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="hidden lg:flex lg:flex-col w-[13.5rem] flex-shrink-0 border-r border-primary/10 bg-white dark:bg-slate-900/60 backdrop-blur-md z-20 transition-all duration-300 h-screen">
+            <div class="px-5 py-3.5 flex items-center gap-3 sidebar-logo-container flex-shrink-0">
+                <div class="size-8 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                    <img src="favicon.png" class="w-full h-full object-cover" alt="Logo">
+                </div>
+                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                    <h1 class="text-sm font-bold leading-none font-heading">BizPerform</h1>
+                    <p class="text-[9px] text-primary uppercase tracking-wider font-bold">MANAGEMENT PORTAL</p>
+                </div>
+            </div>
+            
+            <div class="sidebar-scroll-container flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-nav-scroll flex flex-col justify-between">
+                <nav class="flex-1 px-2.5 py-1 space-y-0.5">
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="dashboard-code.html" data-page="dashboard-code.html">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        <span class="text-sm nav-text">Dashboard</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="add-entry-code.html" data-page="add-entry-code.html">
+                        <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                        <span class="text-sm nav-text">Add Entry</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="daily-txn.html" data-page="daily-txn.html">
+                        <span class="material-symbols-outlined text-[20px]">point_of_sale</span>
+                        <span class="text-sm nav-text">Daily Txn</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="transactions-code.html" data-page="transactions-code.html">
+                        <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                        <span class="text-sm nav-text">Txn Table</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="reports-code.html" data-page="reports-code.html">
+                        <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+                        <span class="text-sm nav-text">Analytics</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="credit-ledger-code.html" data-page="credit-ledger-code.html">
+                        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        <span class="text-sm nav-text">Credit Book</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="account-register-code.html" data-page="account-register-code.html">
+                        <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+                        <span class="text-sm nav-text">Acc Register</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="customer-deposit-code.html" data-page="customer-deposit-code.html">
+                        <span class="material-symbols-outlined text-[20px]">savings</span>
+                        <span class="text-sm nav-text">Cust Deposit</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="pending-code.html" data-page="pending-code.html">
+                        <span class="material-symbols-outlined text-[20px]">pending_actions</span>
+                        <span class="text-sm nav-text">Pending Txns</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
+                        <span class="material-symbols-outlined text-[20px]">account_balance</span>
+                        <span class="text-sm nav-text">Bank Cashout</span>
+                    </a>
+                    <!-- Quick Note (Active) -->
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-primary/10 text-primary font-bold shadow-sm" href="quick-note-code.html" data-page="quick-note-code.html">
+                        <span class="material-symbols-outlined text-[20px] fill-1">sticky_note_2</span>
+                        <span class="text-sm nav-text">Quick Note</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                        <span class="text-sm nav-text">App Settings</span>
+                    </a>
+                    <a id="logout-btn" href="#" class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">logout</span>
+                        <span class="text-sm nav-text font-semibold">Exit Portal</span>
+                    </a>
+                </nav>
+                
+                <div class="flex-shrink-0 mt-auto">
+                    <!-- Theme Toggle -->
+                    <div class="px-2.5 pb-1 pt-1">
+                        <button id="theme-toggle-btn" onclick="(function(){const isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('biz_theme',isDark?'dark':'light');const icon=document.getElementById('theme-icon');if(icon)icon.textContent=isDark?'light_mode':'dark_mode';const lbl=document.getElementById('theme-label');if(lbl)lbl.textContent=isDark?'Light Mode':'Dark Mode';})()" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-primary/5 hover:text-primary transition-all nav-link">
+                            <span id="theme-icon" class="material-symbols-outlined text-[20px]">dark_mode</span>
+                            <span id="theme-label" class="text-xs nav-text font-semibold">Dark Mode</span>
+                        </button>
+                    </div>
+
+                    <!-- Profile Card -->
+                    <div class="p-2 border-t border-primary/10">
+                        <div class="profile-card bg-primary/5 dark:bg-primary/10 rounded-xl p-1.5 border border-primary/20">
+                            <div class="flex items-center gap-2.5">
+                                <div class="size-8 rounded-lg border-2 border-primary/30 p-0.5 overflow-hidden flex-shrink-0 shadow-sm">
+                                    <img src="assets/parsuram.png" alt="Parsuram" class="size-full rounded-md object-cover" onerror="this.src='favicon.png'">
+                                </div>
+                                <div class="sidebar-text overflow-hidden whitespace-nowrap">
+                                    <p class="text-[7.5px] text-primary/70 font-bold uppercase tracking-widest leading-none mb-0.5">Author</p>
+                                    <h6 class="text-[10px] font-black text-slate-900 dark:text-white leading-none uppercase tracking-tight">PARSURAM NAIK</h6>
+                                    <p class="text-[7.5px] text-slate-500 font-medium leading-none mt-0.5">Quick Notes Portal</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col h-screen overflow-hidden bg-background-light dark:bg-background-dark">
+            <!-- Top Bar / Header -->
+            <header class="flex-shrink-0 h-16 border-b border-primary/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-4 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 text-white flex items-center justify-center shadow-md shadow-primary/20 flex-shrink-0">
+                        <span class="material-symbols-outlined text-xl">edit_note</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-black tracking-tight text-slate-900 dark:text-white font-heading leading-tight">Quick Notes</h2>
+                            <span id="cloud-sync-status" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-500/20">
+                                <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Live Sync
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Digital operations notepad — replaces physical paper notebooks with real-time sync.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button" onclick="window.focusComposer()" class="bg-primary hover:bg-primary/90 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">add</span>
+                        <span class="hidden sm:inline">New Note</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Page Body -->
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 pb-28 lg:pb-8 space-y-5">
+                
+                <!-- Quick Stats Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
+                        <div class="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg">note_stack</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Notes</span>
+                            <span id="stat-total" class="text-base font-black text-slate-800 dark:text-slate-100 font-mono">0</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
+                        <div class="size-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg">push_pin</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pinned</span>
+                            <span id="stat-pinned" class="text-base font-black text-amber-600 dark:text-amber-400 font-mono">0</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
+                        <div class="size-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg">pending_actions</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Tasks</span>
+                            <span id="stat-active" class="text-base font-black text-blue-600 dark:text-blue-400 font-mono">0</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
+                        <div class="size-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-lg">check_circle</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed</span>
+                            <span id="stat-done" class="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Note Composer Card (Fast Scratchpad Box) -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-primary/15 shadow-sm transition-all focus-within:shadow-md focus-within:border-primary/40">
+                    <form id="quickNoteForm" onsubmit="window.saveQuickNote(event)">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-base">draw</span>
+                                Quick Note Composer
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono hidden sm:inline">Tip: Press Ctrl + Enter to save quickly</span>
+                        </div>
+
+                        <!-- Title Input -->
+                        <div class="mb-2">
+                            <input type="text" id="composerTitle" placeholder="Title / Subject (e.g., Raman Loan Document, SBI Cash Deposit...)" class="w-full px-3.5 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+                        </div>
+
+                        <!-- Content Textarea -->
+                        <div class="mb-3">
+                            <textarea id="composerContent" rows="3" required placeholder="Write your note, customer calculation, mobile number, bank reminder, or daily reminder here..." class="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-y min-h-[75px]"></textarea>
+                        </div>
+
+                        <!-- Options Bar: Category, Color, Pin & Action Buttons -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <!-- Category Select -->
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[11px] font-semibold text-slate-400">Tag:</span>
+                                    <select id="composerCategory" class="text-xs font-bold py-1 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+                                        <option value="General">📌 General</option>
+                                        <option value="Urgent">⚡ Urgent</option>
+                                        <option value="Customer">👤 Customer</option>
+                                        <option value="Bank / CSP">🏦 Bank / CSP</option>
+                                        <option value="Cash / Payment">💰 Cash / Payment</option>
+                                        <option value="To-Do">📝 To-Do List</option>
+                                    </select>
+                                </div>
+
+                                <!-- Color Tag Picker -->
+                                <div class="flex items-center gap-1.5 ml-1">
+                                    <span class="text-[11px] font-semibold text-slate-400">Color:</span>
+                                    <div class="flex items-center gap-1" id="composerColorGroup">
+                                        <button type="button" onclick="window.selectColor('violet')" data-color="violet" class="color-btn size-5 rounded-full bg-violet-500 ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-slate-900 transition-all"></button>
+                                        <button type="button" onclick="window.selectColor('blue')" data-color="blue" class="color-btn size-5 rounded-full bg-blue-500 hover:scale-110 transition-all"></button>
+                                        <button type="button" onclick="window.selectColor('emerald')" data-color="emerald" class="color-btn size-5 rounded-full bg-emerald-500 hover:scale-110 transition-all"></button>
+                                        <button type="button" onclick="window.selectColor('amber')" data-color="amber" class="color-btn size-5 rounded-full bg-amber-500 hover:scale-110 transition-all"></button>
+                                        <button type="button" onclick="window.selectColor('rose')" data-color="rose" class="color-btn size-5 rounded-full bg-rose-500 hover:scale-110 transition-all"></button>
+                                        <button type="button" onclick="window.selectColor('slate')" data-color="slate" class="color-btn size-5 rounded-full bg-slate-500 hover:scale-110 transition-all"></button>
+                                    </div>
+                                    <input type="hidden" id="composerColor" value="violet">
+                                </div>
+
+                                <!-- Pin Toggle -->
+                                <label class="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer ml-1 select-none">
+                                    <input type="checkbox" id="composerPinned" class="rounded text-primary focus:ring-primary/20 size-3.5">
+                                    <span>Pin to top</span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button type="button" onclick="window.clearComposer()" class="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                                    Clear
+                                </button>
+                                <button type="submit" id="saveNoteBtn" class="bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5 transition-all">
+                                    <span class="material-symbols-outlined text-base">save</span>
+                                    <span>Save Note</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Search & Filters Toolbar -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 max-w-md">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">search</span>
+                        <input type="text" id="noteSearchInput" oninput="window.filterNotes()" placeholder="Search in notes, titles, mobile numbers..." class="w-full pl-9 pr-8 py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+                        <button type="button" onclick="document.getElementById('noteSearchInput').value=''; window.filterNotes();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+                    </div>
+
+                    <!-- Filter Chips -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                        <button type="button" onclick="window.setCategoryFilter('All')" data-cat="All" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white transition-all whitespace-nowrap shadow-sm">All</button>
+                        <button type="button" onclick="window.setCategoryFilter('Pinned')" data-cat="Pinned" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-amber-400 transition-all whitespace-nowrap">📌 Pinned</button>
+                        <button type="button" onclick="window.setCategoryFilter('Urgent')" data-cat="Urgent" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400 transition-all whitespace-nowrap">⚡ Urgent</button>
+                        <button type="button" onclick="window.setCategoryFilter('Customer')" data-cat="Customer" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-400 transition-all whitespace-nowrap">👤 Customer</button>
+                        <button type="button" onclick="window.setCategoryFilter('Bank / CSP')" data-cat="Bank / CSP" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-violet-400 transition-all whitespace-nowrap">🏦 Bank / CSP</button>
+                        <button type="button" onclick="window.setCategoryFilter('Cash / Payment')" data-cat="Cash / Payment" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-400 transition-all whitespace-nowrap">💰 Cash</button>
+                        <button type="button" onclick="window.setCategoryFilter('To-Do')" data-cat="To-Do" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-amber-400 transition-all whitespace-nowrap">📝 To-Do</button>
+                    </div>
+                </div>
+
+                <!-- Pinned Notes Section -->
+                <div id="pinnedSection" class="hidden space-y-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-amber-500 text-base fill-1">push_pin</span>
+                        <h4 class="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-heading">Pinned Notes</h4>
+                    </div>
+                    <div id="pinnedNotesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 items-start"></div>
+                </div>
+
+                <!-- All / Other Notes Section -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-base">sticky_note_2</span>
+                            <h4 id="notesSectionTitle" class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-heading">Recent Notes</h4>
+                        </div>
+                        <span id="notesCountBadge" class="text-xs font-mono font-bold text-slate-400">0 notes</span>
+                    </div>
+                    <div id="allNotesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 items-start">
+                        <!-- Dynamic notes injected here -->
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyNotesState" class="hidden py-16 flex flex-col items-center justify-center text-center">
+                    <div class="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+                        <span class="material-symbols-outlined text-3xl">edit_document</span>
+                    </div>
+                    <h4 class="text-base font-bold text-slate-800 dark:text-slate-200 font-heading">No notes found</h4>
+                    <p class="text-xs text-slate-400 max-w-sm mt-1">Use the quick composer above to create your first note or change your search filter.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Note Modal -->
+    <div id="editNoteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="window.closeEditModal()"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-primary/20 w-full max-w-lg p-5 sm:p-6 overflow-hidden z-10 transition-all transform scale-95 opacity-0" id="editModalPanel">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-xl">edit</span>
+                    <h3 class="text-base font-bold font-heading text-slate-900 dark:text-white">Edit Note</h3>
+                </div>
+                <button type="button" onclick="window.closeEditModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="editNoteForm" onsubmit="window.saveEditedNote(event)">
+                <input type="hidden" id="editNoteId">
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Title / Subject</label>
+                        <input type="text" id="editNoteTitle" class="w-full px-3.5 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Note Content *</label>
+                        <textarea id="editNoteContent" rows="5" required class="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Category</label>
+                            <select id="editNoteCategory" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none">
+                                <option value="General">📌 General</option>
+                                <option value="Urgent">⚡ Urgent</option>
+                                <option value="Customer">👤 Customer</option>
+                                <option value="Bank / CSP">🏦 Bank / CSP</option>
+                                <option value="Cash / Payment">💰 Cash / Payment</option>
+                                <option value="To-Do">📝 To-Do List</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Color Theme</label>
+                            <select id="editNoteColor" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none">
+                                <option value="violet">💜 Violet</option>
+                                <option value="blue">💙 Blue</option>
+                                <option value="emerald">💚 Emerald</option>
+                                <option value="amber">💛 Amber</option>
+                                <option value="rose">❤️ Rose</option>
+                                <option value="slate">🩶 Slate</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 pt-1">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="editNotePinned" class="rounded text-primary focus:ring-primary/20 size-4">
+                            <span>Pin this note to top</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="editNoteCompleted" class="rounded text-emerald-500 focus:ring-emerald-500/20 size-4">
+                            <span>Mark as Completed</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onclick="window.closeEditModal()" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">save</span>
+                        <span>Update Note</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Horizontal Bottom Navigation Bar -->
+    <nav class="lg:hidden fixed bottom-3 left-3 right-3 z-40 flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-3 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-primary/20 shadow-2xl">
+        <a href="dashboard-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">dashboard</span>
+            <span class="text-[9px] font-bold">Dash</span>
+        </a>
+        <a href="add-entry-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">add_circle</span>
+            <span class="text-[9px] font-bold">Add</span>
+        </a>
+        <a href="daily-txn.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">point_of_sale</span>
+            <span class="text-[9px] font-bold">Daily</span>
+        </a>
+        <a href="transactions-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">receipt_long</span>
+            <span class="text-[9px] font-bold">Txns</span>
+        </a>
+        <a href="quick-note-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-primary text-white shrink-0 w-[64px] h-[64px] shadow-lg shadow-primary/30">
+            <span class="material-symbols-outlined text-lg fill-1">sticky_note_2</span>
+            <span class="text-[9px] font-bold">Notes</span>
+        </a>
+        <a href="account-register-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">how_to_reg</span>
+            <span class="text-[9px] font-bold">Accounts</span>
+        </a>
+        <a href="settings-code.html" class="flex flex-col items-center justify-center gap-1 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 shrink-0 w-[64px] h-[64px]">
+            <span class="material-symbols-outlined text-lg">settings</span>
+            <span class="text-[9px] font-bold">Settings</span>
+        </a>
+    </nav>
+
+    <!-- Firebase App Script -->
+    <script type="module">
+        import { db } from './firebase-config.js';
+        import {
+            collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        window.allNotes = [];
+        window.activeCategory = 'All';
+
+        // Color Styles Map
+        const COLOR_MAP = {
+            violet: {
+                border: 'border-violet-200 dark:border-violet-500/25 hover:border-violet-400 dark:hover:border-violet-500/50',
+                bar: 'bg-violet-500',
+                badge: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300 border border-violet-200/60 dark:border-violet-500/20'
+            },
+            blue: {
+                border: 'border-blue-200 dark:border-blue-500/25 hover:border-blue-400 dark:hover:border-blue-500/50',
+                bar: 'bg-blue-500',
+                badge: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-200/60 dark:border-blue-500/20'
+            },
+            emerald: {
+                border: 'border-emerald-200 dark:border-emerald-500/25 hover:border-emerald-400 dark:hover:border-emerald-500/50',
+                bar: 'bg-emerald-500',
+                badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-500/20'
+            },
+            amber: {
+                border: 'border-amber-200 dark:border-amber-500/25 hover:border-amber-400 dark:hover:border-amber-500/50',
+                bar: 'bg-amber-500',
+                badge: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200/60 dark:border-amber-500/20'
+            },
+            rose: {
+                border: 'border-rose-200 dark:border-rose-500/25 hover:border-rose-400 dark:hover:border-rose-500/50',
+                bar: 'bg-rose-500',
+                badge: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border border-rose-200/60 dark:border-rose-500/20'
+            },
+            slate: {
+                border: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600',
+                bar: 'bg-slate-400 dark:bg-slate-600',
+                badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }
+        };
+
+        // Real-time Cloud Sync Listener
+        window.initNotesSync = function() {
+            try {
+                const q = query(collection(db, "quick_notes"), orderBy("created_at", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    window.allNotes = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    window.renderNotes();
+                    window.updateStats();
+                }, (err) => {
+                    console.error("Firestore onSnapshot error:", err);
+                    document.getElementById('cloud-sync-status').innerHTML = `
+                        <span class="size-1.5 rounded-full bg-rose-500"></span>
+                        Offline
+                    `;
+                });
+            } catch (err) {
+                console.error("Failed to initialize sync listener:", err);
+            }
+        };
+
+        // Format dates
+        function formatNoteTime(iso) {
+            if (!iso) return '';
+            try {
+                const date = new Date(iso);
+                if (isNaN(date.getTime())) return '';
+                const now = new Date();
+                const isToday = date.toDateString() === now.toDateString();
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (isToday) {
+                    return `Today at ${timeStr}`;
+                }
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = date.toLocaleString('default', { month: 'short' });
+                return `${day} ${month}, ${timeStr}`;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // Render Notes to DOM
+        window.renderNotes = function() {
+            const queryText = (document.getElementById('noteSearchInput').value || '').toLowerCase().trim();
+            const filterCat = window.activeCategory;
+
+            let filtered = window.allNotes.filter(note => {
+                const matchSearch = (note.title || '').toLowerCase().includes(queryText) ||
+                                    (note.content || '').toLowerCase().includes(queryText) ||
+                                    (note.category || '').toLowerCase().includes(queryText);
+                
+                let matchCat = true;
+                if (filterCat === 'Pinned') {
+                    matchCat = note.isPinned === true;
+                } else if (filterCat !== 'All') {
+                    matchCat = (note.category || 'General') === filterCat;
+                }
+                return matchSearch && matchCat;
+            });
+
+            // Split into Pinned vs Others
+            const pinnedList = filtered.filter(n => n.isPinned);
+            const otherList = filtered.filter(n => !n.isPinned);
+
+            const pinnedSection = document.getElementById('pinnedSection');
+            const pinnedGrid = document.getElementById('pinnedNotesGrid');
+            const otherGrid = document.getElementById('allNotesGrid');
+            const emptyState = document.getElementById('emptyNotesState');
+            const badge = document.getElementById('notesCountBadge');
+
+            if (badge) badge.innerText = `${filtered.length} notes`;
+
+            if (filtered.length === 0) {
+                pinnedSection.classList.add('hidden');
+                otherGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // Render Pinned Section
+            if (pinnedList.length > 0) {
+                pinnedSection.classList.remove('hidden');
+                pinnedGrid.innerHTML = pinnedList.map(n => renderNoteCardHTML(n)).join('');
+            } else {
+                pinnedSection.classList.add('hidden');
+                pinnedGrid.innerHTML = '';
+            }
+
+            // Render Other Notes
+            otherGrid.innerHTML = otherList.map(n => renderNoteCardHTML(n)).join('');
+        };
+
+        function renderNoteCardHTML(n) {
+            const c = COLOR_MAP[n.color] || COLOR_MAP.violet;
+            const completedClass = n.isCompleted ? 'completed-note ring-1 ring-emerald-500/40 bg-slate-50/50 dark:bg-slate-900/40' : '';
+            const pinIcon = n.isPinned ? 'fill-1 text-amber-500' : 'text-slate-400 hover:text-amber-500';
+            const checkIcon = n.isCompleted ? 'check_circle fill-1 text-emerald-500' : 'radio_button_unchecked text-slate-400 hover:text-emerald-500';
+            const timeStr = formatNoteTime(n.created_at || n.updated_at);
+            
+            const hasTitle = n.title && n.title.trim().length > 0;
+            const displayTitle = hasTitle ? escapeHtml(n.title.trim()) : '';
+            const formattedContent = escapeHtml(n.content || '').replace(/\n/g, '<br>');
+
+            return `
+                <div class="note-card relative overflow-hidden flex flex-col rounded-2xl p-3 sm:p-3.5 bg-white dark:bg-slate-900/90 border ${c.border} shadow-sm hover:shadow-md ${completedClass} group transition-all duration-200">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${c.bar}"></div>
+                    
+                    <!-- Header: Category + Action Icons (Pin & Done) -->
+                    <div class="flex items-center justify-between gap-2 mb-1.5 pl-1.5">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider ${c.badge}">
+                            ${escapeHtml(n.category || 'General')}
+                        </span>
+                        
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="window.toggleNotePin('${n.id}', ${!n.isPinned})" class="size-6 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="${n.isPinned ? 'Unpin' : 'Pin to top'}">
+                                <span class="material-symbols-outlined text-[16px] ${pinIcon}">push_pin</span>
+                            </button>
+                            <button type="button" onclick="window.toggleNoteComplete('${n.id}', ${!n.isCompleted})" class="size-6 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="${n.isCompleted ? 'Mark active' : 'Mark completed'}">
+                                <span class="material-symbols-outlined text-[16px] ${checkIcon}">check_circle</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Title (if present) -->
+                    ${hasTitle ? `
+                    <h5 class="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400 pl-1.5 mb-1 leading-snug select-text">
+                        ${displayTitle}
+                    </h5>
+                    ` : ''}
+
+                    <!-- Note Body (Much bigger, bold, readable font!) -->
+                    <div class="note-content text-sm sm:text-[15px] font-semibold text-slate-800 dark:text-slate-100 leading-snug tracking-tight break-words select-text pl-1.5 mb-2.5">
+                        ${formattedContent}
+                    </div>
+
+                    <!-- Footer: Timestamp & Actions -->
+                    <div class="mt-auto pt-2 border-t border-slate-100 dark:border-slate-800/70 flex items-center justify-between text-[10px] text-slate-400 font-medium pl-1.5">
+                        <span class="font-mono flex items-center gap-1 text-[9.5px]">
+                            <span class="material-symbols-outlined text-[12px] opacity-70">schedule</span>
+                            ${timeStr}
+                        </span>
+
+                        <div class="flex items-center gap-0.5">
+                            <button type="button" onclick="window.copyNoteText('${n.id}')" class="size-6 flex items-center justify-center text-slate-400 hover:text-primary rounded-md hover:bg-primary/10 transition-colors" title="Copy text">
+                                <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                            </button>
+                            <button type="button" onclick="window.openEditModal('${n.id}')" class="size-6 flex items-center justify-center text-slate-400 hover:text-blue-500 rounded-md hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" title="Edit">
+                                <span class="material-symbols-outlined text-[14px]">edit</span>
+                            </button>
+                            <button type="button" onclick="window.deleteQuickNote('${n.id}')" class="size-6 flex items-center justify-center text-slate-400 hover:text-rose-500 rounded-md hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[14px]">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Update top stats
+        window.updateStats = function() {
+            const total = window.allNotes.length;
+            const pinned = window.allNotes.filter(n => n.isPinned).length;
+            const done = window.allNotes.filter(n => n.isCompleted).length;
+            const active = total - done;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-pinned').innerText = pinned;
+            document.getElementById('stat-active').innerText = active;
+            document.getElementById('stat-done').innerText = done;
+        };
+
+        // Select color in composer
+        window.selectColor = function(color) {
+            document.getElementById('composerColor').value = color;
+            document.querySelectorAll('#composerColorGroup .color-btn').forEach(btn => {
+                const c = btn.getAttribute('data-color');
+                if (c === color) {
+                    btn.classList.add('ring-2', `ring-${color}-500`, 'ring-offset-2', 'dark:ring-offset-slate-900');
+                } else {
+                    btn.className = `color-btn size-5 rounded-full bg-${c}-500 hover:scale-110 transition-all`;
+                }
+            });
+        };
+
+        // Clear Composer
+        window.clearComposer = function() {
+            document.getElementById('composerTitle').value = '';
+            document.getElementById('composerContent').value = '';
+            document.getElementById('composerCategory').value = 'General';
+            document.getElementById('composerPinned').checked = false;
+            window.selectColor('violet');
+        };
+
+        // Focus composer
+        window.focusComposer = function() {
+            const textarea = document.getElementById('composerContent');
+            if (textarea) {
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                textarea.focus();
+            }
+        };
+
+        // Save Note
+        window.saveQuickNote = async function(e) {
+            if (e) e.preventDefault();
+            const content = document.getElementById('composerContent').value.trim();
+            if (!content) return;
+
+            const title = document.getElementById('composerTitle').value.trim();
+            const category = document.getElementById('composerCategory').value;
+            const color = document.getElementById('composerColor').value;
+            const isPinned = document.getElementById('composerPinned').checked;
+
+            const noteData = {
+                title: title,
+                content: content,
+                category: category,
+                color: color,
+                isPinned: isPinned,
+                isCompleted: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            const btn = document.getElementById('saveNoteBtn');
+            if (btn) btn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "quick_notes"), noteData);
+                window.clearComposer();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Note Saved Globally!',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error("Save note failed:", err);
+                Swal.fire('Error', 'Could not save note: ' + err.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
+
+        // Toggle Pin status
+        window.toggleNotePin = async function(id, isPinned) {
+            try {
+                await updateDoc(doc(db, "quick_notes", id), {
+                    isPinned: isPinned,
+                    updated_at: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Update pin failed:", err);
+            }
+        };
+
+        // Toggle Completed status
+        window.toggleNoteComplete = async function(id, isCompleted) {
+            try {
+                await updateDoc(doc(db, "quick_notes", id), {
+                    isCompleted: isCompleted,
+                    updated_at: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Update complete failed:", err);
+            }
+        };
+
+        // Delete Note
+        window.deleteQuickNote = async function(id) {
+            const res = await Swal.fire({
+                title: 'Delete this note?',
+                text: 'This will remove the note globally across all devices.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (res.isConfirmed) {
+                try {
+                    await deleteDoc(doc(db, "quick_notes", id));
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Note Deleted',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } catch (err) {
+                    console.error("Delete failed:", err);
+                    Swal.fire('Error', 'Could not delete note: ' + err.message, 'error');
+                }
+            }
+        };
+
+        // Copy Note Text
+        window.copyNoteText = function(id) {
+            const note = window.allNotes.find(n => n.id === id);
+            if (!note) return;
+            const fullText = (note.title ? note.title + '\n\n' : '') + (note.content || '');
+            navigator.clipboard.writeText(fullText).then(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Copied to clipboard!',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }).catch(() => {
+                alert('Copied: \n' + fullText);
+            });
+        };
+
+        // Category Filter selection
+        window.setCategoryFilter = function(cat) {
+            window.activeCategory = cat;
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                if (chip.getAttribute('data-cat') === cat) {
+                    chip.className = 'filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white transition-all whitespace-nowrap shadow-sm';
+                } else {
+                    chip.className = 'filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all whitespace-nowrap';
+                }
+            });
+            window.renderNotes();
+        };
+
+        window.filterNotes = function() {
+            window.renderNotes();
+        };
+
+        // Edit Note Modal Logic
+        window.openEditModal = function(id) {
+            const note = window.allNotes.find(n => n.id === id);
+            if (!note) return;
+
+            document.getElementById('editNoteId').value = note.id;
+            document.getElementById('editNoteTitle').value = note.title || '';
+            document.getElementById('editNoteContent').value = note.content || '';
+            document.getElementById('editNoteCategory').value = note.category || 'General';
+            document.getElementById('editNoteColor').value = note.color || 'violet';
+            document.getElementById('editNotePinned').checked = !!note.isPinned;
+            document.getElementById('editNoteCompleted').checked = !!note.isCompleted;
+
+            const modal = document.getElementById('editNoteModal');
+            const panel = document.getElementById('editModalPanel');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            panel.classList.remove('scale-95', 'opacity-0');
+            panel.classList.add('scale-100', 'opacity-100');
+        };
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById('editNoteModal');
+            const panel = document.getElementById('editModalPanel');
+            panel.classList.remove('scale-100', 'opacity-100');
+            panel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 250);
+        };
+
+        window.saveEditedNote = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editNoteId').value;
+            const title = document.getElementById('editNoteTitle').value.trim();
+            const content = document.getElementById('editNoteContent').value.trim();
+            const category = document.getElementById('editNoteCategory').value;
+            const color = document.getElementById('editNoteColor').value;
+            const isPinned = document.getElementById('editNotePinned').checked;
+            const isCompleted = document.getElementById('editNoteCompleted').checked;
+
+            try {
+                await updateDoc(doc(db, "quick_notes", id), {
+                    title: title,
+                    content: content,
+                    category: category,
+                    color: color,
+                    isPinned: isPinned,
+                    isCompleted: isCompleted,
+                    updated_at: new Date().toISOString()
+                });
+                window.closeEditModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Note Updated Globally!',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error("Update failed:", err);
+                Swal.fire('Error', 'Could not update note: ' + err.message, 'error');
+            }
+        };
+
+        // Keyboard Shortcut: Ctrl + Enter to save in composer
+        document.getElementById('composerContent').addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                window.saveQuickNote();
+            }
+        });
+
+        // Initialize listener on load
+        window.initNotesSync();
+    </script>
+</body>
+</html>
+

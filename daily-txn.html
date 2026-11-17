@@ -110,13 +110,15 @@
         
         /* Prevent wrapping of values inside breakdown modals and adjust padding to fit on mobile */
         #online-breakdown-modal table p,
-        #roinet-breakdown-modal table p {
+        #roinet-breakdown-modal table p,
+        #cgb-breakdown-modal table p {
             white-space: nowrap !important;
         }
 
         @media (max-width: 639px) {
             #online-breakdown-modal td,
-            #roinet-breakdown-modal td {
+            #roinet-breakdown-modal td,
+            #cgb-breakdown-modal td {
                 padding-left: 0.25rem !important; /* px-1 */
                 padding-right: 0.25rem !important; /* px-1 */
             }
@@ -225,6 +227,10 @@
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="bank-withdrawals-code.html" data-page="bank-withdrawals-code.html">
                         <span class="material-symbols-outlined text-[20px]">account_balance</span>
                         <span class="text-sm nav-text">Bank Cashout</span>
+                    </a>
+                    <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="quick-note-code.html" data-page="quick-note-code.html">
+                        <span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+                        <span class="text-sm nav-text">Quick Note</span>
                     </a>
                     <a class="nav-link flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/5 transition-colors" href="settings-code.html" data-page="settings-code.html">
                         <span class="material-symbols-outlined text-[20px]">settings</span>
@@ -385,8 +391,10 @@
 
                                 <option value="CSP_COMMISSION">CSP Commission</option>
                                 <option value="CSP_SUBSCRIPTION">CSP Subscription</option>
+                                <option value="OPEN_ACCOUNT">Open Account</option>
                                 <option value="JIO_TOPUP">Jio Topup</option>
                                 <option value="DISHTV_RECHARGE">DishTV Recharge</option>
+                                <option value="MOBILE_RECHARGE">Mobile Recharge</option>
                                 <option value="LOAN_REPAYMENT">Loan Repayment</option>
                                 <option value="JIO_RECHARGE">Jio Recharge</option>
                                 <option value="ELECTRICITY_BILL">Electricity Bill</option>
@@ -426,7 +434,8 @@
                                 <option value="Airtel(Parsu)">Airtel(Parsu)</option>
                                 <option value="Airtel(Dalai)">Airtel(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
-                                <option value="Crgb Bc">Crgb Bc</option>
+                                <option value="Cgb Bc(Parsu)">CGB BC (Parsu)</option>
+                                <option value="Cgb Bc(Dalai)">CGB BC (Dalai)</option>
                                 <option value="Yono SBI">Yono SBI</option>
                                 <option value="online(parsu)">online(parsu)</option>
                                 <option value="online(dalai)">online(dalai)</option>
@@ -451,8 +460,9 @@
                                 <option value="Airtel(Parsu)">Airtel (Parsu)</option>
                                 <option value="Airtel(Dalai)">Airtel (Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
-                                <option value="Crgb Bc">CRGB BC</option>
-                            </select>
+                                <option value="Cgb Bc(Parsu)">CGB BC (Parsu)</option>
+                                <option value="Cgb Bc(Dalai)">CGB BC (Dalai)</option>
+                                </select>
                         </div>
                         <div id="reason-field-container" class="flex flex-col gap-2 hidden">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Reason</label>
@@ -493,7 +503,8 @@
                                 <option value="Roinet(Parsu)">Roinet(Parsu)</option>
                                 <option value="Roinet(Dalai)">Roinet(Dalai)</option>
                                 <option value="SpiceMoney">SpiceMoney</option>
-                                <option value="Crgb Bc">Crgb Bc</option>
+                                <option value="Cgb Bc(Parsu)">CGB BC (Parsu)</option>
+                                <option value="Cgb Bc(Dalai)">CGB BC (Dalai)</option>
                                 <option value="online(parsu)">online(parsu)</option>
                                 <option value="online(dalai)">online(dalai)</option>
                                 <option value="online(shop)">online(shop)</option>
@@ -522,6 +533,7 @@
                             </div>
 
                             <datalist id="bank-list">
+                                <option value="CGB">
                                 <option value="CRGB">
                                 <option value="SBI">
                                 <option value="IPPB">
@@ -587,7 +599,38 @@
                         </div>
                         <div id="conditional-field-container" class="flex flex-col gap-2">
                             <label id="conditional-label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Aadhar (Last 4 Digits)</label>
-                            <input id="txn-conditional" tabindex="6" type="text" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                            <input id="txn-conditional" tabindex="6" type="text" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, this.maxLength || 12)" placeholder="Last 4 digits..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                        </div>
+                        <!-- Account Register Specific Fields (Active when Txn Type is Open Account) -->
+                        <div id="acc-number-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Account Number</label>
+                            <input id="txn-acc-number" tabindex="6" type="text" placeholder="Enter account no..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                        </div>
+                        <div id="acc-mobile-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Mobile Number</label>
+                            <input id="txn-acc-mobile" tabindex="6" type="tel" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" placeholder="10-digit mobile..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                        </div>
+                        <div id="acc-dob-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">DOB (Date of Birth)</label>
+                            <input id="txn-acc-dob" tabindex="6" type="date" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                        </div>
+                        <div id="acc-type-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Account Type</label>
+                            <select id="txn-acc-type" tabindex="6" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
+                                <option value="Savings">Savings</option>
+                                <option value="Current">Current</option>
+                                <option value="Fixed Deposit">Fixed Deposit</option>
+                                <option value="Recurring Deposit">Recurring Deposit</option>
+                                <option value="Loan">Loan</option>
+                            </select>
+                        </div>
+                        <div id="acc-nominee-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Nominee Name</label>
+                            <input id="txn-acc-nominee" tabindex="6" type="text" placeholder="Enter nominee name..." class="capitalize w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
+                        </div>
+                        <div id="acc-ref-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">ID / Reference No.</label>
+                            <input id="txn-acc-ref" tabindex="6" type="text" placeholder="Reference / ID No..." class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium">
                         </div>
                         <div id="lamination-size-container" class="flex flex-col gap-2 hidden">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lamination Size</label>
@@ -674,7 +717,9 @@
                                 <option value="roinet_1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Roinet(parsu)</option>
                                 <option value="roinet_2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Roinet(dalai)</option>
                                 <option value="spicemoney" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">SpiceMoney</option>
-                                <option value="crgb" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CRGB BC</option>
+                                <option value="crgb" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CGB BC (All)</option>
+                                <option value="cgb_1" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CGB BC (Parsu)</option>
+                                <option value="cgb_2" class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">CGB BC (Dalai)</option>
                             </select>
                             <span class="material-symbols-outlined text-xs text-slate-400 pointer-events-none shrink-0">expand_more</span>
                         </label>
@@ -805,11 +850,11 @@
                         </div>
                     </div>
 
-                    <!-- CRGB BC -->
-                    <div class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-violet-50/80 to-white dark:from-violet-500/10 dark:to-slate-900/90 border border-violet-100 dark:border-violet-500/20 shadow-sm hover:shadow group flex flex-col min-h-[96px] justify-between transition-all duration-200">
+                    <!-- CGB BC -->
+                    <div id="cgb-card" onclick="showCgbBreakdown()" class="relative overflow-hidden px-3 py-2.5 rounded-[14px] bg-gradient-to-br from-violet-50/80 to-white dark:from-violet-500/10 dark:to-slate-900/90 border border-violet-100 dark:border-violet-500/20 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.99] group cursor-pointer select-none flex flex-col min-h-[96px] justify-between transition-all duration-200">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-violet-500"></div>
                         <div class="flex items-center justify-between mb-0.5">
-                            <span class="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider leading-none">CRGB BC</span>
+                            <span class="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider leading-none">CGB BC</span>
                             <svg class="w-3.5 h-3.5 text-violet-500 opacity-50 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                         </div>
                         <div class="flex items-center justify-between mb-1.5 leading-none">
@@ -1554,6 +1599,97 @@
     </div>
 
     
+
+    <!-- CGB BC Breakdown Modal -->
+    <div id="cgb-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-2 sm:p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
+            <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-violet-600 to-indigo-600">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                        <span class="material-symbols-outlined">account_balance</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-black text-lg leading-none">CGB BC</h3>
+                        <p class="text-white/70 text-[10px] uppercase tracking-widest font-bold mt-1">Chhattisgarh Grameen Bank - Split</p>
+                    </div>
+                </div>
+                <button onclick="closeCgbBreakdown()" class="size-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-2 sm:p-4 space-y-6">
+                <div class="p-1 sm:p-2">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-separate border-spacing-y-2">
+                            <thead>
+                                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th class="px-1.5 pb-2 text-left sm:px-3">Account ID</th>
+                                    <th class="px-1.5 pb-2 text-right sm:px-3">Opening</th>
+                                    <th class="px-1.5 pb-2 text-right sm:px-3">Recent Changes</th>
+                                    <th class="px-1.5 pb-2 text-right sm:px-3">Closing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cgb-breakdown-table-body">
+                                <!-- CGB BC (Parsu) Row -->
+                                <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden hover:bg-violet-50/50 dark:hover:bg-violet-500/10 cursor-pointer transition-colors" onclick="if (window.selectAccountFilter) { window.selectAccountFilter('cgb_1'); closeCgbBreakdown(); }" title="Click to view CGB BC (Parsu) ledger">
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                        <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">CGB BC (Parsu)</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_1-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_1-chg" class="text-[10px] font-black">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_1-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                    </td>
+                                </tr>
+                                <!-- CGB BC (Dalai) Row -->
+                                <tr class="bg-slate-50 dark:bg-white/5 rounded-2xl overflow-hidden hover:bg-violet-50/50 dark:hover:bg-violet-500/10 cursor-pointer transition-colors" onclick="if (window.selectAccountFilter) { window.selectAccountFilter('cgb_2'); closeCgbBreakdown(); }" title="Click to view CGB BC (Dalai) ledger">
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-slate-100 dark:border-white/10 text-left">
+                                        <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300">CGB BC (Dalai)</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_2-op" class="text-xs font-black text-slate-700 dark:text-slate-200">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_2-chg" class="text-[10px] font-black">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-slate-100 dark:border-white/10 text-right">
+                                        <p id="bd-cgb_2-cl" class="text-xs font-black text-slate-800 dark:text-white">₹ 0</p>
+                                    </td>
+                                </tr>
+                                <!-- Total Row -->
+                                <tr class="bg-violet-600 rounded-2xl overflow-hidden shadow-lg shadow-violet-200 dark:shadow-none hover:bg-violet-700 cursor-pointer transition-colors" onclick="if (window.selectAccountFilter) { window.selectAccountFilter('crgb'); closeCgbBreakdown(); }" title="Click to view all CGB BC ledger">
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-l-2xl border-y border-l border-violet-500">
+                                        <p class="text-[10px] font-black text-white uppercase">TOTAL</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-violet-500 text-right">
+                                        <p id="bd-cgb_total-op" class="text-xs font-black text-white/90">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 border-y border-violet-500 text-right">
+                                        <p id="bd-cgb_total-chg" class="text-[10px] font-black text-white/90">₹ 0</p>
+                                    </td>
+                                    <td class="px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-r-2xl border-y border-r border-violet-500 text-right">
+                                        <p id="bd-cgb_total-cl" class="text-sm font-black text-white">₹ 0</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-white/5 text-center">
+                <button onclick="closeCgbBreakdown()" class="px-8 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform">
+                    Got It
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Customer Deposit Breakdown Modal -->
     <div id="cust-deposit-breakdown-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in duration-200">
@@ -2299,6 +2435,75 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+
+        function showCgbBreakdown() {
+            const modal = document.getElementById('cgb-breakdown-modal');
+            if (!modal) return;
+
+            const fmt = (v) => `₹ ${parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            const bd = window._cgbBreakdown || {
+                opening: { cgb_1: 0, cgb_2: 0, total: 0 },
+                closing: { cgb_1: 0, cgb_2: 0, total: 0 },
+                lastChange: { cgb_1: 0, cgb_2: 0, total: 0, mostRecent: null }
+            };
+
+            const getVal = (obj, key) => {
+                if (!obj) return 0;
+                if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+                return 0;
+            };
+
+            const op = bd.opening || {};
+            const cl = bd.closing || {};
+            const lastChg = bd.lastChange || {};
+            const mostRecent = lastChg.mostRecent;
+
+            const updateRow = (id, opVal, clVal, changeVal, mappedKey) => {
+                const change = changeVal || 0;
+                const opEl = document.getElementById(`bd-${id}-op`);
+                const clEl = document.getElementById(`bd-${id}-cl`);
+                const chgEl = document.getElementById(`bd-${id}-chg`);
+                
+                if (opEl) opEl.textContent = fmt(opVal);
+                if (clEl) clEl.textContent = fmt(clVal);
+                if (chgEl) {
+                    chgEl.textContent = (change >= 0 ? '+' : '') + fmt(change);
+                    if (mostRecent === mappedKey && mappedKey !== 'total') {
+                        chgEl.className = `text-[11px] font-black ${change > 0 ? 'text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 shadow-sm' : (change < 0 ? 'text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200 shadow-sm' : 'text-slate-400')}`;
+                    } else if (id === 'cgb_total') {
+                        chgEl.className = `text-[11px] font-black text-white/90`;
+                    } else {
+                        chgEl.className = `text-[10px] font-bold ${change > 0 ? 'text-emerald-500/70' : (change < 0 ? 'text-rose-500/70' : 'text-slate-400/50')}`;
+                    }
+                }
+            };
+
+            const op1 = getVal(op, 'cgb_1');
+            const op2 = getVal(op, 'cgb_2');
+            const cl1 = getVal(cl, 'cgb_1');
+            const cl2 = getVal(cl, 'cgb_2');
+            const chg1 = getVal(lastChg, 'cgb_1');
+            const chg2 = getVal(lastChg, 'cgb_2');
+
+            const totalOp = (op.total !== undefined && op.total !== null && op.total !== 0) ? op.total : (op1 + op2);
+            const totalCl = (cl.total !== undefined && cl.total !== null && cl.total !== 0) ? cl.total : (cl1 + cl2);
+            const totalChg = (lastChg.total !== undefined && lastChg.total !== null && lastChg.total !== 0) ? lastChg.total : (chg1 + chg2);
+
+            updateRow('cgb_1', op1, cl1, chg1, 'cgb_1');
+            updateRow('cgb_2', op2, cl2, chg2, 'cgb_2');
+            updateRow('cgb_total', totalOp, totalCl, totalChg, 'total');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCgbBreakdown() {
+            const modal = document.getElementById('cgb-breakdown-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
 
         function openOnlineBreakdown() {
             const modal = document.getElementById('online-breakdown-modal');
