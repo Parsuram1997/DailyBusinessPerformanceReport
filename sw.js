@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v74'; // Gold SIP editable amount and debited account with global settings sync
+const CACHE_NAME = 'biz-report-v75'; // Fix syntax error in app.js and restore balance logic in app-v2.js
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

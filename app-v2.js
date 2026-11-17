@@ -9567,6 +9567,23 @@ async function initDailyTxn() {
                         onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
                     // Subtract charges from where they were generically added
+                    if (t.chargesType === 'Online') balances.online -= chg;
+                    else balances.cash -= chg;
+
+                    // But track individual account changes (Amount + Charges deducted from wallet)
+                    const totalDeduction = amt + chg;
+                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
+                        balances.roinet -= totalDeduction;
+                        // Track breakdown per provider
+                        updateRoinetDelta(provider, -totalDeduction);
+                    }
+                    else if (provider.includes('crgb') || provider.includes('cgb')) { balances.crgb -= totalDeduction; updateCgbDelta(t.provider, -totalDeduction); }
+                    else if (provider.includes('jio')) balances.jio -= totalDeduction;
+                    
+                    // Add charges to expense
+                    balances.expense += chg;
+
+                    // The amount settles INTO the depositBy account (the bank account receiving the settlement)
                     if (provider !== 'cash' && t.depositBy) {
                         onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
