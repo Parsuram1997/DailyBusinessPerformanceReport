@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v73'; // Add CSP wallet, CGB BC, and Online balance sufficiency checks for Mobile Recharge
+const CACHE_NAME = 'biz-report-v74'; // Gold SIP editable amount and debited account with global settings sync
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -546,6 +546,77 @@
 
     <!-- Row 4, Full Width: Advanced Settings Lock & Controls -->
     <div class="col-span-1 lg:col-span-2 space-y-4">
+        <!-- Gold SIP Daily Auto-Entry Configuration Card -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 md:p-6 border border-amber-500/20 shadow-sm flex flex-col justify-between">
+            <div>
+                <!-- Card Header -->
+                <div class="flex items-center justify-between border-b border-primary/5 pb-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                            <span class="material-symbols-outlined font-bold text-xl">savings</span>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                Gold SIP Daily Auto-Entry
+                                <span class="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-700/50 px-2 py-0.5 rounded-full">Global Setting</span>
+                            </h4>
+                            <p class="text-xs text-slate-500 font-medium">Configure daily Gold SIP amount and which online account it deducts from automatically</p>
+                        </div>
+                    </div>
+                    <!-- Enable/Disable Toggle -->
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-emerald-600" id="gold-sip-status-label">Enabled</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-gold-sip-enabled" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Card Body Form Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Daily Amount Input -->
+                    <div class="space-y-1.5">
+                        <label for="input-gold-sip-amount" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs text-amber-600">currency_rupee</span> Daily SIP Amount
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-amber-600">₹</span>
+                            <input type="number" id="input-gold-sip-amount" min="1" step="1"
+                                class="w-full pl-8 pr-3 py-2.5 text-sm font-bold rounded-xl border border-primary/20 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-mono"
+                                placeholder="206">
+                        </div>
+                        <p class="text-[11px] text-slate-400">Amount auto-deducted daily (e.g. ₹ 206, ₹ 300, etc.)</p>
+                    </div>
+
+                    <!-- Debited Online Account Selector -->
+                    <div class="space-y-1.5">
+                        <label for="select-gold-sip-account" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs text-amber-600">account_balance_wallet</span> Debited Account
+                        </label>
+                        <div class="relative">
+                            <select id="select-gold-sip-account"
+                                class="w-full px-3 py-2.5 text-sm font-bold rounded-xl border border-primary/20 bg-slate-50 dark:bg-slate-800/60 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+                                <option value="online(shop)">online(shop) - Shop Account</option>
+                                <option value="online(parsu)">online(parsu) - Parsu Account</option>
+                                <option value="online(dalai)">online(dalai) - Dalai Account</option>
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Online account from which Gold SIP is deducted</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-primary/5 pt-3 mt-4">
+                <span class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                    <span class="material-symbols-outlined text-xs text-emerald-500">cloud_sync</span>
+                    <span>Syncs globally across all devices</span>
+                </span>
+                <span class="text-[11px] font-mono font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-0.5 rounded-lg border border-amber-200/50 dark:border-amber-700/50" id="gold-sip-preview-badge">₹ 206 • online(shop)</span>
+            </div>
+        </div>
+
         <!-- Locked Compact Access Card -->
         <div id="compact-lock-card" class="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 dark:from-primary/10 dark:via-primary/20 dark:to-primary/10 border border-primary/20 rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <div class="flex flex-col sm:flex-row items-center gap-4">
@@ -1441,6 +1512,62 @@ const toggleValidateOnlineDiff = document.getElementById('toggle-validate-online
 const toggleValidateCspDiff = document.getElementById('toggle-validate-csp-diff');
 const toggleValidateTxnsChecked = document.getElementById('toggle-validate-txns-checked');
 
+// Gold SIP Settings Elements
+const toggleGoldSipEnabled = document.getElementById('toggle-gold-sip-enabled');
+const inputGoldSipAmount = document.getElementById('input-gold-sip-amount');
+const selectGoldSipAccount = document.getElementById('select-gold-sip-account');
+const goldSipStatusLabel = document.getElementById('gold-sip-status-label');
+const goldSipPreviewBadge = document.getElementById('gold-sip-preview-badge');
+
+function updateGoldSipUIState() {
+    const isEnabled = toggleGoldSipEnabled ? toggleGoldSipEnabled.checked : true;
+    const amt = inputGoldSipAmount ? (parseFloat(inputGoldSipAmount.value) || 206) : 206;
+    const acc = selectGoldSipAccount ? selectGoldSipAccount.value : 'online(shop)';
+    
+    if (goldSipStatusLabel) {
+        goldSipStatusLabel.textContent = isEnabled ? 'Enabled' : 'Disabled';
+        goldSipStatusLabel.className = isEnabled ? 'text-[11px] font-black uppercase tracking-wider text-emerald-600' : 'text-[11px] font-black uppercase tracking-wider text-slate-400';
+    }
+    if (goldSipPreviewBadge) {
+        goldSipPreviewBadge.textContent = isEnabled ? `₹ ${amt} • ${acc}` : 'Disabled';
+        goldSipPreviewBadge.className = isEnabled ? 'text-[11px] font-mono font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-0.5 rounded-lg border border-amber-200/50 dark:border-amber-700/50' : 'text-[11px] font-mono font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg';
+    }
+}
+
+function saveGoldSipSettings() {
+    const isEnabled = toggleGoldSipEnabled ? toggleGoldSipEnabled.checked : true;
+    const amt = inputGoldSipAmount ? (parseFloat(inputGoldSipAmount.value) || 206) : 206;
+    const acc = selectGoldSipAccount ? selectGoldSipAccount.value : 'online(shop)';
+
+    localStorage.setItem('gold_sip_enabled', String(isEnabled));
+    localStorage.setItem('gold_sip_amount', String(amt));
+    localStorage.setItem('gold_sip_account', acc);
+
+    updateGoldSipUIState();
+
+    if (window.saveAppSettings) {
+        window.saveAppSettings({
+            gold_sip_enabled: isEnabled,
+            gold_sip_amount: amt,
+            gold_sip_account: acc
+        });
+    }
+
+    if (typeof Swal !== 'undefined' && Swal.mixin) {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1800,
+            timerProgressBar: true
+        });
+        Toast.fire({
+            icon: 'success',
+            title: 'Gold SIP settings saved globally'
+        });
+    }
+}
+
 const unlockBtn = document.getElementById('btn-unlock-dtxn');
 const compactLockCard = document.getElementById('compact-lock-card');
 const advancedContainer = document.getElementById('advanced-settings-container');
@@ -1592,6 +1719,10 @@ function applySettingsToUI() {
     depositActionsToggle.checked = localStorage.getItem('DEPOSIT_SHOW_ACTIONS') !== 'false';
     dtxnNewTabToggle.checked = localStorage.getItem('dtxn_openInNewTab') === 'true';
     if (hidePublicDtxnToggle) hidePublicDtxnToggle.checked = localStorage.getItem('HIDE_PUBLIC_DAILY_TXN') === 'true';
+    if (toggleGoldSipEnabled) toggleGoldSipEnabled.checked = localStorage.getItem('gold_sip_enabled') !== 'false';
+    if (inputGoldSipAmount) inputGoldSipAmount.value = localStorage.getItem('gold_sip_amount') || '206';
+    if (selectGoldSipAccount) selectGoldSipAccount.value = localStorage.getItem('gold_sip_account') || 'online(shop)';
+    if (typeof updateGoldSipUIState === 'function') updateGoldSipUIState();
 }
 
 // Initial load
@@ -1624,7 +1755,10 @@ function saveGlobalSettings() {
         CREDIT_LEDGER_SHOW_ACTIONS: creditActionsToggle.checked,
         DEPOSIT_SHOW_ACTIONS: depositActionsToggle.checked,
         dtxn_openInNewTab: dtxnNewTabToggle.checked,
-        HIDE_PUBLIC_DAILY_TXN: hidePublicDtxnToggle ? hidePublicDtxnToggle.checked : false
+        HIDE_PUBLIC_DAILY_TXN: hidePublicDtxnToggle ? hidePublicDtxnToggle.checked : false,
+        gold_sip_enabled: toggleGoldSipEnabled ? toggleGoldSipEnabled.checked : true,
+        gold_sip_amount: inputGoldSipAmount ? (parseFloat(inputGoldSipAmount.value) || 206) : 206,
+        gold_sip_account: selectGoldSipAccount ? selectGoldSipAccount.value : 'online(shop)'
     };
     if (window.saveAppSettings) {
         window.saveAppSettings(settings);
@@ -1649,6 +1783,9 @@ function saveGlobalSettings() {
         localStorage.setItem('DEPOSIT_SHOW_ACTIONS', settings.DEPOSIT_SHOW_ACTIONS);
         localStorage.setItem('dtxn_openInNewTab', settings.dtxn_openInNewTab);
         localStorage.setItem('HIDE_PUBLIC_DAILY_TXN', settings.HIDE_PUBLIC_DAILY_TXN);
+        localStorage.setItem('gold_sip_enabled', settings.gold_sip_enabled);
+        localStorage.setItem('gold_sip_amount', settings.gold_sip_amount);
+        localStorage.setItem('gold_sip_account', settings.gold_sip_account);
     }
 }
 
@@ -1676,6 +1813,12 @@ pinSettingsToggle.addEventListener('change', saveGlobalSettings);
 creditActionsToggle.addEventListener('change', saveGlobalSettings);
 depositActionsToggle.addEventListener('change', saveGlobalSettings);
 dtxnNewTabToggle.addEventListener('change', saveGlobalSettings);
+if (toggleGoldSipEnabled) toggleGoldSipEnabled.addEventListener('change', saveGoldSipSettings);
+if (inputGoldSipAmount) {
+    inputGoldSipAmount.addEventListener('change', saveGoldSipSettings);
+    inputGoldSipAmount.addEventListener('input', updateGoldSipUIState);
+}
+if (selectGoldSipAccount) selectGoldSipAccount.addEventListener('change', saveGoldSipSettings);
 if (hidePublicDtxnToggle) {
     hidePublicDtxnToggle.addEventListener('change', () => {
         // Always write directly to localStorage so login page picks it up instantly

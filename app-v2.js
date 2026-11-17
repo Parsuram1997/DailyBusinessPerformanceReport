@@ -8064,6 +8064,14 @@ async function initDailyTxn() {
                         depositByLabel.innerText = 'Deposit By';
                     }
                 }
+                if (txnType.value === 'GOLD_SIP' && !editingTxnId) {
+                    if (!txnAmount.value || txnAmount.value === '0') {
+                        txnAmount.value = localStorage.getItem('gold_sip_amount') || '206';
+                    }
+                    if (txnDepositBy && !txnDepositBy.value) {
+                        txnDepositBy.value = localStorage.getItem('gold_sip_account') || 'online(shop)';
+                    }
+                }
             } else {
                 depositByContainer.classList.add('hidden');
                 txnDepositBy.value = '';
@@ -8783,7 +8791,7 @@ async function initDailyTxn() {
                 providerCharge: txnType.value === 'AADHAAR_PAY' ? (parseFloat(txnProviderCharge ? txnProviderCharge.value : 0) || 0) : 0,
                 pages: (['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION'].includes(txnType.value)) ? (parseInt(txnQuantity.value) || 0) : 0,
                 laminationSize: (txnType.value === 'LAMINATION') ? txnLaminationSize.value : '',
-                note: (txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') ? (txnExpenseType.value || (txnType.value === 'CSP_SUBSCRIPTION' ? 'CSP SUBSCRIPTION' : 'Daily Expense')) : capitalizeWords(txnNote.value.trim()),
+                note: txnType.value === 'GOLD_SIP' ? (existingTxn?.note || 'Auto Daily Deduction') : ((txnType.value === 'DAILY_EXPENSE' || txnType.value === 'CSP_SUBSCRIPTION') ? (txnExpenseType.value || (txnType.value === 'CSP_SUBSCRIPTION' ? 'CSP SUBSCRIPTION' : 'Daily Expense')) : capitalizeWords(txnNote.value.trim())),
                 remark: txnRemark ? capitalizeWords(txnRemark.value.trim()) : '',
                 address: capitalizeWords(txnAddress.value.trim()),
                 extraDetails: (['AEPS', 'MATM', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'QR_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnConditional.value.trim() : '',
@@ -8797,7 +8805,7 @@ async function initDailyTxn() {
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'SETTLEMENT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP', 'CSP_WALLET_LOAD'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : (txnType.value === 'CSP_WALLET_LOAD' ? txnProvider.value : '')) : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? txnProvider.value : '',
-                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? (document.getElementById('txn-qr-wallet') ? document.getElementById('txn-qr-wallet').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnProvider.value : '')),
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : (txnType.value === 'GOLD_SIP' ? (txnDepositBy ? txnDepositBy.value : (localStorage.getItem('gold_sip_account') || 'online(shop)')) : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? (document.getElementById('txn-qr-wallet') ? document.getElementById('txn-qr-wallet').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnProvider.value : ''))),
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
@@ -8851,6 +8859,10 @@ async function initDailyTxn() {
                         deductOnlineAmount = newTxn.amount;
                         pName = newTxn.depositBy || 'Online';
                     }
+                } else if (newTxn.type === 'GOLD_SIP') {
+                    deductOnlineAccount = getOnlineSub(newTxn.depositBy || 'shop');
+                    deductOnlineAmount = newTxn.amount;
+                    pName = newTxn.depositBy || 'online(shop)';
                 }
 
                 if (deductOnlineAccount) {
@@ -8863,6 +8875,7 @@ async function initDailyTxn() {
 
                     if (existingTxn) {
                         if (existingTxn.type === 'ONLINE_WORK' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
+                        else if (existingTxn.type === 'GOLD_SIP' && getOnlineSub(existingTxn.depositBy || 'shop') === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
                         else if (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP'].includes(existingTxn.type) && existingTxn.provider === 'Online' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
                         else if (existingTxn.type === 'CASH_WITHDRAWAL' && getOnlineSub(existingTxn.depositBy) === deductOnlineAccount) available += parseFloat(existingTxn.amount || 0);
                         else if (['ELECTRICITY_BILL', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'PAN_CARD', 'LOAN_REPAYMENT'].includes(existingTxn.type)) {
@@ -9554,23 +9567,6 @@ async function initDailyTxn() {
                         onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
                     // Subtract charges from where they were generically added
-                    if (t.chargesType === 'Online') balances.online -= chg;
-                    else balances.cash -= chg;
-
-                    // But track individual account changes (Amount + Charges deducted from wallet)
-                    const totalDeduction = amt + chg;
-                    if (provider.includes('roinet') || provider.includes('airtel') || provider.includes('spicemoney')) {
-                        balances.roinet -= totalDeduction;
-                        // Track breakdown per provider
-                        updateRoinetDelta(provider, -totalDeduction);
-                    }
-                    else if (provider.includes('crgb') || provider.includes('cgb')) { balances.crgb -= totalDeduction; updateCgbDelta(t.provider, -totalDeduction); }
-                    else if (provider.includes('jio')) balances.jio -= totalDeduction;
-                    
-                    // Add charges to expense
-                    balances.expense += chg;
-
-                    // The amount settles INTO the depositBy account (the bank account receiving the settlement)
                     if (provider !== 'cash' && t.depositBy) {
                         onlineBreakdown[getOnlineDest(t.depositBy)] += amt;
                     }
@@ -9867,19 +9863,22 @@ async function initDailyTxn() {
                 // AUTO GOLD SIP LOGIC
                 const todayStr = new Date().toISOString().split('T')[0];
                 if (date === todayStr) {
+                    const isGoldSipEnabled = localStorage.getItem('gold_sip_enabled') !== 'false';
                     const hasGoldSip = txns.some(t => t.type === 'GOLD_SIP');
-                    if (!hasGoldSip) {
+                    if (isGoldSipEnabled && !hasGoldSip) {
+                        const configuredAmount = parseFloat(localStorage.getItem('gold_sip_amount') || '206') || 206;
+                        const configuredAccount = localStorage.getItem('gold_sip_account') || 'online(shop)';
                         const newTxn = {
                             type: 'GOLD_SIP',
-                            amount: 206,
+                            amount: configuredAmount,
                             charges: 0,
                             chargesType: 'Online',
+                            depositBy: configuredAccount,
+                            provider: configuredAccount,
                             note: 'Auto Daily Deduction',
                             address: '',
                             extraDetails: '',
-                            provider: '',
                             remainingAmount: 0,
-
                             bankName: '',
                             date: todayStr,
                             timestamp: { seconds: Math.floor(new Date().setHours(0,0,0,0) / 1000) + 60, nanoseconds: 0 }
@@ -10899,7 +10898,13 @@ async function initDailyTxn() {
                         txnProvider.value = p;
                     }
                     }
-                    if (txnDepositBy) txnDepositBy.value = txn.depositBy || '';
+                    if (txnDepositBy) {
+                        if (txn.type === 'GOLD_SIP') {
+                            txnDepositBy.value = txn.depositBy || 'online(shop)';
+                        } else {
+                            txnDepositBy.value = txn.depositBy || '';
+                        }
+                    }
                     if (txnReceivedIn) txnReceivedIn.value = txn.receivedIn || '';
                     if (txnChargesAccount) txnChargesAccount.value = txn.chargesAccount || '';
                     txnRemaining.value = txn.remainingAmount || '';
