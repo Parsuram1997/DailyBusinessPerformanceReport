@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v75'; // Fix syntax error in app.js and restore balance logic in app-v2.js
+const CACHE_NAME = 'biz-report-v76'; // Remove redundant header from dashboard page
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
