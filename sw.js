@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v76'; // Remove redundant header from dashboard page
+const CACHE_NAME = 'biz-report-v77'; // Enable resolving existing active pending transactions directly from daily txn page
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

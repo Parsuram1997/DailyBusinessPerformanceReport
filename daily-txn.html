@@ -417,6 +417,16 @@
                                 <option value="CSP_WALLET_LOAD">CSP Wallet Load</option>
                             </select>
                         </div>
+                        <div id="pending-select-container" class="flex flex-col gap-2 hidden">
+                            <label class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center justify-between">
+                                <span>Existing Pending *</span>
+                                <span id="pending-count-badge" class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold border border-amber-500/20">0 Active</span>
+                            </label>
+                            <select id="txn-pending-select" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-semibold">
+                                <option value="">-- Select Active Pending Customer --</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="txn-original-pending-id" value="">
                         <div id="provider-field-container" class="flex flex-col gap-2 hidden">
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Service Provider</label>
                             <select id="txn-provider" tabindex="2" class="w-full px-3 py-2 rounded-lg text-sm border border-primary/20 bg-slate-50 dark:bg-background-dark/40 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-semibold">
@@ -484,6 +494,7 @@
                                 <option value="online(parsu)">online(parsu)</option>
                                 <option value="online(dalai)">online(dalai)</option>
                                 <option value="online(shop)">online(shop)</option>
+                                <option value="Cash">Cash</option>
                             </select>
                         </div>
                         <div id="receivedin-field-container" class="flex flex-col gap-2 hidden">

@@ -1585,12 +1585,20 @@ async function initAddEntry() {
                     deltas.withdrawal += amt;
                 } else if (t.type === 'PENDING_ADD') {
                     deltas.pending += amt;
-                    deltas.online -= amt;
-                    updateOnlineSubDelta(t.depositBy, amt, false);
+                    if (provider === 'cash' || (t.depositBy && t.depositBy.toLowerCase() === 'cash')) {
+                        deltas.cash -= amt;
+                    } else {
+                        deltas.online -= amt;
+                        updateOnlineSubDelta(t.depositBy, amt, false);
+                    }
                 } else if (t.type === 'PENDING_REMOVE') {
                     deltas.pending -= amt;
-                    deltas.online += amt;
-                    updateOnlineSubDelta(t.depositBy, amt, true);
+                    if (provider === 'cash' || (t.depositBy && t.depositBy.toLowerCase() === 'cash')) {
+                        deltas.cash += amt;
+                    } else {
+                        deltas.online += amt;
+                        updateOnlineSubDelta(t.depositBy, amt, true);
+                    }
                 } else if (t.type === 'CASH_WITHDRAWAL') {
                     deltas.online -= amt;
                     updateOnlineSubDelta(t.depositBy, amt, false);
@@ -7069,10 +7077,12 @@ async function initReports() {
                     else balances.online -= amt;
                 } else if (t.type === 'PENDING_ADD') {
                     balances.pending += amt;
-                    balances.online -= amt;
+                    if (provider === 'cash' || (t.depositBy && t.depositBy.toLowerCase() === 'cash')) balances.cash -= amt;
+                    else balances.online -= amt;
                 } else if (t.type === 'PENDING_REMOVE') {
                     balances.pending -= amt;
-                    balances.online += amt;
+                    if (provider === 'cash' || (t.depositBy && t.depositBy.toLowerCase() === 'cash')) balances.cash += amt;
+                    else balances.online += amt;
                 }
             });
 
@@ -8293,6 +8303,95 @@ async function initDailyTxn() {
     const editDateContainer = document.getElementById('edit-date-container');
     const editTimeContainer = document.getElementById('edit-time-container');
 
+    const pendingSelectContainer = document.getElementById('pending-select-container');
+    const txnPendingSelect = document.getElementById('txn-pending-select');
+    const pendingCountBadge = document.getElementById('pending-count-badge');
+    const txnOriginalPendingId = document.getElementById('txn-original-pending-id');
+    let _activePendingList = [];
+
+    const populateActivePendingDropdown = () => {
+        if (!txnPendingSelect) return;
+        const currentVal = txnPendingSelect.value;
+        txnPendingSelect.innerHTML = '<option value="">-- Select Active Pending Customer --</option>';
+
+        if (!_activePendingList || _activePendingList.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.disabled = true;
+            opt.textContent = 'No active pending records found';
+            txnPendingSelect.appendChild(opt);
+        } else {
+            _activePendingList.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                const amtStr = parseFloat(item.amount || 0).toLocaleString('en-IN');
+                const cust = item.customerName || item.note || 'Unnamed';
+                const acct = item.depositBy || 'online';
+                const dt = item.date || '';
+                opt.textContent = `${cust} - ₹${amtStr} (${acct}${dt ? ' | ' + dt : ''})`;
+                txnPendingSelect.appendChild(opt);
+            });
+        }
+
+        if (pendingCountBadge) {
+            pendingCountBadge.textContent = `${_activePendingList ? _activePendingList.length : 0} Active`;
+        }
+
+        if (currentVal && _activePendingList.some(p => p.id === currentVal)) {
+            txnPendingSelect.value = currentVal;
+        }
+    };
+
+    const initActivePendingListener = () => {
+        try {
+            const qPending = query(
+                collection(db, 'daily_transactions'),
+                where('type', '==', 'PENDING_ADD')
+            );
+            onSnapshot(qPending, (snapshot) => {
+                const list = [];
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.resolved !== true) {
+                        list.push({ id: docSnap.id, ...data });
+                    }
+                });
+                list.sort((a, b) => {
+                    const timeA = a.timestamp?.seconds || (a.date ? new Date(a.date).getTime() / 1000 : 0);
+                    const timeB = b.timestamp?.seconds || (b.date ? new Date(b.date).getTime() / 1000 : 0);
+                    return timeB - timeA;
+                });
+                _activePendingList = list;
+                populateActivePendingDropdown();
+            }, (err) => {
+                console.error('[DailyTxn] Active pending listener error:', err);
+            });
+        } catch(err) {
+            console.error('[DailyTxn] Failed to setup active pending listener:', err);
+        }
+    };
+    initActivePendingListener();
+
+    if (txnPendingSelect) {
+        txnPendingSelect.addEventListener('change', (e) => {
+            const selectedId = e.target.value;
+            if (!selectedId) {
+                if (txnOriginalPendingId) txnOriginalPendingId.value = '';
+                return;
+            }
+            const item = _activePendingList.find(p => p.id === selectedId);
+            if (item) {
+                if (txnOriginalPendingId) txnOriginalPendingId.value = item.id;
+                if (txnNote) txnNote.value = item.customerName || item.note || '';
+                if (txnAmount) txnAmount.value = item.amount || '';
+                if (txnBank) txnBank.value = item.bankName || 'General Bank';
+                if (txnDepositBy && item.depositBy) {
+                    txnDepositBy.value = item.depositBy;
+                }
+            }
+        });
+    }
+
     const deleteModal = document.getElementById('delete-modal');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
@@ -8393,9 +8492,25 @@ async function initDailyTxn() {
                     const snap = await getDocs(collection(db, 'daily_transactions'));
                     const targetTxnDoc = snap.docs.find(d => d.id === deletingTxnId);
                     if (targetTxnDoc) {
-                        await syncCreditFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
-                        await syncBankWithdrawalFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
-                        await syncAccountFromDailyTxn(targetTxnDoc.data(), deletingTxnId, true);
+                        const targetData = targetTxnDoc.data();
+                        const origPendingId = targetData.originalPendingId || targetData.pendingRefId;
+                        if (targetData.type === 'PENDING_REMOVE' && origPendingId) {
+                            try {
+                                await updateDoc(doc(db, 'daily_transactions', origPendingId), {
+                                    resolved: false,
+                                    resolvedDate: null,
+                                    resolvedAccount: null,
+                                    resolutionType: null,
+                                    resolutionRemarks: null
+                                });
+                                console.log('[DailyTxn] Reverted original pending doc to unresolved:', origPendingId);
+                            } catch(e) {
+                                console.warn('[DailyTxn] Failed to revert original pending doc:', e);
+                            }
+                        }
+                        await syncCreditFromDailyTxn(targetData, deletingTxnId, true);
+                        await syncBankWithdrawalFromDailyTxn(targetData, deletingTxnId, true);
+                        await syncAccountFromDailyTxn(targetData, deletingTxnId, true);
                     } else {
                         await syncCreditFromDailyTxn(null, deletingTxnId, true);
                         await syncBankWithdrawalFromDailyTxn(null, deletingTxnId, true);
@@ -8469,6 +8584,9 @@ async function initDailyTxn() {
         editingTxnId = null;
         editingTxnTimestamp = null;
         form.reset();
+        if (txnOriginalPendingId) txnOriginalPendingId.value = '';
+        if (txnPendingSelect) txnPendingSelect.value = '';
+        if (pendingSelectContainer) pendingSelectContainer.classList.add('hidden');
         if (editDateContainer) editDateContainer.classList.add('hidden');
         if (editTimeContainer) editTimeContainer.classList.add('hidden');
         txnType.value = 'AEPS';
@@ -8551,6 +8669,15 @@ if (submitBtn) {
             if (label) label.innerText = isDamagedRecovery ? 'CONVERTED TO' : 'CHARGES MODE';
         }
 
+        if (pendingSelectContainer) {
+            if (txnType.value === 'PENDING_REMOVE') {
+                pendingSelectContainer.classList.remove('hidden');
+                populateActivePendingDropdown();
+            } else {
+                pendingSelectContainer.classList.add('hidden');
+            }
+        }
+
         if (isChargesOnly || isSimplified || isAmountOnly || isNoteAndAmount || isCredit || isDamagedRecovery || isCapital || isPending || isCashMovement) {
             conditionalContainer.classList.add('hidden');
             if (amountFieldContainer) {
@@ -8580,10 +8707,15 @@ if (submitBtn) {
                             txnExpenseType.disabled = false;
                         }
                     } else {
-                        if (label) label.innerText = isPending ? 'Account Name' : 'Customer Name';
+                        if (label) {
+                            if (txnType.value === 'PENDING_REMOVE' || txnType.value === 'PENDING_ADD') label.innerText = 'Customer Name *';
+                            else label.innerText = 'Customer Name';
+                        }
                         if (txnNote) {
                             txnNote.classList.remove('hidden');
-                            txnNote.placeholder = isPending ? 'Enter account name...' : 'Enter Name...';
+                            if (txnType.value === 'PENDING_REMOVE') txnNote.placeholder = 'Select from dropdown above or enter name...';
+                            else if (txnType.value === 'PENDING_ADD') txnNote.placeholder = 'Enter customer name...';
+                            else txnNote.placeholder = 'Enter Name...';
                             if (['CREDIT_GIVEN', 'CREDIT_RECEIVED', 'CUST_MONEY_IN', 'CUST_MONEY_OUT'].includes(txnType.value)) {
                                 txnNote.setAttribute('list', 'customer-list');
                                 if (typeof populateCustomerSuggestions === 'function') {
@@ -8875,7 +9007,11 @@ if (submitBtn) {
         } else {
             providerContainer.classList.add('hidden');
             txnProvider.value = '';
-            if (amountLabel) amountLabel.innerText = 'Amount';
+            if (amountLabel) {
+                if (txnType.value === 'PENDING_REMOVE') amountLabel.innerText = 'Pending Cleared Amount';
+                else if (txnType.value === 'PENDING_ADD') amountLabel.innerText = 'Pending Added Amount';
+                else amountLabel.innerText = 'Amount';
+            }
         }
 
         if (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) {
@@ -9707,11 +9843,15 @@ if (submitBtn) {
                 depositBy: (['ONLINE_WORK', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'PENDING_ADD', 'PENDING_REMOVE', 'AADHAAR_DEPOSIT', 'GOLD_SIP', 'CSP_WALLET_LOAD'].includes(txnType.value) || (['CUST_MONEY_IN', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'DAILY_EXPENSE', 'DAMAGED_RECOVERY'].includes(txnType.value) && txnProvider && txnProvider.value === 'Online')) ? (txnDepositBy ? txnDepositBy.value : (txnType.value === 'CSP_WALLET_LOAD' ? txnProvider.value : '')) : '',
                 receivedIn: (['ONLINE_WORK', 'JIO_RECHARGE'].includes(txnType.value) && txnProvider.value === 'Online') ? (txnReceivedIn ? txnReceivedIn.value : '') : '',
                 paymentApp: (['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? txnProvider.value : '',
-                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : (txnType.value === 'GOLD_SIP' ? (txnDepositBy ? txnDepositBy.value : (localStorage.getItem('gold_sip_account') || 'online(shop)')) : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnProvider.value : '')),
+                provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : (txnType.value === 'GOLD_SIP' ? (txnDepositBy ? txnDepositBy.value : (localStorage.getItem('gold_sip_account') || 'online(shop)')) : (['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) ? ((txnDepositBy && txnDepositBy.value.toLowerCase() === 'cash') ? 'cash' : 'online') : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? txnQrWallet.value : (['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnProvider.value : ''))),
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
-                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnBank.value.trim() : ''),
+                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : ''),
+                originalPendingId: (txnType.value === 'PENDING_REMOVE') ? (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : '') : '',
+                pendingRefId: (txnType.value === 'PENDING_REMOVE') ? (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : '') : '',
+                resolved: (txnType.value === 'PENDING_REMOVE') ? true : (txnType.value === 'PENDING_ADD' ? false : undefined),
+                customerName: ['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) ? capitalizeWords(txnNote.value.trim()) : '',
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
                 date: (editingTxnId && txnEditDate && txnEditDate.value) ? txnEditDate.value : currentSelectedDate,
                 timestamp: (editingTxnId && txnEditDate && txnEditDate.value && txnEditTime && txnEditTime.value) ? { seconds: Math.floor(new Date(`${txnEditDate.value}T${txnEditTime.value}`).getTime() / 1000), nanoseconds: 0 } : (editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 })
@@ -10096,6 +10236,22 @@ if (submitBtn) {
                 await syncBankWithdrawalFromDailyTxn(newTxn, docRef.id, false);
                 await syncAccountFromDailyTxn(newTxn, docRef.id, false);
                 await syncDepositCustomerFromDailyTxn(newTxn);
+            }
+
+            // If this is PENDING_REMOVE and has an originalPendingId, mark original doc as resolved
+            if (newTxn.type === 'PENDING_REMOVE' && newTxn.originalPendingId) {
+                try {
+                    await updateDoc(doc(db, 'daily_transactions', newTxn.originalPendingId), {
+                        resolved: true,
+                        resolvedDate: newTxn.date,
+                        resolvedAccount: newTxn.depositBy,
+                        resolutionType: 'Daily Txn Settlement',
+                        resolutionRemarks: newTxn.remark || 'Cleared via Daily Txn'
+                    });
+                    console.log(`[DailyTxn] Successfully marked original pending ${newTxn.originalPendingId} as resolved`);
+                } catch(err) {
+                    console.error(`[DailyTxn] Failed to mark original pending ${newTxn.originalPendingId} as resolved:`, err);
+                }
             }
 
             resetFormState();
@@ -11662,6 +11818,8 @@ if (submitBtn) {
                         window.updateCustomBankSelectDisplay(txn.bankName || '');
                     }
 
+                    if (txnOriginalPendingId) txnOriginalPendingId.value = txn.originalPendingId || txn.pendingRefId || '';
+                    if (txnPendingSelect) txnPendingSelect.value = txn.originalPendingId || txn.pendingRefId || '';
                     if (txnChargesType) txnChargesType.value = txn.chargesType || 'Cash';
                     if (txnMethod && txn.method) txnMethod.value = txn.method;
                     if (typeof updateConditionalField === 'function') updateConditionalField();
