@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v77'; // Enable resolving existing active pending transactions directly from daily txn page
+const CACHE_NAME = 'biz-report-v78'; // Fix addDoc undefined resolved field and sanitize newTxn
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

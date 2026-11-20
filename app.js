@@ -9848,14 +9848,28 @@ if (submitBtn) {
                 reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
                 bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : ''),
-                originalPendingId: (txnType.value === 'PENDING_REMOVE') ? (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : '') : '',
-                pendingRefId: (txnType.value === 'PENDING_REMOVE') ? (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : '') : '',
-                resolved: (txnType.value === 'PENDING_REMOVE') ? true : (txnType.value === 'PENDING_ADD' ? false : undefined),
-                customerName: ['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) ? capitalizeWords(txnNote.value.trim()) : '',
+                ...(txnType.value === 'PENDING_REMOVE' ? {
+                    originalPendingId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
+                    pendingRefId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
+                    resolved: true
+                } : {}),
+                ...(txnType.value === 'PENDING_ADD' ? {
+                    resolved: false
+                } : {}),
+                ...(['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) ? {
+                    customerName: capitalizeWords(txnNote.value.trim())
+                } : {}),
                 accountId: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select')?.options[document.getElementById('txn-bank-select')?.selectedIndex]?.getAttribute('data-account-id') || '') : '',
                 date: (editingTxnId && txnEditDate && txnEditDate.value) ? txnEditDate.value : currentSelectedDate,
                 timestamp: (editingTxnId && txnEditDate && txnEditDate.value && txnEditTime && txnEditTime.value) ? { seconds: Math.floor(new Date(`${txnEditDate.value}T${txnEditTime.value}`).getTime() / 1000), nanoseconds: 0 } : (editingTxnId && editingTxnTimestamp ? editingTxnTimestamp : { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 })
             };
+
+            // Sanitize newTxn against any undefined fields to prevent Firestore addDoc/updateDoc failures
+            Object.keys(newTxn).forEach(key => {
+                if (newTxn[key] === undefined) {
+                    delete newTxn[key];
+                }
+            });
 
             // Generic Closing Balance validations for Online Accounts
             if (window._onlineBreakdown && window._onlineBreakdown.closing) {
