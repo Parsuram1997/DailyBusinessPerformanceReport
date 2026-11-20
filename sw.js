@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v78'; // Fix addDoc undefined resolved field and sanitize newTxn
+const CACHE_NAME = 'biz-report-v79'; // Restore missing form.onsubmit block in app.js
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

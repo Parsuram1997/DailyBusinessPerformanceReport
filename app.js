@@ -9523,6 +9523,14 @@ if (submitBtn) {
                 return { valid: false, element: txnCharges, message: 'Please enter Charges (e.g. 0)' };
             }
         }
+        
+        const providerChargeContainer = document.getElementById('provider-charge-container');
+        if (providerChargeContainer && !providerChargeContainer.classList.contains('hidden')) {
+            const txnProviderCharge = document.getElementById('txn-provider-charge');
+            if (txnProviderCharge && txnProviderCharge.value.trim() === '') {
+                return { valid: false, element: txnProviderCharge, message: 'Please enter Provider Charge' };
+            }
+        }
 
         const chargesModeContainer = document.getElementById('charges-mode-container');
         if (chargesModeContainer && !chargesModeContainer.classList.contains('hidden')) {
@@ -9561,9 +9569,9 @@ if (submitBtn) {
     form.onsubmit = async (e) => {
         e.preventDefault();
         console.log('Save Button Clicked - Starting process');
-
+        
         const submitBtn = form.querySelector('button[type="submit"]');
-
+        
         const validation = validateDailyTxnForm();
         if (!validation.valid) {
             showValidationToast(validation.message);
@@ -9585,9 +9593,9 @@ if (submitBtn) {
         }
 
         try {
-            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'CSP_COMMISSION', 'OTHER_INCOME'];
+            const chargesOnlyTypes = ['PHOTOCOPY', 'PRINTOUT', 'PASSPORT', 'LAMINATION', 'OTHER_INCOME'];
             const isChargesOnly = chargesOnlyTypes.includes(txnType.value);
-
+            
             const amountVal = isChargesOnly ? 0 : parseFloat(txnAmount.value);
             const chargesVal = parseFloat(txnCharges.value || 0);
 
@@ -9614,46 +9622,10 @@ if (submitBtn) {
 
             const existingTxn = editingTxnId ? allTxnsForDate.find(t => t.id === editingTxnId) : null;
 
-            // Cash Sufficiency Check
-            const isCashDeduction = ['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CASH_DEPOSIT'].includes(txnType.value) || 
-                                    (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'PAN_CARD'].includes(txnType.value) && (!txnProvider || txnProvider.value !== 'Online'));
-            if (isCashDeduction) {
-                let effCash = currentAvailableCash;
-                if (existingTxn) {
-                    const wasCashDeduction = ['AEPS', 'MATM', 'WITHDRAWAL', 'QR_WITHDRAWAL', 'DAMAGED_CURRENCY', 'CASH_DEPOSIT'].includes(existingTxn.type) || 
-                                             (['DAILY_EXPENSE', 'CUST_MONEY_OUT', 'CREDIT_GIVEN', 'SHARE_WITHDRAWN', 'JIO_TOPUP', 'PAN_CARD'].includes(existingTxn.type) && (!existingTxn.provider || existingTxn.provider !== 'Online'));
-                    if (wasCashDeduction) {
-                        effCash += parseFloat(existingTxn.amount || 0);
-                    }
-                }
-                if (amountVal > effCash) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Insufficient Cash',
-                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
-                        confirmButtonColor: '#7c3aed'
-                    });
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
-                    }
-                    return;
-                }
-            }
-
-
             // Validation & Checks for Cash Movements
             if (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) {
                 const txnBankSelect = document.getElementById('txn-bank-select');
                 const selectedBankVal = txnBankSelect ? txnBankSelect.value.trim() : (txnBank ? txnBank.value.trim() : '');
-                if (!selectedBankVal) {
-                    alert('Please select a bank account from the dropdown.');
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
-                    }
-                    return;
-                }
                 let effOnline = currentAvailableOnline;
                 let effCash = currentAvailableCash;
                 if (existingTxn && existingTxn.type === 'CASH_WITHDRAWAL') {
@@ -9707,6 +9679,48 @@ if (submitBtn) {
                         }
                         return;
                     }
+                }
+            }
+
+            // Cash Sufficiency Check for AEPS, MATM, WITHDRAWAL, DAMAGED_CURRENCY
+            if (['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY', 'AADHAAR_PAY'].includes(txnType.value)) {
+                let effCash = currentAvailableCash;
+                if (existingTxn && ['AEPS', 'MATM', 'WITHDRAWAL', 'DAMAGED_CURRENCY', 'AADHAAR_PAY'].includes(existingTxn.type)) {
+                    effCash += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effCash) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Cash',
+                        text: `You only have ₹ ${effCash.toLocaleString('en-IN')} available in cash. Please add more cash or check your balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
+                }
+            }
+
+            // Online Sufficiency Check for DEPOSIT
+            if (['DEPOSIT', 'AADHAAR_DEPOSIT'].includes(txnType.value)) {
+                let effOnline = currentAvailableOnline;
+                if (existingTxn && ['DEPOSIT', 'AADHAAR_DEPOSIT'].includes(existingTxn.type)) {
+                    effOnline += parseFloat(existingTxn.amount || 0);
+                }
+                if (amountVal > effOnline) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Insufficient Online Balance',
+                        text: `You only have ₹ ${effOnline.toLocaleString('en-IN')} available online. Please check your account balances.`,
+                        confirmButtonColor: '#7c3aed'
+                    });
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> Save Transaction';
+                    }
+                    return;
                 }
             }
 
