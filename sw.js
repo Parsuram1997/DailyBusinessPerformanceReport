@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v90'; // Redesign quick notes with clean dashboard and modal composer
+const CACHE_NAME = 'biz-report-v91'; // Fix CGB bank name display in table instead of converting to CGB BC (Parsu)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -11326,7 +11326,6 @@ if (submitBtn) {
                 'FINO BANK': 'FINO',
                 'INDIAN BANK': 'INDIAN',
                 'JILLA SAKAHARI BANK': 'JSB',
-                'CHHATTISGARH GRAMIN BANK': 'CRGB',
                 'PUNJAB NATIONAL BANK': 'PNB',
                 'HDFC BANK': 'HDFC',
                 'ICICI BANK': 'ICICI',
@@ -11496,12 +11495,28 @@ if (submitBtn) {
                             let b2 = infoList.length > 1 ? infoList.slice(1).join(' | ') : 'NA';
 
                             const formatB = (str) => {
-                                if (String(str) === 'NA') return 'NA';
-                                const s = String(str);
+                                if (!str || String(str) === 'NA') return 'NA';
+                                const s = String(str).trim();
+                                const upper = s.toUpperCase();
+
+                                // 1. Bank names: CGB or CRGB (with optional account type) -> normalize to CGB
+                                if (/^(cgb|crgb)(\s+(current|savings|saving))?$/i.test(s)) {
+                                    return s.replace(/^crgb/i, 'CGB').replace(/^cgb/i, 'CGB');
+                                }
+
+                                // 2. Known short bank codes
+                                const shortBanks = ['SBI', 'BOB', 'PNB', 'IPPB', 'UCO', 'UBI', 'AIRTEL', 'FINO', 'INDIAN', 'JSB', 'CANARA', 'BOI', 'CBI', 'IDBI', 'KOTAK', 'PAYTM', 'HDFC', 'ICICI', 'AXIS'];
+                                const firstWord = upper.split(/[\s|:]+/)[0];
+                                if (shortBanks.includes(firstWord)) {
+                                    return s;
+                                }
+
+                                // 3. BC Providers / Accounts (CGB BC / CRGB BC)
                                 if (/cgb/i.test(s) || /crgb/i.test(s)) {
-                                    if (/dalai/i.test(s)) return 'CGB BC (Dalai)';
+                                    if (/dalai/i.test(s) || /cgb_2/i.test(s) || /crgb_2/i.test(s)) return 'CGB BC (Dalai)';
                                     return 'CGB BC (Parsu)';
                                 }
+
                                 return s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
                             };
                             
@@ -13199,7 +13214,6 @@ if (submitBtn) {
             'FINO BANK': 'FINO',
             'INDIAN BANK': 'INDIAN',
             'JILLA SAKAHARI BANK': 'JSB',
-            'CHHATTISGARH GRAMIN BANK': 'CRGB',
             'PUNJAB NATIONAL BANK': 'PNB',
             'HDFC BANK': 'HDFC',
             'ICICI BANK': 'ICICI',
@@ -13285,7 +13299,28 @@ if (submitBtn) {
             infoList = ['Debit: ' + (txn.paymentApp || txn.depositBy || 'Online'), 'Credit: ' + (txn.provider || 'Wallet')];
         }
 
-        const formatB = (str) => (!str || str === 'NA') ? 'NA' : String(str).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        const formatB = (str) => {
+            if (!str || String(str) === 'NA') return 'NA';
+            const s = String(str).trim();
+            const upper = s.toUpperCase();
+
+            if (/^(cgb|crgb)(\s+(current|savings|saving))?$/i.test(s)) {
+                return s.replace(/^crgb/i, 'CGB').replace(/^cgb/i, 'CGB');
+            }
+
+            const shortBanks = ['SBI', 'BOB', 'PNB', 'IPPB', 'UCO', 'UBI', 'AIRTEL', 'FINO', 'INDIAN', 'JSB', 'CANARA', 'BOI', 'CBI', 'IDBI', 'KOTAK', 'PAYTM', 'HDFC', 'ICICI', 'AXIS'];
+            const firstWord = upper.split(/[\s|:]+/)[0];
+            if (shortBanks.includes(firstWord)) {
+                return s;
+            }
+
+            if (/cgb/i.test(s) || /crgb/i.test(s)) {
+                if (/dalai/i.test(s) || /cgb_2/i.test(s) || /crgb_2/i.test(s)) return 'CGB BC (Dalai)';
+                return 'CGB BC (Parsu)';
+            }
+
+            return s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        };
         let b1 = formatB(infoList[0] || 'NA');
         let b2 = formatB(infoList.length > 1 ? infoList.slice(1).join(' | ') : 'NA');
         return { line1: b1, line2: b2, display: b2 !== 'NA' ? (b1 + '\n' + b2) : b1 };
