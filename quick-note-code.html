@@ -15,8 +15,8 @@
                 extend: {
                     colors: {
                         "primary": "#7f13ec",
-                        "background-light": "#f8fafc",
-                        "background-dark": "#0f172a",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#191022",
                     },
                     fontFamily: {
                         "display": ["Outfit", "Inter", "sans-serif"],
@@ -239,7 +239,7 @@
                 </div>
 
                 <div class="flex items-center gap-2.5">
-                    <button type="button" onclick="window.focusComposer()" class="bg-primary hover:bg-primary/90 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center gap-1.5">
+                    <button type="button" onclick="window.openNoteModal()" class="bg-primary hover:bg-primary/90 active:scale-95 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md shadow-primary/20 transition-all flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-base">add</span>
                         <span class="hidden sm:inline">New Note</span>
                     </button>
@@ -249,115 +249,46 @@
             <!-- Scrollable Page Body -->
             <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 pb-28 lg:pb-8 space-y-5">
                 
-                <!-- Quick Stats Strip -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
-                        <div class="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">note_stack</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Notes</span>
-                            <span id="stat-total" class="text-base font-black text-slate-800 dark:text-slate-100 font-mono">0</span>
-                        </div>
-                    </div>
-                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
-                        <div class="size-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">push_pin</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pinned</span>
-                            <span id="stat-pinned" class="text-base font-black text-amber-600 dark:text-amber-400 font-mono">0</span>
-                        </div>
-                    </div>
-                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
-                        <div class="size-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">pending_actions</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Tasks</span>
-                            <span id="stat-active" class="text-base font-black text-blue-600 dark:text-blue-400 font-mono">0</span>
-                        </div>
-                    </div>
-                    <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-primary/10 shadow-sm flex items-center gap-3">
-                        <div class="size-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">check_circle</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed</span>
-                            <span id="stat-done" class="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Note Composer Card (Fast Scratchpad Box) -->
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-primary/15 shadow-sm transition-all focus-within:shadow-md focus-within:border-primary/40">
-                    <form id="quickNoteForm" onsubmit="window.saveQuickNote(event)">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-base">draw</span>
-                                Quick Note Composer
-                            </span>
-                            <span class="text-[10px] text-slate-400 font-mono hidden sm:inline">Tip: Press Ctrl + Enter to save quickly</span>
-                        </div>
-
-                        <!-- Title Input -->
-                        <div class="mb-2">
-                            <input type="text" id="composerTitle" placeholder="Title / Subject (e.g., Raman Loan Document, SBI Cash Deposit...)" class="w-full px-3.5 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
-                        </div>
-
-                        <!-- Content Textarea -->
-                        <div class="mb-3">
-                            <textarea id="composerContent" rows="3" required placeholder="Write your note, customer calculation, mobile number, bank reminder, or daily reminder here..." class="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-y min-h-[75px]"></textarea>
-                        </div>
-
-                        <!-- Options Bar: Category, Color, Pin & Action Buttons -->
-                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
-                            <div class="flex flex-wrap items-center gap-2.5">
-                                <!-- Category Select -->
-                                <div class="flex items-center gap-1">
-                                    <span class="text-[11px] font-semibold text-slate-400">Tag:</span>
-                                    <select id="composerCategory" class="text-xs font-bold py-1 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-                                        <option value="General">📌 General</option>
-                                        <option value="Urgent">⚡ Urgent</option>
-                                        <option value="Customer">👤 Customer</option>
-                                        <option value="Bank / CSP">🏦 Bank / CSP</option>
-                                        <option value="Cash / Payment">💰 Cash / Payment</option>
-                                        <option value="To-Do">📝 To-Do List</option>
-                                    </select>
-                                </div>
-
-                                <!-- Color Tag Picker -->
-                                <div class="flex items-center gap-1.5 ml-1">
-                                    <span class="text-[11px] font-semibold text-slate-400">Color:</span>
-                                    <div class="flex items-center gap-1" id="composerColorGroup">
-                                        <button type="button" onclick="window.selectColor('violet')" data-color="violet" class="color-btn size-5 rounded-full bg-violet-500 ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-slate-900 transition-all"></button>
-                                        <button type="button" onclick="window.selectColor('blue')" data-color="blue" class="color-btn size-5 rounded-full bg-blue-500 hover:scale-110 transition-all"></button>
-                                        <button type="button" onclick="window.selectColor('emerald')" data-color="emerald" class="color-btn size-5 rounded-full bg-emerald-500 hover:scale-110 transition-all"></button>
-                                        <button type="button" onclick="window.selectColor('amber')" data-color="amber" class="color-btn size-5 rounded-full bg-amber-500 hover:scale-110 transition-all"></button>
-                                        <button type="button" onclick="window.selectColor('rose')" data-color="rose" class="color-btn size-5 rounded-full bg-rose-500 hover:scale-110 transition-all"></button>
-                                        <button type="button" onclick="window.selectColor('slate')" data-color="slate" class="color-btn size-5 rounded-full bg-slate-500 hover:scale-110 transition-all"></button>
-                                    </div>
-                                    <input type="hidden" id="composerColor" value="violet">
-                                </div>
-
-                                <!-- Pin Toggle -->
-                                <label class="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer ml-1 select-none">
-                                    <input type="checkbox" id="composerPinned" class="rounded text-primary focus:ring-primary/20 size-3.5">
-                                    <span>Pin to top</span>
-                                </label>
+                <!-- Compact Sleek Stats Ribbon -->
+                <div class="bg-white dark:bg-slate-900/80 rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 dark:border-primary/15 shadow-sm">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+                        <div class="flex items-center gap-3 px-3 py-1.5">
+                            <div class="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-lg">note_stack</span>
                             </div>
-
-                            <div class="flex items-center gap-2 ml-auto">
-                                <button type="button" onclick="window.clearComposer()" class="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
-                                    Clear
-                                </button>
-                                <button type="submit" id="saveNoteBtn" class="bg-primary hover:bg-primary/90 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5 transition-all">
-                                    <span class="material-symbols-outlined text-base">save</span>
-                                    <span>Save Note</span>
-                                </button>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Notes</span>
+                                <span id="stat-total" class="text-base font-black text-slate-800 dark:text-slate-100 font-mono">0</span>
                             </div>
                         </div>
-                    </form>
+                        <div class="flex items-center gap-3 px-3 py-1.5 pt-2 sm:pt-1.5">
+                            <div class="size-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-lg">push_pin</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pinned</span>
+                                <span id="stat-pinned" class="text-base font-black text-amber-600 dark:text-amber-400 font-mono">0</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 px-3 py-1.5 pt-2 sm:pt-1.5">
+                            <div class="size-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-lg">pending_actions</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Tasks</span>
+                                <span id="stat-active" class="text-base font-black text-blue-600 dark:text-blue-400 font-mono">0</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 px-3 py-1.5 pt-2 sm:pt-1.5">
+                            <div class="size-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-lg">check_circle</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed</span>
+                                <span id="stat-done" class="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">0</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Search & Filters Toolbar -->
@@ -406,44 +337,48 @@
 
                 <!-- Empty State -->
                 <div id="emptyNotesState" class="hidden py-16 flex flex-col items-center justify-center text-center">
-                    <div class="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+                    <div class="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 shadow-inner">
                         <span class="material-symbols-outlined text-3xl">edit_document</span>
                     </div>
-                    <h4 class="text-base font-bold text-slate-800 dark:text-slate-200 font-heading">No notes found</h4>
-                    <p class="text-xs text-slate-400 max-w-sm mt-1">Use the quick composer above to create your first note or change your search filter.</p>
+                    <h4 class="text-base font-bold text-slate-800 dark:text-slate-200 font-heading">No notes yet</h4>
+                    <p class="text-xs text-slate-400 max-w-sm mt-1 mb-4">Keep customer reminders, bank notes, pending tasks, or quick calculations right here.</p>
+                    <button type="button" onclick="window.openNoteModal()" class="bg-primary hover:bg-primary/90 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-base">add</span>
+                        <span>+ Create Your First Note</span>
+                    </button>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Edit Note Modal -->
-    <div id="editNoteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="window.closeEditModal()"></div>
-        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-primary/20 w-full max-w-lg p-5 sm:p-6 overflow-hidden z-10 transition-all transform scale-95 opacity-0" id="editModalPanel">
+    <!-- Unified Note Modal (Create & Edit) -->
+    <div id="noteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="window.closeNoteModal()"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-primary/20 w-full max-w-lg p-5 sm:p-6 overflow-hidden z-10 transition-all transform scale-95 opacity-0" id="noteModalPanel">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary text-xl">edit</span>
-                    <h3 class="text-base font-bold font-heading text-slate-900 dark:text-white">Edit Note</h3>
+                    <span id="modalHeaderIcon" class="material-symbols-outlined text-primary text-xl">edit_note</span>
+                    <h3 id="modalHeaderTitle" class="text-base font-bold font-heading text-slate-900 dark:text-white">Create New Note</h3>
                 </div>
-                <button type="button" onclick="window.closeEditModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <button type="button" onclick="window.closeNoteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <form id="editNoteForm" onsubmit="window.saveEditedNote(event)">
-                <input type="hidden" id="editNoteId">
-                <div class="space-y-3">
+            <form id="noteModalForm" onsubmit="window.saveModalNote(event)">
+                <input type="hidden" id="modalNoteId">
+                <div class="space-y-3.5">
                     <div>
-                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Title / Subject</label>
-                        <input type="text" id="editNoteTitle" class="w-full px-3.5 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Title / Subject (Optional)</label>
+                        <input type="text" id="modalNoteTitle" placeholder="e.g., Raman Loan Document, SBI Cash Deposit..." class="w-full px-3.5 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Note Content *</label>
-                        <textarea id="editNoteContent" rows="5" required class="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"></textarea>
+                        <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Note Content <span class="text-rose-500">*</span></label>
+                        <textarea id="modalNoteContent" rows="4" required placeholder="Write your note, customer calculation, mobile number, bank reminder, or daily reminder here..." class="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-y min-h-[90px]"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Category</label>
-                            <select id="editNoteCategory" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none">
+                            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Tag / Category</label>
+                            <select id="modalNoteCategory" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-primary cursor-pointer">
                                 <option value="General">📌 General</option>
                                 <option value="Urgent">⚡ Urgent</option>
                                 <option value="Customer">👤 Customer</option>
@@ -454,7 +389,7 @@
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Color Theme</label>
-                            <select id="editNoteColor" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none">
+                            <select id="modalNoteColor" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-primary cursor-pointer">
                                 <option value="violet">💜 Violet</option>
                                 <option value="blue">💙 Blue</option>
                                 <option value="emerald">💚 Emerald</option>
@@ -464,23 +399,26 @@
                             </select>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4 pt-1">
-                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                            <input type="checkbox" id="editNotePinned" class="rounded text-primary focus:ring-primary/20 size-4">
-                            <span>Pin this note to top</span>
+                    <div class="flex items-center gap-5 pt-1">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="modalNotePinned" class="rounded text-primary focus:ring-primary/20 size-4">
+                            <span>Pin to top</span>
                         </label>
-                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                            <input type="checkbox" id="editNoteCompleted" class="rounded text-emerald-500 focus:ring-emerald-500/20 size-4">
+                        <label id="modalCompletedWrapper" class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="modalNoteCompleted" class="rounded text-emerald-500 focus:ring-emerald-500/20 size-4">
                             <span>Mark as Completed</span>
                         </label>
                     </div>
                 </div>
-                <div class="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" onclick="window.closeEditModal()" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
-                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-base">save</span>
-                        <span>Update Note</span>
-                    </button>
+                <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-mono hidden sm:inline">Tip: Press Ctrl + Enter to save</span>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="window.closeNoteModal()" class="px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Cancel</button>
+                        <button type="submit" id="modalSubmitBtn" class="bg-primary hover:bg-primary/90 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-primary/20 flex items-center gap-1.5 transition-all">
+                            <span class="material-symbols-outlined text-base">save</span>
+                            <span id="modalSubmitText">Save Note</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -743,73 +681,130 @@
             document.getElementById('stat-done').innerText = done;
         };
 
-        // Select color in composer
-        window.selectColor = function(color) {
-            document.getElementById('composerColor').value = color;
-            document.querySelectorAll('#composerColorGroup .color-btn').forEach(btn => {
-                const c = btn.getAttribute('data-color');
-                if (c === color) {
-                    btn.classList.add('ring-2', `ring-${color}-500`, 'ring-offset-2', 'dark:ring-offset-slate-900');
-                } else {
-                    btn.className = `color-btn size-5 rounded-full bg-${c}-500 hover:scale-110 transition-all`;
-                }
-            });
-        };
+        // Unified Note Modal (Open/Close & Save)
+        window.openNoteModal = function(id = null) {
+            const modal = document.getElementById('noteModal');
+            const panel = document.getElementById('noteModalPanel');
+            const headerIcon = document.getElementById('modalHeaderIcon');
+            const headerTitle = document.getElementById('modalHeaderTitle');
+            const submitText = document.getElementById('modalSubmitText');
+            const completedWrapper = document.getElementById('modalCompletedWrapper');
 
-        // Clear Composer
-        window.clearComposer = function() {
-            document.getElementById('composerTitle').value = '';
-            document.getElementById('composerContent').value = '';
-            document.getElementById('composerCategory').value = 'General';
-            document.getElementById('composerPinned').checked = false;
-            window.selectColor('violet');
-        };
-
-        // Focus composer
-        window.focusComposer = function() {
-            const textarea = document.getElementById('composerContent');
-            if (textarea) {
-                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                textarea.focus();
+            if (id) {
+                const note = window.allNotes.find(n => n.id === id);
+                if (!note) return;
+                document.getElementById('modalNoteId').value = note.id;
+                document.getElementById('modalNoteTitle').value = note.title || '';
+                document.getElementById('modalNoteContent').value = note.content || '';
+                document.getElementById('modalNoteCategory').value = note.category || 'General';
+                document.getElementById('modalNoteColor').value = note.color || 'violet';
+                document.getElementById('modalNotePinned').checked = !!note.isPinned;
+                document.getElementById('modalNoteCompleted').checked = !!note.isCompleted;
+                if (headerIcon) headerIcon.textContent = 'edit';
+                if (headerTitle) headerTitle.textContent = 'Edit Note';
+                if (submitText) submitText.textContent = 'Update Note';
+                if (completedWrapper) completedWrapper.classList.remove('hidden');
+            } else {
+                document.getElementById('modalNoteId').value = '';
+                document.getElementById('modalNoteTitle').value = '';
+                document.getElementById('modalNoteContent').value = '';
+                document.getElementById('modalNoteCategory').value = 'General';
+                document.getElementById('modalNoteColor').value = 'violet';
+                document.getElementById('modalNotePinned').checked = false;
+                document.getElementById('modalNoteCompleted').checked = false;
+                if (headerIcon) headerIcon.textContent = 'edit_note';
+                if (headerTitle) headerTitle.textContent = 'Create New Note';
+                if (submitText) submitText.textContent = 'Save Note';
+                if (completedWrapper) completedWrapper.classList.add('hidden');
             }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            void modal.offsetWidth;
+            panel.classList.remove('scale-95', 'opacity-0');
+            panel.classList.add('scale-100', 'opacity-100');
+            setTimeout(() => {
+                const contentInput = document.getElementById('modalNoteContent');
+                if (contentInput) contentInput.focus();
+            }, 60);
         };
 
-        // Save Note
-        window.saveQuickNote = async function(e) {
+        window.openEditModal = function(id) {
+            window.openNoteModal(id);
+        };
+
+        window.closeNoteModal = function() {
+            const modal = document.getElementById('noteModal');
+            const panel = document.getElementById('noteModalPanel');
+            if (!panel) return;
+            panel.classList.remove('scale-100', 'opacity-100');
+            panel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        };
+
+        window.closeEditModal = window.closeNoteModal;
+        window.focusComposer = window.openNoteModal;
+
+        window.saveModalNote = async function(e) {
             if (e) e.preventDefault();
-            const content = document.getElementById('composerContent').value.trim();
+            const content = document.getElementById('modalNoteContent').value.trim();
             if (!content) return;
 
-            const title = document.getElementById('composerTitle').value.trim();
-            const category = document.getElementById('composerCategory').value;
-            const color = document.getElementById('composerColor').value;
-            const isPinned = document.getElementById('composerPinned').checked;
+            const id = document.getElementById('modalNoteId').value;
+            const title = document.getElementById('modalNoteTitle').value.trim();
+            const category = document.getElementById('modalNoteCategory').value;
+            const color = document.getElementById('modalNoteColor').value;
+            const isPinned = document.getElementById('modalNotePinned').checked;
+            const isCompleted = document.getElementById('modalNoteCompleted').checked;
 
-            const noteData = {
-                title: title,
-                content: content,
-                category: category,
-                color: color,
-                isPinned: isPinned,
-                isCompleted: false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            const btn = document.getElementById('saveNoteBtn');
+            const btn = document.getElementById('modalSubmitBtn');
             if (btn) btn.disabled = true;
 
             try {
-                await addDoc(collection(db, "quick_notes"), noteData);
-                window.clearComposer();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Note Saved Globally!',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
+                if (id) {
+                    await updateDoc(doc(db, "quick_notes", id), {
+                        title: title,
+                        content: content,
+                        category: category,
+                        color: color,
+                        isPinned: isPinned,
+                        isCompleted: isCompleted,
+                        updated_at: new Date().toISOString()
+                    });
+                    window.closeNoteModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Note Updated Globally!',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } else {
+                    const noteData = {
+                        title: title,
+                        content: content,
+                        category: category,
+                        color: color,
+                        isPinned: isPinned,
+                        isCompleted: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+                    await addDoc(collection(db, "quick_notes"), noteData);
+                    window.closeNoteModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Note Saved Globally!',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                }
             } catch (err) {
                 console.error("Save note failed:", err);
                 Swal.fire('Error', 'Could not save note: ' + err.message, 'error');
@@ -817,6 +812,8 @@
                 if (btn) btn.disabled = false;
             }
         };
+
+        window.saveQuickNote = window.saveModalNote;
 
         // Toggle Pin status
         window.toggleNotePin = async function(id, isPinned) {
@@ -908,81 +905,16 @@
             window.renderNotes();
         };
 
-        // Edit Note Modal Logic
-        window.openEditModal = function(id) {
-            const note = window.allNotes.find(n => n.id === id);
-            if (!note) return;
-
-            document.getElementById('editNoteId').value = note.id;
-            document.getElementById('editNoteTitle').value = note.title || '';
-            document.getElementById('editNoteContent').value = note.content || '';
-            document.getElementById('editNoteCategory').value = note.category || 'General';
-            document.getElementById('editNoteColor').value = note.color || 'violet';
-            document.getElementById('editNotePinned').checked = !!note.isPinned;
-            document.getElementById('editNoteCompleted').checked = !!note.isCompleted;
-
-            const modal = document.getElementById('editNoteModal');
-            const panel = document.getElementById('editModalPanel');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            void modal.offsetWidth;
-            panel.classList.remove('scale-95', 'opacity-0');
-            panel.classList.add('scale-100', 'opacity-100');
-        };
-
-        window.closeEditModal = function() {
-            const modal = document.getElementById('editNoteModal');
-            const panel = document.getElementById('editModalPanel');
-            panel.classList.remove('scale-100', 'opacity-100');
-            panel.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 250);
-        };
-
-        window.saveEditedNote = async function(e) {
-            e.preventDefault();
-            const id = document.getElementById('editNoteId').value;
-            const title = document.getElementById('editNoteTitle').value.trim();
-            const content = document.getElementById('editNoteContent').value.trim();
-            const category = document.getElementById('editNoteCategory').value;
-            const color = document.getElementById('editNoteColor').value;
-            const isPinned = document.getElementById('editNotePinned').checked;
-            const isCompleted = document.getElementById('editNoteCompleted').checked;
-
-            try {
-                await updateDoc(doc(db, "quick_notes", id), {
-                    title: title,
-                    content: content,
-                    category: category,
-                    color: color,
-                    isPinned: isPinned,
-                    isCompleted: isCompleted,
-                    updated_at: new Date().toISOString()
-                });
-                window.closeEditModal();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Note Updated Globally!',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-            } catch (err) {
-                console.error("Update failed:", err);
-                Swal.fire('Error', 'Could not update note: ' + err.message, 'error');
-            }
-        };
-
-        // Keyboard Shortcut: Ctrl + Enter to save in composer
-        document.getElementById('composerContent').addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                window.saveQuickNote();
-            }
-        });
+        // Keyboard Shortcut: Ctrl + Enter inside note modal
+        const modalContent = document.getElementById('modalNoteContent');
+        if (modalContent) {
+            modalContent.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    window.saveModalNote();
+                }
+            });
+        }
 
         // Initialize listener on load
         window.initNotesSync();
