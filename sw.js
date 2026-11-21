@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v93'; // Save Google user profile to Firestore users collection upon login and heartbeat
+const CACHE_NAME = 'biz-report-v94'; // Make App Settings page 100% full width
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
