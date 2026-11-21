@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v88'; // Account Register: short bank name and village column
+const CACHE_NAME = 'biz-report-v89'; // Add bottom padding (pb-6) to author profile card across all pages
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
