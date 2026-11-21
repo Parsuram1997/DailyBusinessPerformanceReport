@@ -12056,12 +12056,30 @@ if (submitBtn) {
                 let txns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allTxnsForDate = txns;
 
-                // AUTO GOLD SIP LOGIC
-                const todayStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+                // AUTO GOLD SIP LOGIC - Safe, Deduplicated, Single Execution
+                const nowObj = new Date();
+                const todayStr = `${nowObj.getFullYear()}-${String(nowObj.getMonth() + 1).padStart(2, '0')}-${String(nowObj.getDate()).padStart(2, '0')}`;
+
+                // 1. Auto cleanup: If this date already has multiple Gold SIPs, keep the first and delete duplicates
+                const goldSipTxns = txns.filter(t => t.type === 'GOLD_SIP');
+                if (goldSipTxns.length > 1) {
+                    console.warn(`[AutoGoldSIP] Found ${goldSipTxns.length} duplicate Gold SIPs for date ${date}. Removing extras...`);
+                    for (let i = 1; i < goldSipTxns.length; i++) {
+                        deleteDoc(doc(db, 'daily_transactions', goldSipTxns[i].id)).catch(err => console.warn('Failed to delete duplicate gold sip:', err));
+                    }
+                }
+
+                // 2. Creation logic: Only for today's date
                 if (date === todayStr) {
                     const isGoldSipEnabled = localStorage.getItem('gold_sip_enabled') !== 'false';
-                    const hasGoldSip = txns.some(t => t.type === 'GOLD_SIP');
-                    if (isGoldSipEnabled && !hasGoldSip) {
+                    const hasGoldSip = goldSipTxns.length > 0;
+                    const goldSipDocId = `auto_gold_sip_${todayStr}`;
+                    const alreadyProcessedLocally = localStorage.getItem('gold_sip_created_' + todayStr) === 'true';
+
+                    if (isGoldSipEnabled && !hasGoldSip && !window._goldSipInFlight && !alreadyProcessedLocally) {
+                        window._goldSipInFlight = true;
+                        localStorage.setItem('gold_sip_created_' + todayStr, 'true');
+
                         const configuredAmount = parseFloat(localStorage.getItem('gold_sip_amount') || '206') || 206;
                         const configuredAccount = localStorage.getItem('gold_sip_account') || 'online(shop)';
                         const newTxn = {
@@ -12079,7 +12097,17 @@ if (submitBtn) {
                             date: todayStr,
                             timestamp: { seconds: Math.floor(new Date().setHours(0, 0, 0, 0) / 1000) + 60, nanoseconds: 0 }
                         };
-                        addDoc(txnCollection, newTxn).catch(e => console.error("Auto Gold SIP error:", e));
+
+                        // Use deterministic document ID (auto_gold_sip_YYYY-MM-DD) so concurrent tabs/devices can NEVER duplicate!
+                        setDoc(doc(db, 'daily_transactions', goldSipDocId), newTxn)
+                            .then(() => {
+                                console.log(`[AutoGoldSIP] Successfully created single Gold SIP document: ${goldSipDocId}`);
+                            })
+                            .catch(e => {
+                                console.error("Auto Gold SIP error:", e);
+                                window._goldSipInFlight = false;
+                                localStorage.removeItem('gold_sip_created_' + todayStr);
+                            });
                     }
                 }
 

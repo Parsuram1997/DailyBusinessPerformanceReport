@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v96'; // Add 4 utility tools to Daily Txn entry card
+const CACHE_NAME = 'biz-report-v97'; // Prevent Gold SIP duplicate creation with deterministic ID & auto-dedup
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
