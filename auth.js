@@ -157,6 +157,47 @@ window.applySidebarMode = function(mode) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Users & Roles ───────────────────────────────────────────
+const ADMIN_EMAILS = [
+    'parsuramnaik5@gmail.com'
+];
+
+window.isUserAdmin = function(email) {
+    if (!email) return false;
+    const e = email.toLowerCase().trim();
+    const customAdmin = (localStorage.getItem('biz_admin_email') || '').toLowerCase().trim();
+    if (customAdmin && e === customAdmin) return true;
+    return ADMIN_EMAILS.some(a => a.toLowerCase().trim() === e);
+};
+
+window.handleGoogleLoginSuccess = function(user) {
+    const email = user.email || '';
+    const name = user.displayName || (email ? email.split('@')[0] : 'User');
+    const photo = user.photoURL || '';
+    const isAdmin = window.isUserAdmin(email);
+    const role = isAdmin ? 'admin' : 'user';
+
+    window.authSet('isLoggedIn', 'true');
+    window.authSet('userRole', role);
+    window.authSet('username', name);
+    window.authSet('userEmail', email);
+    if (photo) {
+        window.authSet('userPhoto', photo);
+    }
+
+    if (!localStorage.getItem('auth_deviceId')) {
+        const stableId = 'dev_' + (
+            typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+                : Math.random().toString(36).slice(2, 14)
+        );
+        localStorage.setItem('auth_deviceId', stableId);
+    }
+
+    setTimeout(() => {
+        window.location.href = 'dashboard-code.html';
+    }, 400);
+};
+
 const USERS = [
     { username: 'DNONLINECENTER', password: 'Tongpal@123', role: 'user' },
     { username: 'Mybusiness',     password: 'Mamta@123',   role: 'admin' }
@@ -332,8 +373,13 @@ function handleLogout(event) {
             window.authRemove('isLoggedIn');
             window.authRemove('userRole');
             window.authRemove('username');
+            window.authRemove('userEmail');
+            window.authRemove('userPhoto');
             // Remove stable device ID so session tracker cleans up too
             localStorage.removeItem('auth_deviceId');
+            try {
+                if (window.firebaseSignOut) window.firebaseSignOut();
+            } catch(e) {}
             window.location.replace('index.html');
         }, 1200);
     });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v91'; // Fix CGB bank name display in table instead of converting to CGB BC (Parsu)
+const CACHE_NAME = 'biz-report-v92'; // Implement Google Sign-In with official Google button & backup password login
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
