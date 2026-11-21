@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v84'; // Fix CGB BC (Parsu) filter and remove CGB BC (All)
+const CACHE_NAME = 'biz-report-v85'; // Remove CRGB from bank list, keep CGB
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

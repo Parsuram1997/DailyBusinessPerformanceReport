@@ -9862,7 +9862,7 @@ if (submitBtn) {
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
                 reason: txnReason && reasonFieldContainer && !reasonFieldContainer.classList.contains('hidden') ? txnReason.value.trim() : '',
 
-                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : ''),
+                bankName: ((['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : '')).replace(/^crgb$/i, 'CGB'),
                 ...(txnType.value === 'PENDING_REMOVE' ? {
                     originalPendingId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
                     pendingRefId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
@@ -11289,8 +11289,11 @@ if (submitBtn) {
             if (!name) return "";
             const n = name.toUpperCase().trim();
             const map = {
-                'CHHATTISGARH GRAMEEN BANK': 'CRGB',
-                'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+                'CHHATTISGARH GRAMEEN BANK': 'CGB',
+                'CHHATTISGARH RAJYA GRAMIN BANK': 'CGB',
+                'CHHATTISGARH GRAMIN BANK': 'CGB',
+                'CRGB': 'CGB',
+                'CGB': 'CGB',
                 'STATE BANK OF INDIA': 'SBI',
                 'INDIA POST PAYMENT BANK': 'IPPB',
                 'BANK OF BARODA': 'BOB',
@@ -13159,8 +13162,11 @@ if (submitBtn) {
         if (!name) return '';
         const n = name.toUpperCase().trim();
         const map = {
-            'CHHATTISGARH GRAMEEN BANK': 'CRGB',
-            'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+            'CHHATTISGARH GRAMEEN BANK': 'CGB',
+            'CHHATTISGARH RAJYA GRAMIN BANK': 'CGB',
+            'CHHATTISGARH GRAMIN BANK': 'CGB',
+            'CRGB': 'CGB',
+            'CGB': 'CGB',
             'STATE BANK OF INDIA': 'SBI',
             'INDIA POST PAYMENT BANK': 'IPPB',
             'BANK OF BARODA': 'BOB',

@@ -8946,7 +8946,7 @@ async function initDailyTxn() {
                 provider: txnType.value === 'CSP_SUBSCRIPTION' ? (document.getElementById('txn-csp-provider') ? document.getElementById('txn-csp-provider').value : '') : (txnType.value === 'GOLD_SIP' ? (txnDepositBy ? txnDepositBy.value : (localStorage.getItem('gold_sip_account') || 'online(shop)')) : (['PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value) ? ((txnDepositBy && txnDepositBy.value.toLowerCase() === 'cash') ? 'cash' : 'online') : ((['QR_WITHDRAWAL', 'ONLINE_EXCHANGE', 'CSP_WALLET_LOAD'].includes(txnType.value)) ? (document.getElementById('txn-qr-wallet') ? document.getElementById('txn-qr-wallet').value : '') : ((['AEPS', 'MATM', 'DEPOSIT', 'AADHAAR_DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'CREDIT_GIVEN', 'CREDIT_RECEIVED', 'DISHTV_RECHARGE', 'MOBILE_RECHARGE', 'JIO_RECHARGE', 'JIO_TOPUP', 'ELECTRICITY_BILL', 'PAN_CARD', 'CUST_MONEY_IN', 'CUST_MONEY_OUT', 'DAILY_EXPENSE', 'SETTLEMENT', 'ONLINE_WORK', 'DAMAGED_RECOVERY', 'ADD_CAPITAL', 'SHARE_WITHDRAWN', 'CSP_COMMISSION', 'AADHAAR_PAY', 'LOAN_REPAYMENT', 'OPEN_ACCOUNT'].includes(txnType.value)) ? txnProvider.value : '')))),
                 chargesType: txnChargesType ? txnChargesType.value : 'Cash',
                 remainingAmount: (['AEPS', 'MATM', 'AADHAAR_PAY'].includes(txnType.value)) ? parseFloat(txnRemaining.value || 0) : 0,
-                bankName: (['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : ''),
+                bankName: ((['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value)) ? (document.getElementById('txn-bank-select') ? document.getElementById('txn-bank-select').value.trim() : '') : ((['AEPS', 'MATM', 'SETTLEMENT', 'DEPOSIT', 'WITHDRAWAL', 'FREE_DEPOSIT', 'FREE_WITHDRAWAL', 'ADMIN_DEPOSIT', 'ADMIN_WITHDRAWAL', 'AADHAAR_DEPOSIT', 'AADHAAR_PAY', 'OPEN_ACCOUNT', 'PENDING_ADD', 'PENDING_REMOVE'].includes(txnType.value)) ? ((txnBank && txnBank.value.trim()) ? txnBank.value.trim() : 'General Bank') : '')).replace(/^crgb$/i, 'CGB'),
                 ...(txnType.value === 'PENDING_REMOVE' ? {
                     originalPendingId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
                     pendingRefId: (txnOriginalPendingId ? txnOriginalPendingId.value.trim() : ''),
@@ -10617,8 +10617,11 @@ async function initDailyTxn() {
             if (!name) return "";
             const n = name.toUpperCase().trim();
             const map = {
-                'CHHATTISGARH GRAMEEN BANK': 'CRGB',
-                'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+                'CHHATTISGARH GRAMEEN BANK': 'CGB',
+                'CHHATTISGARH RAJYA GRAMIN BANK': 'CGB',
+                'CHHATTISGARH GRAMIN BANK': 'CGB',
+                'CRGB': 'CGB',
+                'CGB': 'CGB',
                 'STATE BANK OF INDIA': 'SBI',
                 'INDIA POST PAYMENT BANK': 'IPPB',
                 'BANK OF BARODA': 'BOB',
@@ -11179,8 +11182,11 @@ async function initDailyTxn() {
         if (!name) return '';
         const n = name.toUpperCase().trim();
         const map = {
-            'CHHATTISGARH GRAMEEN BANK': 'CRGB',
-            'CHHATTISGARH RAJYA GRAMIN BANK': 'CRGB',
+            'CHHATTISGARH GRAMEEN BANK': 'CGB',
+            'CHHATTISGARH RAJYA GRAMIN BANK': 'CGB',
+            'CHHATTISGARH GRAMIN BANK': 'CGB',
+            'CRGB': 'CGB',
+            'CGB': 'CGB',
             'STATE BANK OF INDIA': 'SBI',
             'INDIA POST PAYMENT BANK': 'IPPB',
             'BANK OF BARODA': 'BOB',
