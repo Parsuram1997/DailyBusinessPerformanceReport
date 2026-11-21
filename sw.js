@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v95'; // Instant optimistic transaction deletion without full DB scans
+const CACHE_NAME = 'biz-report-v96'; // Add 4 utility tools to Daily Txn entry card
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -17,6 +17,10 @@ const ASSETS_TO_CACHE = [
   './account-register-code.html',
   './bank-withdrawals-code.html',
   './quick-note-code.html',
+  './img-to-pdf.html',
+  './passport-tool.html',
+  './image-compressor.html',
+  './pdf-compressor.html',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap'

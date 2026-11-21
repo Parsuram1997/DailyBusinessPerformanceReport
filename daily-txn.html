@@ -703,11 +703,38 @@
                             <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-amber-600">Edit Time</label>
                             <input type="time" id="txn-edit-time" class="w-full px-3 py-2 rounded-lg text-sm border border-amber-500/50 bg-amber-50 dark:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all font-semibold">
                         </div>
-                        <div class="col-span-full order-last flex flex-col sm:flex-row justify-end pt-1">
-                            <button type="submit" tabindex="9" class="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-lg shadow-primary/20 hover:shadow-xl transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
-                                <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
-                                Save Transaction
-                            </button>
+                        <div class="col-span-full order-last flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-2">
+                            <!-- Quick Utility Tools (Open in New Tab) -->
+                            <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                                <a href="img-to-pdf.html" target="_blank" rel="noopener noreferrer" 
+                                    class="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-red-500 via-rose-500 to-red-600 hover:from-red-600 hover:to-rose-700 shadow-md shadow-rose-500/25 hover:shadow-lg hover:shadow-rose-500/35 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                                    <span class="material-symbols-outlined text-base sm:text-lg">picture_as_pdf</span>
+                                    <span>Img to PDF Tool</span>
+                                </a>
+                                <a href="passport-tool.html" target="_blank" rel="noopener noreferrer" 
+                                    class="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-700 shadow-md shadow-sky-500/25 hover:shadow-lg hover:shadow-sky-500/35 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                                    <span class="material-symbols-outlined text-base sm:text-lg">badge</span>
+                                    <span>Passport PSD Tool</span>
+                                </a>
+                                <a href="image-compressor.html" target="_blank" rel="noopener noreferrer" 
+                                    class="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-teal-400 via-emerald-500 to-teal-600 hover:from-teal-500 hover:to-emerald-700 shadow-md shadow-teal-500/25 hover:shadow-lg hover:shadow-teal-500/35 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                                    <span class="material-symbols-outlined text-base sm:text-lg">image</span>
+                                    <span>Image Compressor</span>
+                                </a>
+                                <a href="pdf-compressor.html" target="_blank" rel="noopener noreferrer" 
+                                    class="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 hover:from-amber-500 hover:to-orange-700 shadow-md shadow-amber-500/25 hover:shadow-lg hover:shadow-amber-500/35 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                                    <span class="material-symbols-outlined text-base sm:text-lg">folder_zip</span>
+                                    <span>PDF Compressor</span>
+                                </a>
+                            </div>
+
+                            <!-- Save Transaction Button -->
+                            <div class="flex items-center justify-end">
+                                <button type="submit" tabindex="9" class="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-lg shadow-primary/20 hover:shadow-xl transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
+                                    <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
+                                    Save Transaction
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
