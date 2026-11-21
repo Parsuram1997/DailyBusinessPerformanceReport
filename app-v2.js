@@ -8312,7 +8312,7 @@ async function initDailyTxn() {
         }
 
         // Bank Name Visibility
-        if (['AEPS', 'MATM', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'OPEN_ACCOUNT'].includes(txnType.value)) {
+        if (['AEPS', 'MATM', 'SETTLEMENT', 'CASH_WITHDRAWAL', 'CASH_DEPOSIT', 'OPEN_ACCOUNT', 'AADHAAR_PAY', 'AADHAAR_DEPOSIT'].includes(txnType.value)) {
             bankContainer.classList.remove('hidden');
             const bankLabel = bankContainer.querySelector('label');
             const isCashMove = ['CASH_WITHDRAWAL', 'CASH_DEPOSIT'].includes(txnType.value);

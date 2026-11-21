@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v85'; // Remove CRGB from bank list, keep CGB
+const CACHE_NAME = 'biz-report-v86'; // Enable Bank Name for Aadhaar Pay and Aadhaar Deposit
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
