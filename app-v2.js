@@ -7300,8 +7300,8 @@ async function initDailyTxn() {
         'roinet_1': 'Roinet(parsu)',
         'roinet_2': 'Roinet(dalai)',
         'spicemoney': 'SpiceMoney',
-        'crgb': 'CGB BC (All)',
-        'cgb': 'CGB BC (All)',
+        'crgb': 'CGB BC (Parsu)',
+        'cgb': 'CGB BC (Parsu)',
         'cgb_1': 'CGB BC (Parsu)',
         'cgb_2': 'CGB BC (Dalai)'
     };
@@ -9848,7 +9848,7 @@ async function initDailyTxn() {
                     spicemoney: d_sm,
                     crgb: d_crgb,
                     cgb: d_crgb,
-                    cgb_1: d_c1,
+                    cgb_1: (d_c1 !== 0) ? d_c1 : ((d_c2 === 0 && d_crgb !== 0) ? d_crgb : 0),
                     cgb_2: d_c2
                 };
 
@@ -10788,8 +10788,7 @@ async function initDailyTxn() {
                                 const s = String(str);
                                 if (/cgb/i.test(s) || /crgb/i.test(s)) {
                                     if (/dalai/i.test(s)) return 'CGB BC (Dalai)';
-                                    if (/parsu/i.test(s)) return 'CGB BC (Parsu)';
-                                    return 'CGB BC';
+                                    return 'CGB BC (Parsu)';
                                 }
                                 return s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
                             };
@@ -11139,7 +11138,9 @@ async function initDailyTxn() {
     if (accFilterSelect) {
         accFilterSelect.value = currentAccountFilter;
         accFilterSelect.onchange = (e) => {
-            currentAccountFilter = e.target.value;
+            let val = e.target.value;
+            if (val === 'crgb' || val === 'cgb') val = 'cgb_1';
+            currentAccountFilter = val;
             window.currentAccountFilter = currentAccountFilter;
             updateAccountFilterBtnDisplay();
             renderBadgesAndTable();
@@ -11156,6 +11157,7 @@ async function initDailyTxn() {
         };
     }
     window.selectAccountFilter = (accKey) => {
+        if (accKey === 'crgb' || accKey === 'cgb') accKey = 'cgb_1';
         currentAccountFilter = accKey || 'ALL';
         window.currentAccountFilter = currentAccountFilter;
         const sel = document.getElementById('account-filter-select');

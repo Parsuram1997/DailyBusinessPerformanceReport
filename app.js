@@ -8416,8 +8416,8 @@ async function initDailyTxn() {
         'roinet_1': 'Roinet(parsu)',
         'roinet_2': 'Roinet(dalai)',
         'spicemoney': 'SpiceMoney',
-        'crgb': 'CGB BC (All)',
-        'cgb': 'CGB BC (All)',
+        'crgb': 'CGB BC (Parsu)',
+        'cgb': 'CGB BC (Parsu)',
         'cgb_1': 'CGB BC (Parsu)',
         'cgb_2': 'CGB BC (Dalai)'
     };
@@ -10514,17 +10514,24 @@ if (submitBtn) {
                     roinetBreakdown[key] += val;
                 }
             };
+            const opCgb1 = parseFloat(details.cgb_1 || details.crgb_1 || 0);
+            const opCgb2 = parseFloat(details.cgb_2 || details.crgb_2 || 0);
+            const totalSplitCgb = opCgb1 + opCgb2;
+            const cgbOpeningFallback = parseFloat(opValues.crgb || 0);
+            const opCgbFinal1 = totalSplitCgb > 0 ? opCgb1 : cgbOpeningFallback;
+            const opCgbFinal2 = opCgb2;
+
             const getCgbSubAccountKey = (prov) => {
                 if (!prov) return null;
                 const p = String(prov).trim().toLowerCase().replace(/[\s\-_()]+/g, '');
                 if (p.includes('dalai') || p.includes('cgb2') || p.includes('crgb2')) return 'cgb_2';
                 if (p.includes('parsu') || p.includes('cgb1') || p.includes('crgb1')) return 'cgb_1';
                 if (p.includes('crgb') || p.includes('cgb')) return 'cgb_1';
-                return null;
+                return 'cgb_1';
             };
             const cgbBreakdown = { cgb_1: 0, cgb_2: 0 };
             const updateCgbDelta = (prov, val) => {
-                const key = getCgbSubAccountKey(prov);
+                const key = getCgbSubAccountKey(prov) || 'cgb_1';
                 if (key) {
                     cgbBreakdown[key] += val;
                 }
@@ -10892,6 +10899,9 @@ if (submitBtn) {
                 const d_a2 = roinetBreakdown.airtel_2 - prevRoinetBreakdown.airtel_2;
                 const d_sm = roinetBreakdown.spicemoney - prevRoinetBreakdown.spicemoney;
                 const d_crgb = (balances.crgb || 0) - (prevBals.crgb || 0);
+                const d_c1 = cgbBreakdown.cgb_1 - prevCgbBreakdown.cgb_1;
+                const d_c2 = cgbBreakdown.cgb_2 - prevCgbBreakdown.cgb_2;
+                const effective_cgb_1 = (d_c1 !== 0) ? d_c1 : ((d_c2 === 0 && d_crgb !== 0) ? d_crgb : 0);
 
                 t.subAccountDeltas = {
                     online_p1: d1,
@@ -10903,7 +10913,10 @@ if (submitBtn) {
                     airtel_1: d_a1,
                     airtel_2: d_a2,
                     spicemoney: d_sm,
-                    crgb: d_crgb
+                    crgb: d_crgb,
+                    cgb: d_crgb,
+                    cgb_1: effective_cgb_1,
+                    cgb_2: d_c2
                 };
 
                 t.subAccountBalances = {
@@ -10916,7 +10929,10 @@ if (submitBtn) {
                     airtel_1: opAirtel1 + roinetBreakdown.airtel_1,
                     airtel_2: opAirtel2 + roinetBreakdown.airtel_2,
                     spicemoney: opSpiceMoney + roinetBreakdown.spicemoney,
-                    crgb: parseFloat(opValues.crgb || 0) + (balances.crgb || 0)
+                    crgb: parseFloat(opValues.crgb || 0) + (balances.crgb || 0),
+                    cgb: parseFloat(opValues.crgb || 0) + (balances.crgb || 0),
+                    cgb_1: opCgbFinal1 + cgbBreakdown.cgb_1,
+                    cgb_2: opCgbFinal2 + cgbBreakdown.cgb_2
                 };
 
                 const hasOnlineMovement = 
@@ -10955,8 +10971,6 @@ if (submitBtn) {
                     const d_total = balances.roinet - prevBals.roinet;
                     if (d_total !== 0) lastRoinetChanges.total = d_total;
                 }
-                const d_c1 = cgbBreakdown.cgb_1 - prevCgbBreakdown.cgb_1;
-                const d_c2 = cgbBreakdown.cgb_2 - prevCgbBreakdown.cgb_2;
                 const hasCgbMovement = (balances.crgb !== prevBals.crgb) || (d_c1 !== 0) || (d_c2 !== 0);
                 if (hasCgbMovement) {
                     if (d_c1 !== 0) { lastCgbChanges.cgb_1 = d_c1; lastCgbChanges.mostRecent = 'cgb_1'; }
@@ -11038,13 +11052,6 @@ if (submitBtn) {
                     mostRecent: lastRoinetChanges.mostRecent
                 }
             };
-
-            const opCgb1 = parseFloat(details.cgb_1 || details.crgb_1 || 0);
-            const opCgb2 = parseFloat(details.cgb_2 || details.crgb_2 || 0);
-            const totalSplitCgb = opCgb1 + opCgb2;
-            const cgbOpeningFallback = parseFloat(opValues.crgb || 0);
-            const opCgbFinal1 = totalSplitCgb > 0 ? opCgb1 : cgbOpeningFallback;
-            const opCgbFinal2 = opCgb2;
 
             currentAvailableCgb1 = opCgbFinal1 + cgbBreakdown.cgb_1;
             currentAvailableCgb2 = opCgbFinal2 + cgbBreakdown.cgb_2;
@@ -11467,8 +11474,7 @@ if (submitBtn) {
                                 const s = String(str);
                                 if (/cgb/i.test(s) || /crgb/i.test(s)) {
                                     if (/dalai/i.test(s)) return 'CGB BC (Dalai)';
-                                    if (/parsu/i.test(s)) return 'CGB BC (Parsu)';
-                                    return 'CGB BC';
+                                    return 'CGB BC (Parsu)';
                                 }
                                 return s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
                             };
@@ -12595,7 +12601,9 @@ if (submitBtn) {
     if (accFilterSelect) {
         accFilterSelect.value = currentAccountFilter;
         accFilterSelect.onchange = (e) => {
-            currentAccountFilter = e.target.value;
+            let val = e.target.value;
+            if (val === 'crgb' || val === 'cgb') val = 'cgb_1';
+            currentAccountFilter = val;
             window.currentAccountFilter = currentAccountFilter;
             updateAccountFilterBtnDisplay();
             renderBadgesAndTable();
@@ -12612,6 +12620,7 @@ if (submitBtn) {
         };
     }
     window.selectAccountFilter = (accKey) => {
+        if (accKey === 'crgb' || accKey === 'cgb') accKey = 'cgb_1';
         currentAccountFilter = accKey || 'ALL';
         window.currentAccountFilter = currentAccountFilter;
         const sel = document.getElementById('account-filter-select');

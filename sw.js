@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v83'; // Make Bank Withdrawals page full width
+const CACHE_NAME = 'biz-report-v84'; // Fix CGB BC (Parsu) filter and remove CGB BC (All)
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
