@@ -360,7 +360,9 @@
             <table class="w-full text-sm text-left relative">
                 <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10 backdrop-blur-md shadow-sm">
                     <tr>
+                        <th class="px-4 py-4 font-semibold text-center w-12">#</th>
                         <th class="px-5 py-4 font-semibold">Date</th>
+                        <th class="px-5 py-4 font-semibold">Bank</th>
                         <th class="px-5 py-4 font-semibold">DOB</th>
                         <th class="px-5 py-4 font-semibold">Acc No.</th>
                         <th class="px-5 py-4 font-semibold">Holder Name</th>
@@ -396,14 +398,26 @@
 
             <form id="accountForm" class="space-y-6">
                 <input type="hidden" id="accountId">
-                <!-- Row 1: Account Number & Opening Date -->
-
+                <!-- Row 1: Bank Name & Account Number -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Bank Name</label>
+                        <input type="text" id="bankName" placeholder="Enter bank name (e.g. SBI, CGB)"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                    </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Number</label>
                         <input type="text" id="accountNumber" required
                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                    </div>
+                </div>
 
+                <!-- Row 2: Account Holder Name & Opening Date -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Holder Name</label>
+                        <input type="text" id="accountHolderName" required placeholder="Enter full name"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Opening Date</label>
@@ -412,21 +426,7 @@
                     </div>
                 </div>
 
-                <!-- Row 2: Account Holder Name & DOB -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Holder Name</label>
-                        <input type="text" id="accountHolderName" required placeholder="Enter full name"
-                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">DOB</label>
-                        <input type="date" id="dob"
-                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
-                    </div>
-                </div>
-
-                <!-- Row 3: Account Type & Mobile Number -->
+                <!-- Row 3: Account Type & DOB -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Account Type</label>
@@ -441,16 +441,25 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mobile Number</label>
-                        <input type="tel" id="mobileNumber" required placeholder="Enter mobile number" pattern="[0-9]{10}"
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">DOB</label>
+                        <input type="date" id="dob"
                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                     </div>
                 </div>
 
-                <!-- Row 4: Address -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Address</label>
-                    <input type="text" id="address" required placeholder="Enter address details"
+                <!-- Row 4: Mobile Number & Address -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mobile Number</label>
+                        <input type="tel" id="mobileNumber" required placeholder="Enter mobile number" pattern="[0-9]{10}"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Address</label>
+                        <input type="text" id="address" required placeholder="Enter address details"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
+                    </div>
+                </div>
                         class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                 </div>
 
@@ -840,22 +849,25 @@
         const filtered = window.allAccounts.filter(acc => {
             const m = (acc.accountHolderName||'').toLowerCase().includes(search) ||
                       (acc.accountNumber||'').toLowerCase().includes(search) ||
+                      (acc.bankName||acc.bank||'').toLowerCase().includes(search) ||
                       (acc.mobileNumber||'').toLowerCase().includes(search);
             const s = statusFilter === 'All' || acc.status === statusFilter;
             return m && s;
         });
         tbody.innerHTML = '';
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="px-5 py-8 text-center text-slate-500">No accounts found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="px-5 py-8 text-center text-slate-500">No accounts found.</td></tr>';
         } else {
-            filtered.forEach(acc => {
+            filtered.forEach((acc, idx) => {
                 const sc = acc.status === 'Active'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
                     : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400';
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group';
                 tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-center text-xs font-semibold text-slate-400">${idx + 1}</td>
                     <td class="px-5 py-3 whitespace-nowrap">${acc.openingDate||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-800 dark:text-slate-200">${acc.bankName||acc.bank||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap">${acc.dob||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-900 dark:text-white">${acc.accountNumber||'-'}</td>
                     <td class="px-5 py-3">${acc.accountHolderName||'-'}</td>
@@ -900,6 +912,7 @@
             if (acc) {
                 document.getElementById('modalTitle').innerText    = 'Edit Account';
                 document.getElementById('accountId').value         = acc.id;
+                document.getElementById('bankName').value          = acc.bankName || acc.bank || '';
                 document.getElementById('accountNumber').value     = acc.accountNumber || '';
                 document.getElementById('accountHolderName').value = acc.accountHolderName || '';
                 document.getElementById('accountType').value       = acc.accountType || '';
@@ -916,6 +929,7 @@
         } else {
             document.getElementById('modalTitle').innerText    = 'Open New Account';
             document.getElementById('accountId').value         = '';
+            document.getElementById('bankName').value          = '';
             document.getElementById('accountNumber').value     = window.generateAccountNumber();
             document.getElementById('openingDate').valueAsDate = new Date();
             document.getElementById('dob').value               = '';
@@ -947,18 +961,19 @@
         e.preventDefault();
         const id = document.getElementById('accountId').value;
         const data = {
-            accountNumber:     document.getElementById('accountNumber').value,
-            accountHolderName: document.getElementById('accountHolderName').value,
+            bankName:          document.getElementById('bankName').value.trim(),
+            accountNumber:     document.getElementById('accountNumber').value.trim(),
+            accountHolderName: document.getElementById('accountHolderName').value.trim(),
             accountType:       document.getElementById('accountType').value,
             openingDate:       document.getElementById('openingDate').value,
-            mobileNumber:      document.getElementById('mobileNumber').value,
+            mobileNumber:      document.getElementById('mobileNumber').value.trim(),
             dob:               document.getElementById('dob').value,
-            aadhar:            document.getElementById('aadhar').value,
-            address:           document.getElementById('address').value,
-            idReference:       document.getElementById('idReference').value,
-            nomineeName:       document.getElementById('nomineeName').value,
+            aadhar:            document.getElementById('aadhar').value.trim(),
+            address:           document.getElementById('address').value.trim(),
+            idReference:       document.getElementById('idReference').value.trim(),
+            nomineeName:       document.getElementById('nomineeName').value.trim(),
             status:            document.getElementById('status').value,
-            remarks:           document.getElementById('remarks').value,
+            remarks:           document.getElementById('remarks').value.trim(),
             updated_at:        new Date().toISOString()
         };
         try {
@@ -968,6 +983,7 @@
                     data.dailyTxnId = existing.dailyTxnId;
                     try {
                         await updateDoc(doc(db, "daily_transactions", existing.dailyTxnId), {
+                            bankName: data.bankName,
                             accountNumber: data.accountNumber,
                             note: data.accountHolderName,
                             accountType: data.accountType,

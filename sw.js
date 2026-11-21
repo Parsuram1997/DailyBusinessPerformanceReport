@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v79'; // Restore missing form.onsubmit block in app.js
+const CACHE_NAME = 'biz-report-v80'; // Add bankName and serial number to Account Register
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

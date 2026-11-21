@@ -7061,6 +7061,7 @@ async function syncAccountFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
         }
 
         const accountData = {
+            bankName: newTxn.bankName || newTxn.bank || '',
             accountNumber: newTxn.accountNumber || newTxn.extraDetails || '',
             accountHolderName: newTxn.accountHolderName || newTxn.customerName || newTxn.note || '',
             accountType: newTxn.accountType || 'Savings',
