@@ -163,11 +163,15 @@ setupEntriesListener();
     }
 
     async function writeHeartbeatV2() {
+        const email = (window.authGet && window.authGet('userEmail')) || '';
+        const photoURL = (window.authGet && window.authGet('userPhoto')) || '';
         try {
             // app-v2.js uses compat SDK: db.collection().doc().set()
             await db.collection('active_sessions').doc(deviceId).set({
                 deviceId,
                 username,
+                email,
+                photoURL,
                 role,
                 userAgent: ua,
                 location: sessionLocationV2,
@@ -176,12 +180,26 @@ setupEntriesListener();
                 page: window.location.pathname.split('/').pop() || 'index.html'
             });
             console.log('[Session v2] Heartbeat written for', deviceId);
+
+            if (email) {
+                const cleanKey = email.toLowerCase().trim().replace(/[.#$[\]]/g, '_');
+                await db.collection('users').doc(cleanKey).set({
+                    email,
+                    displayName: username,
+                    photoURL,
+                    role,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastSeenMs: Date.now(),
+                    lastPage: window.location.pathname.split('/').pop() || 'dashboard-code.html',
+                    userAgent: ua
+                }, { merge: true });
+            }
         } catch (e) {
             console.error('[Session v2] Firestore write failed:', e.code, e.message);
             // Fallback: try without serverTimestamp
             try {
                 await db.collection('active_sessions').doc(deviceId).set({
-                    deviceId, username, role, userAgent: ua,
+                    deviceId, username, email, photoURL, role, userAgent: ua,
                     location: sessionLocationV2,
                     lastSeenMs: Date.now(),
                     page: window.location.pathname.split('/').pop() || 'index.html'

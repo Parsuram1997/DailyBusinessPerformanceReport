@@ -106,11 +106,15 @@ window._startGlobalEntriesListener();
 
     async function writeHeartbeat() {
         if (!db) { console.warn('[Session] Firestore db not ready'); return; }
+        const email = (window.authGet && window.authGet('userEmail')) || '';
+        const photoURL = (window.authGet && window.authGet('userPhoto')) || '';
         try {
             await setDoc(doc(db, 'active_sessions', deviceId), {
                 deviceId,
                 shortTag,
                 username,
+                email,
+                photoURL,
                 role,
                 userAgent: ua,
                 screenResolution: `${screen.width}x${screen.height}`,
@@ -121,6 +125,21 @@ window._startGlobalEntriesListener();
                 page: window.location.pathname.split('/').pop() || 'index.html'
             });
             console.log('[Session] Heartbeat written for', deviceId);
+
+            // Also keep user profile in Firestore 'users' collection
+            if (email) {
+                const cleanKey = email.toLowerCase().trim().replace(/[.#$[\]]/g, '_');
+                await setDoc(doc(db, 'users', cleanKey), {
+                    email,
+                    displayName: username,
+                    photoURL,
+                    role,
+                    lastSeen: serverTimestamp(),
+                    lastSeenMs: Date.now(),
+                    lastPage: window.location.pathname.split('/').pop() || 'dashboard-code.html',
+                    userAgent: ua
+                }, { merge: true });
+            }
         } catch (e) {
             console.error('[Session] Firestore write failed:', e.code, e.message);
         }

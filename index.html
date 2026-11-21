@@ -264,7 +264,7 @@
     </style>
 
     <script type="module">
-        import { auth, googleProvider, signInWithPopup, signOut } from './firebase-config.js';
+        import { db, auth, googleProvider, signInWithPopup, signOut, doc, setDoc, getDoc, serverTimestamp } from './firebase-config.js';
 
         // Expose signOut helper globally so auth.js handleLogout can use it
         window.firebaseSignOut = () => signOut(auth);
@@ -298,8 +298,36 @@
 
             try {
                 const result = await signInWithPopup(auth, googleProvider);
+                if (btnText) btnText.textContent = 'Saving account to Firestore...';
+
+                const user = result.user;
+                const isAdmin = window.isUserAdmin ? window.isUserAdmin(user.email) : (user.email === 'parsuramnaik5@gmail.com');
+                const role = isAdmin ? 'admin' : 'user';
+
+                // Save or update user document in Firestore 'users' collection
+                try {
+                    const userRef = doc(db, 'users', user.uid);
+                    const snap = await getDoc(userRef);
+                    const isNew = !snap.exists();
+                    await setDoc(userRef, {
+                        uid: user.uid,
+                        email: user.email || '',
+                        displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
+                        photoURL: user.photoURL || '',
+                        role: role,
+                        provider: 'google',
+                        lastLogin: serverTimestamp(),
+                        lastLoginMs: Date.now(),
+                        userAgent: navigator.userAgent,
+                        ...(isNew ? { createdAt: serverTimestamp(), createdAtMs: Date.now() } : {})
+                    }, { merge: true });
+                    console.log('[Firestore] User document saved in users/' + user.uid);
+                } catch (fsErr) {
+                    console.error('[Firestore] User save error:', fsErr);
+                }
+
                 if (btnText) btnText.textContent = 'Signing in...';
-                window.handleGoogleLoginSuccess(result.user);
+                window.handleGoogleLoginSuccess(user);
             } catch (error) {
                 console.error('Google Sign-In Error:', error);
                 if (btn) btn.disabled = false;

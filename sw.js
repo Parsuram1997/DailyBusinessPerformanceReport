@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v92'; // Implement Google Sign-In with official Google button & backup password login
+const CACHE_NAME = 'biz-report-v93'; // Save Google user profile to Firestore users collection upon login and heartbeat
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

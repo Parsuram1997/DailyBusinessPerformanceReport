@@ -1,6 +1,6 @@
 // Firebase configuration - imports must be at top for ES modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
@@ -21,4 +21,4 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-export { app, db, analytics, auth, googleProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged };
+export { app, db, analytics, auth, googleProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, doc, setDoc, getDoc, serverTimestamp, collection, onSnapshot };
