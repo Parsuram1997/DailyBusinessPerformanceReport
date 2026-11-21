@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v86'; // Enable Bank Name for Aadhaar Pay and Aadhaar Deposit
+const CACHE_NAME = 'biz-report-v87'; // Disable ArrowUp/ArrowDown spinner increment on amount fields
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

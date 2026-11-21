@@ -7188,6 +7188,29 @@ async function initDailyTxn() {
     const txnDateText = document.getElementById('current-date-text');
     const txnViewDate = document.getElementById('txn-view-date');
 
+    // Prevent ArrowUp / ArrowDown and mouse wheel from incrementing/decrementing amount fields
+    const amountInputs = [txnAmount, txnRemaining, txnCharges, txnProviderCharge, txnQuantity].filter(Boolean);
+    amountInputs.forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
+        });
+        input.addEventListener('wheel', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+    });
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target && e.target.type === 'number') {
+            e.preventDefault();
+        }
+    }, { capture: true });
+    document.addEventListener('wheel', (e) => {
+        if (e.target && e.target.type === 'number' && document.activeElement === e.target) {
+            e.preventDefault();
+        }
+    }, { passive: false, capture: true });
+
     const pendingSelectContainer = document.getElementById('pending-select-container');
     const txnPendingSelect = document.getElementById('txn-pending-select');
     const pendingCountBadge = document.getElementById('pending-count-badge');

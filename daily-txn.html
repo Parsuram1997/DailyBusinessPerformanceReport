@@ -107,6 +107,17 @@
         @media screen and (max-width: 767px) {
             input, select, textarea { font-size: 16px !important; }
         }
+
+        /* Prevent number input spinners (up/down arrows) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
         
         /* Prevent wrapping of values inside breakdown modals and adjust padding to fit on mobile */
         #online-breakdown-modal table p,
