@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v94'; // Make App Settings page 100% full width
+const CACHE_NAME = 'biz-report-v95'; // Instant optimistic transaction deletion without full DB scans
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

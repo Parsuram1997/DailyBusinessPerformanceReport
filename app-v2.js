@@ -6910,6 +6910,26 @@ function protectPrivilegedLinks() {
 
 async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     try {
+        if (isDelete) {
+            let linkedCredit = null;
+            try {
+                const q = query(collection(db, "credits"), where("dailyTxnId", "==", String(dailyTxnId)));
+                const qSnap = await getDocs(q);
+                if (!qSnap.empty) {
+                    linkedCredit = { ...qSnap.docs[0].data(), id: qSnap.docs[0].id };
+                }
+            } catch (_) {}
+            if (!linkedCredit) {
+                const existingCredits = await loadCredits();
+                linkedCredit = existingCredits.find(cr => String(cr.dailyTxnId) === String(dailyTxnId));
+            }
+            if (linkedCredit) {
+                await deleteCredit(linkedCredit.id);
+                console.log('[CreditSync] Successfully deleted linked credit entry:', linkedCredit.id);
+            }
+            return;
+        }
+
         const existingCredits = await loadCredits();
         let linkedCredit = existingCredits.find(cr => cr.dailyTxnId === dailyTxnId);
         
@@ -6921,14 +6941,6 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
                 // Ensure we do not hijack an existing credit entry that is already linked to another daily transaction
                 linkedCredit = existingCredits.find(cr => !cr.dailyTxnId && (cr.description === 'Synced from Daily Txn' || cr.note === newTxn.note.trim() || cr.note?.startsWith(newTxn.note.trim())) && cr.date === newTxn.date && String(cr.customerId) === String(customer.id));
             }
-        }
-
-        if (isDelete) {
-            if (linkedCredit) {
-                await deleteCredit(linkedCredit.id);
-                console.log('[CreditSync] Successfully deleted linked credit entry:', linkedCredit.id);
-            }
-            return;
         }
 
         if (!newTxn || !['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(newTxn.type)) {
@@ -6990,16 +7002,29 @@ async function syncCreditFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
 
 async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     try {
-        const existingWithdrawals = await loadBankWithdrawals();
-        let linkedWithdrawal = existingWithdrawals.find(w => String(w.dailyTxnId) === String(dailyTxnId));
-
         if (isDelete) {
+            let linkedWithdrawal = null;
+            try {
+                const q = query(collection(db, "bank_withdrawals"), where("dailyTxnId", "==", String(dailyTxnId)));
+                const qSnap = await getDocs(q);
+                if (!qSnap.empty) {
+                    const docSnap = qSnap.docs[0];
+                    linkedWithdrawal = { ...docSnap.data(), id: docSnap.data().id || docSnap.id, firebaseId: docSnap.id };
+                }
+            } catch (_) {}
+            if (!linkedWithdrawal) {
+                const existingWithdrawals = await loadBankWithdrawals();
+                linkedWithdrawal = existingWithdrawals.find(w => String(w.dailyTxnId) === String(dailyTxnId));
+            }
             if (linkedWithdrawal) {
                 await deleteBankWithdrawal(linkedWithdrawal.id || linkedWithdrawal.firebaseId);
                 console.log('[BankWithdrawalSync] Successfully deleted linked withdrawal entry:', linkedWithdrawal.id);
             }
             return;
         }
+
+        const existingWithdrawals = await loadBankWithdrawals();
+        let linkedWithdrawal = existingWithdrawals.find(w => String(w.dailyTxnId) === String(dailyTxnId));
 
         if (!newTxn || newTxn.type !== 'CASH_WITHDRAWAL') {
             if (linkedWithdrawal) {
@@ -7056,11 +7081,17 @@ async function syncBankWithdrawalFromDailyTxn(newTxn, dailyTxnId, isDelete = fal
 async function syncAccountFromDailyTxn(newTxn, dailyTxnId, isDelete = false) {
     try {
         if (!dailyTxnId) return;
-        const snap = await getDocs(collection(db, "accounts"));
-        let linkedAccount = snap.docs.find(d => {
-            const data = d.data();
-            return String(data.dailyTxnId) === String(dailyTxnId);
-        });
+        let linkedAccount = null;
+        try {
+            const q = query(collection(db, "accounts"), where("dailyTxnId", "==", String(dailyTxnId)));
+            const qSnap = await getDocs(q);
+            if (!qSnap.empty) {
+                linkedAccount = qSnap.docs[0];
+            }
+        } catch (_) {
+            const snap = await getDocs(collection(db, "accounts"));
+            linkedAccount = snap.docs.find(d => String(d.data().dailyTxnId) === String(dailyTxnId));
+        }
 
         if (isDelete) {
             if (linkedAccount) {
@@ -7688,105 +7719,125 @@ async function initDailyTxn() {
         deletingTxnId = null;
     };
 
+    const showTxnToast = (message, title = 'SUCCESS', isError = false) => {
+        let container = document.getElementById('txn-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'txn-toast-container';
+            container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 ${isError ? 'bg-rose-600/95 dark:bg-rose-500/95' : 'bg-emerald-600/95 dark:bg-emerald-500/95'} backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out`;
+        toast.innerHTML = `
+            <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                <span class="material-symbols-outlined text-xl font-bold">${isError ? 'error' : 'check_circle'}</span>
+            </span>
+            <div class="flex flex-col leading-tight">
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/80">${title}</span>
+                <span class="text-sm font-bold text-white mt-0.5">${message}</span>
+            </div>
+        `;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 350);
+        }, 4000);
+    };
+
     if (cancelDeleteBtn) cancelDeleteBtn.onclick = hideDeleteModal;
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = async () => {
             if (!deletingTxnId) return;
-            const performDelete = async () => {
-                confirmDeleteBtn.disabled = true;
-                if (cancelDeleteBtn) cancelDeleteBtn.disabled = true;
-                const originalText = confirmDeleteBtn.innerHTML;
-                confirmDeleteBtn.innerHTML = '<div class="flex items-center justify-center gap-2"><span class="material-symbols-outlined animate-spin text-lg">sync</span><span>Deleting...</span></div>';
-                
+            const targetTxnId = deletingTxnId;
+
+            // 1. Immediately find the target txn data from in-memory cache
+            const targetData = (window.allTxnsForDate || allTxnsForDate || []).find(d => String(d.id) === String(targetTxnId));
+
+            // 2. Hide delete modal instantly (zero waiting for network)
+            hideDeleteModal();
+
+            // 3. Optimistic UI: smoothly fade and remove the row immediately from the table
+            const targetRow = document.querySelector(`tr[data-id="${targetTxnId}"]`);
+            if (targetRow) {
+                targetRow.style.transition = 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+                targetRow.style.opacity = '0';
+                targetRow.style.transform = 'translateX(-20px) scale(0.98)';
+                setTimeout(() => {
+                    if (targetRow.parentNode) targetRow.remove();
+                }, 250);
+            }
+
+            // 4. Optimistically update in-memory lists
+            if (window.allTxnsForDate) {
+                window.allTxnsForDate = window.allTxnsForDate.filter(d => String(d.id) !== String(targetTxnId));
+            }
+            if (allTxnsForDate) {
+                allTxnsForDate = allTxnsForDate.filter(d => String(d.id) !== String(targetTxnId));
+            }
+
+            // 5. Show toast notification immediately
+            showTxnToast('Transaction deleted successfully', 'SUCCESS');
+
+            // 6. Fast background execution: direct deleteDoc + selective sync (never download entire collections)
+            (async () => {
                 try {
-                    const snap = await getDocs(collection(db, 'daily_transactions'));
-                    const targetTxnDoc = snap.docs.find(d => d.id === deletingTxnId);
-                    if (targetTxnDoc) {
-                        const targetData = targetTxnDoc.data();
-                        const origPendingId = targetData.originalPendingId || targetData.pendingRefId;
-                        if (targetData.type === 'PENDING_REMOVE' && origPendingId) {
-                            try {
-                                await updateDoc(doc(db, 'daily_transactions', origPendingId), {
+                    let txnData = targetData;
+                    if (!txnData) {
+                        try {
+                            const singleSnap = await getDoc(doc(db, 'daily_transactions', targetTxnId));
+                            if (singleSnap && (typeof singleSnap.exists === 'function' ? singleSnap.exists() : singleSnap.exists)) {
+                                txnData = singleSnap.data();
+                            }
+                        } catch(e) {
+                            console.warn('[DailyTxn] Could not fetch single doc prior to delete:', e);
+                        }
+                    }
+
+                    // Delete the transaction doc in Firestore
+                    const deletePromise = deleteDoc(doc(db, 'daily_transactions', targetTxnId));
+                    const parallelTasks = [deletePromise];
+
+                    if (txnData) {
+                        const origPendingId = txnData.originalPendingId || txnData.pendingRefId;
+                        if (txnData.type === 'PENDING_REMOVE' && origPendingId) {
+                            parallelTasks.push(
+                                updateDoc(doc(db, 'daily_transactions', origPendingId), {
                                     resolved: false,
                                     resolvedDate: null,
                                     resolvedAccount: null,
                                     resolutionType: null,
                                     resolutionRemarks: null
-                                });
-                                console.log('[DailyTxn] Reverted original pending doc to unresolved:', origPendingId);
-                            } catch(e) {
-                                console.warn('[DailyTxn] Failed to revert original pending doc:', e);
-                            }
+                                }).catch(e => console.warn('[DailyTxn] Failed to revert original pending doc:', e))
+                            );
                         }
-                        await syncCreditFromDailyTxn(targetData, deletingTxnId, true);
-                        await syncBankWithdrawalFromDailyTxn(targetData, deletingTxnId, true);
-                        await syncAccountFromDailyTxn(targetData, deletingTxnId, true);
+                        if (['CREDIT_GIVEN', 'CREDIT_RECEIVED'].includes(txnData.type)) {
+                            parallelTasks.push(syncCreditFromDailyTxn(txnData, targetTxnId, true).catch(console.warn));
+                        }
+                        if (txnData.type === 'CASH_WITHDRAWAL') {
+                            parallelTasks.push(syncBankWithdrawalFromDailyTxn(txnData, targetTxnId, true).catch(console.warn));
+                        }
+                        if (txnData.type === 'OPEN_ACCOUNT') {
+                            parallelTasks.push(syncAccountFromDailyTxn(txnData, targetTxnId, true).catch(console.warn));
+                        }
                     } else {
-                        await syncCreditFromDailyTxn(null, deletingTxnId, true);
-                        await syncBankWithdrawalFromDailyTxn(null, deletingTxnId, true);
-                        await syncAccountFromDailyTxn(null, deletingTxnId, true);
+                        // Fallback only if type was completely unknown
+                        parallelTasks.push(syncCreditFromDailyTxn(null, targetTxnId, true).catch(console.warn));
+                        parallelTasks.push(syncBankWithdrawalFromDailyTxn(null, targetTxnId, true).catch(console.warn));
+                        parallelTasks.push(syncAccountFromDailyTxn(null, targetTxnId, true).catch(console.warn));
                     }
-                    await deleteDoc(doc(db, 'daily_transactions', deletingTxnId));
-                    hideDeleteModal();
-                    
-                    let container = document.getElementById('txn-toast-container');
-                    if (!container) {
-                        container = document.createElement('div');
-                        container.id = 'txn-toast-container';
-                        container.className = 'fixed top-6 right-6 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0';
-                        document.body.appendChild(container);
-                    }
-                    const toast = document.createElement('div');
-                    toast.className = 'pointer-events-auto flex items-center gap-3.5 px-4.5 py-4 bg-emerald-600/95 dark:bg-emerald-500/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 transform translate-x-full opacity-0 transition-all duration-300 ease-out';
-                    toast.innerHTML = `
-                        <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
-                            <span class="material-symbols-outlined text-xl font-bold">check_circle</span>
-                        </span>
-                        <div class="flex flex-col leading-tight">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-white/80">SUCCESS</span>
-                            <span class="text-sm font-bold text-white mt-0.5">Transaction deleted successfully</span>
-                        </div>
-                    `;
-                    container.appendChild(toast);
-                    requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
-                    setTimeout(() => {
-                        toast.classList.add('translate-x-full', 'opacity-0');
-                        setTimeout(() => toast.remove(), 350);
-                    }, 4000);
 
-                } catch(e) {
-                    console.error(e);
-                    const errorModal = document.createElement('div');
-                    errorModal.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn';
-                    errorModal.innerHTML = `
-                        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-scaleUp p-8 text-center">
-                            <div class="size-16 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-6">
-                                <span class="material-symbols-outlined text-4xl">error</span>
-                            </div>
-                            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Deletion Failed</h3>
-                            <p class="text-sm text-slate-500 font-medium mb-8">An error occurred while trying to delete the transaction.</p>
-                            <div class="flex items-center gap-3">
-                                <button class="cancel-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
-                                <button class="retry-err-btn flex-1 px-6 py-3.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 transition-all">Retry</button>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(errorModal);
-                    errorModal.querySelector('.cancel-err-btn').onclick = () => {
-                        errorModal.remove();
-                        hideDeleteModal();
-                    };
-                    errorModal.querySelector('.retry-err-btn').onclick = () => {
-                        errorModal.remove();
-                        performDelete();
-                    };
-                } finally {
-                    confirmDeleteBtn.disabled = false;
-                    if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
-                    confirmDeleteBtn.innerHTML = originalText;
+                    await Promise.allSettled(parallelTasks);
+                    console.log('[DailyTxn] Async background delete completed for:', targetTxnId);
+                } catch(err) {
+                    console.error('[DailyTxn] Error deleting transaction from server:', err);
+                    showTxnToast('Failed to delete transaction. Re-syncing...', 'ERROR', true);
+                    if (typeof loadTransactions === 'function' && currentSelectedDate) {
+                        loadTransactions(currentSelectedDate);
+                    }
                 }
-            };
-            performDelete();
+            })();
         };
     }
 
