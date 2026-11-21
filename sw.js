@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v87'; // Disable ArrowUp/ArrowDown spinner increment on amount fields
+const CACHE_NAME = 'biz-report-v88'; // Account Register: short bank name and village column
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

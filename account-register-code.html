@@ -362,6 +362,7 @@
                         <th class="px-5 py-4 font-semibold">DOB</th>
                         <th class="px-5 py-4 font-semibold">Acc No.</th>
                         <th class="px-5 py-4 font-semibold">Holder Name</th>
+                        <th class="px-5 py-4 font-semibold">Village</th>
                         <th class="px-5 py-4 font-semibold">Type</th>
                         <th class="px-5 py-4 font-semibold">Mobile</th>
                         <th class="px-5 py-4 font-semibold">Aadhar</th>
@@ -451,12 +452,10 @@
                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Address</label>
-                        <input type="text" id="address" required placeholder="Enter address details"
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Village / Address</label>
+                        <input type="text" id="address" required placeholder="Enter village or address details"
                             class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                     </div>
-                </div>
-                        class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-white transition-all">
                 </div>
 
                 <!-- Row 5: Aadhar & Reference Number -->
@@ -829,6 +828,41 @@
 
     const isAdmin = () => ((window.authGet && window.authGet('userRole')) || localStorage.getItem('auth_userRole') || localStorage.getItem('userRole') || sessionStorage.getItem('userRole')) === 'admin';
 
+    const getShortBankName = (name) => {
+        if (!name) return '-';
+        const n = String(name).toUpperCase().trim();
+        const map = {
+            'CHHATTISGARH GRAMEEN BANK': 'CGB',
+            'CHHATTISGARH RAJYA GRAMIN BANK': 'CGB',
+            'CHHATTISGARH GRAMIN BANK': 'CGB',
+            'CRGB': 'CGB',
+            'CGB': 'CGB',
+            'STATE BANK OF INDIA': 'SBI',
+            'INDIA POST PAYMENT BANK': 'IPPB',
+            'BANK OF BARODA': 'BOB',
+            'UCO BANK': 'UCO',
+            'UNION BANK': 'UBI',
+            'UNION BANK OF INDIA': 'UBI',
+            'AIRTEL BANK': 'AIRTEL',
+            'AIRTEL PAYMENTS BANK': 'AIRTEL',
+            'FINO BANK': 'FINO',
+            'FINO PAYMENTS BANK': 'FINO',
+            'INDIAN BANK': 'INDIAN',
+            'JILLA SAKAHARI BANK': 'JSB',
+            'PUNJAB NATIONAL BANK': 'PNB',
+            'HDFC BANK': 'HDFC',
+            'ICICI BANK': 'ICICI',
+            'AXIS BANK': 'AXIS',
+            'CANARA BANK': 'CANARA',
+            'BANK OF INDIA': 'BOI',
+            'CENTRAL BANK OF INDIA': 'CBI',
+            'IDBI BANK': 'IDBI',
+            'KOTAK MAHINDRA BANK': 'KOTAK',
+            'PAYTM PAYMENTS BANK': 'PAYTM'
+        };
+        return map[n] || name;
+    };
+
     window.loadAccounts = async function() {
         try {
             const snap = await getDocs(collection(db, "accounts"));
@@ -854,13 +888,14 @@
             const m = (acc.accountHolderName||'').toLowerCase().includes(search) ||
                       (acc.accountNumber||'').toLowerCase().includes(search) ||
                       (acc.bankName||acc.bank||'').toLowerCase().includes(search) ||
+                      (acc.address||acc.village||'').toLowerCase().includes(search) ||
                       (acc.mobileNumber||'').toLowerCase().includes(search);
             const s = statusFilter === 'All' || acc.status === statusFilter;
             return m && s;
         });
         tbody.innerHTML = '';
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${admin ? 12 : 11}" class="px-5 py-8 text-center text-slate-500">No accounts found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${admin ? 13 : 12}" class="px-5 py-8 text-center text-slate-500">No accounts found.</td></tr>`;
         } else {
             filtered.forEach((acc, idx) => {
                 const sc = acc.status === 'Active'
@@ -871,13 +906,14 @@
                 tr.innerHTML = `
                     <td class="px-4 py-3 whitespace-nowrap text-center text-xs font-semibold text-slate-400">${idx + 1}</td>
                     <td class="px-5 py-3 whitespace-nowrap">${acc.openingDate||'-'}</td>
-                    <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-800 dark:text-slate-200">${acc.bankName||acc.bank||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200" title="${acc.bankName||acc.bank||''}">${getShortBankName(acc.bankName||acc.bank||'')}</td>
                     <td class="px-5 py-3 whitespace-nowrap">${acc.dob||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-900 dark:text-white">${acc.accountNumber||'-'}</td>
-                    <td class="px-5 py-3">${acc.accountHolderName||'-'}</td>
+                    <td class="px-5 py-3 font-semibold text-slate-900 dark:text-white">${acc.accountHolderName||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap text-slate-700 dark:text-slate-300 font-medium">${acc.address||acc.village||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap"><span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md text-xs font-medium">${acc.accountType||'-'}</span></td>
                     <td class="px-5 py-3 whitespace-nowrap">${acc.mobileNumber||'-'}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${acc.aadhar||'-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap font-mono text-xs">${acc.aadhar||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap text-xs">${acc.idReference||'-'}</td>
                     <td class="px-5 py-3 whitespace-nowrap">
                         <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${sc}">${acc.status||'-'}</span>
