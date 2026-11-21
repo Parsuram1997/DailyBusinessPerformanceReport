@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v80'; // Add bankName and serial number to Account Register
+const CACHE_NAME = 'biz-report-v81'; // Remove add account button and restrict actions to admin in Account Register
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
