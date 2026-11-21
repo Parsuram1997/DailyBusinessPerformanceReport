@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v81'; // Remove add account button and restrict actions to admin in Account Register
+const CACHE_NAME = 'biz-report-v82'; // Remove add pending button and restrict actions to admin in Pending Transactions
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

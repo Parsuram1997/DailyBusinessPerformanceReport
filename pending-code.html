@@ -225,10 +225,6 @@
                     <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
                     <span>PDF</span>
                 </button>
-                <button onclick="openAddPendingModal()" class="flex items-center gap-2 px-3.5 md:px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-amber-500/25 transition-all active:scale-95">
-                    <span class="material-symbols-outlined text-base">add_circle</span>
-                    <span class="whitespace-nowrap">Add Pending</span>
-                </button>
             </div>
         </header>
 
@@ -358,7 +354,7 @@
                                 <th class="px-4 py-3.5 whitespace-nowrap">Debited / Credited Account</th>
                                 <th class="px-4 py-3.5 text-right whitespace-nowrap">Amount</th>
                                 <th class="px-4 py-3.5 text-center whitespace-nowrap">Type / Status</th>
-                                <th class="px-4 py-3.5 text-center whitespace-nowrap">Action</th>
+                                <th id="action-th" class="px-4 py-3.5 text-center whitespace-nowrap">Action</th>
                             </tr>
                         </thead>
                         <tbody id="pending-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs font-semibold">
@@ -566,6 +562,8 @@
     let allPendingTxns = [];
     let currentFilterStatus = 'ALL'; // 'ALL', 'ACTIVE', 'CLEARED' (Default to ALL so 200 and all pending txns appear immediately)
 
+    const isAdmin = () => ((window.authGet && window.authGet('userRole')) || localStorage.getItem('auth_userRole') || localStorage.getItem('userRole') || sessionStorage.getItem('userRole')) === 'admin';
+
     // Format currency helper
     const formatINR = (val) => '₹ ' + (parseFloat(val) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
@@ -641,7 +639,7 @@
             console.error("Fallback fetch failed:", e);
             const tableBody = document.getElementById('pending-table-body');
             if (tableBody) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-rose-500 font-bold">Failed to load pending transactions. Please check your connection.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${isAdmin() ? 8 : 7}" class="px-6 py-8 text-center text-rose-500 font-bold">Failed to load pending transactions. Please check your connection.</td></tr>`;
             }
         }
     }
@@ -694,6 +692,12 @@
         const tableBody = document.getElementById('pending-table-body');
         if (!tableBody) return;
 
+        const actionTh = document.getElementById('action-th');
+        const admin = isAdmin();
+        if (actionTh) {
+            actionTh.style.display = admin ? '' : 'none';
+        }
+
         const searchVal = (document.getElementById('pending-search-input')?.value || '').toLowerCase().trim();
         const accountFilter = document.getElementById('account-filter')?.value || 'ALL';
         const dateFilter = document.getElementById('date-filter')?.value || '';
@@ -733,7 +737,7 @@
         if (filtered.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="px-6 py-12 text-center text-slate-400 font-semibold">
+                    <td colspan="${admin ? 8 : 7}" class="px-6 py-12 text-center text-slate-400 font-semibold">
                         <div class="flex flex-col items-center justify-center gap-2">
                             <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">inbox</span>
                             <p class="text-sm">No pending transactions found matching your filter.</p>
@@ -798,6 +802,7 @@
                             </span>
                         `}
                     </td>
+                    ${admin ? `
                     <td class="px-4 py-3.5 text-center whitespace-nowrap">
                         <div class="flex items-center justify-center gap-1.5">
                             ${isAdd && !t.resolved ? `
@@ -811,6 +816,7 @@
                             </button>
                         </div>
                     </td>
+                    ` : ''}
                 </tr>
             `;
         }).join('');
@@ -852,6 +858,10 @@
 
     // Modal Control: Add
     window.openAddPendingModal = () => {
+        if (!isAdmin()) {
+            Swal.fire({ icon: 'warning', title: 'Permission Denied', text: 'Only administrators can record pending transactions.' });
+            return;
+        }
         const modal = document.getElementById('add-pending-modal');
         if (modal) {
             const today = new Date().toISOString().split('T')[0];
@@ -876,6 +886,10 @@
     // Save New Pending Transaction into 'daily_transactions'
     window.handleSavePending = async (e) => {
         e.preventDefault();
+        if (!isAdmin()) {
+            Swal.fire({ icon: 'warning', title: 'Permission Denied', text: 'Only administrators can record pending transactions.' });
+            return;
+        }
         const date = document.getElementById('new-pending-date').value;
         const time = document.getElementById('new-pending-time').value || '12:00';
         const customer = document.getElementById('new-pending-customer').value.trim();
@@ -936,6 +950,10 @@
 
     // Modal Control: Resolve
     window.openResolveModal = (id, customer, amount, bank) => {
+        if (!isAdmin()) {
+            Swal.fire({ icon: 'warning', title: 'Permission Denied', text: 'Only administrators can resolve pending transactions.' });
+            return;
+        }
         const modal = document.getElementById('resolve-pending-modal');
         if (modal) {
             document.getElementById('resolve-item-id').value = id;
@@ -963,6 +981,10 @@
     // Confirm Resolution into 'daily_transactions'
     window.handleConfirmResolution = async (e) => {
         e.preventDefault();
+        if (!isAdmin()) {
+            Swal.fire({ icon: 'warning', title: 'Permission Denied', text: 'Only administrators can resolve pending transactions.' });
+            return;
+        }
         const pendingId = document.getElementById('resolve-item-id').value;
         const amount = parseFloat(document.getElementById('resolve-original-amount').value || 0);
         const customer = document.getElementById('resolve-customer-name').value;
@@ -1026,6 +1048,10 @@
 
     // Delete Record from 'daily_transactions'
     window.deletePendingTxn = async (id) => {
+        if (!isAdmin()) {
+            Swal.fire({ icon: 'warning', title: 'Permission Denied', text: 'Only administrators can delete pending records.' });
+            return;
+        }
         const result = await Swal.fire({
             title: 'Delete this record?',
             text: 'This pending record will be permanently deleted from database.',
