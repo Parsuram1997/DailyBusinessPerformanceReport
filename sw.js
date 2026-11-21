@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biz-report-v82'; // Remove add pending button and restrict actions to admin in Pending Transactions
+const CACHE_NAME = 'biz-report-v83'; // Make Bank Withdrawals page full width
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
